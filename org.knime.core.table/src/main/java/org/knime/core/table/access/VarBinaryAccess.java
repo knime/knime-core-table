@@ -52,7 +52,7 @@ import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 
 /**
- * Definition of {@link ByteArrayAccess}.
+ * Definition of {@link VarBinaryAccess}.
  *
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @since 4.3
@@ -60,9 +60,10 @@ import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
  * @noreference This class is not intended to be referenced by clients.
  */
 @SuppressWarnings("javadoc")
-public final class ByteArrayAccess {
+// TODO rename to VarBinaryAccess
+public final class VarBinaryAccess {
 
-    private ByteArrayAccess() {
+    private VarBinaryAccess() {
     }
 
     public interface VarBinaryReadAccess extends ReadAccess {
