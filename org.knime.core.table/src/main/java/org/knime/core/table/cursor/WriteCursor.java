@@ -20,6 +20,8 @@
  */
 package org.knime.core.table.cursor;
 
+import java.io.IOException;
+
 /**
  * A {@link LookaheadCursor} for writing data to a storage.<br>
  * Provides a {@link #finish()} method that ensures that any data that hasn't been written out, yet, is written out
@@ -32,6 +34,7 @@ public interface WriteCursor<A> extends LookaheadCursor<A> {
 
     /**
      * Finishes the write process by e.g. flushing data that hasn't been written out yet and closing the instance.
+     * @throws IOException if closing fails
      */
-    void finish();
+    void finish() throws IOException;
 }

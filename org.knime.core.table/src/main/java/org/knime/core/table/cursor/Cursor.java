@@ -40,20 +40,13 @@ public interface Cursor<A> extends Closeable {
     boolean forward();
 
     /**
-     * Always returns the same access instance.
+     * Always returns the same access instance.<br>
+     * This method can be called before the first call to {@link #forward()} e.g. to set up a decorator.<br>
+     * However, the access won't point to any values and it is only save to access values after the first
+     * {@link #forward()} call.
      *
      * @return the access that is forwarded by this cursor
      */
     A access();
-
-    /**
-     * Closes this resource, relinquishing any underlying resources. This method is invoked automatically on objects
-     * managed by the try-with-resources statement. This method is idempotent, i.e., it can be called repeatedly without
-     * side effects.<br>
-     *
-     * Potential IOException will be logged.
-     */
-    @Override
-    void close();
 
 }
