@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KNIME Table Plugin
+Bundle-SymbolicName: org.knime.core.table;singleton:=true
+Bundle-Version: 4.4.0.qualifier
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-ActivationPolicy: lazy
+Require-Bundle: 
+ org.slf4j.api;bundle-version="[1.7.2,2.0.0)"
+Export-Package: org.knime.core.table,
+ org.knime.core.table.access,
+ org.knime.core.table.cursor,
+ org.knime.core.table.row,
+ org.knime.core.table.schema
+Automatic-Module-Name: org.knime.core.table
