@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.knime.maven</groupId>
+		<artifactId>ap.parent</artifactId>
+		<version>4.4.0</version>
+	</parent>
+
+	<groupId>org.knime</groupId>
+	<artifactId>knime-core-table</artifactId>
+	<version>${revision}${changelist}</version>
+	<packaging>pom</packaging>
+	<name>Aggregator POM for knime-core-table</name>
+
+	<properties>
+		<revision>4.4.0</revision>
+		<changelist>-SNAPSHOT</changelist>
+		<feature-branch-extension.branchListProperty>git.branch</feature-branch-extension.branchListProperty>
+		<feature-branch-extension.appendArtifactoryProperties>false</feature-branch-extension.appendArtifactoryProperties>
+		<sonar.coverage.exclusions>
+          org.knime.core.table.tests/**/*
+        </sonar.coverage.exclusions>
+	</properties>
+
+	<modules>
+		<module>org.knime.core.table</module>
+		<module>org.knime.core.table.tests</module>
+        <module>org.knime.update.core.table</module>
+	</modules>
+	<repositories>
+		<repository>
+			<id>p2-knime-tp</id>
+			<layout>p2</layout>
+			<url>${knime.tp.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-shared</id>
+			<layout>p2</layout>
+			<url>${knime.shared.p2}</url>
+		</repository>
+	</repositories>
+	
+</project>
