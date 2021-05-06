@@ -66,4 +66,8 @@ public final class PeriodDataSpec implements DataSpec {
         return v.visit(this);
     }
 
+    @Override
+    public String toString() {
+        return "Period";
+    }
 }

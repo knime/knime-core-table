@@ -67,4 +67,9 @@ public final class StringDataSpec implements DataSpec {
     public <R> R accept(final Mapper<R> v) {
         return v.visit(this);
     }
+
+    @Override
+    public String toString() {
+        return "String";
+    }
 }

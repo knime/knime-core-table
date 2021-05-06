@@ -47,6 +47,9 @@ package org.knime.core.table.schema;
 
 /**
  * Specification / configuration of implementations of data.
+ * <P>
+ * Implementations of this interface must provide meaningful implementations of {@link #equals(Object)} and
+ * {@link #hashCode()}. They should also provide a meaningful implementation of {@link #toString()}.
  *
  * @author Marc Bux, KNIME GmbH, Berlin, Germany
  */

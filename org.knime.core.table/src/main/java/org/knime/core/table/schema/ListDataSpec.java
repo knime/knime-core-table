@@ -76,4 +76,19 @@ public final class ListDataSpec implements DataSpec {
         return v.visit(this);
     }
 
+    @Override
+    public int hashCode() {
+        return 31 + m_inner.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        return obj instanceof ListDataSpec && m_inner.equals(((ListDataSpec)obj).m_inner);
+    }
+
+    @Override
+    public String toString() {
+        return "List (" + m_inner.toString() + ")";
+    }
+
 }

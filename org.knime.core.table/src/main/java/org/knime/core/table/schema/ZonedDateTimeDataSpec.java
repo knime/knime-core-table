@@ -66,4 +66,8 @@ public final class ZonedDateTimeDataSpec implements DataSpec {
         return v.visit(this);
     }
 
+    @Override
+    public String toString() {
+        return "Zoned date-time";
+    }
 }

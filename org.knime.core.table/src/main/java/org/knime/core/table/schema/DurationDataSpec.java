@@ -66,4 +66,9 @@ public final class DurationDataSpec implements DataSpec {
         return v.visit(this);
     }
 
+    @Override
+    public String toString() {
+        return "Duration";
+    }
+
 }
