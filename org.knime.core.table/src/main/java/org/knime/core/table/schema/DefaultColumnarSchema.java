@@ -44,30 +44,61 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2020 (dietzc): created
+ *   Apr 14, 2021 (marcel): created
  */
-package org.knime.core.table.access;
+package org.knime.core.table.schema;
 
-/***
- * Provides write access to an underlying data structure.
- *
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
- * @since 4.3
- *
- * @noreference This interface is not intended to be referenced by clients.
- */
-public interface WriteAccess {
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-    /**
-     * Sets the value missing. Default is missing.
-     */
-    void setMissing();
+public final class DefaultColumnarSchema implements ColumnarSchema {
 
-    // TODO: improve type safety? Would require a type parameter on WriteAccess (meh).
-    /**
-     * Copies the value at the given access into this access.
-     *
-     * @param access The access whose value to copy into this access.
-     */
-    void setFrom(ReadAccess access);
+    private final List<DataSpec> m_columnSpecs;
+
+    public DefaultColumnarSchema(final DataSpec... columnSpecs) {
+        this(Arrays.asList(columnSpecs));
+    }
+
+    public DefaultColumnarSchema(final List<DataSpec> columnSpecs) {
+        m_columnSpecs = Collections.unmodifiableList(new ArrayList<>(columnSpecs));
+    }
+
+    @Override
+    public int numColumns() {
+        return m_columnSpecs.size();
+    }
+
+    @Override
+    public DataSpec getSpec(final int index) {
+        return m_columnSpecs.get(index);
+    }
+
+    @Override
+    public int hashCode() {
+        return m_columnSpecs.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof ColumnarSchema)) { // NOSONAR
+            return false;
+        }
+        final ColumnarSchema other = (ColumnarSchema)obj;
+        if (m_columnSpecs.size() != other.numColumns()) {
+            return false;
+        }
+        final List<DataSpec> otherColumnSpecs = (other instanceof DefaultColumnarSchema) //
+            ? ((DefaultColumnarSchema)other).m_columnSpecs //
+            : IntStream.range(0, other.numColumns()).mapToObj(other::getSpec).collect(Collectors.toList());
+        return m_columnSpecs.equals(otherColumnSpecs);
+    }
+
+    @Override
+    public String toString() {
+        return "Columns (" + m_columnSpecs.size() + ") " + m_columnSpecs.toString();
+    }
 }

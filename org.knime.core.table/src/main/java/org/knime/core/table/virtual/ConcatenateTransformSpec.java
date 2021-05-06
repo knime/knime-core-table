@@ -44,30 +44,76 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2020 (dietzc): created
+ *   Apr 14, 2021 (marcel): created
  */
-package org.knime.core.table.access;
+package org.knime.core.table.virtual;
 
-/***
- * Provides write access to an underlying data structure.
- *
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
- * @since 4.3
- *
- * @noreference This interface is not intended to be referenced by clients.
- */
-public interface WriteAccess {
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.util.Arrays;
+import java.util.List;
 
-    /**
-     * Sets the value missing. Default is missing.
-     */
-    void setMissing();
+import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.schema.ColumnarSchema;
 
-    // TODO: improve type safety? Would require a type parameter on WriteAccess (meh).
-    /**
-     * Copies the value at the given access into this access.
-     *
-     * @param access The access whose value to copy into this access.
-     */
-    void setFrom(ReadAccess access);
+import com.google.common.collect.Lists;
+
+// TODO: in its current state, this spec can be converted into a singleton. Let's wait and see if there will be any parametrization.
+public final class ConcatenateTransformSpec implements TableTransformSpec {
+
+    @Override
+    public List<ColumnarSchema> transformSchemas(final List<ColumnarSchema> schemas) {
+        return Arrays.asList(createSchema(schemas));
+    }
+
+    private static ColumnarSchema createSchema(final List<ColumnarSchema> schemas) {
+        final ColumnarSchema schema = schemas.get(0);
+        for (int i = 1; i < schemas.size(); i++) {
+            final ColumnarSchema furtherSchema = schemas.get(i);
+            if (!schema.equals(furtherSchema)) {
+                throw new IllegalArgumentException("Incompatible schemas: " + schema + " vs " + furtherSchema);
+            }
+        }
+        return schema;
+    }
+
+    @SuppressWarnings("resource") // Created tables are to be closed by clients.
+    @Override
+    public List<RowAccessible> transformTables(final List<RowAccessible> tables) {
+        final ColumnarSchema schema = createSchema(Lists.transform(tables, RowAccessible::getSchema));
+        return Arrays.asList(new ConcatenatedTable(tables, schema));
+    }
+
+    @Override
+    public int hashCode() {
+        return ConcatenateTransformSpec.class.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        return obj instanceof ConcatenateTransformSpec;
+    }
+
+    @Override
+    public String toString() {
+        return "Concatenate";
+    }
+
+    public static final class ConcatenateTransformSpecSerializer
+        extends AbstractTableTransformSpecSerializer<ConcatenateTransformSpec> {
+
+        public ConcatenateTransformSpecSerializer() {
+            super(ConcatenateTransformSpec.class, 0);
+        }
+
+        @Override
+        public void write(final ConcatenateTransformSpec spec, final DataOutput output) {
+            // Nothing to do.
+        }
+
+        @Override
+        public ConcatenateTransformSpec read(final DataInput input) {
+            return new ConcatenateTransformSpec();
+        }
+    }
 }

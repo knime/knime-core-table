@@ -44,30 +44,29 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2020 (dietzc): created
+ *   Apr 23, 2021 (marcel): created
  */
-package org.knime.core.table.access;
+package org.knime.core.table.virtual;
 
-/***
- * Provides write access to an underlying data structure.
- *
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
- * @since 4.3
- *
- * @noreference This interface is not intended to be referenced by clients.
- */
-public interface WriteAccess {
+public abstract class AbstractTableTransformSpecSerializer<T extends TableTransformSpec>
+    implements TableTransformSpecSerializer<T> {
 
-    /**
-     * Sets the value missing. Default is missing.
-     */
-    void setMissing();
+    private final Class<T> m_serializableClass;
 
-    // TODO: improve type safety? Would require a type parameter on WriteAccess (meh).
-    /**
-     * Copies the value at the given access into this access.
-     *
-     * @param access The access whose value to copy into this access.
-     */
-    void setFrom(ReadAccess access);
+    private final int m_version;
+
+    public AbstractTableTransformSpecSerializer(final Class<T> serializableClass, final int serializerVersion) {
+        m_serializableClass = serializableClass;
+        m_version = serializerVersion;
+    }
+
+    @Override
+    public Class<T> getSerializableClass() {
+        return m_serializableClass;
+    }
+
+    @Override
+    public int getVersion() {
+        return m_version;
+    }
 }

@@ -44,30 +44,63 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2020 (dietzc): created
+ *   Apr 12, 2021 (marcel): created
  */
-package org.knime.core.table.access;
+package org.knime.core.table.virtual;
 
-/***
- * Provides write access to an underlying data structure.
- *
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
- * @since 4.3
- *
- * @noreference This interface is not intended to be referenced by clients.
- */
-public interface WriteAccess {
+import java.util.Collections;
+import java.util.List;
+
+import org.knime.core.table.row.RowAccessible;
+
+public final class TableTransform {
+
+    // Static factory methods are needed because the erasures of the equivalent constructors would be identical.
+
+    public static TableTransform createFromSourceTables(final List<RowAccessible> sourceTables,
+        final TableTransformSpec spec) {
+        final TableTransform transform = new TableTransform(spec);
+        transform.m_sourceTables = Collections.unmodifiableList(sourceTables);
+        transform.m_precedingTransforms = Collections.emptyList();
+        return transform;
+    }
+
+    public static TableTransform createFromPrecedingTransforms(final List<TableTransform> precedingTransforms,
+        final TableTransformSpec spec) {
+        final TableTransform transform = new TableTransform(spec);
+        transform.m_sourceTables = Collections.emptyList();
+        transform.m_precedingTransforms = Collections.unmodifiableList(precedingTransforms);
+        return transform;
+    }
+
+    private final TableTransformSpec m_spec;
+
+    private /* final */ List<RowAccessible> m_sourceTables;
+
+    private /* final */ List<TableTransform> m_precedingTransforms;
+
+    private TableTransform(final TableTransformSpec spec) {
+        m_spec = spec;
+    }
 
     /**
-     * Sets the value missing. Default is missing.
+     * @return The specification of the transformation.
      */
-    void setMissing();
+    public TableTransformSpec getSpec() {
+        return m_spec;
+    }
 
-    // TODO: improve type safety? Would require a type parameter on WriteAccess (meh).
     /**
-     * Copies the value at the given access into this access.
-     *
-     * @param access The access whose value to copy into this access.
+     * @return empty if {@link #getPrecedingTransforms()} returns a non-empty collection.
      */
-    void setFrom(ReadAccess access);
+    public List<RowAccessible> getSourceTables() {
+        return m_sourceTables;
+    }
+
+    /**
+     * @return empty if {@link #getSourceTables()} returns a a non-empty collection.
+     */
+    public List<TableTransform> getPrecedingTransforms() {
+        return m_precedingTransforms;
+    }
 }

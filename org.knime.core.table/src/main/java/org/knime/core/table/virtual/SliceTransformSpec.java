@@ -44,32 +44,90 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   19 Apr 2021 (Marc): created
+ *   Apr 14, 2021 (marcel): created
  */
-package org.knime.core.table.schema;
+package org.knime.core.table.virtual;
 
-/**
- * {@link DataSpec} for String data.
- *
- * @author Marc Bux, KNIME GmbH, Berlin, Germany
- */
-public final class StringDataSpec implements DataSpec {
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.schema.ColumnarSchema;
+
+public final class SliceTransformSpec implements TableTransformSpec {
+
+    private final long m_from;
+
+    private final long m_to;
 
     /**
-     * The singleton instance of {@link StringDataSpec}.
+     * @param from The start index of the slice (inclusive).
+     * @param to The end index of the slice (exclusive).
      */
-    public static final StringDataSpec INSTANCE = new StringDataSpec();
-
-    private StringDataSpec() {
+    public SliceTransformSpec(final long from, final long to) {
+        if (from < 0) {
+            throw new IndexOutOfBoundsException("Negative 'from' index.");
+        }
+        if (to < 0) {
+            throw new IndexOutOfBoundsException("Negative 'to' index.");
+        }
+        m_from = from;
+        m_to = to;
     }
 
     @Override
-    public <R> R accept(final Mapper<R> v) {
-        return v.visit(this);
+    public List<ColumnarSchema> transformSchemas(final List<ColumnarSchema> schemas) {
+        return schemas;
+    }
+
+    @SuppressWarnings("resource") // Created tables are to be closed by clients.
+    @Override
+    public List<RowAccessible> transformTables(final List<RowAccessible> tables) {
+        final RowAccessible table = tables.get(0);
+        final ColumnarSchema schema = table.getSchema();
+        return Arrays.asList(new SlicedTable(table, m_from, m_to, schema));
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(m_from) * 31 + Long.hashCode(m_to);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof SliceTransformSpec)) {
+            return false;
+        }
+        final SliceTransformSpec other = (SliceTransformSpec)obj;
+        return m_from == other.m_from && m_to == other.m_to;
     }
 
     @Override
     public String toString() {
-        return "String";
+        return "Slice from " + m_from + " to " + m_to;
+    }
+
+    public static final class SliceTransformSpecSerializer
+        extends AbstractTableTransformSpecSerializer<SliceTransformSpec> {
+
+        public SliceTransformSpecSerializer() {
+            super(SliceTransformSpec.class, 0);
+        }
+
+        @Override
+        public void write(final SliceTransformSpec spec, final DataOutput output) throws IOException {
+            output.writeLong(spec.m_from);
+            output.writeLong(spec.m_to);
+        }
+
+        @Override
+        public SliceTransformSpec read(final DataInput input) throws IOException {
+            final long from = input.readLong();
+            final long to = input.readLong();
+            return new SliceTransformSpec(from, to);
+        }
     }
 }

@@ -47,6 +47,9 @@ package org.knime.core.table.schema;
 
 /**
  * The columnar schema of a table.
+ * <P>
+ * Implementations of this interface must provide meaningful implementations of {@link #equals(Object)} and
+ * {@link #hashCode()}. They should also provide a meaningful implementation of {@link #toString()}.
  *
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Marc Bux, KNIME GmbH, Berlin, Germany

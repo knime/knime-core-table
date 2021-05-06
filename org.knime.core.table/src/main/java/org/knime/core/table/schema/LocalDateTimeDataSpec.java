@@ -66,4 +66,8 @@ public final class LocalDateTimeDataSpec implements DataSpec {
         return v.visit(this);
     }
 
+    @Override
+    public String toString() {
+        return "Local date-time";
+    }
 }

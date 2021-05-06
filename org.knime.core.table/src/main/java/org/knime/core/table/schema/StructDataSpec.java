@@ -48,6 +48,10 @@
  */
 package org.knime.core.table.schema;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
  * The {@link DataSpec} for struct data.
  */
@@ -75,6 +79,21 @@ public final class StructDataSpec implements DataSpec {
     @Override
     public final <R> R accept(final Mapper<R> v) {
         return v.visit(this);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(m_inner);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        return obj instanceof StructDataSpec && Arrays.equals(m_inner, ((StructDataSpec)obj).m_inner);
+    }
+
+    @Override
+    public String toString() {
+        return Stream.of(m_inner).map(DataSpec::toString).collect(Collectors.joining(", ", "Struct {", "}"));
     }
 
 }

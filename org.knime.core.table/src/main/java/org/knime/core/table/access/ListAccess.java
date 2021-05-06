@@ -69,6 +69,11 @@ public final class ListAccess {
     public interface ListReadAccess extends ReadAccess {
 
         /**
+         * @return the size of the list
+         */
+        int size();
+
+        /**
          * Get the {@link ReadAccess} at the given index in the list. Note that this object should only be used until
          * this method is called again. Implementations are allowed to reuse the object when this method is called
          * again.
@@ -79,16 +84,6 @@ public final class ListAccess {
          */
         <R extends ReadAccess> R getReadAccess(int index);
 
-        /**
-         * @param index the index in the list
-         * @return <code>true</code> if the value at this index is missing
-         */
-        boolean isMissing(int index);
-
-        /**
-         * @return the size of the list
-         */
-        int size();
     }
 
     /**
@@ -97,6 +92,13 @@ public final class ListAccess {
      * @since 4.3
      */
     public interface ListWriteAccess extends WriteAccess {
+
+        /**
+         * Create a new list with the given size. Call this before accessing the elements.
+         *
+         * @param size the size of the list
+         */
+        void create(int size);
 
         /**
          * Get the {@link WriteAccess} at the given index in the list. Call this only after starting a new list with
@@ -111,11 +113,5 @@ public final class ListAccess {
          */
         <W extends WriteAccess> W getWriteAccess(int index);
 
-        /**
-         * Create a new list with the given size. Call this before accessing the elements.
-         *
-         * @param size the size of the list
-         */
-        void create(int size);
     }
 }

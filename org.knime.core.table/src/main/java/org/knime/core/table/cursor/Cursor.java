@@ -35,11 +35,6 @@ import java.io.Closeable;
 public interface Cursor<A> extends Closeable {
 
     /**
-     * @return true if forwarding was successful, false otherwise (i.e. at the end)
-     */
-    boolean forward();
-
-    /**
      * Always returns the same access instance.<br>
      * This method can be called before the first call to {@link #forward()} e.g. to set up a decorator.<br>
      * However, the access won't point to any values and it is only save to access values after the first
@@ -48,5 +43,10 @@ public interface Cursor<A> extends Closeable {
      * @return the access that is forwarded by this cursor
      */
     A access();
+
+    /**
+     * @return true if forwarding was successful, false otherwise (i.e. at the end)
+     */
+    boolean forward();
 
 }

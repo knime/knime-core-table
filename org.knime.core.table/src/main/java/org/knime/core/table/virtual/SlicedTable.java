@@ -44,30 +44,95 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2020 (dietzc): created
+ *   Apr 8, 2021 (marcel): created
  */
-package org.knime.core.table.access;
+package org.knime.core.table.virtual;
 
-/***
- * Provides write access to an underlying data structure.
+import java.io.IOException;
+
+import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.schema.ColumnarSchema;
+
+/**
+ * Implementation of the operation specified by {@link SliceTransformSpec}.
  *
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
- * @since 4.3
- *
- * @noreference This interface is not intended to be referenced by clients.
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public interface WriteAccess {
+class SlicedTable implements RowAccessible {
 
-    /**
-     * Sets the value missing. Default is missing.
-     */
-    void setMissing();
+    private final RowAccessible m_delegateTable;
 
-    // TODO: improve type safety? Would require a type parameter on WriteAccess (meh).
-    /**
-     * Copies the value at the given access into this access.
-     *
-     * @param access The access whose value to copy into this access.
-     */
-    void setFrom(ReadAccess access);
+    private final long m_from;
+
+    private final long m_to;
+
+    private final ColumnarSchema m_schema;
+
+    public SlicedTable(final RowAccessible tableToSlice, final long from, final long to,
+        final ColumnarSchema slicedSchema) {
+        m_delegateTable = tableToSlice;
+        m_from = from;
+        m_to = to;
+        m_schema = slicedSchema;
+    }
+
+    @Override
+    public ColumnarSchema getSchema() {
+        return m_schema;
+    }
+
+    @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
+    @Override
+    public Cursor<ReadAccessRow> createCursor() {
+        return new SlicedCursor(m_delegateTable.createCursor(), m_from, m_to);
+    }
+
+    @Override
+    public void close() throws IOException {
+        m_delegateTable.close();
+    }
+
+    private static final class SlicedCursor implements Cursor<ReadAccessRow> {
+
+        private final Cursor<ReadAccessRow> m_delegateCursor;
+
+        private final long m_from;
+
+        private final long m_to;
+
+        private long m_currentIndex;
+
+        public SlicedCursor(final Cursor<ReadAccessRow> delegateCursor, final long from, final long to) {
+            m_delegateCursor = delegateCursor;
+            m_from = from;
+            m_to = to;
+        }
+
+        @Override
+        public ReadAccessRow access() {
+            return m_delegateCursor.access();
+        }
+
+        @Override
+        public boolean forward() {
+            while (m_currentIndex < m_from) {
+                m_delegateCursor.forward();
+                m_currentIndex++;
+            }
+            if (m_currentIndex < m_to) {
+                final boolean forwarded = m_delegateCursor.forward();
+                m_currentIndex++;
+                return forwarded;
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            m_delegateCursor.close();
+        }
+    }
 }

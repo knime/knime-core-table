@@ -44,32 +44,83 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   19 Apr 2021 (Marc): created
+ *   Apr 14, 2021 (marcel): created
  */
-package org.knime.core.table.schema;
+package org.knime.core.table.virtual;
 
-/**
- * {@link DataSpec} for String data.
- *
- * @author Marc Bux, KNIME GmbH, Berlin, Germany
- */
-public final class StringDataSpec implements DataSpec {
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-    /**
-     * The singleton instance of {@link StringDataSpec}.
-     */
-    public static final StringDataSpec INSTANCE = new StringDataSpec();
+import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DefaultColumnarSchema;
 
-    private StringDataSpec() {
+import com.google.common.collect.Lists;
+
+// TODO: in its current state, this spec can be converted into a singleton. Let's wait and see if there will be any parametrization.
+public final class AppendTransformSpec implements TableTransformSpec {
+
+    @Override
+    public List<ColumnarSchema> transformSchemas(final List<ColumnarSchema> schemas) {
+        return Arrays.asList(createSchema(schemas));
+    }
+
+    private static ColumnarSchema createSchema(final List<ColumnarSchema> schemas) {
+        int totalNumColumns = 0;
+        for (final ColumnarSchema schema : schemas) {
+            totalNumColumns += schema.numColumns();
+        }
+        final List<DataSpec> appendedSpecs = new ArrayList<>(totalNumColumns);
+        for (final ColumnarSchema schema : schemas) {
+            final int numColumns = schema.numColumns();
+            for (int i = 0; i < numColumns; i++) {
+                appendedSpecs.add(schema.getSpec(i));
+            }
+        }
+        return new DefaultColumnarSchema(appendedSpecs);
+    }
+
+    @SuppressWarnings("resource") // Created tables are to be closed by clients.
+    @Override
+    public List<RowAccessible> transformTables(final List<RowAccessible> tables) {
+        final ColumnarSchema schema = createSchema(Lists.transform(tables, RowAccessible::getSchema));
+        return Arrays.asList(new AppendedTable(tables, schema));
     }
 
     @Override
-    public <R> R accept(final Mapper<R> v) {
-        return v.visit(this);
+    public int hashCode() {
+        return AppendTransformSpec.class.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        return obj instanceof AppendTransformSpec;
     }
 
     @Override
     public String toString() {
-        return "String";
+        return "Append";
+    }
+
+    public static final class AppendTransformSpecSerializer
+        extends AbstractTableTransformSpecSerializer<AppendTransformSpec> {
+
+        public AppendTransformSpecSerializer() {
+            super(AppendTransformSpec.class, 0);
+        }
+
+        @Override
+        public void write(final AppendTransformSpec spec, final DataOutput output) {
+            // Nothing to do.
+        }
+
+        @Override
+        public AppendTransformSpec read(final DataInput input) {
+            return new AppendTransformSpec();
+        }
     }
 }
