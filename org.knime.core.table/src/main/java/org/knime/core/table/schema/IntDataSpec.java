@@ -66,4 +66,9 @@ public final class IntDataSpec implements DataSpec {
         return v.visit(this);
     }
 
+    @Override
+    public String toString() {
+        return "Integer";
+    }
+
 }

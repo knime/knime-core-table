@@ -96,7 +96,7 @@ public final class VarBinaryDataSpec implements DataSpec {
     }
 
     /**
-     * The singelton instance of {@link VarBinaryDataSpec}.
+     * The singleton instance of {@link VarBinaryDataSpec}.
      */
     public static final VarBinaryDataSpec INSTANCE = new VarBinaryDataSpec();
 
@@ -106,6 +106,11 @@ public final class VarBinaryDataSpec implements DataSpec {
     @Override
     public <R> R accept(final Mapper<R> v) {
         return v.visit(this);
+    }
+
+    @Override
+    public String toString() {
+        return "Variable-width binary";
     }
 
 }

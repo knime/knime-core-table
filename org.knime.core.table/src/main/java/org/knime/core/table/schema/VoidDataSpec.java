@@ -66,4 +66,8 @@ public final class VoidDataSpec implements DataSpec {
         return v.visit(this);
     }
 
+    @Override
+    public String toString() {
+        return "Void";
+    }
 }
