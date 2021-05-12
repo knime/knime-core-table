@@ -50,6 +50,7 @@ package org.knime.core.table.virtual;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -102,9 +103,7 @@ public final class TableTransformer {
         final Map<TableTransform, List<RowAccessible>> tables = new HashMap<>();
 
         m_sources.forEach(souceTransform -> {
-            final List<RowAccessible> transformedTables =
-                souceTransform.getSpec().transformTables(souceTransform.getSourceTables());
-            tables.put(souceTransform, transformedTables);
+            tables.put(souceTransform, Arrays.asList(souceTransform.getSourceTable()));
             transformStack.push(souceTransform);
         });
 
@@ -118,8 +117,8 @@ public final class TableTransformer {
             }
 
             // Test for incomplete argument list of non-unary transforms.
-            if (node.getPrecedingTransforms().size() > 1
-                && node.getPrecedingTransforms().stream().anyMatch(t -> !tables.containsKey(t))) {
+            if (node.getPrecedingTransforms().size() > 1 &&
+                node.getPrecedingTransforms().stream().anyMatch(t -> !tables.containsKey(t))) {
                 // We cannot process the node yet because not all parents have been visited.
                 transformStack.addLast(node);
                 continue;

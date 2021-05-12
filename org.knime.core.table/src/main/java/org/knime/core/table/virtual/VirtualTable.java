@@ -69,6 +69,11 @@ public final class VirtualTable {
 
     private final ColumnarSchema m_schema;
 
+    public VirtualTable(final RowAccessible source) {
+        m_transform = new TableTransform(source);
+        m_schema = source.getSchema();
+    }
+
     public VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {
         m_transform = producingTransform;
         m_schema = schema;
@@ -91,14 +96,13 @@ public final class VirtualTable {
         final List<TableTransform> transforms = new ArrayList<>(1 + tables.size());
         transforms.add(m_transform);
         transforms.addAll(Collections2.transform(tables, VirtualTable::getProducingTransform));
-        return new VirtualTable(TableTransform.createFromPrecedingTransforms(transforms, transformSpec), schema);
+        return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
     }
 
     public VirtualTable appendMissingValueColumns(final List<DataSpec> columns) {
         final TableTransformSpec transformSpec = new AppendMissingValuesTransformSpec(columns);
         final ColumnarSchema schema = transformSpec.transformSchemas(Arrays.asList(m_schema)).get(0);
-        return new VirtualTable(TableTransform.createFromPrecedingTransforms(Arrays.asList(m_transform), transformSpec),
-            schema);
+        return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), schema);
     }
 
     public VirtualTable concatenate(final List<VirtualTable> tables) {
@@ -110,39 +114,35 @@ public final class VirtualTable {
         final List<TableTransform> transforms = new ArrayList<>(1 + tables.size());
         transforms.add(m_transform);
         transforms.addAll(Collections2.transform(tables, VirtualTable::getProducingTransform));
-        return new VirtualTable(TableTransform.createFromPrecedingTransforms(transforms, transformSpec), schema);
+        return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
     }
 
-    public VirtualTable filterColumns(final int[] columnIndices) {
+    public VirtualTable filterColumns(final int... columnIndices) {
         final TableTransformSpec transformSpec = new ColumnFilterTransformSpec(columnIndices);
         final ColumnarSchema schema = transformSpec.transformSchemas(Arrays.asList(m_schema)).get(0);
-        return new VirtualTable(TableTransform.createFromPrecedingTransforms(Arrays.asList(m_transform), transformSpec),
-            schema);
+        return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), schema);
     }
 
     public VirtualTable map(final BiConsumer<ReadAccessRow, WriteAccessRow> mapper, final ColumnarSchema outputSchema) {
         final TableTransformSpec transformSpec = new MapTransformSpec(ignore -> outputSchema, mapper);
-        return new VirtualTable(TableTransform.createFromPrecedingTransforms(Arrays.asList(m_transform), transformSpec),
-            outputSchema);
+        return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), outputSchema);
     }
 
-    public VirtualTable permute(final int[] permutation) {
+    public VirtualTable permute(final int... permutation) {
         final TableTransformSpec transformSpec = new PermuteTransformSpec(permutation);
         final ColumnarSchema schema = transformSpec.transformSchemas(Arrays.asList(m_schema)).get(0);
-        return new VirtualTable(TableTransform.createFromPrecedingTransforms(Arrays.asList(m_transform), transformSpec),
-            schema);
+        return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), schema);
 
     }
 
     public VirtualTable slice(final long from, final long to) {
         final TableTransformSpec transformSpec = new SliceTransformSpec(from, to);
         final ColumnarSchema schema = transformSpec.transformSchemas(Arrays.asList(m_schema)).get(0);
-        return new VirtualTable(TableTransform.createFromPrecedingTransforms(Arrays.asList(m_transform), transformSpec),
-            schema);
+        return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), schema);
     }
 
     /**
-     * @param destination The {@link RowWriteAccess} of the destination must be compatible to the {@link #getgetSchema()
+     * @param destination The {@link WriteAccessRow} of the destination must be compatible to the {@link #getSchema()
      *            schema} of this instance. The destination must be {@link Cursor#close() closed} by the caller of this
      *            method.
      */

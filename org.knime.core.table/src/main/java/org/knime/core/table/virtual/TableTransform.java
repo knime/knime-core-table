@@ -55,50 +55,42 @@ import org.knime.core.table.row.RowAccessible;
 
 public final class TableTransform {
 
-    // Static factory methods are needed because the erasures of the equivalent constructors would be identical.
+    // TODO: it's probably not a good idea to let the graph directly hold tables, for resource-management reasons. Use
+    // and match to an identifier instead?
+    private final RowAccessible m_sourceTable;
 
-    public static TableTransform createFromSourceTables(final List<RowAccessible> sourceTables,
-        final TableTransformSpec spec) {
-        final TableTransform transform = new TableTransform(spec);
-        transform.m_sourceTables = Collections.unmodifiableList(sourceTables);
-        transform.m_precedingTransforms = Collections.emptyList();
-        return transform;
-    }
-
-    public static TableTransform createFromPrecedingTransforms(final List<TableTransform> precedingTransforms,
-        final TableTransformSpec spec) {
-        final TableTransform transform = new TableTransform(spec);
-        transform.m_sourceTables = Collections.emptyList();
-        transform.m_precedingTransforms = Collections.unmodifiableList(precedingTransforms);
-        return transform;
-    }
+    private final List<TableTransform> m_precedingTransforms;
 
     private final TableTransformSpec m_spec;
 
-    private /* final */ List<RowAccessible> m_sourceTables;
+    public TableTransform(final RowAccessible sourceTable) {
+        m_sourceTable = sourceTable;
+        m_precedingTransforms = Collections.emptyList();
+        m_spec = IdentityTableTransformSpec.INSTANCE;
+    }
 
-    private /* final */ List<TableTransform> m_precedingTransforms;
-
-    private TableTransform(final TableTransformSpec spec) {
+    public TableTransform(final List<TableTransform> precedingTransforms, final TableTransformSpec spec) {
+        m_sourceTable = null;
+        m_precedingTransforms = Collections.unmodifiableList(precedingTransforms);
         m_spec = spec;
     }
 
     /**
-     * @return The specification of the transformation.
+     * @return The specification of this transformation.
      */
     public TableTransformSpec getSpec() {
         return m_spec;
     }
 
     /**
-     * @return empty if {@link #getPrecedingTransforms()} returns a non-empty collection.
+     * @return {@code null} if {@link #getPrecedingTransforms()} returns a non-empty collection.
      */
-    public List<RowAccessible> getSourceTables() {
-        return m_sourceTables;
+    public RowAccessible getSourceTable() {
+        return m_sourceTable;
     }
 
     /**
-     * @return empty if {@link #getSourceTables()} returns a a non-empty collection.
+     * @return empty if {@link #getSourceTable()} returns a non-{@code null} object.
      */
     public List<TableTransform> getPrecedingTransforms() {
         return m_precedingTransforms;
