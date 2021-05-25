@@ -48,9 +48,6 @@
  */
 package org.knime.core.table.virtual;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,6 +56,11 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public final class AppendMissingValuesTransformSpec implements TableTransformSpec {
 
@@ -115,25 +117,30 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
         extends AbstractTableTransformSpecSerializer<AppendMissingValuesTransformSpec> {
 
         public AppendMissingValuesTransformSpecSerializer() {
-            super(AppendMissingValuesTransformSpec.class, 0);
+            super("append_missing_values", 0);
         }
 
         @Override
-        public void write(final AppendMissingValuesTransformSpec spec, final DataOutput output) throws IOException {
-            final List<DataSpec> columns = spec.m_columns;
-            output.writeInt(columns.size());
-            for (final DataSpec column : columns) {
-                SerializationUtil.writeDataSpec(column, output);
+        protected JsonNode saveInternal(final AppendMissingValuesTransformSpec spec, final JsonNodeFactory output) {
+            final ObjectNode config = output.objectNode();
+            final ArrayNode columnTypesConfig = config.putArray("column_types");
+            final DataSpecSerializer dataSpecSerializer = new DataSpecSerializer();
+            for (final DataSpec column : spec.m_columns) {
+                final JsonNode columnTypeConfig = dataSpecSerializer.save(column, output);
+                columnTypesConfig.add(columnTypeConfig);
             }
+            return config;
         }
 
         @Override
-        public AppendMissingValuesTransformSpec read(final DataInput input) throws IOException {
-            final DataSpec[] columns = new DataSpec[input.readInt()];
-            for (int i = 0; i < columns.length; i++) {
-                columns[i] = SerializationUtil.readDataSpec(input);
+        protected AppendMissingValuesTransformSpec loadInternal(final JsonNode input) {
+            final ObjectNode root = (ObjectNode)input;
+            final ArrayNode columnTypesConfig = (ArrayNode)root.get("column_types");
+            final DataSpec[] columnTypes = new DataSpec[columnTypesConfig.size()];
+            for (int i = 0; i < columnTypes.length; i++) {
+                columnTypes[i] = DataSpecSerializer.load(columnTypesConfig.get(i));
             }
-            return new AppendMissingValuesTransformSpec(Arrays.asList(columns));
+            return new AppendMissingValuesTransformSpec(Arrays.asList(columnTypes));
         }
     }
 }

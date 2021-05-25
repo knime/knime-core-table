@@ -48,14 +48,15 @@
  */
 package org.knime.core.table.virtual;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public final class SliceTransformSpec implements TableTransformSpec {
 
@@ -114,19 +115,22 @@ public final class SliceTransformSpec implements TableTransformSpec {
         extends AbstractTableTransformSpecSerializer<SliceTransformSpec> {
 
         public SliceTransformSpecSerializer() {
-            super(SliceTransformSpec.class, 0);
+            super("slice", 0);
         }
 
         @Override
-        public void write(final SliceTransformSpec spec, final DataOutput output) throws IOException {
-            output.writeLong(spec.m_from);
-            output.writeLong(spec.m_to);
+        protected JsonNode saveInternal(final SliceTransformSpec spec, final JsonNodeFactory output) {
+            final ObjectNode config = output.objectNode();
+            config.put("from", spec.m_from);
+            config.put("to", spec.m_to);
+            return config;
         }
 
         @Override
-        public SliceTransformSpec read(final DataInput input) throws IOException {
-            final long from = input.readLong();
-            final long to = input.readLong();
+        protected SliceTransformSpec loadInternal(final JsonNode input) {
+            final ObjectNode config = (ObjectNode)input;
+            final long from = config.get("from").longValue();
+            final long to = config.get("to").longValue();
             return new SliceTransformSpec(from, to);
         }
     }

@@ -48,9 +48,6 @@
  */
 package org.knime.core.table.virtual;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -99,24 +96,5 @@ public final class MapTransformSpec implements TableTransformSpec {
 
     // TODO: hashCode, equals, toString
 
-    public static final class MapTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<MapTransformSpec> {
-
-        public MapTransformSpecSerializer() {
-            super(MapTransformSpec.class, 0);
-        }
-
-        @Override
-        public void write(final MapTransformSpec object, final DataOutput output) throws IOException {
-            // TODO: implement serializer registry
-            // TODO: we need a mechanism to find out whether a serialized spec is cross-lanugage compatible or not (the
-            // the map spec currently is not).
-            throw new IllegalStateException("not yet implemented");
-        }
-
-        @Override
-        public MapTransformSpec read(final DataInput input) throws IOException, ClassNotFoundException {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-    }
+    // TODO: serialization?
 }

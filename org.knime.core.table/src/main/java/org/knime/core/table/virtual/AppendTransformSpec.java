@@ -48,8 +48,6 @@
  */
 package org.knime.core.table.virtual;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,6 +57,8 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.Lists;
 
 // TODO: in its current state, this spec can be converted into a singleton. Let's wait and see if there will be any parametrization.
@@ -110,16 +110,17 @@ public final class AppendTransformSpec implements TableTransformSpec {
         extends AbstractTableTransformSpecSerializer<AppendTransformSpec> {
 
         public AppendTransformSpecSerializer() {
-            super(AppendTransformSpec.class, 0);
+            super("append", 0);
         }
 
         @Override
-        public void write(final AppendTransformSpec spec, final DataOutput output) {
-            // Nothing to do.
+        protected JsonNode saveInternal(final AppendTransformSpec spec, final JsonNodeFactory output) {
+            // Nothing to serialize.
+            return null;
         }
 
         @Override
-        public AppendTransformSpec read(final DataInput input) {
+        protected AppendTransformSpec loadInternal(final JsonNode input) {
             return new AppendTransformSpec();
         }
     }

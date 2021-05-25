@@ -48,14 +48,14 @@
  */
 package org.knime.core.table.virtual;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.util.Arrays;
 import java.util.List;
 
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.Lists;
 
 // TODO: in its current state, this spec can be converted into a singleton. Let's wait and see if there will be any parametrization.
@@ -103,16 +103,17 @@ public final class ConcatenateTransformSpec implements TableTransformSpec {
         extends AbstractTableTransformSpecSerializer<ConcatenateTransformSpec> {
 
         public ConcatenateTransformSpecSerializer() {
-            super(ConcatenateTransformSpec.class, 0);
+            super("concatenate", 0);
         }
 
         @Override
-        public void write(final ConcatenateTransformSpec spec, final DataOutput output) {
-            // Nothing to do.
+        protected JsonNode saveInternal(final ConcatenateTransformSpec spec, final JsonNodeFactory output) {
+            // Nothing to serialize.
+            return null;
         }
 
         @Override
-        public ConcatenateTransformSpec read(final DataInput input) {
+        protected ConcatenateTransformSpec loadInternal(final JsonNode input) {
             return new ConcatenateTransformSpec();
         }
     }

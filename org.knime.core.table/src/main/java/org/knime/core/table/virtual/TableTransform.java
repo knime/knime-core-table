@@ -51,48 +51,53 @@ package org.knime.core.table.virtual;
 import java.util.Collections;
 import java.util.List;
 
-import org.knime.core.table.row.RowAccessible;
-
 public final class TableTransform {
-
-    // TODO: it's probably not a good idea to let the graph directly hold tables, for resource-management reasons. Use
-    // and match to an identifier instead?
-    private final RowAccessible m_sourceTable;
 
     private final List<TableTransform> m_precedingTransforms;
 
     private final TableTransformSpec m_spec;
 
-    public TableTransform(final RowAccessible sourceTable) {
-        m_sourceTable = sourceTable;
+    public TableTransform(final SourceTransformSpec spec) {
         m_precedingTransforms = Collections.emptyList();
-        m_spec = IdentityTableTransformSpec.INSTANCE;
+        m_spec = spec;
     }
 
     public TableTransform(final List<TableTransform> precedingTransforms, final TableTransformSpec spec) {
-        m_sourceTable = null;
         m_precedingTransforms = Collections.unmodifiableList(precedingTransforms);
         m_spec = spec;
     }
 
     /**
-     * @return The specification of this transformation.
+     * @return The specification of this transformation. Can be a {@link SourceTransformSpec}, in which case
+     *         {@link #getPrecedingTransforms()} returns an empty list.
      */
     public TableTransformSpec getSpec() {
         return m_spec;
     }
 
     /**
-     * @return {@code null} if {@link #getPrecedingTransforms()} returns a non-empty collection.
-     */
-    public RowAccessible getSourceTable() {
-        return m_sourceTable;
-    }
-
-    /**
-     * @return empty if {@link #getSourceTable()} returns a non-{@code null} object.
+     * @return Empty if {@link #getSpec()} returns a {@link SourceTransformSpec}.
      */
     public List<TableTransform> getPrecedingTransforms() {
         return m_precedingTransforms;
+    }
+
+    @Override
+    public int hashCode() {
+        return m_spec.hashCode() * 31 + m_precedingTransforms.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof TableTransform)) {
+            return false;
+        }
+        final TableTransform other = (TableTransform)obj;
+        return m_spec.equals(other.m_spec) && m_precedingTransforms.equals(other.m_precedingTransforms);
+    }
+
+    @Override
+    public String toString() {
+        return "Transform " + m_precedingTransforms.size() + "->1: " + m_spec.toString();
     }
 }

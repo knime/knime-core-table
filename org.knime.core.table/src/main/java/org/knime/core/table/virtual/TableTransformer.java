@@ -58,6 +58,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.knime.core.table.row.RowAccessible;
@@ -71,10 +72,13 @@ public final class TableTransformer {
 
     private final Set<TableTransform> m_sources = new HashSet<>();
 
+    private final Map<UUID, RowAccessible> m_sourceTables;
+
     // TODO: current implementation is limited to graphs with a single output
     private final TableTransform m_leafTransform;
 
-    public TableTransformer(final TableTransform leafTransform) {
+    public TableTransformer(final Map<UUID, RowAccessible> sources, final TableTransform leafTransform) {
+        m_sourceTables = sources;
         m_leafTransform = leafTransform;
         traceBack(leafTransform);
     }
@@ -102,9 +106,10 @@ public final class TableTransformer {
         final Deque<TableTransform> transformStack = new ArrayDeque<>();
         final Map<TableTransform, List<RowAccessible>> tables = new HashMap<>();
 
-        m_sources.forEach(souceTransform -> {
-            tables.put(souceTransform, Arrays.asList(souceTransform.getSourceTable()));
-            transformStack.push(souceTransform);
+        m_sources.forEach(sourceTransform -> {
+            tables.put(sourceTransform, Arrays
+                .asList(m_sourceTables.get(((SourceTransformSpec)sourceTransform.getSpec()).getSourceIdentifier())));
+            transformStack.push(sourceTransform);
         });
 
         while (!transformStack.isEmpty()) {

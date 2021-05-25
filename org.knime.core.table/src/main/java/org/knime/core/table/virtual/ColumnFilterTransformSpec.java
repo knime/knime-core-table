@@ -48,9 +48,6 @@
  */
 package org.knime.core.table.virtual;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -58,6 +55,11 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public final class ColumnFilterTransformSpec implements TableTransformSpec {
 
@@ -123,17 +125,28 @@ public final class ColumnFilterTransformSpec implements TableTransformSpec {
         extends AbstractTableTransformSpecSerializer<ColumnFilterTransformSpec> {
 
         public ColumnFilterTransformSpecSerializer() {
-            super(ColumnFilterTransformSpec.class, 0);
+            super("column_filter", 0);
         }
 
         @Override
-        public void write(final ColumnFilterTransformSpec spec, final DataOutput output) throws IOException {
-            SerializationUtil.writeIntArray(spec.m_columnIndices, output);
+        protected JsonNode saveInternal(final ColumnFilterTransformSpec spec, final JsonNodeFactory output) {
+            final ObjectNode config = output.objectNode();
+            final ArrayNode columnIndicesConfig = config.putArray("included_columns");
+            for (final int columnIndex : spec.m_columnIndices) {
+                columnIndicesConfig.add(columnIndex);
+            }
+            return config;
         }
 
         @Override
-        public ColumnFilterTransformSpec read(final DataInput input) throws IOException {
-            return new ColumnFilterTransformSpec(SerializationUtil.readIntArray(input));
+        protected ColumnFilterTransformSpec loadInternal(final JsonNode input) {
+            final ObjectNode root = (ObjectNode)input;
+            final ArrayNode columnIndicesConfig = (ArrayNode)root.get("included_columns");
+            final int[] columnIndices = new int[columnIndicesConfig.size()];
+            for (int i = 0; i < columnIndices.length; i++) {
+                columnIndices[i] = columnIndicesConfig.get(i).intValue();
+            }
+            return new ColumnFilterTransformSpec(columnIndices);
         }
     }
 }

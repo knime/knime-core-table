@@ -48,18 +48,16 @@
  */
 package org.knime.core.table.virtual;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 public interface TableTransformSpecSerializer<T extends TableTransformSpec> {
 
-    // TODO: we may need to relax type parameter T here in case T itself is generically parametrized
-    Class<T> getSerializableClass();
+    String getTransformIdentifier();
 
     int getVersion();
 
-    void write(T object, DataOutput output) throws IOException;
+    JsonNode save(T spec, JsonNodeFactory factory);
 
-    T read(DataInput input) throws IOException, ClassNotFoundException;
+    T load(JsonNode config);
 }

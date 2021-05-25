@@ -52,6 +52,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 import org.knime.core.table.cursor.Cursor;
@@ -69,9 +71,9 @@ public final class VirtualTable {
 
     private final ColumnarSchema m_schema;
 
-    public VirtualTable(final RowAccessible source) {
-        m_transform = new TableTransform(source);
-        m_schema = source.getSchema();
+    public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema) {
+        m_transform = new TableTransform(new SourceTransformSpec(sourceIdentifier));
+        m_schema = schema;
     }
 
     public VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {
@@ -146,9 +148,10 @@ public final class VirtualTable {
      *            schema} of this instance. The destination must be {@link Cursor#close() closed} by the caller of this
      *            method.
      */
-    public void copy(final Cursor<WriteAccessRow> destination) throws IOException {
+    public void copy(final Map<UUID, RowAccessible> sources, final Cursor<WriteAccessRow> destination)
+        throws IOException {
         // TODO: optimize graph
-        try (final RowAccessible transformedTable = new TableTransformer(m_transform).transform()) {
+        try (final RowAccessible transformedTable = new TableTransformer(sources, m_transform).transform()) {
             try (final Cursor<ReadAccessRow> source = transformedTable.createCursor()) {
                 final ReadAccessRow readAccess = source.access();
                 final WriteAccessRow writeAccess = destination.access();

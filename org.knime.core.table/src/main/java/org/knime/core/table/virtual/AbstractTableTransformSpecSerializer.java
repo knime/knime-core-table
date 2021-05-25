@@ -48,25 +48,53 @@
  */
 package org.knime.core.table.virtual;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 public abstract class AbstractTableTransformSpecSerializer<T extends TableTransformSpec>
     implements TableTransformSpecSerializer<T> {
 
-    private final Class<T> m_serializableClass;
+    private final String m_transformIdentifier;
 
     private final int m_version;
 
-    public AbstractTableTransformSpecSerializer(final Class<T> serializableClass, final int serializerVersion) {
-        m_serializableClass = serializableClass;
+    public AbstractTableTransformSpecSerializer(final String transformIdentifier, final int serializerVersion) {
+        m_transformIdentifier = transformIdentifier;
         m_version = serializerVersion;
     }
 
     @Override
-    public Class<T> getSerializableClass() {
-        return m_serializableClass;
+    public String getTransformIdentifier() {
+        return m_transformIdentifier;
     }
 
     @Override
     public int getVersion() {
         return m_version;
     }
+
+    @Override
+    public JsonNode save(final T spec, final JsonNodeFactory factory) {
+        final ObjectNode root = factory.objectNode();
+        root.put("type", m_transformIdentifier);
+        if (m_version != 0) {
+            root.put("version", m_version);
+        }
+        final JsonNode customConfig = saveInternal(spec, factory);
+        if (customConfig != null) {
+            root.set("config", customConfig);
+        }
+        return root;
+    }
+
+    protected abstract JsonNode saveInternal(final T spec, final JsonNodeFactory factory);
+
+    @Override
+    public T load(final JsonNode config) {
+        final JsonNode customConfig = config.get("config");
+        return loadInternal(customConfig);
+    }
+
+    protected abstract T loadInternal(final JsonNode config);
 }
