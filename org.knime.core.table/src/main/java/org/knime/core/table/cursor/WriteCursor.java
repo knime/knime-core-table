@@ -23,7 +23,7 @@ package org.knime.core.table.cursor;
 import java.io.IOException;
 
 /**
- * A {@link LookaheadCursor} for writing data to a storage.<br>
+ * A {@link Cursor} for writing data to a storage.<br>
  * Provides a {@link #finish()} method that ensures that any data that hasn't been written out, yet, is written out
  * before the instance is closed.
  *
