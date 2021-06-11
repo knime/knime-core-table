@@ -130,9 +130,9 @@ public final class VirtualTable {
     }
 
     public VirtualTable appendMissingValueColumns(final List<DataSpec> columns) {
-        final TableTransformSpec transformSpec =
-            new AppendMissingValuesTransformSpec(columns.toArray(new DataSpec[columns.size()]));
-        final ColumnarSchema schema = ColumnarSchemas.append(Arrays.asList(m_schema));
+        final AppendMissingValuesTransformSpec transformSpec =
+                new AppendMissingValuesTransformSpec(columns.toArray(new DataSpec[columns.size()]));
+        final ColumnarSchema schema = ColumnarSchemas.append(Arrays.asList(m_schema, transformSpec.getAppendedSchema()));
         return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), schema);
     }
 
