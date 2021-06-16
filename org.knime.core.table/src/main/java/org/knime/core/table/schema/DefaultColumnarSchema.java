@@ -93,15 +93,18 @@ public final class DefaultColumnarSchema implements ColumnarSchema {
         if (!(obj instanceof ColumnarSchema)) { // NOSONAR
             return false;
         }
+        if (obj instanceof DefaultColumnarSchema) {
+            return m_columnSpecs.equals(((DefaultColumnarSchema)obj).m_columnSpecs);
+        }
         final ColumnarSchema other = (ColumnarSchema)obj;
-        if (m_columnSpecs.size() != other.numColumns()) {
+        if (numColumns() != other.numColumns()) {
             return false;
         }
-        return Iterators.elementsEqual(m_columnSpecs.iterator(), other.iterator());
+        return Iterators.elementsEqual(iterator(), other.iterator());
     }
 
     @Override
     public String toString() {
-        return "Columns (" + m_columnSpecs.size() + ") " + m_columnSpecs.toString();
+        return "Columns (" + m_columnSpecs.size() + ") " + m_columnSpecs;
     }
 }
