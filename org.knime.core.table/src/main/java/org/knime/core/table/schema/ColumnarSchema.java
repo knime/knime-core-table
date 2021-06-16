@@ -47,9 +47,9 @@ package org.knime.core.table.schema;
 
 /**
  * The columnar schema of a table.
- * <P>
- * Implementations of this interface must provide meaningful implementations of {@link #equals(Object)} and
- * {@link #hashCode()}. They should also provide a meaningful implementation of {@link #toString()}.
+ * <p>
+ * Implementations of this interface must implement {@link #equals(Object)} and
+ * {@link #hashCode()} as specified to ensure comparability across implementations.
  *
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Marc Bux, KNIME GmbH, Berlin, Germany
@@ -72,4 +72,22 @@ public interface ColumnarSchema extends Iterable<DataSpec> {
      */
     DataSpec getSpec(int index);
 
+    /**
+     * Compares the specified object with this {@code ColumnarSchema} for
+     * equality. Returns {@code true} if and only if the specified object is
+     * also a {@code ColumnarSchema}, and contains the same {@code DataSpec}s
+     * (as determined by {@code Objects.equals(e1, e2)}, in the same order.
+     */
+    @Override boolean equals(Object o);
+
+    /**
+     * Returns the hash code value for this {@code ColumnarSchema}. The hash code
+     * is defined to be the result of the following calculation:
+     * <pre>{@code
+     *     int hashCode = 1;
+     *     for (E e : list)
+     *         hashCode = 31*hashCode + (e==null ? 0 : e.hashCode());
+     * }</pre>
+     */
+    @Override int hashCode();
 }
