@@ -69,7 +69,7 @@ public final class StructAccess {
      */
     public interface StructReadAccess extends ReadAccess {
 
-        int numInnerReadAccesses();
+        int size();
 
         /**
          * Get {@link ReadAccess} to an inner {@link ReadAccess}.
@@ -78,7 +78,7 @@ public final class StructAccess {
          * @param index of inner type
          * @return {@link ReadAccess} to inner types of the struct
          */
-        <R extends ReadAccess> R getInnerReadAccessAt(int index);
+        <R extends ReadAccess> R getAccess(int index);
     }
 
     /**
@@ -89,7 +89,7 @@ public final class StructAccess {
      */
     public interface StructWriteAccess extends WriteAccess {
 
-        int numInnerWriteAccesses();
+        int size();
 
         /**
          * Get {@link WriteAccess} to an inner {@link WriteAccess}.
@@ -98,6 +98,6 @@ public final class StructAccess {
          * @param index of inner type
          * @return {@link WriteAccess} to inner types of the struct
          */
-        <W extends WriteAccess> W getWriteAccessAt(int index);
+        <W extends WriteAccess> W getWriteAccess(int index);
     }
 }

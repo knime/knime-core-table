@@ -34,7 +34,7 @@ public interface ReadAccessRow {
     /**
      * @return the number of columns
      */
-    int getNumColumns();
+    int size();
 
     /**
      * Provides access to values within the individual columns.<br>

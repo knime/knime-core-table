@@ -32,7 +32,7 @@ public interface WriteAccessRow {
     /**
      * @return the number of columns in this {@link WriteAccess}
      */
-    int getNumColumns();
+    int size();
 
     /**
      * Provides write access to values within the individual columns.<br>
