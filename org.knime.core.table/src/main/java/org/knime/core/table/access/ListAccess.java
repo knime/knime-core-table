@@ -77,7 +77,7 @@ public final class ListAccess {
          * @param index the index in the list
          * @return the {@link ReadAccess} at the given index
          */
-        <R extends ReadAccess> R getReadAccess(int index);
+        <R extends ReadAccess> R getAccess(int index);
 
         /**
          * @param index the index in the list
