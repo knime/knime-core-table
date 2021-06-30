@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.spec.MapperSpec;
 
 /**
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
@@ -61,6 +62,10 @@ public final class RowAccessibles {
 
     public static RowAccessible filter(final RowAccessible in, final int[] selection) {
         return new ColumnFilteredRowAccessible(in, selection);
+    }
+
+    public static RowAccessible map(final RowAccessible in, final MapperSpec factory) {
+        return new MappedRowAccessible(in, factory);
     }
 
     public static RowAccessible permute(final RowAccessible in, final int[] mapping) {

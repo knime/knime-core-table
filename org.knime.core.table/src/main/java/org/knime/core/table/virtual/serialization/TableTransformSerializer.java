@@ -250,6 +250,9 @@ public final class TableTransformSerializer {
                     return new ColumnFilterTransformSpec.ColumnFilterTransformSpecSerializer();
                 case "concatenate":
                     return new ConcatenateTransformSpec.ConcatenateTransformSpecSerializer();
+                case "map":
+                    // TODO: we want to be able to (de)serialize special, declarative map operations ("expressions") eventually.
+                    throw new UnsupportedOperationException("Cannot deserialize map transformations.");
                 case "permute":
                     return new PermuteTransformSpec.PermuteTransformSpecSerializer();
                 case "slice":

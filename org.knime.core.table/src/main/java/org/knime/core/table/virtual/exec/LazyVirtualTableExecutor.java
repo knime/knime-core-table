@@ -40,6 +40,7 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
+import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -147,6 +148,9 @@ public class LazyVirtualTableExecutor implements VirtualTableExecutor {
             } else if (spec instanceof SliceTransformSpec) {
                 transformedTables.add(
                     RowAccessibles.slice(precedingTables.get(0), ((SliceTransformSpec)spec).getRowRangSelection()));
+            } else if (spec instanceof MapTransformSpec) {
+                transformedTables
+                    .add(RowAccessibles.map(precedingTables.get(0), ((MapTransformSpec)spec).getFactory()));
             }
 
             tables.put(node, transformedTables);
