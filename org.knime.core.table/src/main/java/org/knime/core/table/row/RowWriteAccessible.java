@@ -44,30 +44,22 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2020 (dietzc): created
+ *   Mar 24, 2021 (dietzc): created
  */
-package org.knime.core.table.access;
+package org.knime.core.table.row;
 
-/***
- * Provides write access to an underlying data structure.
- *
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
- * @since 4.3
- *
- * @noreference This interface is not intended to be referenced by clients.
- */
-public interface WriteAccess {
+import java.io.Closeable;
+
+import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.schema.ColumnarSchema;
+
+public interface RowWriteAccessible extends Closeable {
 
     /**
-     * Sets the value missing. Default is missing.
+     * @return the {@link ColumnarSchema} of the rows in this {@link RowAccessible}
      */
-    void setMissing();
+    ColumnarSchema getSchema();
 
-    // TODO: improve type safety? Would require a type parameter on WriteAccess (meh).
-    /**
-     * Copies the value at the given access into this access.
-     *
-     * @param access The access whose value to copy into this access.
-     */
-    void setFrom(ReadAccess access);
+    Cursor<WriteAccessRow> getWriteCursor();
+
 }
