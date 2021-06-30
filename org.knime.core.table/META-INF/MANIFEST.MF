@@ -13,5 +13,6 @@ Export-Package: org.knime.core.table,
  org.knime.core.table.access,
  org.knime.core.table.cursor,
  org.knime.core.table.row,
- org.knime.core.table.schema
+ org.knime.core.table.schema,
+ org.knime.core.table.virtual
 Automatic-Module-Name: org.knime.core.table
