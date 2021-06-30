@@ -30,7 +30,7 @@ import java.io.IOException;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @param <A> the type of access forwarded by this forwarder
  */
-public interface WriteCursor<A> extends LookaheadCursor<A> {
+public interface WriteCursor<A> extends Cursor<A> {
 
     /**
      * Finishes the write process by e.g. flushing data that hasn't been written out yet and closing the instance.

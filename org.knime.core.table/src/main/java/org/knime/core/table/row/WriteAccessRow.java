@@ -42,5 +42,12 @@ public interface WriteAccessRow {
      * @param index to the column for which to get the access
      * @return the access for column
      */
-    <A extends WriteAccess> A getAccess(int index);
+    <A extends WriteAccess> A getWriteAccess(int index);
+
+    /**
+     * Copies the given row into this row.
+     *
+     * @param row the row to copy
+     */
+    void setFrom(ReadAccessRow row);
 }

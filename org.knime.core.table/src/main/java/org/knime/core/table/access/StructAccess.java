@@ -69,6 +69,8 @@ public final class StructAccess {
      */
     public interface StructReadAccess extends ReadAccess {
 
+        int numInnerReadAccesses();
+
         /**
          * Get {@link ReadAccess} to an inner {@link ReadAccess}.
          *
@@ -86,6 +88,8 @@ public final class StructAccess {
      * @since 4.3
      */
     public interface StructWriteAccess extends WriteAccess {
+
+        int numInnerWriteAccesses();
 
         /**
          * Get {@link WriteAccess} to an inner {@link WriteAccess}.

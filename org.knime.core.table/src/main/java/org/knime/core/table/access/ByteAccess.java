@@ -36,7 +36,7 @@ public final class ByteAccess {
         byte getByteValue();
     }
 
-    public interface ByteWriteAccess extends ReadAccess {
+    public interface ByteWriteAccess extends WriteAccess {
         void setByteValue(final byte value);
     }
 
