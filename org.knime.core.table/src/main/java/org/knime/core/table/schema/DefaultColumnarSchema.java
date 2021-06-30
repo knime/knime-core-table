@@ -42,34 +42,66 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
+ *
+ * History
+ *   Apr 14, 2021 (marcel): created
  */
 package org.knime.core.table.schema;
 
-/**
- * The columnar schema of a table.
- * <P>
- * Implementations of this interface must provide meaningful implementations of {@link #equals(Object)} and
- * {@link #hashCode()}. They should also provide a meaningful implementation of {@link #toString()}.
- *
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
- * @author Marc Bux, KNIME GmbH, Berlin, Germany
- */
-public interface ColumnarSchema extends Iterable<DataSpec> {
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
-    /**
-     * Obtain the number of columns in the table described by this schema.
-     *
-     * @return the number of columns in the store
-     */
-    int numColumns();
+import com.google.common.collect.Iterators;
 
-    /**
-     * Obtain the {@link DataSpec} of the column at a given index.
-     *
-     * @param index the index of the column for which to obtain the spec
-     * @return the column's spec
-     * @throws IndexOutOfBoundsException if the index is negative or equal to or greater than the number of columns
-     */
-    DataSpec getSpec(int index);
+public final class DefaultColumnarSchema implements ColumnarSchema {
 
+    private final List<DataSpec> m_columnSpecs;
+
+    public DefaultColumnarSchema(final DataSpec... columnSpecs) {
+        this(Arrays.asList(columnSpecs));
+    }
+
+    public DefaultColumnarSchema(final List<DataSpec> columnSpecs) {
+        m_columnSpecs = Collections.unmodifiableList(new ArrayList<>(columnSpecs));
+    }
+
+    @Override
+    public int numColumns() {
+        return m_columnSpecs.size();
+    }
+
+    @Override
+    public DataSpec getSpec(final int index) {
+        return m_columnSpecs.get(index);
+    }
+
+    @Override
+    public Iterator<DataSpec> iterator() {
+        return m_columnSpecs.iterator();
+    }
+
+    @Override
+    public int hashCode() {
+        return m_columnSpecs.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof ColumnarSchema)) { // NOSONAR
+            return false;
+        }
+        final ColumnarSchema other = (ColumnarSchema)obj;
+        if (m_columnSpecs.size() != other.numColumns()) {
+            return false;
+        }
+        return Iterators.elementsEqual(m_columnSpecs.iterator(), other.iterator());
+    }
+
+    @Override
+    public String toString() {
+        return "Columns (" + m_columnSpecs.size() + ") " + m_columnSpecs.toString();
+    }
 }
