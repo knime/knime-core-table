@@ -16,20 +16,21 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Created on 16 Apr 2021 by Marc
+ *   Created on May 26, 2021 by dietzc
  */
-package org.knime.core.table;
+package org.knime.core.table.virtual.exec;
 
-import org.junit.Test;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.knime.core.table.row.RowAccessible;
 
 /**
- *
- * @author Marc
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
+ * @since 4.4
  */
-public class DummyTest {
+public interface VirtualTableExecutor {
 
-	@Test
-    public void testAccesses() {
-	}
-
+    List<RowAccessible> execute(Map<UUID, RowAccessible> inputs);
 }
