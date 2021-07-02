@@ -80,7 +80,7 @@ public final class ConcatenateTransformTest {
     @Test
     public void testConcatenateTwoTables() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -115,7 +115,7 @@ public final class ConcatenateTransformTest {
     @Test
     public void testConcatenateThreeTables() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{true, 0.01f, 10l}, //
             new Object[]{false, 0.02f, 20l}, //
@@ -154,7 +154,7 @@ public final class ConcatenateTransformTest {
     @Test
     public void testAppendReferenceIdenticalTables() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] values = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -182,7 +182,7 @@ public final class ConcatenateTransformTest {
     @Test
     public void testPreConcatenateZeroRowTable() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[0][0];
         final Object[][] secondValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
@@ -198,7 +198,7 @@ public final class ConcatenateTransformTest {
     @Test
     public void testPostConcatenateZeroRowTable() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -214,7 +214,7 @@ public final class ConcatenateTransformTest {
     @Test
     public void testInsertConcatenateZeroRowTable() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -244,7 +244,7 @@ public final class ConcatenateTransformTest {
     @Test
     public void testConcatenateOnlyZeroRowTables() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] values = new Object[0][0];
 
         testConcatenateTables(schema, values, Arrays.asList(values, values));
@@ -253,8 +253,8 @@ public final class ConcatenateTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testRejectIncompatibleSchemas() {
         ColumnarSchemas.concatenate(Arrays.asList( //
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE), //
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, StringDataSpec.INSTANCE) //
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE), //
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, StringDataSpec.INSTANCE) //
         ));
     }
 

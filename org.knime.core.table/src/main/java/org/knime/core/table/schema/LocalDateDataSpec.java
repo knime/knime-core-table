@@ -48,6 +48,8 @@
  */
 package org.knime.core.table.schema;
 
+import org.knime.core.table.schema.traits.DataTraits;
+
 /**
  * {@link DataSpec} for LocalDate data.
  */
@@ -64,6 +66,11 @@ public final class LocalDateDataSpec implements DataSpec {
     @Override
     public <R> R accept(final Mapper<R> v) {
         return v.visit(this);
+    }
+
+    @Override
+    public <R> R accept(final MapperWithTraits<R> v, final DataTraits traits) {
+        return v.visit(this, traits);
     }
 
     @Override

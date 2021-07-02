@@ -52,6 +52,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import org.knime.core.table.schema.traits.DataTraits;
+
 /**
  * {@link DataSpec} for byte array data.
  */
@@ -109,8 +111,12 @@ public final class VarBinaryDataSpec implements DataSpec {
     }
 
     @Override
+    public <R> R accept(final MapperWithTraits<R> v, final DataTraits traits) {
+        return v.visit(this, traits);
+    }
+
+    @Override
     public String toString() {
         return "Variable-width binary";
     }
-
 }

@@ -54,18 +54,27 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.knime.core.table.schema.traits.DataTraits;
+
 import com.google.common.collect.Iterators;
 
 public final class DefaultColumnarSchema implements ColumnarSchema {
 
     private final List<DataSpec> m_columnSpecs;
 
-    public DefaultColumnarSchema(final DataSpec... columnSpecs) {
-        this(Arrays.asList(columnSpecs));
+    private final List<DataTraits> m_columnTraits;
+
+    public DefaultColumnarSchema(final DataSpec columnSpec, final DataTraits columnTraits) {
+        this(Arrays.asList(columnSpec), Arrays.asList(columnTraits));
     }
 
-    public DefaultColumnarSchema(final List<DataSpec> columnSpecs) {
+    public DefaultColumnarSchema(final DataSpec[] columnSpecs, final DataTraits[] columnTraits) {
+        this(Arrays.asList(columnSpecs), Arrays.asList(columnTraits));
+    }
+
+    public DefaultColumnarSchema(final List<DataSpec> columnSpecs, final List<DataTraits> columnTraits) {
         m_columnSpecs = Collections.unmodifiableList(new ArrayList<>(columnSpecs));
+        m_columnTraits = Collections.unmodifiableList(new ArrayList<>(columnTraits));
     }
 
     @Override
@@ -76,6 +85,11 @@ public final class DefaultColumnarSchema implements ColumnarSchema {
     @Override
     public DataSpec getSpec(final int index) {
         return m_columnSpecs.get(index);
+    }
+
+    @Override
+    public DataTraits getTraits(final int index) {
+        return m_columnTraits.get(index);
     }
 
     @Override

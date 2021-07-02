@@ -45,6 +45,8 @@
  */
 package org.knime.core.table.schema;
 
+import org.knime.core.table.schema.traits.DataTraits;
+
 /**
  * The columnar schema of a table.
  * <p>
@@ -53,6 +55,7 @@ package org.knime.core.table.schema;
  *
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Marc Bux, KNIME GmbH, Berlin, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public interface ColumnarSchema extends Iterable<DataSpec> {
 
@@ -71,6 +74,15 @@ public interface ColumnarSchema extends Iterable<DataSpec> {
      * @throws IndexOutOfBoundsException if the index is negative or equal to or greater than the number of columns
      */
     DataSpec getSpec(int index);
+
+    /**
+     * Return the {@link DataTraits} of the selected column
+     *
+     * @param index the index of the column for which to query the traits
+     * @return the {@link DataTraits}
+     * @throws IndexOutOfBoundsException if the index is negative or equal to or greater than the number of columns
+     */
+    DataTraits getTraits(int index);
 
     /**
      * Compares the specified object with this {@code ColumnarSchema} for

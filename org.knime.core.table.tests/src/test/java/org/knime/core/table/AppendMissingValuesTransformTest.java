@@ -73,7 +73,7 @@ public final class AppendMissingValuesTransformTest {
     @Test
     public void testAppendMissingValues() throws IOException {
         final ColumnarSchema originalSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -82,10 +82,10 @@ public final class AppendMissingValuesTransformTest {
             new Object[]{0.5, 5, "Fifth"} //
         };
         final ColumnarSchema missingValuesColumns =
-            new DefaultColumnarSchema(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
 
         final ColumnarSchema missingsAppendedSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE,
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE,
                 BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
         final Object[][] missingsAppendedValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", null, null, null}, //

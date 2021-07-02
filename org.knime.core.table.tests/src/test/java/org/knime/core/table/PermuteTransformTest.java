@@ -76,7 +76,7 @@ public final class PermuteTransformTest {
     @Test
     public void testIdentityPermutation() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] values = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -92,7 +92,7 @@ public final class PermuteTransformTest {
     @Test
     public void testSwapFirstAndLastColumns() throws IOException {
         final ColumnarSchema originalSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -103,7 +103,7 @@ public final class PermuteTransformTest {
         final int[] permutation = {2, 1, 0};
 
         final ColumnarSchema permutedSchema =
-            new DefaultColumnarSchema(StringDataSpec.INSTANCE, IntDataSpec.INSTANCE, DoubleDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(StringDataSpec.INSTANCE, IntDataSpec.INSTANCE, DoubleDataSpec.INSTANCE);
         final Object[][] permutedValues = new Object[][]{ //
             new Object[]{"First", 1, 0.1}, //
             new Object[]{"Second", 2, 0.2}, //
@@ -117,7 +117,7 @@ public final class PermuteTransformTest {
 
     @Test
     public void testPermuteAroundHalfOfTheColumns() throws IOException {
-        final ColumnarSchema originalSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
+        final ColumnarSchema originalSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
             ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
@@ -129,7 +129,7 @@ public final class PermuteTransformTest {
         };
         final int[] permutation = {0, 2, 1, 3, 6, 5, 7, 4, 8};
 
-        final ColumnarSchema permutedSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE,
+        final ColumnarSchema permutedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, IntDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, ByteDataSpec.INSTANCE,
             LongDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, FloatDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
         final Object[][] permutedValues = new Object[][]{ //
@@ -145,7 +145,7 @@ public final class PermuteTransformTest {
 
     @Test
     public void testShiftAllColumnsToTheLeft() throws IOException {
-        final ColumnarSchema originalSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
+        final ColumnarSchema originalSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
             ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
@@ -157,7 +157,7 @@ public final class PermuteTransformTest {
         };
         final int[] permutation = {1, 2, 3, 4, 5, 6, 7, 8, 0};
 
-        final ColumnarSchema permutedSchema = new DefaultColumnarSchema(IntDataSpec.INSTANCE, StringDataSpec.INSTANCE,
+        final ColumnarSchema permutedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(IntDataSpec.INSTANCE, StringDataSpec.INSTANCE,
             BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE, ByteDataSpec.INSTANCE,
             VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE, DoubleDataSpec.INSTANCE);
         final Object[][] permutedValues = new Object[][]{ //
@@ -191,14 +191,14 @@ public final class PermuteTransformTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testRejectNumPermutationIndicesGreaterThanNumColumns() {
-        ColumnarSchemas.permute(new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE),
+        ColumnarSchemas.permute(TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE),
             new int[]{2, 1, 0});
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testRejectNumPermutationIndicesLessThanNumColumns() {
         ColumnarSchemas.permute(
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE),
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE),
             new int[]{1, 0});
     }
 

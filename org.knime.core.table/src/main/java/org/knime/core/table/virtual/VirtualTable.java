@@ -55,6 +55,7 @@ import java.util.UUID;
 
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
@@ -129,9 +130,9 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
     }
 
-    public VirtualTable appendMissingValueColumns(final List<DataSpec> columns) {
+    public VirtualTable appendMissingValueColumns(final List<DataSpec> columns, final List<DataTraits> traits) {
         final AppendMissingValuesTransformSpec transformSpec =
-                new AppendMissingValuesTransformSpec(columns.toArray(new DataSpec[columns.size()]));
+                new AppendMissingValuesTransformSpec(columns.toArray(new DataSpec[columns.size()]), traits.toArray(new DataTraits[traits.size()]));
         final ColumnarSchema schema = ColumnarSchemas.append(Arrays.asList(m_schema, transformSpec.getAppendedSchema()));
         return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), schema);
     }

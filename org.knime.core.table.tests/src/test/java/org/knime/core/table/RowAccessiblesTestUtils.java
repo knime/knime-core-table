@@ -63,7 +63,6 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.row.WriteAccessRow;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DefaultColumnarSchema;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -291,7 +290,7 @@ public final class RowAccessiblesTestUtils {
     // it.
     @SuppressWarnings("resource")
     static RowAccessible createZeroColumnTable() {
-        return toRowAccessible(createRowWriteAccessible(new DefaultColumnarSchema()));
+        return toRowAccessible(createRowWriteAccessible(TestColumnarSchemaUtils.createWithEmptyTraits()));
     }
 
     static void assertRowAccessibleEquals(final RowAccessible result, final ColumnarSchema expectedSchema,

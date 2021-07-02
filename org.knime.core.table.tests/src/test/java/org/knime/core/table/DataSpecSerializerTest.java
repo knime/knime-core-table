@@ -73,6 +73,11 @@ import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VoidDataSpec;
 import org.knime.core.table.schema.ZonedDateTimeDataSpec;
+import org.knime.core.table.schema.traits.DataTrait;
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.schema.traits.DefaultDataTraits;
+import org.knime.core.table.schema.traits.DefaultListDataTraits;
+import org.knime.core.table.schema.traits.DefaultStructDataTraits;
 import org.knime.core.table.virtual.serialization.DataSpecSerializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -124,8 +129,32 @@ public final class DataSpecSerializerTest<T extends DataSpec> {
     @Parameterized.Parameter
     public T m_spec;
 
+    static DataTraits generateTraitsForSpec(final StructDataSpec spec) {
+        DataTraits[] innerTraits = new DataTraits[spec.getInner().length];
+
+        for(int i = 0; i < innerTraits.length; i++) {
+            innerTraits[i] = generateTraitsForSpec(spec.getInner()[i]);
+        }
+
+        return new DefaultStructDataTraits(new DataTrait[0], innerTraits);
+    }
+
+    static DataTraits generateTraitsForSpec(final ListDataSpec spec) {
+        return new DefaultListDataTraits(new DataTrait[0], generateTraitsForSpec(spec.getInner()));
+    }
+
+    static DataTraits generateTraitsForSpec(final DataSpec spec) {
+        if (spec instanceof StructDataSpec) {
+            return generateTraitsForSpec((StructDataSpec)spec);
+        } else if (spec instanceof ListDataSpec) {
+            return generateTraitsForSpec((ListDataSpec)spec);
+        }
+        return DefaultDataTraits.EMPTY;
+    }
+
     @Test
     public void testDataSpecSerializationRoundtrip() {
+        var traits = generateTraitsForSpec(m_spec);
         final JsonNode config = new DataSpecSerializer().save(m_spec, JsonNodeFactory.instance);
         @SuppressWarnings("unchecked")
         final T deserialized = (T)DataSpecSerializer.load(config);

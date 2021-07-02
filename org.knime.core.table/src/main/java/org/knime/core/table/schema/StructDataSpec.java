@@ -52,6 +52,9 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.schema.traits.StructDataTraits;
+
 /**
  * The {@link DataSpec} for struct data.
  */
@@ -77,8 +80,13 @@ public final class StructDataSpec implements DataSpec {
     }
 
     @Override
-    public final <R> R accept(final Mapper<R> v) {
+    public <R> R accept(final Mapper<R> v) {
         return v.visit(this);
+    }
+
+    @Override
+    public <R> R accept(final MapperWithTraits<R> v, final DataTraits traits) {
+        return v.visit(this, (StructDataTraits)traits);
     }
 
     @Override

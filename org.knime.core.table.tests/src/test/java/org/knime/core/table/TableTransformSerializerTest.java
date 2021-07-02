@@ -59,7 +59,7 @@ public final class TableTransformSerializerTest {
 
         add(params, "Linear graph",
             new VirtualTable(UUID.randomUUID(),
-                new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE)) //
+                TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE)) //
                     .slice(2, 7) //
                     .filterColumns(0, 2) //
                     .getProducingTransform() //
@@ -68,10 +68,10 @@ public final class TableTransformSerializerTest {
         // Joining graph
 
         final VirtualTable transformedTable1 = new VirtualTable(UUID.randomUUID(),
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE)) //
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE)) //
                 .filterColumns(0);
         final VirtualTable transformedTable2 = new VirtualTable(UUID.randomUUID(),
-            new DefaultColumnarSchema(StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE)) //
+            TestColumnarSchemaUtils.createWithEmptyTraits(StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE)) //
                 .slice(3, 6);
         final TableTransform joiningGraph = transformedTable1.append(Arrays.asList(transformedTable2)) //
             .getProducingTransform();
@@ -80,7 +80,7 @@ public final class TableTransformSerializerTest {
         // Forking and joining graph
 
         final VirtualTable transformedTable = new VirtualTable(UUID.randomUUID(),
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE)) //
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE)) //
                 .slice(1, 6);
         final VirtualTable forkedTable1 = transformedTable.filterColumns(1);
         final VirtualTable forkedTable2 = transformedTable.permute(2, 1, 0);

@@ -51,6 +51,8 @@ package org.knime.core.table.virtual.spec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
 import org.knime.core.table.virtual.serialization.DataSpecSerializer;
 
@@ -66,8 +68,8 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
     /**
      * @param columns The specs of the missing columns to append.
      */
-    public AppendMissingValuesTransformSpec(final DataSpec... columns) {
-        m_columns = new DefaultColumnarSchema(columns);
+    public AppendMissingValuesTransformSpec(final DataSpec[] columnSpecs, final DataTraits[] columnTraits) {
+        m_columns = new DefaultColumnarSchema(columnSpecs, columnTraits);
     }
 
     /**
@@ -105,7 +107,9 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
             final ObjectNode config = output.objectNode();
             final ArrayNode columnTypesConfig = config.putArray("column_types");
             final DataSpecSerializer dataSpecSerializer = new DataSpecSerializer();
-            for (final DataSpec column : spec.m_columns) {
+            for (int i = 0; i < spec.m_columns.numColumns(); i++) {
+                final DataSpec column = spec.m_columns.getSpec(i);
+                final DataTraits traits = spec.m_columns.getTraits(i);
                 final JsonNode columnTypeConfig = dataSpecSerializer.save(column, output);
                 columnTypesConfig.add(columnTypeConfig);
             }
@@ -117,10 +121,13 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
             final ObjectNode root = (ObjectNode)input;
             final ArrayNode columnTypesConfig = (ArrayNode)root.get("column_types");
             final DataSpec[] columnTypes = new DataSpec[columnTypesConfig.size()];
+            final DataTraits[] columnTraits = new DataTraits[columnTypesConfig.size()];
+
             for (int i = 0; i < columnTypes.length; i++) {
                 columnTypes[i] = DataSpecSerializer.load(columnTypesConfig.get(i));
+                columnTraits[i] = DefaultDataTraits.EMPTY; // FIXME: serialize traits?!
             }
-            return new AppendMissingValuesTransformSpec(columnTypes);
+            return new AppendMissingValuesTransformSpec(columnTypes, columnTraits);
         }
     }
 }

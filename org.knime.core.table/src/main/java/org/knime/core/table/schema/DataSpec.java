@@ -45,6 +45,10 @@
  */
 package org.knime.core.table.schema;
 
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.schema.traits.ListDataTraits;
+import org.knime.core.table.schema.traits.StructDataTraits;
+
 /**
  * Specification / configuration of implementations of data.
  * <P>
@@ -146,6 +150,7 @@ public interface DataSpec {
         return VarBinaryDataSpec.INSTANCE;
     }
 
+
     /**
      * @return singleton void spec
      */
@@ -200,6 +205,49 @@ public interface DataSpec {
         R visit(ZonedDateTimeDataSpec spec);
 
         R visit(StringDataSpec spec);
+    }
+
+    /**
+     * A visitor that visits {@link DataSpec DataSpecs} and provides additional DataTraits,
+     * mapping each DataSpec to other objects of a certain type R.
+     *
+     * @param <R> the return type of the mapping
+     */
+    static interface MapperWithTraits<R> {
+
+        R visit(BooleanDataSpec spec, DataTraits traits);
+
+        R visit(ByteDataSpec spec, DataTraits traits);
+
+        R visit(DoubleDataSpec spec, DataTraits traits);
+
+        R visit(DurationDataSpec spec, DataTraits traits);
+
+        R visit(FloatDataSpec spec, DataTraits traits);
+
+        R visit(IntDataSpec spec, DataTraits traits);
+
+        R visit(LocalDateDataSpec spec, DataTraits traits);
+
+        R visit(LocalDateTimeDataSpec spec, DataTraits traits);
+
+        R visit(LocalTimeDataSpec spec, DataTraits traits);
+
+        R visit(LongDataSpec spec, DataTraits traits);
+
+        R visit(PeriodDataSpec spec, DataTraits traits);
+
+        R visit(VarBinaryDataSpec spec, DataTraits traits);
+
+        R visit(VoidDataSpec spec, DataTraits traits);
+
+        R visit(StructDataSpec spec, StructDataTraits traits);
+
+        R visit(ListDataSpec listDataSpec, ListDataTraits traits);
+
+        R visit(ZonedDateTimeDataSpec spec, DataTraits traits);
+
+        R visit(StringDataSpec spec, DataTraits traits);
 
     }
 
@@ -212,4 +260,13 @@ public interface DataSpec {
      */
     <R> R accept(Mapper<R> mapper);
 
+    /**
+     * Accept the visit of a {@link Mapper}, returning the result of the mapper's visit.
+     *
+     * @param <R> the return type of the mapping
+     * @param mapper the visiting mapper
+     * @param traits the type traits of the visited DataSpec
+     * @return other an object of type R
+     */
+    <R> R accept(MapperWithTraits<R> mapper, DataTraits traits);
 }

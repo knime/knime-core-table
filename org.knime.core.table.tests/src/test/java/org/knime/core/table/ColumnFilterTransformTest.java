@@ -78,7 +78,7 @@ public final class ColumnFilterTransformTest {
     @Test
     public void testFilterFirstColumn() throws IOException {
         final ColumnarSchema originalSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -88,7 +88,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {1, 2};
 
-        final ColumnarSchema filteredSchema = new DefaultColumnarSchema(IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits(IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] filteredValues = new Object[][]{ //
             new Object[]{1, "First"}, //
             new Object[]{2, "Second"}, //
@@ -103,7 +103,7 @@ public final class ColumnFilterTransformTest {
     @Test
     public void testFilterLastColumn() throws IOException {
         final ColumnarSchema originalSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -113,7 +113,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {0, 1};
 
-        final ColumnarSchema filteredSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE);
+        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE);
         final Object[][] filteredValues = new Object[][]{ //
             new Object[]{0.1, 1}, //
             new Object[]{0.2, 2}, //
@@ -127,7 +127,7 @@ public final class ColumnFilterTransformTest {
 
     @Test
     public void testFilterAboutHalfOfTheColumns() throws IOException {
-        final ColumnarSchema originalSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
+        final ColumnarSchema originalSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
             ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
@@ -139,7 +139,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {0, 3, 4, 7};
 
-        final ColumnarSchema filteredSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE,
+        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE,
             BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE);
         final Object[][] filteredValues = new Object[][]{ //
             new Object[]{0.1, true, 0.01f, new byte[]{1, 2, 3, 4}}, //
@@ -154,7 +154,7 @@ public final class ColumnFilterTransformTest {
 
     @Test
     public void testFilterAllButOneColumn() throws IOException {
-        final ColumnarSchema originalSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
+        final ColumnarSchema originalSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
             ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
@@ -166,7 +166,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {1};
 
-        final ColumnarSchema filteredSchema = new DefaultColumnarSchema(IntDataSpec.INSTANCE);
+        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits(IntDataSpec.INSTANCE);
         final Object[][] filteredValues = new Object[][]{ //
             new Object[]{1}, //
             new Object[]{2}, //
@@ -181,7 +181,7 @@ public final class ColumnFilterTransformTest {
     @Test
     public void testFilterAllColumns() throws IOException {
         final ColumnarSchema originalSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -191,7 +191,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {};
 
-        final ColumnarSchema filteredSchema = new DefaultColumnarSchema();
+        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits();
         final Object[][] filteredValues = new Object[0][0];
 
         testFilterTable(filteredSchema, filteredValues, originalSchema, originalValues, columnIndicesToKeep);
@@ -218,7 +218,7 @@ public final class ColumnFilterTransformTest {
     @Test(expected = IndexOutOfBoundsException.class)
     public void testRejectFilterContainsColumnIndicesNotInTable() {
         ColumnarSchemas.filter(
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE),
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE),
             new int[]{0, 3});
     }
 

@@ -80,7 +80,7 @@ public final class AppendTransformTest {
     @Test
     public void testAppendTwoTables() throws IOException {
         final ColumnarSchema firstSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -89,7 +89,7 @@ public final class AppendTransformTest {
             new Object[]{0.5, 5, "Fifth"} //
         };
         final ColumnarSchema secondSchema =
-            new DefaultColumnarSchema(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
         final Object[][] secondValues = new Object[][]{ //
             new Object[]{true, 0.01f, 10l}, //
             new Object[]{false, 0.02f, 20l}, //
@@ -98,7 +98,7 @@ public final class AppendTransformTest {
             new Object[]{true, 0.05f, 50l} //
         };
 
-        final ColumnarSchema appendedSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
+        final ColumnarSchema appendedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
         final Object[][] appendedValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", true, 0.01f, 10l}, //
@@ -115,7 +115,7 @@ public final class AppendTransformTest {
     @Test
     public void testAppendThreeTables() throws IOException {
         final ColumnarSchema firstSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -124,7 +124,7 @@ public final class AppendTransformTest {
             new Object[]{0.5, 5, "Fifth"} //
         };
         final ColumnarSchema secondSchema =
-            new DefaultColumnarSchema(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
         final Object[][] secondValues = new Object[][]{ //
             new Object[]{true, 0.01f, 10l}, //
             new Object[]{false, 0.02f, 20l}, //
@@ -133,7 +133,7 @@ public final class AppendTransformTest {
             new Object[]{true, 0.05f, 50l} //
         };
         final ColumnarSchema thirdSchema =
-            new DefaultColumnarSchema(ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
         final Object[][] thirdValues = new Object[][]{ //
             new Object[]{(byte)11, new byte[]{1, 2, 3, 4}, null}, //
             new Object[]{(byte)22, new byte[]{5, 6, 7, 8}, null}, //
@@ -142,7 +142,7 @@ public final class AppendTransformTest {
             new Object[]{(byte)55, new byte[]{7, 8, 9, 0}, null} //
         };
 
-        final ColumnarSchema appendedSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
+        final ColumnarSchema appendedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
             ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
         final Object[][] appendedValues = new Object[][]{ //
@@ -161,7 +161,7 @@ public final class AppendTransformTest {
     @Test
     public void testAppendReferenceIdenticalTables() throws IOException {
         final ColumnarSchema schema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] values = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -170,7 +170,7 @@ public final class AppendTransformTest {
             new Object[]{0.5, 5, "Fifth"} //
         };
 
-        final ColumnarSchema appendedSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
+        final ColumnarSchema appendedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] appendedValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", 0.1, 1, "First"}, //
@@ -188,7 +188,7 @@ public final class AppendTransformTest {
     @Test
     public void testAppendTablesOfDifferentSizes() throws IOException {
         final ColumnarSchema firstSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -197,7 +197,7 @@ public final class AppendTransformTest {
             new Object[]{0.5, 5, "Fifth"} //
         };
         final ColumnarSchema secondSchema =
-            new DefaultColumnarSchema(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
         final Object[][] secondValues = new Object[][]{ //
             new Object[]{true, 0.01f, 10l}, //
             new Object[]{false, 0.02f, 20l}, //
@@ -212,7 +212,7 @@ public final class AppendTransformTest {
             new Object[]{true, 0.11f, 110l} //
         };
 
-        final ColumnarSchema appendedSchema = new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
+        final ColumnarSchema appendedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
             StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
         final Object[][] appendedValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", true, 0.01f, 10l}, //
@@ -236,7 +236,7 @@ public final class AppendTransformTest {
     public void testPrependZeroColumnTable() throws IOException {
         try (final RowAccessible firstTable = createZeroColumnTable()) {
             final ColumnarSchema secondSchema =
-                new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+                TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
             final Object[][] secondValues = new Object[][]{ //
                 new Object[]{0.1, 1, "First"}, //
                 new Object[]{0.2, 2, "Second"}, //
@@ -253,7 +253,7 @@ public final class AppendTransformTest {
     @Test
     public void testAppendZeroColumnTable() throws IOException {
         final ColumnarSchema firstSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -270,7 +270,7 @@ public final class AppendTransformTest {
     @Test
     public void testInsertZeroColumnTable() throws IOException {
         final ColumnarSchema firstSchema =
-            new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
         final Object[][] firstValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -281,7 +281,7 @@ public final class AppendTransformTest {
         try (final RowAccessible firstTable = createRowAccessibleFromRowWiseValues(firstSchema, firstValues);
                 final RowAccessible secondTable = createZeroColumnTable()) {
             final ColumnarSchema thirdSchema =
-                new DefaultColumnarSchema(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
+                TestColumnarSchemaUtils.createWithEmptyTraits(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
             final Object[][] thirdValues = new Object[][]{ //
                 new Object[]{true, 0.01f, 10l}, //
                 new Object[]{false, 0.02f, 20l}, //
@@ -291,7 +291,7 @@ public final class AppendTransformTest {
             };
             try (final RowAccessible thirdTable = createRowAccessibleFromRowWiseValues(thirdSchema, thirdValues)) {
                 final ColumnarSchema appendedSchema =
-                    new DefaultColumnarSchema(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE,
+                    TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE,
                         BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
                 final Object[][] appendedValues = new Object[][]{ //
                     new Object[]{0.1, 1, "First", true, 0.01f, 10l}, //
@@ -310,7 +310,7 @@ public final class AppendTransformTest {
     public void testAppendOnlyZeroColumnTables() throws IOException {
         try (final RowAccessible firstTable = createZeroColumnTable();
                 final RowAccessible secondTable = createZeroColumnTable()) {
-            testAppendTables(new DefaultColumnarSchema(), new Object[0][0], Arrays.asList(firstTable, secondTable));
+            testAppendTables(TestColumnarSchemaUtils.createWithEmptyTraits(), new Object[0][0], Arrays.asList(firstTable, secondTable));
         }
     }
 

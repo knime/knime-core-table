@@ -61,11 +61,17 @@ import java.util.stream.IntStream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
+import org.knime.core.table.schema.traits.DataTrait;
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.schema.traits.DefaultDataTraits;
+import org.knime.core.table.schema.traits.DefaultListDataTraits;
+import org.knime.core.table.schema.traits.DefaultStructDataTraits;
 import org.knime.core.table.virtual.serialization.TableTransformSpecSerializer;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec.AppendMissingValuesTransformSpecSerializer;
@@ -102,13 +108,27 @@ public final class TableTransformSpecSerializerTest<T extends TableTransformSpec
         add(params, new AppendTransformSpec(), new AppendTransformSpecSerializer());
 
         // Append missing value
+        final var specs = new DataSpec[] {//
+            DoubleDataSpec.INSTANCE, //
+            IntDataSpec.INSTANCE, //
+            new ListDataSpec(DoubleDataSpec.INSTANCE), //
+            StringDataSpec.INSTANCE, //
+            new StructDataSpec(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE) //
+        };
+
+        final var traits = new DataTraits[] {//
+            DefaultDataTraits.EMPTY, //
+            DefaultDataTraits.EMPTY, //
+            new DefaultListDataTraits(new DataTrait[0], DefaultDataTraits.EMPTY), //
+            DefaultDataTraits.EMPTY, //
+            new DefaultStructDataTraits(new DataTrait[0], DefaultDataTraits.EMPTY, DefaultDataTraits.EMPTY, DefaultDataTraits.EMPTY) //
+        };
+
+
         add(params, //
             new AppendMissingValuesTransformSpec( //
-                DoubleDataSpec.INSTANCE, //
-                IntDataSpec.INSTANCE, //
-                new ListDataSpec(DoubleDataSpec.INSTANCE), //
-                StringDataSpec.INSTANCE, //
-                new StructDataSpec(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE) //
+                specs,
+                traits
             ), //
             new AppendMissingValuesTransformSpecSerializer());
 

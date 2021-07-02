@@ -21,15 +21,16 @@
 package org.knime.core.table.virtual;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
+import org.knime.core.table.schema.traits.DataTraits;
 
 /**
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public final class ColumnarSchemas {
 
@@ -47,7 +48,15 @@ public final class ColumnarSchemas {
                 appendedSpecs.add(schema.getSpec(i));
             }
         }
-        return new DefaultColumnarSchema(appendedSpecs);
+
+        final List<DataTraits> appendedTraits = new ArrayList<>(totalNumColumns);
+        for (final ColumnarSchema schema : schemas) {
+            final int numColumns = schema.numColumns();
+            for (int i = 0; i < numColumns; i++) {
+                appendedTraits.add(schema.getTraits(i));
+            }
+        }
+        return new DefaultColumnarSchema(appendedSpecs, appendedTraits);
     }
 
     public static ColumnarSchema concatenate(final List<ColumnarSchema> schemas) {
@@ -64,10 +73,12 @@ public final class ColumnarSchemas {
 
     public static ColumnarSchema filter(final ColumnarSchema schema, final int[] selection) {
         final DataSpec[] filteredSpecs = new DataSpec[selection.length];
+        final DataTraits[] filteredTraits = new DataTraits[selection.length];
         for (int i = 0; i < selection.length; i++) {
             filteredSpecs[i] = schema.getSpec(selection[i]);
+            filteredTraits[i] = schema.getTraits(selection[i]);
         }
-        return new DefaultColumnarSchema(Arrays.asList(filteredSpecs));
+        return new DefaultColumnarSchema(filteredSpecs, filteredTraits);
     }
 
     // TODO interface for mapping - beneficial for e.g. wide tables
@@ -78,9 +89,11 @@ public final class ColumnarSchemas {
                 permutation.length + " vs " + in.numColumns());
         }
         final DataSpec[] permutedSpecs = new DataSpec[permutation.length];
+        final DataTraits[] permutedTraits = new DataTraits[permutation.length];
         for (int i = 0; i < permutation.length; i++) {
             permutedSpecs[i] = in.getSpec(permutation[i]);
+            permutedTraits[i] = in.getTraits(permutation[i]);
         }
-        return new DefaultColumnarSchema(Arrays.asList(permutedSpecs));
+        return new DefaultColumnarSchema(permutedSpecs, permutedTraits);
     }
 }
