@@ -52,6 +52,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 // TODO: permute and column filter could be merged. Both columnIndices there and permutation here just specify which
 // columns of the original table will be contained in the new table. Figure out if we lose any optimization capabilities
 // when merging them (e.g. maybe there are column-filter vs permute specific optimizations that cannot be applied to the
@@ -98,5 +105,34 @@ public final class PermuteTransformSpec implements TableTransformSpec {
     @Override
     public String toString() {
         return "Permute " + Arrays.toString(m_permutation);
+    }
+
+    public static final class PermuteTransformSpecSerializer
+        extends AbstractTableTransformSpecSerializer<PermuteTransformSpec> {
+
+        public PermuteTransformSpecSerializer() {
+            super("permute", 0);
+        }
+
+        @Override
+        protected JsonNode saveInternal(final PermuteTransformSpec spec, final JsonNodeFactory output) {
+            final ObjectNode config = output.objectNode();
+            final ArrayNode permutationConfig = config.putArray("permutation");
+            for (int columnIndex : spec.m_permutation) {
+                permutationConfig.add(columnIndex);
+            }
+            return config;
+        }
+
+        @Override
+        protected PermuteTransformSpec loadInternal(final JsonNode input) {
+            final ObjectNode config = (ObjectNode)input;
+            final ArrayNode permutationConfig = (ArrayNode)config.get("permutation");
+            final int[] permutation = new int[permutationConfig.size()];
+            for (int i = 0; i < permutation.length; i++) {
+                permutation[i] = permutationConfig.get(i).intValue();
+            }
+            return new PermuteTransformSpec(permutation);
+        }
     }
 }

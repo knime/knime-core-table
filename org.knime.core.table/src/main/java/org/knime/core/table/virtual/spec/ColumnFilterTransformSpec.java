@@ -50,6 +50,13 @@ package org.knime.core.table.virtual.spec;
 
 import java.util.Arrays;
 
+import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 public final class ColumnFilterTransformSpec implements TableTransformSpec {
 
     private final int[] m_columnIndices;
@@ -93,5 +100,34 @@ public final class ColumnFilterTransformSpec implements TableTransformSpec {
     @Override
     public String toString() {
         return "Column filter " + Arrays.toString(m_columnIndices);
+    }
+
+    public static final class ColumnFilterTransformSpecSerializer
+        extends AbstractTableTransformSpecSerializer<ColumnFilterTransformSpec> {
+
+        public ColumnFilterTransformSpecSerializer() {
+            super("column_filter", 0);
+        }
+
+        @Override
+        protected JsonNode saveInternal(final ColumnFilterTransformSpec spec, final JsonNodeFactory output) {
+            final ObjectNode config = output.objectNode();
+            final ArrayNode columnIndicesConfig = config.putArray("included_columns");
+            for (final int columnIndex : spec.m_columnIndices) {
+                columnIndicesConfig.add(columnIndex);
+            }
+            return config;
+        }
+
+        @Override
+        protected ColumnFilterTransformSpec loadInternal(final JsonNode input) {
+            final ObjectNode root = (ObjectNode)input;
+            final ArrayNode columnIndicesConfig = (ArrayNode)root.get("included_columns");
+            final int[] columnIndices = new int[columnIndicesConfig.size()];
+            for (int i = 0; i < columnIndices.length; i++) {
+                columnIndices[i] = columnIndicesConfig.get(i).intValue();
+            }
+            return new ColumnFilterTransformSpec(columnIndices);
+        }
     }
 }

@@ -44,50 +44,22 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 14, 2021 (marcel): created
+ *   Apr 23, 2021 (marcel): created
  */
-package org.knime.core.table.virtual.spec;
-
-import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
+package org.knime.core.table.virtual.serialization;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
-// TODO: in its current state, this spec can be converted into a singleton. Let's wait and see if there will be any
-// parametrization.
-public final class AppendTransformSpec implements TableTransformSpec {
+import org.knime.core.table.virtual.spec.TableTransformSpec;
 
-    @Override
-    public int hashCode() {
-        return AppendTransformSpec.class.hashCode();
-    }
+public interface TableTransformSpecSerializer<T extends TableTransformSpec> {
 
-    @Override
-    public boolean equals(final Object obj) {
-        return obj instanceof AppendTransformSpec;
-    }
+    String getTransformIdentifier();
 
-    @Override
-    public String toString() {
-        return "Append";
-    }
+    int getVersion();
 
-    public static final class AppendTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<AppendTransformSpec> {
+    JsonNode save(T spec, JsonNodeFactory factory);
 
-        public AppendTransformSpecSerializer() {
-            super("append", 0);
-        }
-
-        @Override
-        protected JsonNode saveInternal(final AppendTransformSpec spec, final JsonNodeFactory output) {
-            // Nothing to serialize.
-            return null;
-        }
-
-        @Override
-        protected AppendTransformSpec loadInternal(final JsonNode input) {
-            return new AppendTransformSpec();
-        }
-    }
+    T load(JsonNode config);
 }
