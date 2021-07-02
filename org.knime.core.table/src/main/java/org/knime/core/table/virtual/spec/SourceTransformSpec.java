@@ -22,6 +22,11 @@ package org.knime.core.table.virtual.spec;
 
 import java.util.UUID;
 
+import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
@@ -51,5 +56,23 @@ public final class SourceTransformSpec implements TableTransformSpec {
     @Override
     public String toString() {
         return "Source " + m_sourceIdentifier.toString();
+    }
+
+    public static final class SourceTransformSpecSerializer
+        extends AbstractTableTransformSpecSerializer<SourceTransformSpec> {
+
+        public SourceTransformSpecSerializer() {
+            super("source", 0);
+        }
+
+        @Override
+        protected JsonNode saveInternal(final SourceTransformSpec spec, final JsonNodeFactory factory) {
+            return factory.objectNode().put("identifier", spec.m_sourceIdentifier.toString());
+        }
+
+        @Override
+        protected SourceTransformSpec loadInternal(final JsonNode config) {
+            return new SourceTransformSpec(UUID.fromString(config.get("identifier").textValue()));
+        }
     }
 }

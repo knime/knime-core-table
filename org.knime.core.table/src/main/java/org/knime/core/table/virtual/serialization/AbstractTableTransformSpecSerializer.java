@@ -44,50 +44,59 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 14, 2021 (marcel): created
+ *   Apr 23, 2021 (marcel): created
  */
-package org.knime.core.table.virtual.spec;
+package org.knime.core.table.virtual.serialization;
 
-import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
+import org.knime.core.table.virtual.spec.TableTransformSpec;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-// TODO: in its current state, this spec can be converted into a singleton. Let's wait and see if there will be any
-// parametrization.
-public final class AppendTransformSpec implements TableTransformSpec {
+public abstract class AbstractTableTransformSpecSerializer<T extends TableTransformSpec>
+    implements TableTransformSpecSerializer<T> {
 
-    @Override
-    public int hashCode() {
-        return AppendTransformSpec.class.hashCode();
+    private final String m_transformIdentifier;
+
+    private final int m_version;
+
+    public AbstractTableTransformSpecSerializer(final String transformIdentifier, final int serializerVersion) {
+        m_transformIdentifier = transformIdentifier;
+        m_version = serializerVersion;
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        return obj instanceof AppendTransformSpec;
+    public String getTransformIdentifier() {
+        return m_transformIdentifier;
     }
 
     @Override
-    public String toString() {
-        return "Append";
+    public int getVersion() {
+        return m_version;
     }
 
-    public static final class AppendTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<AppendTransformSpec> {
-
-        public AppendTransformSpecSerializer() {
-            super("append", 0);
+    @Override
+    public JsonNode save(final T spec, final JsonNodeFactory factory) {
+        final ObjectNode root = factory.objectNode();
+        root.put("type", m_transformIdentifier);
+        if (m_version != 0) {
+            root.put("version", m_version);
         }
-
-        @Override
-        protected JsonNode saveInternal(final AppendTransformSpec spec, final JsonNodeFactory output) {
-            // Nothing to serialize.
-            return null;
+        final JsonNode customConfig = saveInternal(spec, factory);
+        if (customConfig != null) {
+            root.set("config", customConfig);
         }
-
-        @Override
-        protected AppendTransformSpec loadInternal(final JsonNode input) {
-            return new AppendTransformSpec();
-        }
+        return root;
     }
+
+    protected abstract JsonNode saveInternal(final T spec, final JsonNodeFactory factory);
+
+    @Override
+    public T load(final JsonNode config) {
+        final JsonNode customConfig = config.get("config");
+        return loadInternal(customConfig);
+    }
+
+    protected abstract T loadInternal(final JsonNode config);
 }
