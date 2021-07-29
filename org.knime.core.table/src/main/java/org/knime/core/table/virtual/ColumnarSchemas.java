@@ -42,17 +42,11 @@ public final class ColumnarSchemas {
             totalNumColumns += schema.numColumns();
         }
         final List<DataSpec> appendedSpecs = new ArrayList<>(totalNumColumns);
-        for (final ColumnarSchema schema : schemas) {
-            final int numColumns = schema.numColumns();
-            for (int i = 0; i < numColumns; i++) {
-                appendedSpecs.add(schema.getSpec(i));
-            }
-        }
-
         final List<DataTraits> appendedTraits = new ArrayList<>(totalNumColumns);
         for (final ColumnarSchema schema : schemas) {
             final int numColumns = schema.numColumns();
             for (int i = 0; i < numColumns; i++) {
+                appendedSpecs.add(schema.getSpec(i));
                 appendedTraits.add(schema.getTraits(i));
             }
         }

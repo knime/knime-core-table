@@ -290,7 +290,7 @@ public final class RowAccessiblesTestUtils {
     // it.
     @SuppressWarnings("resource")
     static RowAccessible createZeroColumnTable() {
-        return toRowAccessible(createRowWriteAccessible(TestColumnarSchemaUtils.createWithEmptyTraits()));
+        return toRowAccessible(createRowWriteAccessible(ColumnarSchema.of()));
     }
 
     static void assertRowAccessibleEquals(final RowAccessible result, final ColumnarSchema expectedSchema,

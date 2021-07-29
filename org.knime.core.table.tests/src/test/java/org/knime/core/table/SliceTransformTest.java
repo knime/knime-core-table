@@ -49,16 +49,15 @@
 package org.knime.core.table;
 
 import static org.knime.core.table.RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.io.IOException;
 
 import org.junit.Test;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.IntDataSpec;
-import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.virtual.DefaultRowRangeSelection;
 import org.knime.core.table.virtual.RowAccessibles;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
@@ -71,8 +70,7 @@ public final class SliceTransformTest {
 
     @Test
     public void testSliceEntireTable() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] values = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -86,8 +84,7 @@ public final class SliceTransformTest {
 
     @Test
     public void testSliceEntireTableWithToIndexGreaterThanTableSize() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] values = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -101,8 +98,7 @@ public final class SliceTransformTest {
 
     @Test
     public void testSliceAllButFirstRow() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -123,8 +119,7 @@ public final class SliceTransformTest {
 
     @Test
     public void testSliceAllButLastRow() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -145,8 +140,7 @@ public final class SliceTransformTest {
 
     @Test
     public void testSliceSingleRow() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -164,8 +158,7 @@ public final class SliceTransformTest {
 
     @Test
     public void testSliceHalfOfTheTable() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -192,8 +185,7 @@ public final class SliceTransformTest {
 
     @Test
     public void testSliceNothing() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -209,8 +201,7 @@ public final class SliceTransformTest {
 
     @Test
     public void testSliceNothingWithFromIndexGreaterThanToIndex() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //

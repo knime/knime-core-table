@@ -49,19 +49,18 @@
 package org.knime.core.table;
 
 import static org.knime.core.table.RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues;
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.FLOAT;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.LONG;
+import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.io.IOException;
 
 import org.junit.Test;
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.FloatDataSpec;
-import org.knime.core.table.schema.IntDataSpec;
-import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.virtual.RowAccessibles;
 
 /**
@@ -72,8 +71,7 @@ public final class AppendMissingValuesTransformTest {
 
     @Test
     public void testAppendMissingValues() throws IOException {
-        final ColumnarSchema originalSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -81,12 +79,8 @@ public final class AppendMissingValuesTransformTest {
             new Object[]{0.4, 4, "Fourth"}, //
             new Object[]{0.5, 5, "Fifth"} //
         };
-        final ColumnarSchema missingValuesColumns =
-            TestColumnarSchemaUtils.createWithEmptyTraits(BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
-
-        final ColumnarSchema missingsAppendedSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE,
-                BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE);
+        final ColumnarSchema missingValuesColumns = ColumnarSchema.of(BOOLEAN, FLOAT, LONG);
+        final ColumnarSchema missingsAppendedSchema = ColumnarSchema.of(DOUBLE, INT, STRING, BOOLEAN, FLOAT, LONG);
         final Object[][] missingsAppendedValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", null, null, null}, //
             new Object[]{0.2, 2, "Second", null, null, null}, //

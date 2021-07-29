@@ -49,22 +49,21 @@
 package org.knime.core.table;
 
 import static org.knime.core.table.RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues;
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
+import static org.knime.core.table.schema.DataSpecs.BYTE;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.FLOAT;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.LONG;
+import static org.knime.core.table.schema.DataSpecs.STRING;
+import static org.knime.core.table.schema.DataSpecs.VARBINARY;
+import static org.knime.core.table.schema.DataSpecs.VOID;
 
 import java.io.IOException;
 
 import org.junit.Test;
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.schema.BooleanDataSpec;
-import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.FloatDataSpec;
-import org.knime.core.table.schema.IntDataSpec;
-import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.StringDataSpec;
-import org.knime.core.table.schema.VarBinaryDataSpec;
-import org.knime.core.table.schema.VoidDataSpec;
 import org.knime.core.table.virtual.ColumnarSchemas;
 import org.knime.core.table.virtual.RowAccessibles;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
@@ -77,8 +76,7 @@ public final class ColumnFilterTransformTest {
 
     @Test
     public void testFilterFirstColumn() throws IOException {
-        final ColumnarSchema originalSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -88,7 +86,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {1, 2};
 
-        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits(IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema filteredSchema = ColumnarSchema.of(INT, STRING);
         final Object[][] filteredValues = new Object[][]{ //
             new Object[]{1, "First"}, //
             new Object[]{2, "Second"}, //
@@ -102,8 +100,7 @@ public final class ColumnFilterTransformTest {
 
     @Test
     public void testFilterLastColumn() throws IOException {
-        final ColumnarSchema originalSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -113,7 +110,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {0, 1};
 
-        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE);
+        final ColumnarSchema filteredSchema = ColumnarSchema.of(DOUBLE, INT);
         final Object[][] filteredValues = new Object[][]{ //
             new Object[]{0.1, 1}, //
             new Object[]{0.2, 2}, //
@@ -127,9 +124,8 @@ public final class ColumnFilterTransformTest {
 
     @Test
     public void testFilterAboutHalfOfTheColumns() throws IOException {
-        final ColumnarSchema originalSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
-            StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
-            ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema =
+                ColumnarSchema.of(DOUBLE, INT, STRING, BOOLEAN, FLOAT, LONG, BYTE, VARBINARY, VOID);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", true, 0.01f, 10l, (byte)11, new byte[]{1, 2, 3, 4}, null}, //
             new Object[]{0.2, 2, "Second", false, 0.02f, 20l, (byte)22, new byte[]{5, 6, 7, 8}, null}, //
@@ -139,8 +135,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {0, 3, 4, 7};
 
-        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE,
-            BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE);
+        final ColumnarSchema filteredSchema = ColumnarSchema.of(DOUBLE, BOOLEAN, FLOAT, VARBINARY);
         final Object[][] filteredValues = new Object[][]{ //
             new Object[]{0.1, true, 0.01f, new byte[]{1, 2, 3, 4}}, //
             new Object[]{0.2, false, 0.02f, new byte[]{5, 6, 7, 8}}, //
@@ -154,9 +149,8 @@ public final class ColumnFilterTransformTest {
 
     @Test
     public void testFilterAllButOneColumn() throws IOException {
-        final ColumnarSchema originalSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
-            StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
-            ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema =
+                ColumnarSchema.of(DOUBLE, INT, STRING, BOOLEAN, FLOAT, LONG, BYTE, VARBINARY, VOID);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", true, 0.01f, 10l, (byte)11, new byte[]{1, 2, 3, 4}, null}, //
             new Object[]{0.2, 2, "Second", false, 0.02f, 20l, (byte)22, new byte[]{5, 6, 7, 8}, null}, //
@@ -166,7 +160,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {1};
 
-        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits(IntDataSpec.INSTANCE);
+        final ColumnarSchema filteredSchema = ColumnarSchema.of(INT);
         final Object[][] filteredValues = new Object[][]{ //
             new Object[]{1}, //
             new Object[]{2}, //
@@ -180,8 +174,7 @@ public final class ColumnFilterTransformTest {
 
     @Test
     public void testFilterAllColumns() throws IOException {
-        final ColumnarSchema originalSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -191,7 +184,7 @@ public final class ColumnFilterTransformTest {
         };
         final int[] columnIndicesToKeep = {};
 
-        final ColumnarSchema filteredSchema = TestColumnarSchemaUtils.createWithEmptyTraits();
+        final ColumnarSchema filteredSchema = ColumnarSchema.of();
         final Object[][] filteredValues = new Object[0][0];
 
         testFilterTable(filteredSchema, filteredValues, originalSchema, originalValues, columnIndicesToKeep);
@@ -218,7 +211,7 @@ public final class ColumnFilterTransformTest {
     @Test(expected = IndexOutOfBoundsException.class)
     public void testRejectFilterContainsColumnIndicesNotInTable() {
         ColumnarSchemas.filter(
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE),
+            ColumnarSchema.of(DOUBLE, INT, STRING),
             new int[]{0, 3});
     }
 

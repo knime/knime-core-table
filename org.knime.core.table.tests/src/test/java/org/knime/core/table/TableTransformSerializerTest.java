@@ -22,6 +22,10 @@ package org.knime.core.table;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,11 +35,7 @@ import java.util.UUID;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.knime.core.table.schema.BooleanDataSpec;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.IntDataSpec;
-import org.knime.core.table.schema.StringDataSpec;
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.serialization.TableTransformSerializer;
@@ -59,7 +59,7 @@ public final class TableTransformSerializerTest {
 
         add(params, "Linear graph",
             new VirtualTable(UUID.randomUUID(),
-                TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE)) //
+                    ColumnarSchema.of(DOUBLE, INT, STRING)) //
                     .slice(2, 7) //
                     .filterColumns(0, 2) //
                     .getProducingTransform() //
@@ -68,10 +68,10 @@ public final class TableTransformSerializerTest {
         // Joining graph
 
         final VirtualTable transformedTable1 = new VirtualTable(UUID.randomUUID(),
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE)) //
+                ColumnarSchema.of(DOUBLE, INT)) //
                 .filterColumns(0);
         final VirtualTable transformedTable2 = new VirtualTable(UUID.randomUUID(),
-            TestColumnarSchemaUtils.createWithEmptyTraits(StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE)) //
+                ColumnarSchema.of(STRING, BOOLEAN)) //
                 .slice(3, 6);
         final TableTransform joiningGraph = transformedTable1.append(Arrays.asList(transformedTable2)) //
             .getProducingTransform();
@@ -80,7 +80,7 @@ public final class TableTransformSerializerTest {
         // Forking and joining graph
 
         final VirtualTable transformedTable = new VirtualTable(UUID.randomUUID(),
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE)) //
+                ColumnarSchema.of(DOUBLE, INT, STRING)) //
                 .slice(1, 6);
         final VirtualTable forkedTable1 = transformedTable.filterColumns(1);
         final VirtualTable forkedTable2 = transformedTable.permute(2, 1, 0);

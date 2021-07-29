@@ -48,21 +48,21 @@
  */
 package org.knime.core.table;
 
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
+import static org.knime.core.table.schema.DataSpecs.BYTE;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.FLOAT;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.LONG;
+import static org.knime.core.table.schema.DataSpecs.STRING;
+import static org.knime.core.table.schema.DataSpecs.VARBINARY;
+import static org.knime.core.table.schema.DataSpecs.VOID;
+
 import java.io.IOException;
 
 import org.junit.Test;
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.schema.BooleanDataSpec;
-import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.FloatDataSpec;
-import org.knime.core.table.schema.IntDataSpec;
-import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.StringDataSpec;
-import org.knime.core.table.schema.VarBinaryDataSpec;
-import org.knime.core.table.schema.VoidDataSpec;
 import org.knime.core.table.virtual.ColumnarSchemas;
 import org.knime.core.table.virtual.RowAccessibles;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
@@ -75,8 +75,7 @@ public final class PermuteTransformTest {
 
     @Test
     public void testIdentityPermutation() throws IOException {
-        final ColumnarSchema schema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] values = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -91,8 +90,7 @@ public final class PermuteTransformTest {
 
     @Test
     public void testSwapFirstAndLastColumns() throws IOException {
-        final ColumnarSchema originalSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -102,8 +100,7 @@ public final class PermuteTransformTest {
         };
         final int[] permutation = {2, 1, 0};
 
-        final ColumnarSchema permutedSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(StringDataSpec.INSTANCE, IntDataSpec.INSTANCE, DoubleDataSpec.INSTANCE);
+        final ColumnarSchema permutedSchema = ColumnarSchema.of(STRING, INT, DOUBLE);
         final Object[][] permutedValues = new Object[][]{ //
             new Object[]{"First", 1, 0.1}, //
             new Object[]{"Second", 2, 0.2}, //
@@ -117,9 +114,8 @@ public final class PermuteTransformTest {
 
     @Test
     public void testPermuteAroundHalfOfTheColumns() throws IOException {
-        final ColumnarSchema originalSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
-            StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
-            ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema =
+                ColumnarSchema.of(DOUBLE, INT, STRING, BOOLEAN, FLOAT, LONG, BYTE, VARBINARY, VOID);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", true, 0.01f, 10l, (byte)11, new byte[]{1, 2, 3, 4}, null}, //
             new Object[]{0.2, 2, "Second", false, 0.02f, 20l, (byte)22, new byte[]{5, 6, 7, 8}, null}, //
@@ -129,9 +125,8 @@ public final class PermuteTransformTest {
         };
         final int[] permutation = {0, 2, 1, 3, 6, 5, 7, 4, 8};
 
-        final ColumnarSchema permutedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE,
-            StringDataSpec.INSTANCE, IntDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, ByteDataSpec.INSTANCE,
-            LongDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, FloatDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
+        final ColumnarSchema permutedSchema =
+                ColumnarSchema.of(DOUBLE, STRING, INT, BOOLEAN, BYTE, LONG, VARBINARY, FLOAT, VOID);
         final Object[][] permutedValues = new Object[][]{ //
             new Object[]{0.1, "First", 1, true, (byte)11, 10l, new byte[]{1, 2, 3, 4}, 0.01f, null}, //
             new Object[]{0.2, "Second", 2, false, (byte)22, 20l, new byte[]{5, 6, 7, 8}, 0.02f, null}, //
@@ -145,9 +140,8 @@ public final class PermuteTransformTest {
 
     @Test
     public void testShiftAllColumnsToTheLeft() throws IOException {
-        final ColumnarSchema originalSchema = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE,
-            StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE,
-            ByteDataSpec.INSTANCE, VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema =
+                ColumnarSchema.of(DOUBLE, INT, STRING, BOOLEAN, FLOAT, LONG, BYTE, VARBINARY, VOID);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First", true, 0.01f, 10l, (byte)11, new byte[]{1, 2, 3, 4}, null}, //
             new Object[]{0.2, 2, "Second", false, 0.02f, 20l, (byte)22, new byte[]{5, 6, 7, 8}, null}, //
@@ -157,9 +151,8 @@ public final class PermuteTransformTest {
         };
         final int[] permutation = {1, 2, 3, 4, 5, 6, 7, 8, 0};
 
-        final ColumnarSchema permutedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(IntDataSpec.INSTANCE, StringDataSpec.INSTANCE,
-            BooleanDataSpec.INSTANCE, FloatDataSpec.INSTANCE, LongDataSpec.INSTANCE, ByteDataSpec.INSTANCE,
-            VarBinaryDataSpec.INSTANCE, VoidDataSpec.INSTANCE, DoubleDataSpec.INSTANCE);
+        final ColumnarSchema permutedSchema =
+                ColumnarSchema.of(INT, STRING, BOOLEAN, FLOAT, LONG, BYTE, VARBINARY, VOID, DOUBLE);
         final Object[][] permutedValues = new Object[][]{ //
             new Object[]{1, "First", true, 0.01f, 10l, (byte)11, new byte[]{1, 2, 3, 4}, null, 0.1}, //
             new Object[]{2, "Second", false, 0.02f, 20l, (byte)22, new byte[]{5, 6, 7, 8}, null, 0.2}, //
@@ -191,15 +184,12 @@ public final class PermuteTransformTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testRejectNumPermutationIndicesGreaterThanNumColumns() {
-        ColumnarSchemas.permute(TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE),
-            new int[]{2, 1, 0});
+        ColumnarSchemas.permute(ColumnarSchema.of(DOUBLE, INT), new int[]{2, 1, 0});
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testRejectNumPermutationIndicesLessThanNumColumns() {
-        ColumnarSchemas.permute(
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE),
-            new int[]{1, 0});
+        ColumnarSchemas.permute(ColumnarSchema.of(DOUBLE, INT, STRING), new int[]{1, 0});
     }
 
     private static void testPermuteTable(final ColumnarSchema expectedSchema, final Object[][] expectedValues,

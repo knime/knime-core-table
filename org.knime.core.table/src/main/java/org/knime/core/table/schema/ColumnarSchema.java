@@ -45,6 +45,7 @@
  */
 package org.knime.core.table.schema;
 
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
 
 /**
@@ -56,6 +57,7 @@ import org.knime.core.table.schema.traits.DataTraits;
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Marc Bux, KNIME GmbH, Berlin, Germany
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Tobias Pietzsch
  */
 public interface ColumnarSchema extends Iterable<DataSpec> {
 
@@ -102,4 +104,26 @@ public interface ColumnarSchema extends Iterable<DataSpec> {
      * }</pre>
      */
     @Override int hashCode();
+
+    /**
+     * Create a {@code ColumnarSchema}.
+     * <p>
+     * For readability, it is recommended to statically import the {@code DataSpecWithTraits} constants defined in {@link DataSpecs}.
+     * Usage examples:
+     * <pre>{@code
+     * var schema1 = ColumnarSchema.of(DOUBLE, INT, STRING);
+     * var schema2 = ColumnarSchema.of(INT, STRING(DICT_ENCODING), BOOLEAN);
+     * }</pre>
+     * @param specs A list of {@link DataSpecWithTraits} that make up this schema
+     * @return the constructed {@link ColumnarSchema}
+     */
+    static ColumnarSchema of(final DataSpecs.DataSpecWithTraits... specs) {
+        final DataSpec[] columnSpecs = new DataSpec[specs.length];
+        final DataTraits[] columnTraits = new DataTraits[specs.length];
+        for (int i = 0; i < specs.length; i++) {
+            columnSpecs[i] = specs[i].spec();
+            columnTraits[i] = specs[i].traits();
+        }
+        return new DefaultColumnarSchema(columnSpecs, columnTraits);
+    }
 }

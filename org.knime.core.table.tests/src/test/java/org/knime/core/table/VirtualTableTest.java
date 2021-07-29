@@ -50,6 +50,10 @@ package org.knime.core.table;
 
 import static org.junit.Assert.assertEquals;
 import static org.knime.core.table.RowAccessiblesTestUtils.assertTableEqualsValues;
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -59,12 +63,7 @@ import java.util.UUID;
 
 import org.junit.Test;
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.IntDataSpec;
-import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.exec.LazyVirtualTableExecutor;
 import org.knime.core.table.virtual.exec.VirtualTableExecutor;
@@ -80,8 +79,7 @@ public final class VirtualTableTest {
 
     @Test
     public void testLinearTransformGraph() throws IOException {
-        final ColumnarSchema originalSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -95,8 +93,7 @@ public final class VirtualTableTest {
             new Object[]{0.0, 0, "Tenth"} //
         };
 
-        final ColumnarSchema expectedTransformedSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema expectedTransformedSchema = ColumnarSchema.of(DOUBLE, STRING);
         final Object[][] expectedTransformedValues = new Object[][]{ //
             new Object[]{0.3, "Third"}, //
             new Object[]{0.4, "Fourth"}, //
@@ -118,7 +115,7 @@ public final class VirtualTableTest {
 
     @Test
     public void testJoiningTransformGraph() throws IOException {
-        final ColumnarSchema originalSchema1 = TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema1 = ColumnarSchema.of(DOUBLE, INT);
         final Object[][] originalValues1 = new Object[][]{ //
             new Object[]{0.1, 1}, //
             new Object[]{0.2, 2}, //
@@ -131,8 +128,7 @@ public final class VirtualTableTest {
             new Object[]{0.9, 9}, //
             new Object[]{0.0, 0} //
         };
-        final ColumnarSchema originalSchema2 =
-            TestColumnarSchemaUtils.createWithEmptyTraits(StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema2 = ColumnarSchema.of(STRING, BOOLEAN);
         final Object[][] originalValues2 = new Object[][]{ //
             new Object[]{"First", true}, //
             new Object[]{"Second", false}, //
@@ -146,8 +142,7 @@ public final class VirtualTableTest {
             new Object[]{"Tenth", false} //
         };
 
-        final ColumnarSchema expectedTransformedSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, StringDataSpec.INSTANCE, BooleanDataSpec.INSTANCE);
+        final ColumnarSchema expectedTransformedSchema = ColumnarSchema.of(DOUBLE, STRING, BOOLEAN);
         final Object[][] expectedTransformedValues = new Object[][]{ //
             new Object[]{0.1, "Fourth", false}, //
             new Object[]{0.2, "Fifth", true}, //
@@ -179,8 +174,7 @@ public final class VirtualTableTest {
 
     @Test
     public void testForkingAndJoiningTransformGraph() throws IOException {
-        final ColumnarSchema originalSchema =
-            TestColumnarSchemaUtils.createWithEmptyTraits(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE);
+        final ColumnarSchema originalSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
         final Object[][] originalValues = new Object[][]{ //
             new Object[]{0.1, 1, "First"}, //
             new Object[]{0.2, 2, "Second"}, //
@@ -191,8 +185,7 @@ public final class VirtualTableTest {
             new Object[]{0.7, 7, "Seventh"} //
         };
 
-        final ColumnarSchema expectedTransformedSchema = TestColumnarSchemaUtils.createWithEmptyTraits(IntDataSpec.INSTANCE,
-            StringDataSpec.INSTANCE, IntDataSpec.INSTANCE, DoubleDataSpec.INSTANCE);
+        final ColumnarSchema expectedTransformedSchema = ColumnarSchema.of(INT, STRING, INT, DOUBLE);
         final Object[][] expectedTransformedValues = new Object[][]{ //
             new Object[]{2, "Second", 2, 0.2}, //
             new Object[]{3, "Third", 3, 0.3}, //
