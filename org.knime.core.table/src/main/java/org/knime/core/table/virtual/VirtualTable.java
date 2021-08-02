@@ -101,7 +101,7 @@ public final class VirtualTable {
     // characteristics").
 
     public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema) {
-        m_transform = new TableTransform(new SourceTransformSpec(sourceIdentifier));
+        m_transform = new TableTransform(new SourceTransformSpec(sourceIdentifier, schema));
         m_schema = schema;
     }
 

@@ -22,6 +22,7 @@ package org.knime.core.table.virtual.spec;
 
 import java.util.UUID;
 
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,12 +35,19 @@ public final class SourceTransformSpec implements TableTransformSpec {
 
     private final UUID m_sourceIdentifier;
 
-    public SourceTransformSpec(final UUID sourceIdentifier) {
+    private final ColumnarSchema m_schema;
+
+    public SourceTransformSpec(final UUID sourceIdentifier, final ColumnarSchema schema) {
         m_sourceIdentifier = sourceIdentifier;
+        m_schema = schema;
     }
 
     public UUID getSourceIdentifier() {
         return m_sourceIdentifier;
+    }
+
+    public ColumnarSchema getSchema() {
+        return m_schema;
     }
 
     @Override
@@ -65,6 +73,8 @@ public final class SourceTransformSpec implements TableTransformSpec {
             super("source", 0);
         }
 
+        // TODO: de/serialize m_schema
+
         @Override
         protected JsonNode saveInternal(final SourceTransformSpec spec, final JsonNodeFactory factory) {
             return factory.objectNode().put("identifier", spec.m_sourceIdentifier.toString());
@@ -72,7 +82,7 @@ public final class SourceTransformSpec implements TableTransformSpec {
 
         @Override
         protected SourceTransformSpec loadInternal(final JsonNode config) {
-            return new SourceTransformSpec(UUID.fromString(config.get("identifier").textValue()));
+            return new SourceTransformSpec(UUID.fromString(config.get("identifier").textValue()), null);
         }
     }
 }
