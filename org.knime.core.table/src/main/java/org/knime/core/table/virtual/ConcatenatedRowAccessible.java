@@ -53,12 +53,11 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccess;
+import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccessRow;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 
 /**
@@ -97,8 +96,8 @@ class ConcatenatedRowAccessible implements RowAccessible {
 
     @Override
     public void close() throws IOException {
-        for (int i = 0; i < m_delegates.size(); i++) {
-            m_delegates.get(i).close();
+        for (RowAccessible delegate : m_delegates) {
+            delegate.close();
         }
     }
 
@@ -108,7 +107,7 @@ class ConcatenatedRowAccessible implements RowAccessible {
 
         private final List<RowAccessible> m_delegateTables;
 
-        private final ConcatenatedReadAccessRow m_access;
+        private final DelegatingReadAccessRow m_access;
 
         private int m_currentTableIndex = 0;
 
@@ -119,7 +118,8 @@ class ConcatenatedRowAccessible implements RowAccessible {
             @SuppressWarnings("resource") // Cursor is closed below.
             final Cursor<ReadAccessRow> delegate = m_delegateTables.get(m_currentTableIndex).createCursor();
             m_currentDelegateCursor = delegate;
-            m_access = new ConcatenatedReadAccessRow(m_currentDelegateCursor.access(), schema);
+            m_access = DelegatingReadAccesses.createDelegatingReadAccessRow(schema);
+            m_access.setDelegateAccess(m_currentDelegateCursor.access());
         }
 
         @Override
@@ -157,40 +157,6 @@ class ConcatenatedRowAccessible implements RowAccessible {
         @Override
         public void close() throws IOException {
             m_currentDelegateCursor.close();
-        }
-
-        private static final class ConcatenatedReadAccessRow implements ReadAccessRow {
-
-            private final ColumnarSchema m_schema;
-
-            private final DelegatingReadAccess<?>[] m_accesses;
-
-            public ConcatenatedReadAccessRow(final ReadAccessRow initialDelegateAccess, final ColumnarSchema schema) {
-                m_schema = schema;
-                m_accesses = new DelegatingReadAccess[m_schema.numColumns()];
-                for (int i = 0; i < m_accesses.length; i++) {
-                    m_accesses[i] = DelegatingReadAccesses.createDelegatingAccess(m_schema.getSpec(i));
-                }
-                setDelegateAccess(initialDelegateAccess);
-            }
-
-            private void setDelegateAccess(final ReadAccessRow delegateAccess) {
-                for (int i = 0; i < m_schema.numColumns(); i++) {
-                    m_accesses[i].setDelegateAccess(delegateAccess.getAccess(i));
-                }
-            }
-
-            @Override
-            public int size() {
-                return m_schema.numColumns();
-            }
-
-            @Override
-            public <A extends ReadAccess> A getAccess(final int index) {
-                @SuppressWarnings("unchecked")
-                final A casted = (A)m_accesses[index];
-                return casted;
-            }
         }
     }
 }
