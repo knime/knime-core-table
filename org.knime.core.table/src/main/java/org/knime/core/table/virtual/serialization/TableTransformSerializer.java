@@ -155,22 +155,53 @@ public final class TableTransformSerializer {
             return configRoot;
         }
 
-        private static <T extends TableTransformSpec> JsonNode serializeTransformSpec(final T transformSpec,
-            final JsonNodeFactory configFactory) {
-            // TODO: hack for now. Implement proper registration/discovery mechanism later.
-            final Class<?> serializerClass = Arrays.stream(transformSpec.getClass().getNestMembers())
-                .filter(TableTransformSpecSerializer.class::isAssignableFrom) //
-                .findFirst() //
-                .orElseThrow(() -> new IllegalStateException(
-                    "No serializer found for transform spec: " + transformSpec.getClass()));
-            try {
-                @SuppressWarnings("unchecked")
-                final TableTransformSpecSerializer<T> serializer =
-                    (TableTransformSpecSerializer<T>)serializerClass.getDeclaredConstructor().newInstance();
-                return serializer.save(transformSpec, configFactory);
-            } catch (final ReflectiveOperationException ex) {
-                throw new IllegalStateException(ex);
-            }
+    }
+
+
+    public static <T extends TableTransformSpec> JsonNode serializeTransformSpec(final T transformSpec,
+        final JsonNodeFactory configFactory) {
+        // TODO: hack for now. Implement proper registration/discovery mechanism later.
+        final Class<?> serializerClass = Arrays.stream(transformSpec.getClass().getNestMembers())
+            .filter(TableTransformSpecSerializer.class::isAssignableFrom) //
+            .findFirst() //
+            .orElseThrow(() -> new IllegalStateException(
+                "No serializer found for transform spec: " + transformSpec.getClass()));
+        try {
+            @SuppressWarnings("unchecked")
+            final TableTransformSpecSerializer<T> serializer =
+                (TableTransformSpecSerializer<T>)serializerClass.getDeclaredConstructor().newInstance();
+            return serializer.save(transformSpec, configFactory);
+        } catch (final ReflectiveOperationException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+
+    public static TableTransformSpec deserializeTransformSpec(final JsonNode transformSpecConfig) {
+        final String type = transformSpecConfig.get("type").textValue();
+        final TableTransformSpecSerializer<?> serializer = getTransformSpecSerializer(type);
+        return serializer.load(transformSpecConfig);
+    }
+
+
+    private static TableTransformSpecSerializer<?> getTransformSpecSerializer(final String transformIdentifier) {
+        switch (transformIdentifier) {
+            case "append":
+                return new AppendTransformSpec.AppendTransformSpecSerializer();
+            case "append_missing_values":
+                return new AppendMissingValuesTransformSpec.AppendMissingValuesTransformSpecSerializer();
+            case "column_filter":
+                return new ColumnFilterTransformSpec.ColumnFilterTransformSpecSerializer();
+            case "concatenate":
+                return new ConcatenateTransformSpec.ConcatenateTransformSpecSerializer();
+            case "permute":
+                return new PermuteTransformSpec.PermuteTransformSpecSerializer();
+            case "slice":
+                return new SliceTransformSpec.SliceTransformSpecSerializer();
+            case "source":
+                return new SourceTransformSpec.SourceTransformSpecSerializer();
+            default:
+                throw new UnsupportedOperationException("Unkown transformation: " + transformIdentifier);
         }
     }
 
@@ -234,31 +265,5 @@ public final class TableTransformSerializer {
             transforms.put(specIndex, new TableTransform(resolvedParents, transformSpecs.get(specIndex)));
         }
 
-        private static TableTransformSpec deserializeTransformSpec(final JsonNode transformSpecConfig) {
-            final String type = transformSpecConfig.get("type").textValue();
-            final TableTransformSpecSerializer<?> serializer = getTransformSpecSerializer(type);
-            return serializer.load(transformSpecConfig);
-        }
-
-        private static TableTransformSpecSerializer<?> getTransformSpecSerializer(final String transformIdentifier) {
-            switch (transformIdentifier) {
-                case "append":
-                    return new AppendTransformSpec.AppendTransformSpecSerializer();
-                case "append_missing_values":
-                    return new AppendMissingValuesTransformSpec.AppendMissingValuesTransformSpecSerializer();
-                case "column_filter":
-                    return new ColumnFilterTransformSpec.ColumnFilterTransformSpecSerializer();
-                case "concatenate":
-                    return new ConcatenateTransformSpec.ConcatenateTransformSpecSerializer();
-                case "permute":
-                    return new PermuteTransformSpec.PermuteTransformSpecSerializer();
-                case "slice":
-                    return new SliceTransformSpec.SliceTransformSpecSerializer();
-                case "source":
-                    return new SourceTransformSpec.SourceTransformSpecSerializer();
-                default:
-                    throw new UnsupportedOperationException("Unkown transformation: " + transformIdentifier);
-            }
-        }
     }
 }
