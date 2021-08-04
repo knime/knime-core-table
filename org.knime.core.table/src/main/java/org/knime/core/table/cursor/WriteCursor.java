@@ -20,21 +20,24 @@
  */
 package org.knime.core.table.cursor;
 
+import java.io.Flushable;
 import java.io.IOException;
 
 /**
  * A {@link Cursor} for writing data to a storage.<br>
- * Provides a {@link #finish()} method that ensures that any data that hasn't been written out, yet, is written out
- * before the instance is closed.
+ * Provides a {@link #flush()} method that ensures that any data that hasn't been written out, yet, is written out.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @param <A> the type of access forwarded by this forwarder
  */
-public interface WriteCursor<A> extends Cursor<A> {
+public interface WriteCursor<A> extends Cursor<A>, Flushable {
 
     /**
-     * Finishes the write process by e.g. flushing data that hasn't been written out yet and closing the instance.
-     * @throws IOException if closing fails
+     * Finishes the write process by e.g. flushing data that hasn't been written out yet.
+     * Does not close the {@link WriteCursor}.
+     *
+     * @throws IOException if flushing fails
      */
-    void finish() throws IOException;
+    @Override
+    void flush() throws IOException;
 }
