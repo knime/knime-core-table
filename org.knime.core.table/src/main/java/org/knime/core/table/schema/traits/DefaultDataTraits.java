@@ -48,10 +48,10 @@ public class DefaultDataTraits implements DataTraits {
     }
 
     @Override
-    public DataTrait get(final DataTrait.Type type) {
+    public <T extends DataTrait> T get(final Class<T> type) {
         for (var t : m_traits) {
-            if (t.getType() == type) {
-                return t;
+            if (type.isInstance(t)) {
+                return ( T ) t;
             }
         }
 

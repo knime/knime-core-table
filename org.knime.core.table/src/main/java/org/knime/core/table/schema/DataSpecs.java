@@ -1,9 +1,9 @@
 package org.knime.core.table.schema;
 
 import org.knime.core.table.schema.traits.DataTrait;
+import org.knime.core.table.schema.traits.DataTrait.DictEncodingTrait;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
-import org.knime.core.table.schema.traits.DictEncodingTrait;
 
 /**
  * Defines constants and methods that each combine a {@link DataSpec} with {@link DataTrait}s.

@@ -32,8 +32,8 @@ public interface DataTraits {
 
     /**
      * Get the {@link DataTrait} of the given type if available, returns null otherwise.
-     * @param type The {@link DataTrait.Type} to query
+     * @param type The {@link DataTrait} subclass to query
      * @return The trait or null
      */
-    DataTrait get(DataTrait.Type type);
+    <T extends DataTrait> T get(Class<T> type);
 }

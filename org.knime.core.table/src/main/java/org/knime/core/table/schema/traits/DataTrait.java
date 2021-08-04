@@ -31,20 +31,51 @@ import org.knime.core.table.schema.DataSpec;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public interface DataTrait {
-
     /**
-     * A list of available DataTrait types, each describing a piece of information about a {@link DataSpec}
+     * If the {@link DictEncodingTrait} is provided alongside a {@link DataSpec},
+     * and it is enabled, that means the data should be stored using dictionary encoding.
+     *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    public enum Type {
+    public static class DictEncodingTrait implements DataTrait {
+        private final boolean m_enabled;
+
         /**
-         * The dictionary encoding trait: {@link DictEncodingTrait}
+         * Create a dictionary encoding trait, but leave it disabled
          */
-        DICT_ENCODING;
+        public DictEncodingTrait() {
+            this(false);
+        }
+
+        /**
+         * Create a dictionary encoding trait and possibly enable it
+         * @param enabled Whether dictionary encoding should be enabled
+         */
+        public DictEncodingTrait(final boolean enabled) {
+            m_enabled = enabled;
+        }
+
+        /**
+         * @return whether dictionary encoding is enabled
+         */
+        public boolean isEnabled() {
+            return m_enabled;
+        }
+
+        /**
+         * Check whether the dictionary encoding trait is enabled for
+         * a given {@link DataTraits} container.
+         *
+         * @param traits The traits to check
+         * @return true if the {@link DictEncodingTrait} is present and enabled in traits
+         */
+        public static boolean isEnabled(final DataTraits traits) {
+            if (traits == null) {
+                return false;
+            }
+            final DictEncodingTrait trait = traits.get(DictEncodingTrait.class);
+            return trait != null && trait.isEnabled();
+        }
     }
 
-    /**
-     * @return the type of this DataTrait
-     */
-    Type getType();
 }
