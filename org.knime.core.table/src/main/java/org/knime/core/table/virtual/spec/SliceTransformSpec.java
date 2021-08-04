@@ -71,7 +71,7 @@ public final class SliceTransformSpec implements TableTransformSpec {
     /**
      * @return The sliced range of rows.
      */
-    public RowRangeSelection getRowRangSelection() {
+    public RowRangeSelection getRowRangeSelection() {
         return m_range;
     }
 

@@ -40,6 +40,7 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
+import org.knime.core.table.virtual.spec.IdentityTransformSpec;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -104,7 +105,7 @@ public class LazyVirtualTableExecutor implements VirtualTableExecutor {
             transformStack.push(sourceTransform);
         });
 
-        while (!transformStack.isEmpty()) {
+        while (!transformStack.isEmpty()) {//NOSONAR refactoring would decrease readability here
             final TableTransform node = transformStack.pop();
 
             m_children.getOrDefault(node, Collections.emptyList()).forEach(transformStack::push);
@@ -114,46 +115,53 @@ public class LazyVirtualTableExecutor implements VirtualTableExecutor {
             }
 
             // Test for incomplete argument list of non-unary transforms.
-            if (node.getPrecedingTransforms().size() > 1 &&
-                node.getPrecedingTransforms().stream().anyMatch(t -> !tables.containsKey(t))) {
+            if (node.getPrecedingTransforms().size() > 1
+                && node.getPrecedingTransforms().stream().anyMatch(t -> !tables.containsKey(t))) {
                 // We cannot process the node yet because not all parents have been visited.
                 transformStack.addLast(node);
                 continue;
             }
 
-            final List<RowAccessible> precedingTables = node.getPrecedingTransforms().stream().map(tables::get)
-                .flatMap(List<RowAccessible>::stream).collect(Collectors.toList());
+            final List<RowAccessible> precedingTables = node.getPrecedingTransforms().stream()//
+                    .map(tables::get)//
+                .flatMap(List<RowAccessible>::stream)//
+                .collect(Collectors.toList());
 
             // this is what needs to filled
-            final List<RowAccessible> transformedTables = new ArrayList<>();
-            final TableTransformSpec spec = node.getSpec();
-
-            // TODO visitor pattern?
-            if (spec instanceof ColumnFilterTransformSpec) {
-                transformedTables.add(RowAccessibles.filter(precedingTables.get(0),
-                    ((ColumnFilterTransformSpec)spec).getColumnSelection()));
-            } else if (spec instanceof ConcatenateTransformSpec) {
-                transformedTables.add(RowAccessibles.concatenate(precedingTables.get(0), precedingTables
-                    .subList(1, precedingTables.size()).toArray(new RowAccessible[precedingTables.size() - 1])));
-            } else if (spec instanceof AppendTransformSpec) {
-                transformedTables.add(RowAccessibles.append(precedingTables.get(0), precedingTables
-                    .subList(1, precedingTables.size()).toArray(new RowAccessible[precedingTables.size() - 1])));
-            } else if (spec instanceof PermuteTransformSpec) {
-                transformedTables
-                    .add(RowAccessibles.permute(precedingTables.get(0), ((PermuteTransformSpec)spec).getPermutation()));
-            } else if (spec instanceof AppendMissingValuesTransformSpec) {
-                transformedTables.add(RowAccessibles.appendMissing(precedingTables.get(0),
-                    ((AppendMissingValuesTransformSpec)spec).getAppendedSchema()));
-            } else if (spec instanceof SliceTransformSpec) {
-                transformedTables.add(
-                    RowAccessibles.slice(precedingTables.get(0), ((SliceTransformSpec)spec).getRowRangSelection()));
-            }
-
+            final List<RowAccessible> transformedTables = createTransformedTables(node.getSpec(), precedingTables);
             tables.put(node, transformedTables);
         }
 
         // TODO only single output graphs supported at the moment (as this is a lazy implementation)...
         return tables.get(m_leafTransform);
+    }
+
+    @SuppressWarnings("resource")
+    private static List<RowAccessible> createTransformedTables(final TableTransformSpec spec,//NOSONAR
+        final List<RowAccessible> predecessors) {
+        // TODO visitor pattern?
+        if (spec instanceof ColumnFilterTransformSpec) {
+            return List
+                .of(RowAccessibles.filter(predecessors.get(0), ((ColumnFilterTransformSpec)spec).getColumnSelection()));
+        } else if (spec instanceof ConcatenateTransformSpec) {
+            return List.of(RowAccessibles.concatenate(predecessors.get(0),
+                predecessors.subList(1, predecessors.size()).toArray(RowAccessible[]::new)));
+        } else if (spec instanceof AppendTransformSpec) {
+            return List.of(RowAccessibles.append(predecessors.get(0),
+                predecessors.subList(1, predecessors.size()).toArray(RowAccessible[]::new)));
+        } else if (spec instanceof PermuteTransformSpec) {
+            return List.of(RowAccessibles.permute(predecessors.get(0), ((PermuteTransformSpec)spec).getPermutation()));
+        } else if (spec instanceof AppendMissingValuesTransformSpec) {
+            return List.of(RowAccessibles.appendMissing(predecessors.get(0),
+                ((AppendMissingValuesTransformSpec)spec).getAppendedSchema()));
+        } else if (spec instanceof SliceTransformSpec) {
+            return List
+                .of(RowAccessibles.slice(predecessors.get(0), ((SliceTransformSpec)spec).getRowRangeSelection()));
+        } else if (spec instanceof IdentityTransformSpec) {
+            return List.of(predecessors.get(0));
+        } else {
+            throw new IllegalArgumentException("Unsupported transformation: " + spec);
+        }
     }
 
 }
