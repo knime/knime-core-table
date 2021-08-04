@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.knime.core.table.schema.traits.DataTraits;
 
@@ -120,5 +121,10 @@ public final class DefaultColumnarSchema implements ColumnarSchema {
     @Override
     public String toString() {
         return "Columns (" + m_columnSpecs.size() + ") " + m_columnSpecs;
+    }
+
+    @Override
+    public Stream<DataSpec> specStream() {
+        return m_columnSpecs.stream();
     }
 }

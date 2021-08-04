@@ -45,6 +45,8 @@
  */
 package org.knime.core.table.schema;
 
+import java.util.stream.Stream;
+
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
 
@@ -76,6 +78,11 @@ public interface ColumnarSchema extends Iterable<DataSpec> {
      * @throws IndexOutOfBoundsException if the index is negative or equal to or greater than the number of columns
      */
     DataSpec getSpec(int index);
+
+    /**
+     * @return a stream of the contained {@link DataSpec DataSpecs}
+     */
+    Stream<DataSpec> specStream();
 
     /**
      * Return the {@link DataTraits} of the selected column

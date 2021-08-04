@@ -88,8 +88,11 @@ import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryWriteAccess;
 import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeReadAccess;
 import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeWriteAccess;
+import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.row.WriteAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.DurationDataSpec;
@@ -117,7 +120,8 @@ import org.knime.core.table.schema.ZonedDateTimeDataSpec;
  */
 public final class BufferedAccesses {
 
-    private BufferedAccesses() {}
+    private BufferedAccesses() {
+    }
 
     /**
      * Creates a {@link BufferedAccess} for the provided {@link DataSpec}.
@@ -130,12 +134,97 @@ public final class BufferedAccesses {
     }
 
     /**
+     * Creates a {@link BufferedAccessRow} with the provided {@link ColumnarSchema}.
+     *
+     * @param schema defining the number of columns and their types
+     * @return a {@link BufferedAccessRow} with the provided {@link ColumnarSchema}
+     */
+    public static BufferedAccessRow createBufferedAccessRow(final ColumnarSchema schema) {
+        return new DefaultBufferedAccessRow(schema);
+    }
+
+    /**
+     * Convenience method for creating an array of BufferedAccesses for a provided schema.
+     *
+     * @param schema for which to create the BufferedAccesses
+     * @return BufferedAccesses corresponding to the DataSpecs in the provided schema
+     */
+    private static BufferedAccess[] createBufferedAccesses(final ColumnarSchema schema) {
+        return schema.specStream()//
+            .map(BufferedAccesses::createBufferedAccess)//
+            .toArray(BufferedAccess[]::new);
+    }
+
+    /**
+     * Both a {@link ReadAccessRow} and {@link WriteAccessRow} that is based on {@link BufferedAccess BufferedAccesses}.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public interface BufferedAccessRow extends ReadAccessRow, WriteAccessRow {
+
+        /**
+         * Provides access to values within the individual columns.<br>
+         * <b>NOTE:</b> Repetitive calls with the same index return the same access instance but the instance may point
+         * to different values. It is the responsibility of the caller to retrieve the value from the access if they
+         * want to store it.
+         *
+         * @param <A> the concrete type of access
+         * @param index to the column for which to get the access
+         * @return the access for column
+         */
+        public <A extends BufferedAccess> A getBufferedAccess(int index);
+    }
+
+    private static final class DefaultBufferedAccessRow implements BufferedAccessRow {
+
+        private final BufferedAccess[] m_accesses;
+
+        private DefaultBufferedAccessRow(final ColumnarSchema schema) {
+            m_accesses = createBufferedAccesses(schema);
+        }
+
+        @Override
+        public int size() {
+            return m_accesses.length;
+        }
+
+        @Override
+        public <A extends ReadAccess> A getAccess(final int index) {
+            return getBufferedAccess(index);
+        }
+
+        @Override
+        public void setFrom(final ReadAccessRow readAccessRow) {
+            if (readAccessRow.size() != size()) {
+                throw new IllegalArgumentException(
+                    String.format("Wrong size: %d vs. %d", readAccessRow.size(), size()));
+            }
+            for (var i = 0; i < size(); i++) {
+                m_accesses[i].setFrom(readAccessRow.getAccess(i));
+            }
+        }
+
+        @Override
+        public <A extends WriteAccess> A getWriteAccess(final int index) {
+            return getBufferedAccess(index);
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <A extends BufferedAccess> A getBufferedAccess(final int index) {
+            return (A)m_accesses[index];
+        }
+
+    }
+
+    /**
      * Simple marker interface for combined ReadAccess and WriteAccess
      *
      * @author Marc Bux, KNIME GmbH, Berlin, Germany
      * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
      */
-    public interface BufferedAccess extends ReadAccess, WriteAccess {}
+    public interface BufferedAccess extends ReadAccess, WriteAccess {
+    }
 
     private static final class DataSpecToBufferedAccessMapper implements DataSpec.Mapper<BufferedAccess> {
 
@@ -657,7 +746,8 @@ public final class BufferedAccesses {
 
             private static final BufferedVoidAccess VOID_ACCESS_INSTANCE = new BufferedVoidAccess();
 
-            private BufferedVoidAccess() {}
+            private BufferedVoidAccess() {
+            }
 
             @Override
             public boolean isMissing() {
