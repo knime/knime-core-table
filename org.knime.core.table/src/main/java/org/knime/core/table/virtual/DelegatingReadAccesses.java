@@ -20,19 +20,34 @@
  */
 package org.knime.core.table.virtual;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
+import org.knime.core.table.access.DurationAccess.DurationReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
+import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
+import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeReadAccess;
+import org.knime.core.table.access.LocalTimeAccess.LocalTimeReadAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
+import org.knime.core.table.access.PeriodAccess.PeriodReadAccess;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
+import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeReadAccess;
+import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.DurationDataSpec;
@@ -52,18 +67,101 @@ import org.knime.core.table.schema.VoidDataSpec;
 import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 /**
+ * Provides implementations of {@link ReadAccess ReadAccesses} that simply delegate to another {@link ReadAccess}.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class DelegatingReadAccesses {
+public final class DelegatingReadAccesses {
 
-    private DelegatingReadAccesses() {}
+    private DelegatingReadAccesses() {
+    }
 
+    /**
+     * Creates a {@link ReadAccess} for the provided type that delegates to another {@link ReadAccess} of the same type.
+     *
+     * @param spec the type of ReadAccess
+     * @return a {@link DelegatingReadAccess} with the provided {@link DataSpec}
+     */
     public static DelegatingReadAccess<?> createDelegatingAccess(final DataSpec spec) {
         return spec.accept(DataSpecToDelegatingReadAccessMapper.INSTANCE);
     }
 
+    /**
+     * Creates a {@link ReadAccessRow} that delegates to another ReadAccessRow with the same schema.
+     *
+     * @param schema of the ReadAccessRow
+     * @return a {@link DelegatingReadAccessRow} with the provided schema
+     */
+    public static DelegatingReadAccessRow createDelegatingReadAccessRow(final ColumnarSchema schema) {
+        return new DefaultDelegatingReadAccessRow(schema);
+    }
+
+    private static class DefaultDelegatingReadAccessRow implements DelegatingReadAccessRow {
+
+        private final DelegatingReadAccess<?>[] m_accesses;
+
+        private final ColumnarSchema m_schema;
+
+        DefaultDelegatingReadAccessRow(final ColumnarSchema schema) {
+            m_schema = schema;
+            m_accesses = new DelegatingReadAccess[m_schema.numColumns()];
+            for (int i = 0; i < m_accesses.length; i++) {
+                m_accesses[i] = DelegatingReadAccesses.createDelegatingAccess(m_schema.getSpec(i));
+            }
+        }
+
+        @Override
+        public void setDelegateAccess(final ReadAccessRow delegateAccess) {
+            for (int i = 0; i < m_schema.numColumns(); i++) {
+                m_accesses[i].setDelegateAccess(delegateAccess.getAccess(i));
+            }
+        }
+
+        @Override
+        public int size() {
+            return m_schema.numColumns();
+        }
+
+        @Override
+        public <A extends ReadAccess> A getAccess(final int index) {
+            @SuppressWarnings("unchecked")
+            final A casted = (A)m_accesses[index];
+            return casted;
+        }
+
+    }
+
+    /**
+     * A {@link ReadAccessRow} that delegates to another {@link ReadAccessRow} with the same schema. The other
+     * {@link ReadAccessRow} can be changed using the {@link #setDelegateAccess(ReadAccessRow)} method.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public static interface DelegatingReadAccessRow extends ReadAccessRow {
+
+        /**
+         * Sets the access that this instance delegates to.
+         *
+         * @param access to delegate to
+         */
+        void setDelegateAccess(final ReadAccessRow access);
+    }
+
+    /**
+     * A {@link ReadAccess} that delegates to another {@link ReadAccess} of the same type.
+     *
+     * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     * @param <A> the type of {@link ReadAccess} to delegate to
+     */
     public static interface DelegatingReadAccess<A extends ReadAccess> extends ReadAccess {
 
+        /**
+         * Sets the access this access delegates to.
+         *
+         * @param access to delegate to
+         */
         void setDelegateAccess(A access);
     }
 
@@ -89,7 +187,7 @@ final class DelegatingReadAccesses {
 
         @Override
         public DelegatingReadAccess<?> visit(final DurationDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
+            return new DelegatingDurationReadAccess();
         }
 
         @Override
@@ -104,17 +202,17 @@ final class DelegatingReadAccesses {
 
         @Override
         public DelegatingReadAccess<?> visit(final LocalDateDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
+            return new DelegatingLocalDateReadAccess();
         }
 
         @Override
         public DelegatingReadAccess<?> visit(final LocalDateTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
+            return new DelegatingLocalDateTimeReadAccess();
         }
 
         @Override
         public DelegatingReadAccess<?> visit(final LocalTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
+            return new DelegatingLocalTimeReadAccess();
         }
 
         @Override
@@ -124,7 +222,7 @@ final class DelegatingReadAccesses {
 
         @Override
         public DelegatingReadAccess<?> visit(final PeriodDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
+            return new DelegatingPeriodReadAccess();
         }
 
         @Override
@@ -134,7 +232,8 @@ final class DelegatingReadAccesses {
 
         @Override
         public DelegatingReadAccess<?> visit(final VoidDataSpec spec) {
-            return new AbstractDelegatingReadAccess<ReadAccess>() {};
+            return new AbstractDelegatingReadAccess<ReadAccess>() {
+            };
         }
 
         @Override
@@ -149,7 +248,7 @@ final class DelegatingReadAccesses {
 
         @Override
         public DelegatingReadAccess<?> visit(final ZonedDateTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
+            return new DelegatingZonedDateTimeReadAccess();
         }
 
         @Override
@@ -266,6 +365,66 @@ final class DelegatingReadAccesses {
         public <T> T getObject(final ObjectDeserializer<T> deserializer) {
             return m_delegateAccess.getObject(deserializer);
         }
+    }
+
+    private static final class DelegatingDurationReadAccess extends AbstractDelegatingReadAccess<DurationReadAccess>
+        implements DurationReadAccess {
+
+        @Override
+        public Duration getDurationValue() {
+            return m_delegateAccess.getDurationValue();
+        }
+
+    }
+
+    private static final class DelegatingPeriodReadAccess extends AbstractDelegatingReadAccess<PeriodReadAccess>
+        implements PeriodReadAccess {
+
+        @Override
+        public Period getPeriodValue() {
+            return m_delegateAccess.getPeriodValue();
+        }
+
+    }
+
+    private static final class DelegatingZonedDateTimeReadAccess
+        extends AbstractDelegatingReadAccess<ZonedDateTimeReadAccess> implements ZonedDateTimeReadAccess {
+
+        @Override
+        public ZonedDateTime getZonedDateTimeValue() {
+            return m_delegateAccess.getZonedDateTimeValue();
+        }
+
+    }
+
+    private static final class DelegatingLocalTimeReadAccess extends AbstractDelegatingReadAccess<LocalTimeReadAccess>
+        implements LocalTimeReadAccess {
+
+        @Override
+        public LocalTime getLocalTimeValue() {
+            return m_delegateAccess.getLocalTimeValue();
+        }
+
+    }
+
+    private static final class DelegatingLocalDateTimeReadAccess
+        extends AbstractDelegatingReadAccess<LocalDateTimeReadAccess> implements LocalDateTimeReadAccess {
+
+        @Override
+        public LocalDateTime getLocalDateTimeValue() {
+            return m_delegateAccess.getLocalDateTimeValue();
+        }
+
+    }
+
+    private static final class DelegatingLocalDateReadAccess extends AbstractDelegatingReadAccess<LocalDateReadAccess>
+        implements LocalDateReadAccess {
+
+        @Override
+        public LocalDate getLocalDateValue() {
+            return m_delegateAccess.getLocalDateValue();
+        }
+
     }
 
     private abstract static class AbstractDelegatingReadAccess<A extends ReadAccess>
