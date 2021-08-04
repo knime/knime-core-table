@@ -120,14 +120,24 @@ public final class VirtualTable {
 
     public VirtualTable append(final List<VirtualTable> tables) {
         final TableTransformSpec transformSpec = new AppendTransformSpec();
+        final List<ColumnarSchema> schemas = collectSchemas(tables);
+        final ColumnarSchema schema = ColumnarSchemas.append(schemas);
+        final List<TableTransform> transforms = collectTransforms(tables);
+        return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
+    }
+
+    private List<ColumnarSchema> collectSchemas(final List<VirtualTable> tables) {
         final List<ColumnarSchema> schemas = new ArrayList<>(1 + tables.size());
         schemas.add(m_schema);
         schemas.addAll(Collections2.transform(tables, VirtualTable::getSchema));
-        final ColumnarSchema schema = ColumnarSchemas.append(schemas);
+        return schemas;
+    }
+
+    private List<TableTransform> collectTransforms(final List<VirtualTable> tables) {
         final List<TableTransform> transforms = new ArrayList<>(1 + tables.size());
         transforms.add(m_transform);
         transforms.addAll(Collections2.transform(tables, VirtualTable::getProducingTransform));
-        return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
+        return transforms;
     }
 
     public VirtualTable appendMissingValueColumns(final List<DataSpec> columns, final List<DataTraits> traits) {
@@ -139,13 +149,9 @@ public final class VirtualTable {
 
     public VirtualTable concatenate(final List<VirtualTable> tables) {
         final TableTransformSpec transformSpec = new ConcatenateTransformSpec();
-        final List<ColumnarSchema> schemas = new ArrayList<>(1 + tables.size());
-        schemas.add(m_schema);
-        schemas.addAll(Collections2.transform(tables, VirtualTable::getSchema));
+        final List<ColumnarSchema> schemas = collectSchemas(tables);
         final ColumnarSchema schema = ColumnarSchemas.concatenate(schemas);
-        final List<TableTransform> transforms = new ArrayList<>(1 + tables.size());
-        transforms.add(m_transform);
-        transforms.addAll(Collections2.transform(tables, VirtualTable::getProducingTransform));
+        final List<TableTransform> transforms = collectTransforms(tables);
         return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
     }
 
