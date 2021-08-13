@@ -34,7 +34,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.RowAccessibles;
+import org.knime.core.table.virtual.RowRangeSelection;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
@@ -123,7 +125,7 @@ public class LazyVirtualTableExecutor implements VirtualTableExecutor {
             }
 
             final List<RowAccessible> precedingTables = node.getPrecedingTransforms().stream()//
-                    .map(tables::get)//
+                .map(tables::get)//
                 .flatMap(List<RowAccessible>::stream)//
                 .collect(Collectors.toList());
 
@@ -137,30 +139,33 @@ public class LazyVirtualTableExecutor implements VirtualTableExecutor {
     }
 
     @SuppressWarnings("resource")
-    private static List<RowAccessible> createTransformedTables(final TableTransformSpec spec,//NOSONAR
+    private static List<RowAccessible> createTransformedTables(final TableTransformSpec spec, //NOSONAR
         final List<RowAccessible> predecessors) {
         // TODO visitor pattern?
+        final RowAccessible predecessor = predecessors.get(0);
         if (spec instanceof ColumnFilterTransformSpec) {
-            return List
-                .of(RowAccessibles.filter(predecessors.get(0), ((ColumnFilterTransformSpec)spec).getColumnSelection()));
-        } else if (spec instanceof ConcatenateTransformSpec) {
-            return List.of(RowAccessibles.concatenate(predecessors.get(0),
-                predecessors.subList(1, predecessors.size()).toArray(RowAccessible[]::new)));
-        } else if (spec instanceof AppendTransformSpec) {
-            return List.of(RowAccessibles.append(predecessors.get(0),
-                predecessors.subList(1, predecessors.size()).toArray(RowAccessible[]::new)));
+            final int[] selection = ((ColumnFilterTransformSpec)spec).getColumnSelection();
+            return List.of(RowAccessibles.filter(predecessor, selection));
         } else if (spec instanceof PermuteTransformSpec) {
-            return List.of(RowAccessibles.permute(predecessors.get(0), ((PermuteTransformSpec)spec).getPermutation()));
+            final int[] permutation = ((PermuteTransformSpec)spec).getPermutation();
+            return List.of(RowAccessibles.permute(predecessor, permutation));
         } else if (spec instanceof AppendMissingValuesTransformSpec) {
-            return List.of(RowAccessibles.appendMissing(predecessors.get(0),
-                ((AppendMissingValuesTransformSpec)spec).getAppendedSchema()));
+            final ColumnarSchema appendedSchema = ((AppendMissingValuesTransformSpec)spec).getAppendedSchema();
+            return List.of(RowAccessibles.appendMissing(predecessor, appendedSchema));
         } else if (spec instanceof SliceTransformSpec) {
-            return List
-                .of(RowAccessibles.slice(predecessors.get(0), ((SliceTransformSpec)spec).getRowRangeSelection()));
+            final RowRangeSelection rowRange = ((SliceTransformSpec)spec).getRowRangeSelection();
+            return List.of(RowAccessibles.slice(predecessor, rowRange));
         } else if (spec instanceof IdentityTransformSpec) {
-            return List.of(predecessors.get(0));
+            return List.of(predecessor);
         } else {
-            throw new IllegalArgumentException("Unsupported transformation: " + spec);
+            final RowAccessible[] other = predecessors.subList(1, predecessors.size()).toArray(RowAccessible[]::new);
+            if (spec instanceof ConcatenateTransformSpec) {
+                return List.of(RowAccessibles.concatenate(predecessor, other));
+            } else if (spec instanceof AppendTransformSpec) {
+                return List.of(RowAccessibles.append(predecessor, other));
+            } else {
+                throw new IllegalArgumentException("Unsupported transformation: " + spec);
+            }
         }
     }
 
