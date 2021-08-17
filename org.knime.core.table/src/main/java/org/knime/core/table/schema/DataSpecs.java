@@ -1,9 +1,13 @@
 package org.knime.core.table.schema;
 
+import java.util.Arrays;
+
 import org.knime.core.table.schema.traits.DataTrait;
 import org.knime.core.table.schema.traits.DataTrait.DictEncodingTrait;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
+import org.knime.core.table.schema.traits.DefaultListDataTraits;
+import org.knime.core.table.schema.traits.DefaultStructDataTraits;
 
 /**
  * Defines constants and methods that each combine a {@link DataSpec} with {@link DataTrait}s.
@@ -26,6 +30,11 @@ public interface DataSpecs {
         private final DataSpec spec;
 
         private final DataTraits traits;
+
+        DataSpecWithTraits(final DataSpec spec, final DataTraits traits) {
+            this.spec = spec;
+            this.traits = traits;
+        }
 
         DataSpecWithTraits(final DataSpec spec, final DataTrait... traits) {
             this.spec = spec;
@@ -131,5 +140,70 @@ public interface DataSpecs {
 
     static DataSpecWithTraits ZONEDDATETIME(final DataTrait... traits) {
         return new DataSpecWithTraits(ZonedDateTimeDataSpec.INSTANCE, traits);
+    }
+
+    /**
+     * Helper class to construct DataSpecWithTraits of lists.
+     * In conjunction with the definition below (which can be statically imported)
+     * it can be used as follows:
+     *
+     * <pre>{@code
+     * LIST(outerTraits...).of(innerSpecWithTraits)
+     * e.g.
+     * LIST.of(INT)
+     * LIST.of(STRING(DICT_ENCODING))
+     * }</pre>
+     *
+     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     */
+    final class ListSpecWithTraitsBuilder {
+        private DataTrait[] m_traits;
+
+        private ListSpecWithTraitsBuilder(final DataTrait... traits) {
+            m_traits = traits;
+        }
+
+        public DataSpecWithTraits of(final DataSpecWithTraits inner) {
+            return new DataSpecWithTraits(new ListDataSpec(inner.spec()), new DefaultListDataTraits(m_traits, inner.traits()));
+        }
+    }
+
+    static ListSpecWithTraitsBuilder LIST = new ListSpecWithTraitsBuilder();
+
+    static ListSpecWithTraitsBuilder LIST(final DataTrait... traits) {
+        return new ListSpecWithTraitsBuilder(traits);
+    }
+
+    /**
+     * Helper class to construct DataSpecWithTraits of structs.
+     * In conjunction with the definition below (which can be statically imported)
+     * it can be used as follows:
+     *
+     * <pre>{@code
+     * STRUCT(outerTraits...).of(innerSpecsWithTraits...)
+     * e.g.
+     * STRUCT.of(INT, DOUBLE)
+     * STRUCT.of(STRING(DICT_ENCODING), LOCALDATE)
+     * }</pre>
+     *
+     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     */
+    final class StructSpecWithTraitsBuilder {
+        private DataTrait[] m_traits;
+
+        private StructSpecWithTraitsBuilder(final DataTrait... traits) {
+            m_traits = traits;
+        }
+
+        public DataSpecWithTraits of(final DataSpecWithTraits... inner) {
+            return new DataSpecWithTraits(new StructDataSpec(Arrays.stream(inner).map(DataSpecWithTraits::spec).toArray(DataSpec[]::new)),
+                new DefaultStructDataTraits(m_traits, Arrays.stream(inner).map(DataSpecWithTraits::traits).toArray(DataTraits[]::new)));
+        }
+    }
+
+    static StructSpecWithTraitsBuilder STRUCT = new StructSpecWithTraitsBuilder();
+
+    static StructSpecWithTraitsBuilder STRUCT(final DataTrait... traits) {
+        return new StructSpecWithTraitsBuilder(traits);
     }
 }
