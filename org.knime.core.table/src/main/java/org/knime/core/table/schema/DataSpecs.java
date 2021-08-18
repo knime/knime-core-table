@@ -168,7 +168,7 @@ public interface DataSpecs {
         }
     }
 
-    static ListSpecWithTraitsBuilder LIST = new ListSpecWithTraitsBuilder();
+    ListSpecWithTraitsBuilder LIST = new ListSpecWithTraitsBuilder();
 
     static ListSpecWithTraitsBuilder LIST(final DataTrait... traits) {
         return new ListSpecWithTraitsBuilder(traits);
@@ -201,7 +201,7 @@ public interface DataSpecs {
         }
     }
 
-    static StructSpecWithTraitsBuilder STRUCT = new StructSpecWithTraitsBuilder();
+    StructSpecWithTraitsBuilder STRUCT = new StructSpecWithTraitsBuilder();
 
     static StructSpecWithTraitsBuilder STRUCT(final DataTrait... traits) {
         return new StructSpecWithTraitsBuilder(traits);
