@@ -48,6 +48,8 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * @since 4.3
  *
@@ -61,6 +63,11 @@ public final class DoubleAccess {
 
     public interface DoubleReadAccess extends ReadAccess {
         double getDoubleValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.doubleSpec();
+        }
     }
 
     public interface DoubleWriteAccess extends WriteAccess {

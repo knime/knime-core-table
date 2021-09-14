@@ -50,6 +50,8 @@ package org.knime.core.table.access;
 
 import java.time.LocalDate;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of LocalDateAccess.
  *
@@ -64,6 +66,11 @@ public final class LocalDateAccess {
 
     public interface LocalDateReadAccess extends ReadAccess {
         LocalDate getLocalDateValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.localDateSpec();
+        }
     }
 
     public interface LocalDateWriteAccess extends WriteAccess {

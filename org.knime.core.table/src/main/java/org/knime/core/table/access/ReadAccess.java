@@ -48,6 +48,8 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
+
 /***
  * Provides read access to values of an underlying data structure.
  *
@@ -57,6 +59,11 @@ package org.knime.core.table.access;
  * @noreference This interface is not intended to be referenced by clients
  */
 public interface ReadAccess {
+
+    /**
+     * Returns the {@link DataSpec} of this access.
+     */
+    DataSpec getDataSpec();
 
     /**
      * @return <source>true</source> if value is missing.

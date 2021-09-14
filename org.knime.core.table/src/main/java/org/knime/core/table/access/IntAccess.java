@@ -48,6 +48,8 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of {@link IntAccess}.
  *
@@ -64,6 +66,11 @@ public final class IntAccess {
 
     public interface IntReadAccess extends ReadAccess {
         int getIntValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.intSpec();
+        }
     }
 
     public interface IntWriteAccess extends WriteAccess {

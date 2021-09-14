@@ -20,6 +20,8 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of FloatAccess.
  *
@@ -34,6 +36,11 @@ public final class FloatAccess {
 
     public interface FloatReadAccess extends ReadAccess {
         float getFloatValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.floatSpec();
+        }
     }
 
     public interface FloatWriteAccess extends WriteAccess {

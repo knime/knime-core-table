@@ -50,6 +50,8 @@ package org.knime.core.table.access;
 
 import java.time.Period;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of PeriodAccess.
  *
@@ -64,6 +66,11 @@ public final class PeriodAccess {
 
     public interface PeriodReadAccess extends ReadAccess {
         Period getPeriodValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.periodSpec();
+        }
     }
 
     public interface PeriodWriteAccess extends WriteAccess {

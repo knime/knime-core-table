@@ -48,6 +48,8 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of {@link LongAccess}.
  *
@@ -64,6 +66,11 @@ public final class LongAccess {
 
     public interface LongReadAccess extends ReadAccess {
         long getLongValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.longSpec();
+        }
     }
 
     public interface LongWriteAccess extends WriteAccess {

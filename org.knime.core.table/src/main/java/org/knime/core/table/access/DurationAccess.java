@@ -50,6 +50,8 @@ package org.knime.core.table.access;
 
 import java.time.Duration;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of DurationAccess.
  *
@@ -64,6 +66,11 @@ public final class DurationAccess {
 
     public interface DurationReadAccess extends ReadAccess {
         Duration getDurationValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.durationSpec();
+        }
     }
 
     public interface DurationWriteAccess extends WriteAccess {

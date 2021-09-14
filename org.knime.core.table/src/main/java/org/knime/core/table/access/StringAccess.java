@@ -48,6 +48,8 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of StringAccess.
  *
@@ -62,6 +64,11 @@ public final class StringAccess {
 
     public interface StringReadAccess extends ReadAccess {
         String getStringValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.stringSpec();
+        }
     }
 
     public interface StringWriteAccess extends WriteAccess {

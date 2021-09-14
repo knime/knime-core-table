@@ -50,6 +50,8 @@ package org.knime.core.table.access;
 
 import java.time.ZonedDateTime;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of ZonedDateTimeAccess.
  *
@@ -64,6 +66,11 @@ public final class ZonedDateTimeAccess {
 
     public interface ZonedDateTimeReadAccess extends ReadAccess {
         ZonedDateTime getZonedDateTimeValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.zonedDateTimeSpec();
+        }
     }
 
     public interface ZonedDateTimeWriteAccess extends WriteAccess {

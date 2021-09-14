@@ -48,6 +48,7 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 
@@ -72,6 +73,10 @@ public final class VarBinaryAccess {
 
         <T> T getObject(ObjectDeserializer<T> deserializer);
 
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.varBinarySpec();
+        }
     }
 
     public interface VarBinaryWriteAccess extends WriteAccess {

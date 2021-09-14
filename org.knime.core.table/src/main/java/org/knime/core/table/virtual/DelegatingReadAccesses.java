@@ -441,5 +441,10 @@ public final class DelegatingReadAccesses {
         public boolean isMissing() {
             return m_delegateAccess.isMissing();
         }
+
+        @Override
+        public DataSpec getDataSpec() {
+            return m_delegateAccess.getDataSpec();
+        }
     }
 }

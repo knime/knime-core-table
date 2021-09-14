@@ -48,6 +48,11 @@
  */
 package org.knime.core.table.access;
 
+import java.util.Arrays;
+
+import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.StructDataSpec;
+
 /**
  * Struct access to underlying data structures.
  *
@@ -79,6 +84,13 @@ public final class StructAccess {
          * @return {@link ReadAccess} to inner types of the struct
          */
         <R extends ReadAccess> R getAccess(int index);
+
+        @Override
+        default DataSpec getDataSpec() {
+            final DataSpec[] innerSpecs = new DataSpec[size()];
+            Arrays.setAll(innerSpecs, i -> getAccess(i).getDataSpec());
+            return new StructDataSpec(innerSpecs);
+        }
     }
 
     /**

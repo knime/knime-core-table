@@ -452,12 +452,12 @@ public final class BufferedAccesses {
         // TODO: this implementation looks pretty inefficient
         private static final class BufferedListAccess implements ListReadAccess, ListWriteAccess, BufferedAccess {
 
-            private final DataSpec m_innerSpec;
+            private final ListDataSpec m_spec;
 
             private BufferedAccess[] m_inner;
 
             BufferedListAccess(final ListDataSpec spec) {
-                m_innerSpec = spec.getInner();
+                m_spec = spec;
             }
 
             @Override
@@ -486,7 +486,7 @@ public final class BufferedAccesses {
             public void create(final int size) {
                 m_inner = new BufferedAccess[size];
                 for (int i = 0; i < size; i++) {
-                    m_inner[i] = createBufferedAccess(m_innerSpec);
+                    m_inner[i] = createBufferedAccess(m_spec.getInner());
                 }
             }
 
@@ -516,6 +516,10 @@ public final class BufferedAccesses {
                 return m_inner[index].isMissing();
             }
 
+            @Override
+            public DataSpec getDataSpec() {
+                return m_spec;
+            }
         }
 
         private static final class BufferedLongAccess extends AbstractBufferedAccess
@@ -595,7 +599,6 @@ public final class BufferedAccesses {
                     m_inner[i].setFrom(structAccess.getAccess(i));
                 }
             }
-
         }
 
         private static final class BufferedLocalDateAccess extends AbstractBufferedObjectAccess<LocalDate>
@@ -764,6 +767,10 @@ public final class BufferedAccesses {
                 // not to be called
             }
 
+            @Override
+            public DataSpec getDataSpec() {
+                return DataSpec.voidSpec();
+            }
         }
 
         private static final class BufferedZonedDateTimeAccess extends AbstractBufferedObjectAccess<ZonedDateTime>

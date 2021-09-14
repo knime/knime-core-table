@@ -20,6 +20,8 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
+
 /**
  * Definition of ByteAccess.
  *
@@ -34,6 +36,11 @@ public final class ByteAccess {
 
     public interface ByteReadAccess extends ReadAccess {
         byte getByteValue();
+
+        @Override
+        default DataSpec getDataSpec() {
+            return DataSpec.byteSpec();
+        }
     }
 
     public interface ByteWriteAccess extends WriteAccess {

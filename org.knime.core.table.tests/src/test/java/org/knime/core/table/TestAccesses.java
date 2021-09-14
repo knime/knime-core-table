@@ -433,6 +433,11 @@ public final class TestAccesses {
             private TestVoidAccess() {}
 
             @Override
+            public DataSpec getDataSpec() {
+                return DataSpec.voidSpec();
+            }
+
+            @Override
             public boolean isMissing() {
                 return true;
             }
