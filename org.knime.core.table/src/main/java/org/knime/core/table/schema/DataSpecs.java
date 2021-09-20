@@ -23,34 +23,48 @@ import org.knime.core.table.schema.traits.DefaultStructDataTraits;
  *
  * @author Tobias Pietzsch
  */
+@SuppressWarnings("javadoc")
 public interface DataSpecs {
 
     final class DataSpecWithTraits {
 
-        private final DataSpec spec;
+        private final DataSpec m_spec;
 
-        private final DataTraits traits;
+        private final DataTraits m_traits;
 
         DataSpecWithTraits(final DataSpec spec, final DataTraits traits) {
-            this.spec = spec;
-            this.traits = traits;
+            this.m_spec = spec;
+            this.m_traits = traits;
         }
 
         DataSpecWithTraits(final DataSpec spec, final DataTrait... traits) {
-            this.spec = spec;
-            this.traits = (traits.length == 0) ? DefaultDataTraits.EMPTY : new DefaultDataTraits(traits);
+            this.m_spec = spec;
+            this.m_traits = (traits.length == 0) ? DefaultDataTraits.EMPTY : new DefaultDataTraits(traits);
         }
 
         public DataSpec spec() {
-            return spec;
+            return m_spec;
         }
 
         public DataTraits traits() {
-            return traits;
+            return m_traits;
         }
     }
 
-    DataTrait DICT_ENCODING = new DictEncodingTrait(true);
+    DataTrait DICT_ENCODING = new DictEncodingTrait();
+
+    /**
+     * Activate dictionary encoding with a special key type e.g. as follows:
+     * <pre>{@code
+     * var schema = ColumnarSchema.of(STRING(DICT_ENCODING(KeyType.BYTE_KEY)));
+     * }</pre>
+     *
+     * @param keyType the key type to use for dictionary encoding
+     * @return The dictionary encoding trait
+     */
+    static DataTrait DICT_ENCODING(final DictEncodingTrait.KeyType keyType) {
+        return new DictEncodingTrait(keyType);
+    }
 
     DataSpecWithTraits BOOLEAN = new DataSpecWithTraits(BooleanDataSpec.INSTANCE);
 

@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.knime.core.table.schema.traits.DataTrait.DictEncodingTrait;
+import org.knime.core.table.schema.traits.DataTrait.DictEncodingTrait.KeyType;
 
 /**
  *
@@ -43,10 +44,41 @@ public class TraitsTest {
         final var et = DefaultDataTraits.EMPTY;
         assertNull(et.get(DictEncodingTrait.class));
 
-        final var dt2 = new DefaultDataTraits(new DictEncodingTrait(true));
+        final var dt2 = new DefaultDataTraits(new DictEncodingTrait());
         assertNotNull(dt2.get(DictEncodingTrait.class));
-        assertTrue(dt2.get(DictEncodingTrait.class).isEnabled());
         assertTrue(DictEncodingTrait.isEnabled(dt2));
+    }
+
+    @Test
+    public void testDictEncodingKeyTypeByte() {
+        final var dt = new DefaultDataTraits(new DictEncodingTrait(KeyType.BYTE_KEY));
+        assertNotNull(dt.get(DictEncodingTrait.class));
+        assertTrue(DictEncodingTrait.isEnabled(dt));
+        assertEquals(KeyType.BYTE_KEY, DictEncodingTrait.keyType(dt));
+    }
+
+    @Test
+    public void testDictEncodingKeyTypeInt() {
+        final var dt = new DefaultDataTraits(new DictEncodingTrait(KeyType.INT_KEY));
+        assertNotNull(dt.get(DictEncodingTrait.class));
+        assertTrue(DictEncodingTrait.isEnabled(dt));
+        assertEquals(KeyType.INT_KEY, DictEncodingTrait.keyType(dt));
+    }
+
+    @Test
+    public void testDictEncodingKeyTypeLong() {
+        final var dt = new DefaultDataTraits(new DictEncodingTrait(KeyType.LONG_KEY));
+        assertNotNull(dt.get(DictEncodingTrait.class));
+        assertTrue(DictEncodingTrait.isEnabled(dt));
+        assertEquals(KeyType.LONG_KEY, DictEncodingTrait.keyType(dt));
+    }
+
+    @Test
+    public void testDictEncodingKeyTypeDefault() {
+        final var dt = new DefaultDataTraits(new DictEncodingTrait());
+        assertNotNull(dt.get(DictEncodingTrait.class));
+        assertTrue(DictEncodingTrait.isEnabled(dt));
+        assertEquals(KeyType.LONG_KEY, DictEncodingTrait.keyType(dt));
     }
 
     @Test
@@ -68,7 +100,7 @@ public class TraitsTest {
 
     @Test
     public void testStructTrait() {
-        assertThrows(IllegalArgumentException.class, () -> new DefaultStructDataTraits(null, null));
+        assertThrows(IllegalArgumentException.class, () -> new DefaultStructDataTraits(null, (DataTraits[])null));
 
         final var st2 = new DefaultStructDataTraits(DefaultDataTraits.EMPTY);
         assertNull(st2.get(DictEncodingTrait.class));

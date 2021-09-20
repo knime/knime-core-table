@@ -25,56 +25,83 @@ import org.knime.core.table.schema.DataSpec;
 /**
  * A single piece of additional information about a {@link DataSpec}.
  *
- * To quote Bjarne Stroustrup (C++): Think of a trait as a small object whose main purpose is to carry
- * information used by another object or algorithm to determine "policy" or "implementation details".
+ * To quote Bjarne Stroustrup (C++): Think of a trait as a small object whose main purpose is to carry information used
+ * by another object or algorithm to determine "policy" or "implementation details".
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public interface DataTrait {
     /**
-     * If the {@link DictEncodingTrait} is provided alongside a {@link DataSpec},
-     * and it is enabled, that means the data should be stored using dictionary encoding.
+     * If the {@link DictEncodingTrait} is provided alongside a {@link DataSpec}, and it is enabled, that means the data
+     * should be stored using dictionary encoding.
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
     public static class DictEncodingTrait implements DataTrait {
-        private final boolean m_enabled;
 
         /**
-         * Create a dictionary encoding trait, but leave it disabled
+         * Type of key to use for the dictionary
+         */
+        public enum KeyType {
+                /** Use Byte keys -> max 128 different dictionary entries */
+                BYTE_KEY,
+
+                /** Use Integer keys -> max 2147483647 different entries */
+                INT_KEY,
+
+                /** Use Long keys, default */
+                LONG_KEY;
+        }
+
+        private final KeyType m_keyType;
+
+        /**
+         * Create a dictionary encoding trait with default key type LONG_KEY
          */
         public DictEncodingTrait() {
-            this(false);
+            this(KeyType.LONG_KEY);
         }
 
         /**
-         * Create a dictionary encoding trait and possibly enable it
-         * @param enabled Whether dictionary encoding should be enabled
+         * Create a dictionary encoding trait using the provided key type
+         *
+         * @param keyType Which key type to use
          */
-        public DictEncodingTrait(final boolean enabled) {
-            m_enabled = enabled;
+        public DictEncodingTrait(final KeyType keyType) {
+            m_keyType = keyType;
         }
 
         /**
-         * @return whether dictionary encoding is enabled
-         */
-        public boolean isEnabled() {
-            return m_enabled;
-        }
-
-        /**
-         * Check whether the dictionary encoding trait is enabled for
-         * a given {@link DataTraits} container.
+         * Check whether the dictionary encoding trait is present in a given {@link DataTraits} container.
          *
          * @param traits The traits to check
-         * @return true if the {@link DictEncodingTrait} is present and enabled in traits
+         * @return true if the {@link DictEncodingTrait} is present
          */
         public static boolean isEnabled(final DataTraits traits) {
             if (traits == null) {
                 return false;
             }
             final DictEncodingTrait trait = traits.get(DictEncodingTrait.class);
-            return trait != null && trait.isEnabled();
+            return trait != null;
+        }
+
+        /**
+         * Return the {@link KeyType} to use for dictionary encoding if the dictionary encoding trait is present.
+         * Otherwise returns null.
+         *
+         * @param traits The traits to check
+         * @return The {@link KeyType} to use if the {@link DictEncodingTrait} is present, otherwise null.
+         */
+        public static KeyType keyType(final DataTraits traits) {
+            if (traits == null) {
+                return null;
+            }
+            final DictEncodingTrait trait = traits.get(DictEncodingTrait.class);
+            if (trait == null) {
+                return null;
+            }
+
+            return trait.m_keyType;
         }
     }
 
