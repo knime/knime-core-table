@@ -130,10 +130,10 @@ public final class DataSpecSerializerTest<T extends DataSpec> {
     public T m_spec;
 
     static DataTraits generateTraitsForSpec(final StructDataSpec spec) {
-        DataTraits[] innerTraits = new DataTraits[spec.getInner().length];
+        DataTraits[] innerTraits = new DataTraits[spec.size()];
 
         for(int i = 0; i < innerTraits.length; i++) {
-            innerTraits[i] = generateTraitsForSpec(spec.getInner()[i]);
+            innerTraits[i] = generateTraitsForSpec(spec.getDataSpec(i));
         }
 
         return new DefaultStructDataTraits(new DataTrait[0], innerTraits);

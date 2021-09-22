@@ -80,8 +80,8 @@ public final class DataTraitsSerializer {
         config.put("type", "struct");
         addTopLevelTraits(structTraits, config);
         ArrayNode innerNodes = config.putArray("inner");
-        for (var innerTraits : structTraits.getInner()) {
-            innerNodes.add(save(innerTraits));
+        for (int i = 0; i < structTraits.size(); i++) {
+            innerNodes.add(save(structTraits.getDataTraits(i)));
         }
         return config;
     }

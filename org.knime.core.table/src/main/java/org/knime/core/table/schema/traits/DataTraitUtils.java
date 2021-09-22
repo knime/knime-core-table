@@ -49,7 +49,9 @@ public final class DataTraitUtils {
         var newTraits = addTraits(traits.getTraits(), additionalTraits);
         if (traits instanceof StructDataTraits) {
             var structTraits = (StructDataTraits)traits;
-            return new DefaultStructDataTraits(newTraits, structTraits.getInner());
+            var innerTraits = new DataTraits[structTraits.size()];
+            Arrays.setAll(innerTraits, i -> structTraits.getDataTraits(i));
+            return new DefaultStructDataTraits(newTraits, innerTraits);
         } else if (traits instanceof ListDataTraits) {
             var listTraits = (ListDataTraits)traits;
             return new DefaultListDataTraits(newTraits, listTraits.getInner());
@@ -81,9 +83,8 @@ public final class DataTraitUtils {
     public static DataTraits emptyTraits(final DataSpec spec) {
         if (spec instanceof StructDataSpec) {
             var structSpec = (StructDataSpec)spec;
-            var innerTraits = Arrays.stream(structSpec.getInner())//
-                .map(DataTraitUtils::emptyTraits)//
-                .toArray(DataTraits[]::new);
+            var innerTraits = new DataTraits[structSpec.size()];
+            Arrays.setAll(innerTraits, i -> DataTraitUtils.emptyTraits(structSpec.getDataSpec(i)));
             return new DefaultStructDataTraits(innerTraits);
         } else if (spec instanceof ListDataSpec) {
             var listSpec = (ListDataSpec)spec;

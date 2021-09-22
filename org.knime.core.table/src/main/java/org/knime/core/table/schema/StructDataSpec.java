@@ -73,10 +73,20 @@ public final class StructDataSpec implements DataSpec {
     }
 
     /**
-     * @return the array of {@link DataSpec ColumnDataSpecs} of the elements the structs consist of
+     * Get the {@link DataSpec} of the {@code i}-th struct element.
+     *
+     * @param i index of the struct element
+     * @return spec of the {@code i}-th struct element
      */
-    public final DataSpec[] getInner() {
-        return m_inner;
+    public DataSpec getDataSpec(final int i) {
+        return m_inner[i];
+    }
+
+    /**
+     * @return number of elements of this struct
+     */
+    public int size() {
+        return m_inner.length;
     }
 
     @Override

@@ -61,9 +61,20 @@ public class DefaultStructDataTraits extends DefaultDataTraits implements Struct
         m_inner = inner;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public DataTraits[] getInner() {
-        return m_inner;
+    public DataTraits getDataTraits(final int i) {
+        return m_inner[i];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int size() {
+        return m_inner.length;
     }
 
     public static Builder builder() {

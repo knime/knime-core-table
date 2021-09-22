@@ -178,7 +178,7 @@ final class WriteAccessValueSetter {
             final StructWriteAccess structAccess = (StructWriteAccess)m_access;
             final Object[] structValue = (Object[])m_value;
             for (int i = 0; i < structValue.length; i++) {
-                setValue(spec.getInner()[i], structAccess.getWriteAccess(i), structValue[i]);
+                setValue(spec.getDataSpec(i), structAccess.getWriteAccess(i), structValue[i]);
             }
             return null;
         }

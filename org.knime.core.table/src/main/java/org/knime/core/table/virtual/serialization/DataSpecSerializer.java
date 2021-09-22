@@ -56,6 +56,7 @@ public final class DataSpecSerializer {
     /**
      * Note that this method is <b>not</b> thread-safe.
      */
+    @SuppressWarnings("javadoc")
     public JsonNode save(final DataSpec spec, final JsonNodeFactory factory) {
         m_mapper.m_factory = factory;
         try {
@@ -65,6 +66,7 @@ public final class DataSpecSerializer {
         }
     }
 
+    @SuppressWarnings("javadoc")
     public static DataSpec load(final JsonNode input) {
         if (input.isTextual()) {
             final String typeIdentifier = input.textValue();
@@ -194,8 +196,8 @@ public final class DataSpecSerializer {
             final ObjectNode config = m_factory.objectNode();
             config.put("type", "struct");
             final ArrayNode innerTypeIdentifiers = config.putArray("inner_types");
-            for (final DataSpec innerSpec : spec.getInner()) {
-                final JsonNode innerTypeIdentifier = innerSpec.accept(this);
+            for (int i = 0; i < spec.size(); i++) {
+                final JsonNode innerTypeIdentifier = spec.getDataSpec(i).accept(this);
                 innerTypeIdentifiers.add(innerTypeIdentifier);
             }
             return config;

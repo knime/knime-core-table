@@ -170,7 +170,7 @@ final class ReadAccessValueGetter {
             final StructReadAccess structAccess = (StructReadAccess)m_access;
             final Object[] structValue = new Object[structAccess.size()];
             for (int i = 0; i < structValue.length; i++) {
-                structValue[i] = getValue(spec.getInner()[i], structAccess.getAccess(i));
+                structValue[i] = getValue(spec.getDataSpec(i), structAccess.getAccess(i));
             }
             return structValue;
         }

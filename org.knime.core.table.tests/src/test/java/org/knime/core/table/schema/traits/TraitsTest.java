@@ -104,15 +104,15 @@ public class TraitsTest {
 
         final var st2 = new DefaultStructDataTraits(DefaultDataTraits.EMPTY);
         assertNull(st2.get(DictEncodingTrait.class));
-        assertEquals(st2.getInner().length, 1);
-        assertNull(st2.getInner()[0].get(DictEncodingTrait.class));
+        assertEquals(st2.size(), 1);
+        assertNull(st2.getDataTraits(0).get(DictEncodingTrait.class));
 
         final var st3 = new DefaultStructDataTraits(new DataTrait[] { new DictEncodingTrait() }, DefaultDataTraits.EMPTY);
         assertNotNull(st3.get(DictEncodingTrait.class));
-        assertNull(st3.getInner()[0].get(DictEncodingTrait.class));
+        assertNull(st3.getDataTraits(0).get(DictEncodingTrait.class));
 
         final var st4 = new DefaultStructDataTraits(new DefaultDataTraits(new DictEncodingTrait()));
         assertNull(st4.get(DictEncodingTrait.class));
-        assertNotNull(st4.getInner()[0].get(DictEncodingTrait.class));
+        assertNotNull(st4.getDataTraits(0).get(DictEncodingTrait.class));
     }
 }

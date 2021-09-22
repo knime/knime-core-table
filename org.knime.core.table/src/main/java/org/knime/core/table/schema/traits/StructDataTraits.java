@@ -25,8 +25,17 @@ package org.knime.core.table.schema.traits;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public interface StructDataTraits extends DataTraits {
+
     /**
-     * @return The traits of the contained types
+     * Get the {@link DataTrait} of the {@code i}-th data trait.
+     *
+     * @param i index of the data trait
+     * @return get data trait of the {@code i}-th element
      */
-    DataTraits[] getInner();
+    public DataTraits getDataTraits(final int i);
+
+    /**
+     * @return number of traits of this element
+     */
+    public int size();
 }

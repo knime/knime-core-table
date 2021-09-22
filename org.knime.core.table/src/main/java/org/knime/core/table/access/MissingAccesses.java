@@ -387,7 +387,7 @@ public final class MissingAccesses {
             }
 
             @Override
-            public boolean isMissing(int index) {
+            public boolean isMissing(final int index) {
                 return true;
             }
 
@@ -405,10 +405,8 @@ public final class MissingAccesses {
 
             MissingStructAccess(final StructDataSpec spec) {
                 m_spec = spec;
-
-                final DataSpec[] innerSpec = spec.getInner();
-                m_inner = new MissingAccess[innerSpec.length];
-                Arrays.setAll(m_inner, i -> getMissingAccess(innerSpec[i]));
+                m_inner = new MissingAccess[spec.size()];
+                Arrays.setAll(m_inner, i -> getMissingAccess(spec.getDataSpec(i)));
             }
 
             @Override

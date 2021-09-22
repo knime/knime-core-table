@@ -54,7 +54,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.stream.Stream;
+import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
@@ -550,8 +550,8 @@ public final class BufferedAccesses {
             private final BufferedAccess[] m_inner;
 
             BufferedStructAccess(final StructDataSpec spec) {
-                m_inner =
-                    Stream.of(spec.getInner()).map(inner -> createBufferedAccess(inner)).toArray(BufferedAccess[]::new);
+                m_inner = new BufferedAccess[spec.size()];
+                Arrays.setAll(m_inner, i -> createBufferedAccess(spec.getDataSpec(i)));
             }
 
             @Override
