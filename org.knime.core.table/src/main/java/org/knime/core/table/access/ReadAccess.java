@@ -61,7 +61,7 @@ import org.knime.core.table.schema.DataSpec;
 public interface ReadAccess {
 
     /**
-     * Returns the {@link DataSpec} of this access.
+     * @return the {@link DataSpec} of this access.
      */
     DataSpec getDataSpec();
 

@@ -48,6 +48,9 @@
  */
 package org.knime.core.table.access;
 
+import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.ListDataSpec;
+
 /**
  * Definitions of Access for to Lists.
  *
@@ -89,6 +92,15 @@ public final class ListAccess {
          * @return the size of the list
          */
         int size();
+
+        @Override
+        default DataSpec getDataSpec() {
+            if (size() < 1) {
+                throw new IllegalStateException("Cannot get the DataSpec of a list without inner accesses");
+            }
+            final DataSpec innerSpec = getAccess(0).getDataSpec();
+            return new ListDataSpec(innerSpec);
+        }
     }
 
     /**
