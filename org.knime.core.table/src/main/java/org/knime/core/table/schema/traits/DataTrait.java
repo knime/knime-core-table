@@ -37,7 +37,7 @@ public interface DataTrait {
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    public static class DictEncodingTrait implements DataTrait {
+    public static final class DictEncodingTrait implements DataTrait {
 
         /**
          * Type of key to use for the dictionary
