@@ -20,16 +20,21 @@
  */
 package org.knime.core.table.schema.traits;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Special implementation of {@link DefaultDataTraits} for structs
+ *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public class DefaultStructDataTraits extends DefaultDataTraits implements StructDataTraits {
-    private DataTraits[] m_inner;
+
+    private final DataTraits[] m_inner;
 
     /**
-     * Create DataTraits for a struct, without traits for the struct itself,
-     * but only traits for the contained types
+     * Create DataTraits for a struct, without traits for the struct itself, but only traits for the contained types
+     *
      * @param inner Traits for the contained types
      */
     public DefaultStructDataTraits(final DataTraits... inner) {
@@ -43,6 +48,7 @@ public class DefaultStructDataTraits extends DefaultDataTraits implements Struct
 
     /**
      * Create DataTraits for a struct, with traits for the struct and traits for the contained types
+     *
      * @param outer Traits for the struct itself
      * @param inner Traits for the contained types
      */
@@ -58,6 +64,35 @@ public class DefaultStructDataTraits extends DefaultDataTraits implements Struct
     @Override
     public DataTraits[] getInner() {
         return m_inner;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static final class Builder {
+
+        private final List<DataTraits> m_innerTraits = new ArrayList<>();
+
+        private final List<DataTrait> m_outerTraits = new ArrayList<>();
+
+        private Builder() {
+
+        }
+
+        public Builder addInnerTraits(final DataTraits innerTraits) {
+            m_innerTraits.add(innerTraits);
+            return this;
+        }
+
+        public Builder addInnerTraits(final DataTrait... innerTraits) {
+            return addInnerTraits(new DefaultDataTraits(innerTraits));
+        }
+
+        public DefaultStructDataTraits build() {
+            return new DefaultStructDataTraits(m_outerTraits.toArray(DataTrait[]::new),
+                m_innerTraits.toArray(DataTraits[]::new));
+        }
     }
 
 }

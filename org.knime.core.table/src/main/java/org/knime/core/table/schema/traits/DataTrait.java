@@ -78,11 +78,7 @@ public interface DataTrait {
          * @return true if the {@link DictEncodingTrait} is present
          */
         public static boolean isEnabled(final DataTraits traits) {
-            if (traits == null) {
-                return false;
-            }
-            final DictEncodingTrait trait = traits.get(DictEncodingTrait.class);
-            return trait != null;
+            return DataTraits.hasTrait(traits, DictEncodingTrait.class);
         }
 
         /**

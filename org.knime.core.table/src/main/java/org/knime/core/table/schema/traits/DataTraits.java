@@ -20,6 +20,8 @@
  */
 package org.knime.core.table.schema.traits;
 
+import java.util.Optional;
+
 import org.knime.core.table.schema.DataSpec;
 
 /**
@@ -36,4 +38,38 @@ public interface DataTraits {
      * @return The trait or null
      */
     <T extends DataTrait> T get(Class<T> type);
+
+    /**
+     * @return the contained traits (never null)
+     */
+    DataTrait[] getTraits();
+
+
+    /**
+     * Indicates whether a trait is contained in this instance.
+     *
+     * @param <T> the type of trait
+     * @param traitClass the class of trait
+     * @return true if a trait of the provided class is contained in this instance
+     */
+    default <T extends DataTrait> boolean hasTrait(final Class<T> traitClass) {
+        return get(traitClass) != null;
+    }
+
+    // TODO traits shouldn't be null in which case we can get rid of the null-safe static methods
+    public static <T extends DataTrait> boolean hasTrait(final DataTraits traits, final Class<T> traitClass) {
+        if (traits == null) {
+            return false;
+        } else {
+            return traits.hasTrait(traitClass);
+        }
+    }
+
+    public static <T extends DataTrait> Optional<T> getTrait(final DataTraits traits, final Class<T> traitClass) {
+        if (traits == null) {
+            return Optional.empty();
+        } else {
+            return Optional.ofNullable(traits.get(traitClass));
+        }
+    }
 }

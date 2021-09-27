@@ -55,6 +55,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.knime.core.table.schema.traits.DataTraitUtils;
 import org.knime.core.table.schema.traits.DataTraits;
 
 import com.google.common.collect.Iterators;
@@ -127,4 +128,64 @@ public final class DefaultColumnarSchema implements ColumnarSchema {
     public Stream<DataSpec> specStream() {
         return m_columnSpecs.stream();
     }
+
+
+    /**
+     * Creates a builder for DefaultColumnarSchema.
+     *
+     * @return builder for DefaultColumnarSchema
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Builder for DefaultColumnarSchema.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public static final class Builder {
+
+        private final List<DataSpec> m_specs;
+
+        private final List<DataTraits> m_traits = new ArrayList<>();
+
+        private Builder() {
+            m_specs = new ArrayList<>();
+        }
+
+        /**
+         * Adds a column with the provided spec and empty traits.
+         *
+         * @param spec of the column
+         * @return this
+         */
+        public Builder addColumn(final DataSpec spec) {
+            return addColumn(spec, DataTraitUtils.emptyTraits(spec));
+        }
+
+        /**
+         * Adds a column with the provided spec and traits.
+         * @param spec of the column
+         * @param traits of the column
+         * @return this
+         */
+        public Builder addColumn(final DataSpec spec, final DataTraits traits) {
+            m_specs.add(spec);
+            m_traits.add(traits);
+            return this;
+        }
+
+        /**
+         * Builds the {@link DefaultColumnarSchema} with the columns added via {@link #addColumn(DataSpec, DataTraits)}
+         * up to this call.
+         *
+         * @return a {@link DefaultColumnarSchema} with the added columns
+         */
+        public ColumnarSchema build() {
+            return new DefaultColumnarSchema(m_specs, m_traits);
+        }
+
+    }
+
 }

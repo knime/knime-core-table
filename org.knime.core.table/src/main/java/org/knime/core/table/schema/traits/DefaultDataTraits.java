@@ -58,4 +58,9 @@ public class DefaultDataTraits implements DataTraits {
         return null;
     }
 
+    @Override
+    public DataTrait[] getTraits() {
+        return m_traits.clone();
+    }
+
 }
