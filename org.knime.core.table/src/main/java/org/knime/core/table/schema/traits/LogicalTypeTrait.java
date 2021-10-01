@@ -52,4 +52,8 @@ public final class LogicalTypeTrait implements DataTrait {
         return DataTraits.hasTrait(traits, LogicalTypeTrait.class);
     }
 
+    @Override
+    public String toString() {
+        return m_logicalType;
+    }
 }

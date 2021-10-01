@@ -31,6 +31,7 @@ import org.knime.core.table.schema.DataSpec;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public interface DataTrait {
+
     /**
      * If the {@link DictEncodingTrait} is provided alongside a {@link DataSpec}, and it is enabled, that means the data
      * should be stored using dictionary encoding.
@@ -98,6 +99,11 @@ public interface DataTrait {
             }
 
             return trait.m_keyType;
+        }
+
+        @Override
+        public String toString() {
+            return m_keyType.name();
         }
     }
 
