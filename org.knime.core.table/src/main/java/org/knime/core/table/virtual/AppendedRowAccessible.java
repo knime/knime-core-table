@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.knime.core.table.access.BufferedAccesses;
+import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
@@ -160,9 +160,7 @@ class AppendedRowAccessible implements RowAccessible {
                     ? m_tableOffsets[tableIndex + 1] //
                     : m_schema.numColumns();
                 for (int i = fromInclusive; i < toExclusive; i++) {
-                    // Reuse buffered accesses. We could also implement our own missing-value accesses, which would
-                    // probably be a little cleaner (see also AppendedMissingValuesTable).
-                    final ReadAccess missingAccess = BufferedAccesses.createBufferedAccess(m_schema.getSpec(i));
+                    final ReadAccess missingAccess = MissingAccesses.getMissingAccess(m_schema.getSpec(i));
                     @SuppressWarnings("unchecked") // Type safety is ensured by data-spec matching at runtime.
                     final DelegatingReadAccess<ReadAccess> delegatingAccess =
                         (DelegatingReadAccess<ReadAccess>)m_columnAccesses[i];

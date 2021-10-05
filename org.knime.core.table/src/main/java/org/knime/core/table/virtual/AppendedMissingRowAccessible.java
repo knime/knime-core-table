@@ -51,7 +51,7 @@ package org.knime.core.table.virtual;
 import java.io.IOException;
 import java.util.List;
 
-import org.knime.core.table.access.BufferedAccesses;
+import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
@@ -133,10 +133,8 @@ class AppendedMissingRowAccessible implements RowAccessible {
                 m_numNonMissingColumns = m_delegateAccess.size();
                 m_missingColumnAccesses = new ReadAccess[m_schema.numColumns() - m_numNonMissingColumns];
                 for (int i = 0; i < m_missingColumnAccesses.length; i++) {
-                    // Reuse buffered accesses. We could also implement our own missing-value accesses, which would
-                    // probably be a little cleaner (see also AppendedTable).
                     m_missingColumnAccesses[i] =
-                        BufferedAccesses.createBufferedAccess(m_schema.getSpec(m_numNonMissingColumns + i));
+                            MissingAccesses.getMissingAccess(m_schema.getSpec(m_numNonMissingColumns + i));
                 }
             }
 
