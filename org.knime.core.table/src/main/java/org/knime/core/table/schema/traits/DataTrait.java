@@ -73,6 +73,13 @@ public interface DataTrait {
         }
 
         /**
+         * @return the type of key (byte, int or long)
+         */
+        public KeyType getKeyType() {
+            return m_keyType;
+        }
+
+        /**
          * Check whether the dictionary encoding trait is present in a given {@link DataTraits} container.
          *
          * @param traits The traits to check
