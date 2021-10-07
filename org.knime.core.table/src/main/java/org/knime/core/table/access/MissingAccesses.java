@@ -105,7 +105,7 @@ public final class MissingAccesses {
     }
 
     /**
-     * Creates a {@link MissingAccess} for the provided {@link DataSpec}.
+     * Get a {@link MissingAccess} for the provided {@link DataSpec}.
      *
      * @param spec for which a {@link MissingAccess} is required
      * @return a {@link MissingAccess} for the provided {@link DataSpec}
@@ -114,24 +114,8 @@ public final class MissingAccesses {
         return spec.accept(DataSpecToMissingAccessMapper.INSTANCE);
     }
 
-//    /**
-//     * Convenience method for creating an array of MissingAccesses for a provided schema.
-//     *
-//     * @param schema for which to create the MissingAccesses
-//     * @return MissingAccesses corresponding to the DataSpecs in the provided schema
-//     */
-//    // TODO: REMOVE?
-//    public static MissingAccess[] createMissingAccesses(final ColumnarSchema schema) {
-//        return schema.specStream()//
-//            .map(MissingAccesses::getMissingAccess)//
-//            .toArray(MissingAccess[]::new);
-//    }
-
     /**
-     * Simple marker interface for combined ReadAccess and WriteAccess
-     *
-     * @author Marc Bux, KNIME GmbH, Berlin, Germany
-     * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
+     * A {@link ReadAccess} which {@code isMissing()} by default.
      */
     public interface MissingAccess extends ReadAccess {
         @Override
