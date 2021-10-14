@@ -30,16 +30,15 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
     private final int[] m_tableOffsets;
 
     public AppendedRowAccessible(final List<RowAccessible> tablesToAppend) {
-        this(tablesToAppend,
-            ColumnarSchemas.append(tablesToAppend.stream()//
-                .map(RowAccessible::getSchema)//
-                .collect(toList())));
+        this(tablesToAppend, ColumnarSchemas.append(tablesToAppend.stream()//
+            .map(RowAccessible::getSchema)//
+            .collect(toList())));
     }
 
     AppendedRowAccessible(final List<RowAccessible> tablesToAppend, final ColumnarSchema schema) {
         m_delegateTables = tablesToAppend.stream()//
-                .map(RowAccessibles::toLookahead)//
-                .collect(toList());//
+            .map(RowAccessibles::toLookahead)//
+            .collect(toList());//
         m_schema = schema;
         m_tableOffsets = new int[tablesToAppend.size()];
         int currentOffset = 0;//NOSONAR
@@ -129,13 +128,13 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
 
         private final class AppendedReadAccessRow implements ReadAccessRow {
 
-            private final DelegatingReadAccess<?>[] m_columnAccesses;
+            private final DelegatingReadAccess[] m_columnAccesses;
 
             public AppendedReadAccessRow(final ReadAccessRow[] delegateAccesses) {
                 m_columnAccesses = createColumnAccesses(delegateAccesses);
             }
 
-            private DelegatingReadAccess<?>[] createColumnAccesses(final ReadAccessRow[] delegateRowAccesses) {
+            private DelegatingReadAccess[] createColumnAccesses(final ReadAccessRow[] delegateRowAccesses) {
                 final var columnAccesses = new DelegatingReadAccess[m_schema.numColumns()];
                 int delegateTableIndex = 0;//NOSONAR
                 int delegateColumnIndex = 0;//NOSONAR
@@ -147,10 +146,8 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
                     delegateColumnIndex = i - m_tableOffsets[delegateTableIndex];
                     final ReadAccess delegateColumnAccess =
                         delegateRowAccesses[delegateTableIndex].getAccess(delegateColumnIndex);
-                    @SuppressWarnings("unchecked") // Type safety is ensured by data-spec matching at runtime.
-                    final DelegatingReadAccess<ReadAccess> delegatingColumnAccess =
-                        (DelegatingReadAccess<ReadAccess>)DelegatingReadAccesses
-                            .createDelegatingAccess(m_schema.getSpec(i));
+                    final var delegatingColumnAccess =
+                        DelegatingReadAccesses.createDelegatingAccess(m_schema.getSpec(i));
                     delegatingColumnAccess.setDelegateAccess(delegateColumnAccess);
                     columnAccesses[i] = delegatingColumnAccess;
                 }
@@ -164,10 +161,7 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
                     : m_schema.numColumns();
                 for (int i = fromInclusive; i < toExclusive; i++) {
                     final ReadAccess missingAccess = MissingAccesses.getMissingAccess(m_schema.getSpec(i));
-                    @SuppressWarnings("unchecked") // Type safety is ensured by data-spec matching at runtime.
-                    final DelegatingReadAccess<ReadAccess> delegatingAccess =
-                        (DelegatingReadAccess<ReadAccess>)m_columnAccesses[i];
-                    delegatingAccess.setDelegateAccess(missingAccess);
+                    m_columnAccesses[i].setDelegateAccess(missingAccess);
                 }
             }
 
@@ -179,7 +173,7 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
             @Override
             public <A extends ReadAccess> A getAccess(final int index) {
                 @SuppressWarnings("unchecked")
-                final A casted = (A)m_columnAccesses[index];//NOSONAR
+                final A casted = (A)m_columnAccesses[index]; // NOSONAR
                 return casted;
             }
         }

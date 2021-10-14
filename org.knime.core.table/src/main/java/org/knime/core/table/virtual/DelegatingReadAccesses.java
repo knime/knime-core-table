@@ -72,6 +72,7 @@ import org.knime.core.table.schema.ZonedDateTimeDataSpec;
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Steffen Fissler, KNIME GmbH, Konstanz, Germany
  */
 public final class DelegatingReadAccesses {
 
@@ -84,7 +85,7 @@ public final class DelegatingReadAccesses {
      * @param spec the type of ReadAccess
      * @return a {@link DelegatingReadAccess} with the provided {@link DataSpec}
      */
-    public static DelegatingReadAccess<?> createDelegatingAccess(final DataSpec spec) {
+    public static DelegatingReadAccess createDelegatingAccess(final DataSpec spec) {
         return spec.accept(DataSpecToDelegatingReadAccessMapper.INSTANCE);
     }
 
@@ -100,7 +101,7 @@ public final class DelegatingReadAccesses {
 
     private static class DefaultDelegatingReadAccessRow implements DelegatingReadAccessRow {
 
-        private final DelegatingReadAccess<?>[] m_accesses;
+        private final DelegatingReadAccess[] m_accesses;
 
         private final ColumnarSchema m_schema;
 
@@ -159,112 +160,114 @@ public final class DelegatingReadAccesses {
      *
      * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
-     * @param <A> the type of {@link ReadAccess} to delegate to
      */
-    public static interface DelegatingReadAccess<A extends ReadAccess> extends ReadAccess {
+    public static interface DelegatingReadAccess extends ReadAccess {
 
         /**
          * Sets the access this access delegates to.
          *
          * @param access to delegate to
          */
-        void setDelegateAccess(A access);
+        void setDelegateAccess(ReadAccess access);
     }
 
-    private static final class DataSpecToDelegatingReadAccessMapper
-        implements DataSpec.Mapper<DelegatingReadAccess<?>> {
+    private static final class DataSpecToDelegatingReadAccessMapper implements DataSpec.Mapper<DelegatingReadAccess> {
 
         private static final DataSpecToDelegatingReadAccessMapper INSTANCE = new DataSpecToDelegatingReadAccessMapper();
 
         @Override
-        public DelegatingReadAccess<?> visit(final BooleanDataSpec spec) {
-            return new DelegatingBooleanReadAccess();
+        public DelegatingReadAccess visit(final BooleanDataSpec spec) {
+            return new DelegatingBooleanReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final ByteDataSpec spec) {
-            return new DelegatingByteReadAccess();
+        public DelegatingReadAccess visit(final ByteDataSpec spec) {
+            return new DelegatingByteReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final DoubleDataSpec spec) {
-            return new DelegatingDoubleReadAccess();
+        public DelegatingReadAccess visit(final DoubleDataSpec spec) {
+            return new DelegatingDoubleReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final DurationDataSpec spec) {
-            return new DelegatingDurationReadAccess();
+        public DelegatingReadAccess visit(final DurationDataSpec spec) {
+            return new DelegatingDurationReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final FloatDataSpec spec) {
-            return new DelegatingFloatReadAccess();
+        public DelegatingReadAccess visit(final FloatDataSpec spec) {
+            return new DelegatingFloatReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final IntDataSpec spec) {
-            return new DelegatingIntReadAccess();
+        public DelegatingReadAccess visit(final IntDataSpec spec) {
+            return new DelegatingIntReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final LocalDateDataSpec spec) {
-            return new DelegatingLocalDateReadAccess();
+        public DelegatingReadAccess visit(final LocalDateDataSpec spec) {
+            return new DelegatingLocalDateReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final LocalDateTimeDataSpec spec) {
-            return new DelegatingLocalDateTimeReadAccess();
+        public DelegatingReadAccess visit(final LocalDateTimeDataSpec spec) {
+            return new DelegatingLocalDateTimeReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final LocalTimeDataSpec spec) {
-            return new DelegatingLocalTimeReadAccess();
+        public DelegatingReadAccess visit(final LocalTimeDataSpec spec) {
+            return new DelegatingLocalTimeReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final LongDataSpec spec) {
-            return new DelegatingLongReadAccess();
+        public DelegatingReadAccess visit(final LongDataSpec spec) {
+            return new DelegatingLongReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final PeriodDataSpec spec) {
-            return new DelegatingPeriodReadAccess();
+        public DelegatingReadAccess visit(final PeriodDataSpec spec) {
+            return new DelegatingPeriodReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final VarBinaryDataSpec spec) {
-            return new DelegatingVarBinaryReadAccess();
+        public DelegatingReadAccess visit(final VarBinaryDataSpec spec) {
+            return new DelegatingVarBinaryReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final VoidDataSpec spec) {
-            return new AbstractDelegatingReadAccess<ReadAccess>() {
+        public DelegatingReadAccess visit(final VoidDataSpec spec) {
+            return new AbstractDelegatingReadAccess<ReadAccess>(spec) {
             };
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final StructDataSpec spec) {
-            return new DelegatingStructReadAccess();
+        public DelegatingReadAccess visit(final StructDataSpec spec) {
+            return new DelegatingStructReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final ListDataSpec listDataSpec) {
-            return new DelegatingListReadAccess();
+        public DelegatingReadAccess visit(final ListDataSpec spec) {
+            return new DelegatingListReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final ZonedDateTimeDataSpec spec) {
-            return new DelegatingZonedDateTimeReadAccess();
+        public DelegatingReadAccess visit(final ZonedDateTimeDataSpec spec) {
+            return new DelegatingZonedDateTimeReadAccess(spec);
         }
 
         @Override
-        public DelegatingReadAccess<?> visit(final StringDataSpec spec) {
-            return new DelegatingStringReadAccess();
+        public DelegatingReadAccess visit(final StringDataSpec spec) {
+            return new DelegatingStringReadAccess(spec);
         }
     }
 
     private static final class DelegatingBooleanReadAccess extends AbstractDelegatingReadAccess<BooleanReadAccess>
         implements BooleanReadAccess {
+
+        private DelegatingBooleanReadAccess(final DataSpec spec) {
+            super(spec);
+        }
 
         @Override
         public boolean getBooleanValue() {
@@ -275,6 +278,10 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingByteReadAccess extends AbstractDelegatingReadAccess<ByteReadAccess>
         implements ByteReadAccess {
 
+        private DelegatingByteReadAccess(final DataSpec spec) {
+            super(spec);
+        }
+
         @Override
         public byte getByteValue() {
             return m_delegateAccess.getByteValue();
@@ -283,6 +290,10 @@ public final class DelegatingReadAccesses {
 
     private static final class DelegatingDoubleReadAccess extends AbstractDelegatingReadAccess<DoubleReadAccess>
         implements DoubleReadAccess {
+
+        private DelegatingDoubleReadAccess(final DataSpec spec) {
+            super(spec);
+        }
 
         @Override
         public double getDoubleValue() {
@@ -293,6 +304,10 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingFloatReadAccess extends AbstractDelegatingReadAccess<FloatReadAccess>
         implements FloatReadAccess {
 
+        private DelegatingFloatReadAccess(final DataSpec spec) {
+            super(spec);
+        }
+
         @Override
         public float getFloatValue() {
             return m_delegateAccess.getFloatValue();
@@ -301,6 +316,10 @@ public final class DelegatingReadAccesses {
 
     private static final class DelegatingIntReadAccess extends AbstractDelegatingReadAccess<IntReadAccess>
         implements IntReadAccess {
+
+        private DelegatingIntReadAccess(final DataSpec spec) {
+            super(spec);
+        }
 
         @Override
         public int getIntValue() {
@@ -311,24 +330,51 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingListReadAccess extends AbstractDelegatingReadAccess<ListReadAccess>
         implements ListReadAccess {
 
-        @Override
-        public int size() {
-            return m_delegateAccess.size();
+        private final DelegatingReadAccess m_innerAccess;
+
+        private DelegatingListReadAccess(final ListDataSpec spec) {
+            super(spec);
+            m_innerAccess = createDelegatingAccess(spec.getInner());
         }
 
         @Override
+        public int size() {
+            if (m_delegateAccess == null) {
+                return 0;
+            }
+            return m_delegateAccess.size();
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
         public <R extends ReadAccess> R getAccess(final int index) {
-            return m_delegateAccess.getAccess(index);
+            if (m_delegateAccess != null) {
+                m_delegateAccess.getAccess(index);
+            }
+            return (R)m_innerAccess;
         }
 
         @Override
         public boolean isMissing(final int index) {
             return m_delegateAccess.isMissing(index);
         }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void setDelegateAccess(final ReadAccess access) {
+            super.setDelegateAccess(access);
+            m_innerAccess.setDelegateAccess(m_delegateAccess.getAccess(0));
+        }
     }
 
     private static final class DelegatingLongReadAccess extends AbstractDelegatingReadAccess<LongReadAccess>
         implements LongReadAccess {
+
+        private DelegatingLongReadAccess(final DataSpec spec) {
+            super(spec);
+        }
 
         @Override
         public long getLongValue() {
@@ -339,6 +385,10 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingStringReadAccess extends AbstractDelegatingReadAccess<StringReadAccess>
         implements StringReadAccess {
 
+        private DelegatingStringReadAccess(final DataSpec spec) {
+            super(spec);
+        }
+
         @Override
         public String getStringValue() {
             return m_delegateAccess.getStringValue();
@@ -348,19 +398,40 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingStructReadAccess extends AbstractDelegatingReadAccess<StructReadAccess>
         implements StructReadAccess {
 
-        @Override
-        public int size() {
-            return m_delegateAccess.size();
+        private final DelegatingReadAccess[] m_accesses;
+
+        DelegatingStructReadAccess(final StructDataSpec spec) {
+            super(spec);
+            m_accesses = new DelegatingReadAccess[spec.size()];
+            Arrays.setAll(m_accesses, i -> createDelegatingAccess(spec.getDataSpec(i)));
         }
 
         @Override
+        public int size() {
+            return m_accesses.length;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
         public <R extends ReadAccess> R getAccess(final int index) {
-            return m_delegateAccess.getAccess(index);
+            return (R)m_accesses[index];
+        }
+
+        @Override
+        public void setDelegateAccess(final ReadAccess access) {
+            super.setDelegateAccess(access);
+            for (int i = 0; i < m_accesses.length; i++) { //NOSONAR
+                m_accesses[i].setDelegateAccess(m_delegateAccess.getAccess(i));
+            }
         }
     }
 
     private static final class DelegatingVarBinaryReadAccess extends AbstractDelegatingReadAccess<VarBinaryReadAccess>
         implements VarBinaryReadAccess {
+
+        private DelegatingVarBinaryReadAccess(final DataSpec spec) {
+            super(spec);
+        }
 
         @Override
         public byte[] getByteArray() {
@@ -376,6 +447,10 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingDurationReadAccess extends AbstractDelegatingReadAccess<DurationReadAccess>
         implements DurationReadAccess {
 
+        private DelegatingDurationReadAccess(final DataSpec spec) {
+            super(spec);
+        }
+
         @Override
         public Duration getDurationValue() {
             return m_delegateAccess.getDurationValue();
@@ -385,6 +460,10 @@ public final class DelegatingReadAccesses {
 
     private static final class DelegatingPeriodReadAccess extends AbstractDelegatingReadAccess<PeriodReadAccess>
         implements PeriodReadAccess {
+
+        private DelegatingPeriodReadAccess(final DataSpec spec) {
+            super(spec);
+        }
 
         @Override
         public Period getPeriodValue() {
@@ -396,6 +475,10 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingZonedDateTimeReadAccess
         extends AbstractDelegatingReadAccess<ZonedDateTimeReadAccess> implements ZonedDateTimeReadAccess {
 
+        private DelegatingZonedDateTimeReadAccess(final DataSpec spec) {
+            super(spec);
+        }
+
         @Override
         public ZonedDateTime getZonedDateTimeValue() {
             return m_delegateAccess.getZonedDateTimeValue();
@@ -405,6 +488,10 @@ public final class DelegatingReadAccesses {
 
     private static final class DelegatingLocalTimeReadAccess extends AbstractDelegatingReadAccess<LocalTimeReadAccess>
         implements LocalTimeReadAccess {
+
+        private DelegatingLocalTimeReadAccess(final DataSpec spec) {
+            super(spec);
+        }
 
         @Override
         public LocalTime getLocalTimeValue() {
@@ -416,6 +503,10 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingLocalDateTimeReadAccess
         extends AbstractDelegatingReadAccess<LocalDateTimeReadAccess> implements LocalDateTimeReadAccess {
 
+        private DelegatingLocalDateTimeReadAccess(final DataSpec spec) {
+            super(spec);
+        }
+
         @Override
         public LocalDateTime getLocalDateTimeValue() {
             return m_delegateAccess.getLocalDateTimeValue();
@@ -426,6 +517,10 @@ public final class DelegatingReadAccesses {
     private static final class DelegatingLocalDateReadAccess extends AbstractDelegatingReadAccess<LocalDateReadAccess>
         implements LocalDateReadAccess {
 
+        private DelegatingLocalDateReadAccess(final DataSpec spec) {
+            super(spec);
+        }
+
         @Override
         public LocalDate getLocalDateValue() {
             return m_delegateAccess.getLocalDateValue();
@@ -433,24 +528,30 @@ public final class DelegatingReadAccesses {
 
     }
 
-    private abstract static class AbstractDelegatingReadAccess<A extends ReadAccess>
-        implements DelegatingReadAccess<A> {
+    private abstract static class AbstractDelegatingReadAccess<A extends ReadAccess> implements DelegatingReadAccess {
+
+        private final DataSpec m_spec;
 
         protected A m_delegateAccess;
 
+        public AbstractDelegatingReadAccess(final DataSpec spec) {
+            m_spec = spec;
+        }
+
+        @SuppressWarnings("unchecked")
         @Override
-        public void setDelegateAccess(final A access) {
-            m_delegateAccess = access;
+        public void setDelegateAccess(final ReadAccess access) {
+            m_delegateAccess = (A)access;
         }
 
         @Override
         public boolean isMissing() {
-            return m_delegateAccess.isMissing();
+            return (m_delegateAccess == null) || m_delegateAccess.isMissing();
         }
 
         @Override
         public DataSpec getDataSpec() {
-            return m_delegateAccess.getDataSpec();
+            return m_spec;
         }
 
         @Override
