@@ -37,6 +37,69 @@ import com.google.common.base.Preconditions;
 public final class DataTraitUtils {
 
     /**
+     * Merges the provided {@link DataTraits} objects.
+     *
+     * @param traits reference
+     * @param otherTraits additional
+     * @return the merged {@link DataTraits}
+     * @throws IllegalArgumentException if the traits are incompatible in structure or there are conflicts (i.e. the
+     *             same trait contained multiple times)
+     */
+    public static DataTraits merge(final DataTraits traits, final DataTraits otherTraits) {
+        if (isStruct(traits)) {
+            Preconditions.checkArgument(isStruct(otherTraits),
+                "StructDataTraits can only be merged with other StructDataTraits.");
+            return mergeStruct((StructDataTraits)traits, (StructDataTraits)otherTraits);
+        } else if (isList(traits)) {
+            Preconditions.checkArgument(isList(otherTraits),
+                "ListDataTraits can only be merged with other ListDataTraits.");
+            return mergeList((ListDataTraits)traits, (ListDataTraits)otherTraits);
+        } else {
+            Preconditions.checkArgument(!isNested(otherTraits), "Normal traits can't be merged with nested traits.");
+            return new DefaultDataTraits(addTraits(traits.getTraits(), otherTraits.getTraits()));
+        }
+    }
+
+    private static ListDataTraits mergeList(final ListDataTraits traits, final ListDataTraits other) {
+        checkThatNoneIsContained(traits, other.getTraits());
+        var mergedInnerTraits = merge(traits.getInner(), other.getInner());
+        return new DefaultListDataTraits(addTraits(traits.getTraits(), other.getTraits()), mergedInnerTraits);
+    }
+
+    private static StructDataTraits mergeStruct(final StructDataTraits traits, final StructDataTraits other) {
+        checkThatNoneIsContained(traits, other.getTraits());
+        Preconditions.checkArgument(traits.size() == other.size(),
+            "The number of inner traits must match.");
+        var mergedInnerTraits = new DataTraits[traits.size()];
+        Arrays.setAll(mergedInnerTraits, i -> merge(traits.getDataTraits(i), other.getDataTraits(i)));
+        return new DefaultStructDataTraits(addTraits(traits.getTraits(), other.getTraits()), mergedInnerTraits);
+    }
+
+    private static boolean isNested(final DataTraits traits) {
+        return isStruct(traits) || isList(traits);
+    }
+
+    /**
+     * Convenience method for checking if some DataTraits are StructDataTraits.
+     *
+     * @param traits to check
+     * @return true if the traits are StructDataTraits
+     */
+    public static boolean isStruct(final DataTraits traits) {
+        return traits instanceof StructDataTraits;
+    }
+
+    /**
+     * Convenience method for checking if some DataTraits are ListDataTraits.
+     *
+     * @param traits to check
+     * @return true if the traits are ListDataTraits
+     */
+    public static boolean isList(final DataTraits traits) {
+        return traits instanceof ListDataTraits;
+    }
+
+    /**
      * Returns a new DataTraits instance with the provided trait appended to it.
      *
      * @param traits to add a trait to
@@ -47,7 +110,7 @@ public final class DataTraitUtils {
     public static DataTraits withTrait(final DataTraits traits, final DataTrait... additionalTraits) {
         checkThatNoneIsContained(traits, additionalTraits);
         var newTraits = addTraits(traits.getTraits(), additionalTraits);
-        if (traits instanceof StructDataTraits) {
+        if (isStruct(traits)) {
             var structTraits = (StructDataTraits)traits;
             var innerTraits = new DataTraits[structTraits.size()];
             Arrays.setAll(innerTraits, i -> structTraits.getDataTraits(i));
