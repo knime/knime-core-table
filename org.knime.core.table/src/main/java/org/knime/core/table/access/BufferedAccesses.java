@@ -514,9 +514,16 @@ public final class BufferedAccesses {
 
             @Override
             public void create(final int size) {
-                m_inner = new BufferedAccess[size];
-                for (int i = 0; i < size; i++) {
-                    m_inner[i] = createBufferedAccess(m_spec.getInner());
+                if (m_inner == null) {
+                    m_inner = new BufferedAccess[size];
+                } else if (m_inner.length < size) {
+                    var newInner = Arrays.copyOf(m_inner, size);
+                    for (int i = m_inner.length; i < size; i++) {
+                        newInner[i] = createBufferedAccess(m_spec.getInner());
+                    }
+                    m_inner = newInner;
+                } else {
+                    // reuse the existing buffers
                 }
             }
 
