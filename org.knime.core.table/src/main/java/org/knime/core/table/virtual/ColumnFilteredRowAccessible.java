@@ -147,40 +147,4 @@ class ColumnFilteredRowAccessible implements RowAccessible {
             }
         }
     }
-
-    private static final class EmptyCursor implements Cursor<ReadAccessRow> {
-
-        private static final EmptyCursor INSTANCE = new EmptyCursor();
-
-        @Override
-        public ReadAccessRow access() {
-            return EmptyReadAccessRow.INSTANCE;
-        }
-
-        @Override
-        public boolean forward() {
-            return false;
-        }
-
-        @Override
-        public void close() {
-            // Nothing to do.
-        }
-
-        private static final class EmptyReadAccessRow implements ReadAccessRow {
-
-            @SuppressWarnings("hiding")
-            private static final EmptyReadAccessRow INSTANCE = new EmptyReadAccessRow();
-
-            @Override
-            public int size() {
-                return 0;
-            }
-
-            @Override
-            public <A extends ReadAccess> A getAccess(final int index) {
-                throw new IndexOutOfBoundsException(index);
-            }
-        }
-    }
 }
