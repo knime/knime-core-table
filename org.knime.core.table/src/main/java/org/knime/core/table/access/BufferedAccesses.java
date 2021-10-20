@@ -48,6 +48,7 @@
  */
 package org.knime.core.table.access;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -111,6 +112,8 @@ import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
 import org.knime.core.table.schema.ZonedDateTimeDataSpec;
+
+import com.google.common.io.ByteStreams;
 
 /**
  * A collection of buffered access implementations that can be retrieved by mapping from a given {@link DataSpec}.
@@ -763,7 +766,11 @@ public final class BufferedAccesses {
         private static final class BufferedVarBinaryAccess extends AbstractBufferedAccess
             implements VarBinaryReadAccess, VarBinaryWriteAccess {
 
+            private ObjectSerializer<?> m_serializer;
+
             private Object m_value;
+
+            private byte[] m_storage;
 
             @Override
             public void setByteArray(final byte[] value) {
@@ -780,26 +787,63 @@ public final class BufferedAccesses {
 
             @Override
             public byte[] getByteArray() {
-                return (byte[])m_value;
+                if (m_storage != null) {
+                    return m_storage;
+                } else if (m_value != null) {
+                    m_storage = toByteArray(m_value, m_serializer);
+                    return m_storage;
+                } else {
+                    throw new IllegalStateException("No data has been set.");
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            private static <T> byte[] toByteArray(final Object object, final ObjectSerializer<T> serializer) {
+                var dataOutput = ByteStreams.newDataOutput();
+                try {
+                    serializer.serialize(dataOutput, (T)object);
+                } catch (IOException e) {
+                    throw new IllegalStateException(
+                        String.format("Failed to serialize the stored object '%s'.", object), e);
+                }
+                return dataOutput.toByteArray();
+
             }
 
             @Override
             public <T> void setObject(final T value, final ObjectSerializer<T> serializer) {
-                // TODO: should we write a DataOutput that writes into a byte array instead?
+                m_storage = null;
                 m_value = value;
+                m_serializer = serializer;
                 m_isMissing = false;
             }
 
             @Override
             public <T> T getObject(final ObjectDeserializer<T> deserializer) {
-                @SuppressWarnings("unchecked")
-                T value = (T)m_value;
-                return value;
+                if (m_value != null) {
+                    @SuppressWarnings("unchecked")
+                    var casted = (T)m_value;
+                    return casted;
+                } else if (m_storage != null) {
+                    try {
+                        T object = deserializer.deserialize(ByteStreams.newDataInput(m_storage));//NOSONAR
+                        m_value = object;
+                        return object;
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException("Deserializer failed to deserialize the stored object.", e);
+                    }
+                } else {
+                    throw new IllegalStateException("Neither a value nor a byte array has been set.");
+                }
+
             }
 
             @Override
             protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((VarBinaryReadAccess)access).getByteArray();
+                m_storage = ((VarBinaryReadAccess)access).getByteArray();
+                m_serializer = null;
+                m_value = null;
+                m_isMissing = false;
             }
 
             @Override
