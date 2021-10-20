@@ -105,7 +105,7 @@ public final class VirtualTable {
         m_schema = schema;
     }
 
-    public VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {
+    private VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {
         m_transform = producingTransform;
         m_schema = schema;
     }
@@ -142,9 +142,9 @@ public final class VirtualTable {
 
     public VirtualTable appendMissingValueColumns(final List<DataSpec> columns, final List<DataTraits> traits) {
         final AppendMissingValuesTransformSpec transformSpec =
-                new AppendMissingValuesTransformSpec(columns.toArray(new DataSpec[columns.size()]), traits.toArray(new DataTraits[traits.size()]));
-        final ColumnarSchema schema = ColumnarSchemas.append(Arrays.asList(m_schema, transformSpec.getAppendedSchema()));
-        return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), schema);
+                new AppendMissingValuesTransformSpec(columns.toArray(DataSpec[]::new), traits.toArray(DataTraits[]::new));
+        final ColumnarSchema schema = ColumnarSchemas.append(List.of(m_schema, transformSpec.getAppendedSchema()));
+        return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), schema);
     }
 
     public VirtualTable concatenate(final List<VirtualTable> tables) {
@@ -164,13 +164,13 @@ public final class VirtualTable {
     public VirtualTable permute(final int... permutation) {
         final TableTransformSpec transformSpec = new PermuteTransformSpec(permutation);
         final ColumnarSchema schema = ColumnarSchemas.permute(m_schema, permutation);
-        return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), schema);
+        return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), schema);
 
     }
 
     public VirtualTable slice(final long from, final long to) {
         final TableTransformSpec transformSpec = new SliceTransformSpec(from, to);
-        return new VirtualTable(new TableTransform(Arrays.asList(m_transform), transformSpec), m_schema);
+        return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), m_schema);
     }
 
     //    /**
