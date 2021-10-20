@@ -20,6 +20,8 @@
  */
 package org.knime.core.table.schema.traits;
 
+import java.util.Arrays;
+
 /**
  * Default implementation of {@link DataTraits}, simply holding
  * an array of traits.
@@ -61,6 +63,28 @@ public class DefaultDataTraits implements DataTraits {
     @Override
     public DataTrait[] getTraits() {
         return m_traits.clone();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == this) {
+            return true;
+        }
+
+        if (obj == null) {
+            return false;
+        }
+
+        if (getClass().equals(obj.getClass())) {
+            var other = (DefaultDataTraits)obj;
+            return Arrays.equals(m_traits, other.m_traits);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(m_traits);
     }
 
 }

@@ -60,4 +60,19 @@ public class DefaultListDataTraits extends DefaultDataTraits implements ListData
         return m_inner;
     }
 
+    @Override
+    public boolean equals(final Object obj) {
+        if (super.equals(obj)) {
+            var other = (DefaultListDataTraits)obj;
+            return m_inner.equals(other.m_inner);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * super.hashCode() + 37 * m_inner.hashCode();
+    }
+
 }

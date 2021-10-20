@@ -21,6 +21,7 @@
 package org.knime.core.table.schema.traits;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -61,21 +62,31 @@ public class DefaultStructDataTraits extends DefaultDataTraits implements Struct
         m_inner = inner;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public DataTraits getDataTraits(final int i) {
         return m_inner[i];
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int size() {
         return m_inner.length;
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (super.equals(obj)) {
+            return Arrays.equals(m_inner, ((DefaultStructDataTraits)obj).m_inner);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        int innerHashCode = Arrays.hashCode(m_inner);
+        return 37 * super.hashCode() + 31 * innerHashCode;
+    }
+
 
     public static Builder builder() {
         return new Builder();

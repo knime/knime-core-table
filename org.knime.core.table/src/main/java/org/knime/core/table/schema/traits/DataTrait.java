@@ -112,6 +112,22 @@ public interface DataTrait {
         public String toString() {
             return m_keyType.name();
         }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (this == obj) {
+                return true;
+            } else if (obj instanceof DictEncodingTrait) {
+                return m_keyType == ((DictEncodingTrait)obj).m_keyType;
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return m_keyType.hashCode();
+        }
     }
 
 }
