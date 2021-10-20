@@ -61,7 +61,6 @@ import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
  * @noreference This class is not intended to be referenced by clients.
  */
 @SuppressWarnings("javadoc")
-// TODO rename to VarBinaryAccess
 public final class VarBinaryAccess {
 
     private VarBinaryAccess() {
