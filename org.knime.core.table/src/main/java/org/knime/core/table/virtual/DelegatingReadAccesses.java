@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
@@ -128,6 +129,11 @@ public final class DelegatingReadAccesses {
             @SuppressWarnings("unchecked")
             final A casted = (A)m_accesses[index];
             return casted;
+        }
+
+        @Override
+        public String toString() {
+            return Arrays.toString(m_accesses);
         }
 
     }
@@ -445,6 +451,11 @@ public final class DelegatingReadAccesses {
         @Override
         public DataSpec getDataSpec() {
             return m_delegateAccess.getDataSpec();
+        }
+
+        @Override
+        public String toString() {
+            return m_delegateAccess.toString();
         }
     }
 }
