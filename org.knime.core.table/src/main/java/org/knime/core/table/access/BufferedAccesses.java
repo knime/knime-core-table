@@ -215,6 +215,11 @@ public final class BufferedAccesses {
             return (A)m_accesses[index];
         }
 
+        @Override
+        public String toString() {
+            return Arrays.toString(m_accesses);
+        }
+
     }
 
     /**
@@ -336,6 +341,11 @@ public final class BufferedAccesses {
                 m_value = ((BooleanReadAccess)access).getBooleanValue();
             }
 
+            @Override
+            protected String valueToString() {
+                return Boolean.toString(m_value);
+            }
+
         }
 
         private static final class BufferedByteAccess extends AbstractBufferedAccess
@@ -359,6 +369,11 @@ public final class BufferedAccesses {
                 m_value = ((ByteReadAccess)access).getByteValue();
             }
 
+            @Override
+            protected String valueToString() {
+                return Byte.toString(m_value);
+            }
+
         }
 
         private static final class BufferedDoubleAccess extends AbstractBufferedAccess
@@ -380,6 +395,11 @@ public final class BufferedAccesses {
             @Override
             protected void setFromNonMissing(final ReadAccess access) {
                 m_value = ((DoubleReadAccess)access).getDoubleValue();
+            }
+
+            @Override
+            protected String valueToString() {
+                return Double.toString(m_value);
             }
 
         }
@@ -424,6 +444,11 @@ public final class BufferedAccesses {
                 m_value = ((FloatReadAccess)access).getFloatValue();
             }
 
+            @Override
+            protected String valueToString() {
+                return Float.toString(m_value);
+            }
+
         }
 
         private static final class BufferedIntAccess extends AbstractBufferedAccess
@@ -445,6 +470,11 @@ public final class BufferedAccesses {
             @Override
             protected void setFromNonMissing(final ReadAccess access) {
                 m_value = ((IntReadAccess)access).getIntValue();
+            }
+
+            @Override
+            protected String valueToString() {
+                return Integer.toString(m_value);
             }
 
         }
@@ -520,6 +550,12 @@ public final class BufferedAccesses {
             public DataSpec getDataSpec() {
                 return m_spec;
             }
+
+            @Override
+            public String toString() {
+                return Arrays.toString(m_inner);
+            }
+
         }
 
         private static final class BufferedLongAccess extends AbstractBufferedAccess
@@ -541,6 +577,11 @@ public final class BufferedAccesses {
             @Override
             protected void setFromNonMissing(final ReadAccess access) {
                 m_value = ((LongReadAccess)access).getLongValue();
+            }
+
+            @Override
+            protected String valueToString() {
+                return Long.toString(m_value);
             }
 
         }
@@ -598,6 +639,17 @@ public final class BufferedAccesses {
                 for (int i = 0; i < numInnerReadAccesses; i++) {
                     m_inner[i].setFrom(structAccess.getAccess(i));
                 }
+            }
+
+            @Override
+            public String toString() {
+                var sb = new StringBuilder("{");
+                for (int i = 0; i < m_inner.length; i++) {
+                    sb.append(i).append(": ");
+                    sb.append(m_inner[i]);
+                }
+                sb.append("}");
+                return sb.toString();
             }
         }
 
@@ -743,6 +795,11 @@ public final class BufferedAccesses {
                 m_value = ((VarBinaryReadAccess)access).getByteArray();
             }
 
+            @Override
+            protected String valueToString() {
+                return m_value != null ? m_value.toString() : "null";
+            }
+
         }
 
         private static final class BufferedVoidAccess implements BufferedAccess {
@@ -819,6 +876,13 @@ public final class BufferedAccesses {
 
             protected abstract void setFromNonMissing(ReadAccess access);
 
+            @Override
+            public final String toString() {
+                return m_isMissing ? "?" : valueToString();
+            }
+
+            protected abstract String valueToString();
+
         }
 
         private abstract static class AbstractBufferedObjectAccess<T> implements BufferedAccess {
@@ -845,6 +909,11 @@ public final class BufferedAccesses {
             }
 
             protected abstract void setFromNonMissing(ReadAccess access);
+
+            @Override
+            public String toString() {
+                return isMissing() ? "?" : m_value.toString();
+            }
 
         }
     }
