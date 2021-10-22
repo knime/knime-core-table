@@ -86,7 +86,7 @@ class ColumnFilteredRowAccessible implements RowAccessible {
     public Cursor<ReadAccessRow> createCursor() {
         return m_schema.numColumns() != 0 //
             ? new ColumnFilteredCursor(m_delegateTable.createCursor(), m_columnIndices, m_schema) //
-            : EmptyCursor.INSTANCE;
+            : new EmptyCursor(m_schema);
     }
 
     @Override

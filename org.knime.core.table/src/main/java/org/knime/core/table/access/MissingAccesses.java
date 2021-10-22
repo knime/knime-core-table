@@ -72,8 +72,10 @@ import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
 import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeReadAccess;
+import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.DurationDataSpec;
@@ -115,6 +117,17 @@ public final class MissingAccesses {
     }
 
     /**
+     * Get {@link ReadAccessRow} of all {@link MissingAccess MissingAccesses} with the provided {@link ColumnarSchema}.
+     *
+     * @param schema of the table
+     * @return the missing ReadAccessRow
+     */
+    public static ReadAccessRow getMissingReadAccessRow(final ColumnarSchema schema) {
+        return new MissingReadAccessRow(schema);
+    }
+
+
+    /**
      * A {@link ReadAccess} which {@code isMissing()} by default.
      */
     public interface MissingAccess extends ReadAccess {
@@ -122,6 +135,29 @@ public final class MissingAccesses {
         default boolean isMissing() {
             return true;
         }
+    }
+
+    private static final class MissingReadAccessRow implements ReadAccessRow {
+
+        private final MissingAccess[] m_accesses;
+
+        MissingReadAccessRow(final ColumnarSchema schema) {
+            m_accesses = schema.specStream()//
+                    .map(MissingAccesses::getMissingAccess)//
+                    .toArray(MissingAccess[]::new);
+        }
+
+        @Override
+        public int size() {
+            return m_accesses.length;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <A extends ReadAccess> A getAccess(final int index) {
+            return (A)m_accesses[index];
+        }
+
     }
 
     private static final class DataSpecToMissingAccessMapper implements DataSpec.Mapper<MissingAccess> {
