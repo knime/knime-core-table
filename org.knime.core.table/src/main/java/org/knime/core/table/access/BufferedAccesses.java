@@ -766,8 +766,6 @@ public final class BufferedAccesses {
         private static final class BufferedVarBinaryAccess extends AbstractBufferedAccess
             implements VarBinaryReadAccess, VarBinaryWriteAccess {
 
-            private ObjectSerializer<?> m_serializer;
-
             private Object m_value;
 
             private byte[] m_storage;
@@ -790,31 +788,17 @@ public final class BufferedAccesses {
                 if (m_storage != null) {
                     return m_storage;
                 } else if (m_value != null) {
-                    m_storage = toByteArray(m_value, m_serializer);
-                    return m_storage;
+                    throw new IllegalStateException("There is a value set but no byte array. "
+                        + "This usage pattern of setting a value and getting a byte array is not supported.");
                 } else {
                     throw new IllegalStateException("No data has been set.");
                 }
-            }
-
-            @SuppressWarnings("unchecked")
-            private static <T> byte[] toByteArray(final Object object, final ObjectSerializer<T> serializer) {
-                var dataOutput = ByteStreams.newDataOutput();
-                try {
-                    serializer.serialize(dataOutput, (T)object);
-                } catch (IOException e) {
-                    throw new IllegalStateException(
-                        String.format("Failed to serialize the stored object '%s'.", object), e);
-                }
-                return dataOutput.toByteArray();
-
             }
 
             @Override
             public <T> void setObject(final T value, final ObjectSerializer<T> serializer) {
                 m_storage = null;
                 m_value = value;
-                m_serializer = serializer;
                 m_isMissing = false;
             }
 
@@ -841,7 +825,6 @@ public final class BufferedAccesses {
             @Override
             protected void setFromNonMissing(final ReadAccess access) {
                 m_storage = ((VarBinaryReadAccess)access).getByteArray();
-                m_serializer = null;
                 m_value = null;
                 m_isMissing = false;
             }
