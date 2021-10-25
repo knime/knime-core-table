@@ -80,7 +80,14 @@ public final class ListAccess {
          * @param index the index in the list
          * @return the {@link ReadAccess} at the given index
          */
-        <R extends ReadAccess> R getAccess(int index);
+        <R extends ReadAccess> R getAccess();
+
+        /**
+         * Sets the index at which the access provided by {@link #getAccess()} reads.
+         *
+         * @param index to read from
+         */
+        void setIndex(int index);
 
         /**
          * @param index the index in the list
@@ -98,7 +105,7 @@ public final class ListAccess {
             if (size() < 1) {
                 throw new IllegalStateException("Cannot get the DataSpec of a list without inner accesses");
             }
-            final DataSpec innerSpec = getAccess(0).getDataSpec();
+            final var innerSpec = getAccess().getDataSpec();
             return new ListDataSpec(innerSpec);
         }
     }
@@ -121,7 +128,14 @@ public final class ListAccess {
          * @param index the index in the list
          * @return the {@link WriteAccess} at the given index
          */
-        <W extends WriteAccess> W getWriteAccess(int index);
+        <W extends WriteAccess> W getWriteAccess();
+
+        /**
+         * Sets the index at which the access provided via {@link #getWriteAccess()} writes.
+         *
+         * @param index to write at
+         */
+        void setWriteIndex(final int index);
 
         /**
          * Create a new list with the given size. Call this before accessing the elements.

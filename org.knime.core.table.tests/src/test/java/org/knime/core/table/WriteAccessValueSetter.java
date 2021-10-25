@@ -158,7 +158,7 @@ final class WriteAccessValueSetter {
             final Object[] listValue = (Object[])m_value;
             listAccess.create(listValue.length);
             for (int i = 0; i < listValue.length; i++) {
-                setValue(spec.getInner(), listAccess.getWriteAccess(i), listValue[i]);
+                setValue(spec.getInner(), listAccess.getWriteAccess(), listValue[i]);
             }
             return null;
         }

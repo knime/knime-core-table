@@ -149,7 +149,7 @@ final class ReadAccessValueGetter {
             final ListReadAccess listAccess = (ListReadAccess)m_access;
             final Object[] listValue = new Object[listAccess.size()];
             for (int i = 0; i < listValue.length; i++) {
-                listValue[i] = getValue(listDataSpec.getInner(), listAccess.getAccess(i));
+                listValue[i] = getValue(listDataSpec.getInner(), listAccess.getAccess());
             }
             return listValue;
         }

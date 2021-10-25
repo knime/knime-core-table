@@ -300,8 +300,11 @@ public final class MissingAccesses {
 
             private final ListDataSpec m_spec;
 
+            private final MissingAccess m_elementAccess;
+
             MissingListAccess(final ListDataSpec spec) {
                 m_spec = spec;
+                m_elementAccess = getMissingAccess(spec);
             }
 
             @Override
@@ -310,8 +313,13 @@ public final class MissingAccesses {
             }
 
             @Override
-            public <R extends ReadAccess> R getAccess(final int index) {
-                return null;
+            public <R extends ReadAccess> R getAccess() {
+                return (R)m_elementAccess;
+            }
+
+            @Override
+            public void setIndex(final int index) {
+                // nothing to do
             }
 
             @Override

@@ -88,6 +88,8 @@ import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
+import org.knime.core.table.virtual.DelegatingReadAccesses;
+import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccess;
 
 import com.google.common.io.ByteStreams;
 
@@ -418,8 +420,13 @@ public final class BufferedAccesses {
 
             private int m_size;
 
+            private final DelegatingReadAccess m_readAccess;
+
+            private int m_writeIdx = -1;
+
             BufferedListAccess(final ListDataSpec spec) {
                 m_spec = spec;
+                m_readAccess = DelegatingReadAccesses.createDelegatingAccess(spec);
             }
 
             @Override
@@ -432,11 +439,20 @@ public final class BufferedAccesses {
                 return m_size;
             }
 
+            @SuppressWarnings("unchecked")
             @Override
-            public <R extends ReadAccess> R getAccess(final int index) {
-                @SuppressWarnings("unchecked")
-                R access = (R)m_inner[index];
-                return access;
+            public <R extends ReadAccess> R getAccess() {
+                return (R)m_readAccess;
+            }
+
+            @Override
+            public void setIndex(final int index) {
+                m_readAccess.setDelegateAccess(m_inner[index]);
+            }
+
+            @Override
+            public void setWriteIndex(final int index) {
+                m_writeIdx = index;
             }
 
             @Override
@@ -464,9 +480,10 @@ public final class BufferedAccesses {
             }
 
             @Override
-            public <W extends WriteAccess> W getWriteAccess(final int index) {
+            public <W extends WriteAccess> W getWriteAccess() {
+                // FIXME we need a DelegatingWriteAccess, that we can return (see getAccess and setIndex)
                 @SuppressWarnings("unchecked")
-                final W access = (W)m_inner[index];
+                final W access = (W)m_inner[m_writeIdx];
                 return access;
             }
 
@@ -479,7 +496,7 @@ public final class BufferedAccesses {
                     final int listSize = listAccess.size();
                     create(listSize);
                     for (int i = 0; i < listSize; i++) {//NOSONAR
-                        m_inner[i].setFrom(listAccess.getAccess(i));
+                        m_inner[i].setFrom(listAccess.getAccess());
                     }
                 }
             }

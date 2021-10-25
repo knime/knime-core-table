@@ -298,12 +298,22 @@ public final class DelegatingReadAccesses {
         }
 
         @SuppressWarnings("unchecked")
+//<<<<<<< HEAD
+//        public <R extends ReadAccess> R getAccess(final int index) {
+//            if (m_delegateAccess != null) {
+//                m_delegateAccess.getAccess(index);
+//            }
+//            return (R)m_innerAccess;
+//=======
         @Override
-        public <R extends ReadAccess> R getAccess(final int index) {
-            if (m_delegateAccess != null) {
-                m_delegateAccess.getAccess(index);
-            }
-            return (R)m_innerAccess;
+        public <R extends ReadAccess> R getAccess() {
+            return (R)m_delegateAccess;
+        }
+
+        @Override
+        public void setIndex(final int index) {
+            m_delegateAccess.setIndex(index);
+//>>>>>>> 8f0a76d (Redesign ListRead and WriteAccess API)
         }
 
         @Override
@@ -317,7 +327,7 @@ public final class DelegatingReadAccesses {
         @Override
         public void setDelegateAccess(final ReadAccess access) {
             super.setDelegateAccess(access);
-            m_innerAccess.setDelegateAccess(m_delegateAccess.getAccess(0));
+            m_innerAccess.setDelegateAccess(m_delegateAccess.getAccess());
         }
     }
 
