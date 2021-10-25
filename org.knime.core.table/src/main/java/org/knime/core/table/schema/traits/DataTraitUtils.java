@@ -157,6 +157,29 @@ public final class DataTraitUtils {
         }
     }
 
+    /**
+     * Checks if a {@link DataTrait} of the provided class is contained at some level of the provided DataTraits.
+     *
+     * @param traitClass to check for
+     * @param traits to check in
+     * @return true if a traitClass is contained somewhere in the provided traits
+     */
+    public static boolean containsDataTrait(final Class<? extends DataTrait> traitClass, final DataTraits traits) {
+        if (traits.hasTrait(traitClass)) {
+            return true;
+        } else if (isStruct(traits)) {
+            var structTraits = (StructDataTraits)traits;
+            for (int i = 0; i < structTraits.size(); i++) {
+                if (containsDataTrait(traitClass, structTraits.getDataTraits(i))) {
+                    return true;
+                }
+            }
+        } else if (isList(traits)) {
+            return containsDataTrait(traitClass, ((ListDataTraits)traits).getInner());
+        }
+        return false;
+    }
+
     private DataTraitUtils() {
     }
 
