@@ -20,9 +20,13 @@
  */
 package org.knime.core.table.virtual;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.knime.core.table.cursor.Cursors;
+import org.knime.core.table.cursor.LookaheadCursor;
+import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 
@@ -31,7 +35,8 @@ import org.knime.core.table.schema.ColumnarSchema;
  */
 public final class RowAccessibles {
 
-    private RowAccessibles() {}
+    private RowAccessibles() {
+    }
 
     public static RowAccessible append(final RowAccessible in, final RowAccessible... other) {
         final ArrayList<RowAccessible> list = new ArrayList<>();
@@ -69,5 +74,39 @@ public final class RowAccessibles {
 
     public static RowAccessible slice(final RowAccessible in, final RowRangeSelection selection) {
         return new SlicedRowAccessible(in, selection.fromIndex(), selection.toIndex());
+    }
+
+    static LookaheadRowAccessible toLookahead(final RowAccessible rowAccessible) {
+        if (rowAccessible instanceof LookaheadRowAccessible) {
+            return (LookaheadRowAccessible)rowAccessible;
+        } else {
+            return new AdapterLookaheadRowAccessible(rowAccessible);
+        }
+    }
+
+    private static final class AdapterLookaheadRowAccessible implements LookaheadRowAccessible {
+
+        private final RowAccessible m_delegate;
+
+        AdapterLookaheadRowAccessible(final RowAccessible delegate) {
+            m_delegate = delegate;
+        }
+
+        @Override
+        public ColumnarSchema getSchema() {
+            return m_delegate.getSchema();
+        }
+
+        @Override
+        public void close() throws IOException {
+            m_delegate.close();
+        }
+
+        @SuppressWarnings("resource")
+        @Override
+        public LookaheadCursor<ReadAccessRow> createCursor() {
+            return Cursors.toLookahead(m_delegate.getSchema(), m_delegate.createCursor());
+        }
+
     }
 }

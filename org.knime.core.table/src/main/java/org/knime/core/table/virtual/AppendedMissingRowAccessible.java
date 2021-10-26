@@ -53,7 +53,7 @@ import java.util.List;
 
 import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -64,14 +64,14 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class AppendedMissingRowAccessible implements RowAccessible {
+final class AppendedMissingRowAccessible implements LookaheadRowAccessible {
 
-    private final RowAccessible m_delegateTable;
+    private final LookaheadRowAccessible m_delegateTable;
 
     private final ColumnarSchema m_schema;
 
     public AppendedMissingRowAccessible(final RowAccessible tableToAppendTo, final ColumnarSchema missingSchema) {
-        m_delegateTable = tableToAppendTo;
+        m_delegateTable = RowAccessibles.toLookahead(tableToAppendTo);
         m_schema = ColumnarSchemas.append(List.of(tableToAppendTo.getSchema(), missingSchema));
     }
 
@@ -82,7 +82,7 @@ class AppendedMissingRowAccessible implements RowAccessible {
 
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
     @Override
-    public Cursor<ReadAccessRow> createCursor() {
+    public LookaheadCursor<ReadAccessRow> createCursor() {
         return new AppendedMissingValuesCursor(m_delegateTable.createCursor(), m_schema);
     }
 
@@ -91,15 +91,16 @@ class AppendedMissingRowAccessible implements RowAccessible {
         m_delegateTable.close();
     }
 
-    private static final class AppendedMissingValuesCursor implements Cursor<ReadAccessRow> {
+    private static final class AppendedMissingValuesCursor implements LookaheadCursor<ReadAccessRow> {
 
-        private final Cursor<ReadAccessRow> m_delegateCursor;
+        private final LookaheadCursor<ReadAccessRow> m_delegateCursor;
 
         private final AppendedMissingValuesReadAccessRow m_access;
 
-        public AppendedMissingValuesCursor(final Cursor<ReadAccessRow> delegateCursor, final ColumnarSchema schema) {
+        public AppendedMissingValuesCursor(final LookaheadCursor<ReadAccessRow> delegateCursor, final ColumnarSchema schema) {
             m_delegateCursor = delegateCursor;
             m_access = new AppendedMissingValuesReadAccessRow(delegateCursor.access(), schema);
+
         }
 
         @Override
@@ -110,6 +111,11 @@ class AppendedMissingRowAccessible implements RowAccessible {
         @Override
         public boolean forward() {
             return m_delegateCursor.forward();
+        }
+
+        @Override
+        public boolean canForward() {
+            return m_delegateCursor.canForward();
         }
 
         @Override
@@ -132,7 +138,7 @@ class AppendedMissingRowAccessible implements RowAccessible {
                 m_schema = schema;
                 m_numNonMissingColumns = m_delegateAccess.size();
                 m_missingColumnAccesses = new ReadAccess[m_schema.numColumns() - m_numNonMissingColumns];
-                for (int i = 0; i < m_missingColumnAccesses.length; i++) {
+                for (int i = 0; i < m_missingColumnAccesses.length; i++) {//NOSONAR
                     m_missingColumnAccesses[i] =
                             MissingAccesses.getMissingAccess(m_schema.getSpec(m_numNonMissingColumns + i));
                 }
@@ -149,10 +155,11 @@ class AppendedMissingRowAccessible implements RowAccessible {
                     return m_delegateAccess.getAccess(index);
                 } else {
                     @SuppressWarnings("unchecked")
-                    final A casted = (A)m_missingColumnAccesses[index - m_delegateAccess.size()];
+                    final A casted = (A)m_missingColumnAccesses[index - m_delegateAccess.size()];//NOSONAR
                     return casted;
                 }
             }
         }
+
     }
 }

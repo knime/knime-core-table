@@ -48,12 +48,13 @@
  */
 package org.knime.core.table.virtual;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.List;
-import java.util.stream.Collectors;
+import static java.util.stream.Collectors.toList;
 
-import org.knime.core.table.cursor.Cursor;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+
+import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -65,22 +66,26 @@ import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class ConcatenatedRowAccessible implements RowAccessible {
+final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
 
-    private final List<RowAccessible> m_delegates;
+    private final List<LookaheadRowAccessible> m_delegates;
 
     private final ColumnarSchema m_schema;
 
     ConcatenatedRowAccessible(final List<RowAccessible> tablesToConcatenate) {
-        m_delegates = tablesToConcatenate;
+        m_delegates = tablesToConcatenate.stream()//
+                .map(RowAccessibles::toLookahead)//
+                .collect(toList());
         m_schema = ColumnarSchemas
-            .concatenate(tablesToConcatenate.stream().map((i) -> i.getSchema()).collect(Collectors.toList()));
+            .concatenate(tablesToConcatenate.stream()//
+                .map(RowAccessible::getSchema)//
+                .collect(toList()));
     }
 
     /**
      * @return the concatenated row accessibles
      */
-    public List<? extends RowAccessible> getConcatenatedRowAccessibles() {
+    public List<? extends RowAccessible> getConcatenatedRowAccessibles() {//NOSONAR
         return m_delegates;
     }
 
@@ -90,36 +95,43 @@ class ConcatenatedRowAccessible implements RowAccessible {
     }
 
     @Override
-    public Cursor<ReadAccessRow> createCursor() {
-        return new ConcatenatedRowCursor(m_delegates, m_schema);
+    public LookaheadCursor<ReadAccessRow> createCursor() {
+        return new ConcatenatedRowCursor(m_delegates, getSchema());
     }
 
     @Override
     public void close() throws IOException {
-        for (RowAccessible delegate : m_delegates) {
+        for (LookaheadRowAccessible delegate : m_delegates) {
             delegate.close();
         }
     }
 
     // TODO: the implementation of the cursor here is conceptually pretty similar to the multi-chunk cursor in
     // knime-core-columnar. Consolidate some of the "multiple-underlying-partitions" handling logic?
-    private static final class ConcatenatedRowCursor implements Cursor<ReadAccessRow> {
+    private static final class ConcatenatedRowCursor implements LookaheadCursor<ReadAccessRow> {
 
-        private final List<RowAccessible> m_delegateTables;
+        private final Iterator<LookaheadRowAccessible> m_delegateTables;
 
         private final DelegatingReadAccessRow m_access;
 
-        private int m_currentTableIndex = 0;
+        private LookaheadCursor<ReadAccessRow> m_currentDelegateCursor;
 
-        private Cursor<ReadAccessRow> m_currentDelegateCursor;
-
-        public ConcatenatedRowCursor(final List<RowAccessible> inputs, final ColumnarSchema schema) {
-            m_delegateTables = inputs;
-            @SuppressWarnings("resource") // Cursor is closed below.
-            final Cursor<ReadAccessRow> delegate = m_delegateTables.get(m_currentTableIndex).createCursor();
-            m_currentDelegateCursor = delegate;
+        public ConcatenatedRowCursor(final List<LookaheadRowAccessible> inputs, final ColumnarSchema schema) {
+            m_delegateTables = inputs.iterator();
             m_access = DelegatingReadAccesses.createDelegatingReadAccessRow(schema);
-            m_access.setDelegateAccess(m_currentDelegateCursor.access());
+            m_currentDelegateCursor = findNextNonEmptyCursor();
+        }
+
+        private LookaheadCursor<ReadAccessRow> findNextNonEmptyCursor() {
+            while (m_delegateTables.hasNext()) {
+                @SuppressWarnings("resource")
+                var cursor = m_delegateTables.next().createCursor();
+                if (cursor.canForward()) {
+                    m_access.setDelegateAccess(cursor.access());
+                    return cursor;
+                }
+            }
+            return null;
         }
 
         @Override
@@ -129,34 +141,30 @@ class ConcatenatedRowAccessible implements RowAccessible {
 
         @Override
         public boolean forward() {
-            final boolean forwarded = m_currentDelegateCursor.forward();
-            if (forwarded) {
-                return forwarded;
+            if (canForward()) {
+                return m_currentDelegateCursor.forward();
             } else {
-                try {
-                    m_currentDelegateCursor.close();
-                }
-                // TODO: or add IOException to the signature of forward?
-                catch (final IOException ex) {
-                    throw new UncheckedIOException(ex);
-                }
-                m_currentTableIndex++;
-                if (m_currentTableIndex < m_delegateTables.size()) {
-                    @SuppressWarnings("resource") // Cursor is closed above or below.
-                    final Cursor<ReadAccessRow> delegateCursor =
-                        m_delegateTables.get(m_currentTableIndex).createCursor();
-                    m_currentDelegateCursor = delegateCursor;
-                    m_access.setDelegateAccess(m_currentDelegateCursor.access());
-                    return forward();
-                } else {
-                    return false;
-                }
+                return false;
+            }
+        }
+
+        @Override
+        public boolean canForward() {
+            if (m_currentDelegateCursor == null) {
+                return false;
+            } else if (!m_currentDelegateCursor.canForward()) {
+                m_currentDelegateCursor = findNextNonEmptyCursor();
+                return canForward();
+            } else {
+                return true;
             }
         }
 
         @Override
         public void close() throws IOException {
-            m_currentDelegateCursor.close();
+            if (m_currentDelegateCursor != null) {
+                m_currentDelegateCursor.close();
+            }
         }
     }
 }

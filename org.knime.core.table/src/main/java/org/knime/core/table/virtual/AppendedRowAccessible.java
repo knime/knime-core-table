@@ -1,13 +1,15 @@
 package org.knime.core.table.virtual;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -19,9 +21,9 @@ import org.knime.core.table.virtual.spec.AppendTransformSpec;
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class AppendedRowAccessible implements RowAccessible {
+final class AppendedRowAccessible implements LookaheadRowAccessible {
 
-    private final List<RowAccessible> m_delegateTables;
+    private final List<LookaheadRowAccessible> m_delegateTables;
 
     private final ColumnarSchema m_schema;
 
@@ -29,15 +31,19 @@ class AppendedRowAccessible implements RowAccessible {
 
     public AppendedRowAccessible(final List<RowAccessible> tablesToAppend) {
         this(tablesToAppend,
-            ColumnarSchemas.append(tablesToAppend.stream().map((i) -> i.getSchema()).collect(Collectors.toList())));
+            ColumnarSchemas.append(tablesToAppend.stream()//
+                .map(RowAccessible::getSchema)//
+                .collect(toList())));
     }
 
     AppendedRowAccessible(final List<RowAccessible> tablesToAppend, final ColumnarSchema schema) {
-        m_delegateTables = new ArrayList<>(tablesToAppend);
+        m_delegateTables = tablesToAppend.stream()//
+                .map(RowAccessibles::toLookahead)//
+                .collect(toList());//
         m_schema = schema;
         m_tableOffsets = new int[tablesToAppend.size()];
-        int currentOffset = 0;
-        for (int i = 0; i < tablesToAppend.size(); i++) {
+        int currentOffset = 0;//NOSONAR
+        for (int i = 0; i < tablesToAppend.size(); i++) {//NOSONAR
             m_tableOffsets[i] = currentOffset;
             @SuppressWarnings("resource") // Tables will be closed when this instance is being closed.
             final RowAccessible table = tablesToAppend.get(i);
@@ -48,7 +54,7 @@ class AppendedRowAccessible implements RowAccessible {
     /**
      * @return all appended tables
      */
-    List<? extends RowAccessible> getAppendedTables() {
+    List<? extends RowAccessible> getAppendedTables() {//NOSONAR
         return m_delegateTables;
     }
 
@@ -57,15 +63,9 @@ class AppendedRowAccessible implements RowAccessible {
         return m_schema;
     }
 
-    @SuppressWarnings("resource") // Delegate cursors will be closed upon closing of the returned cursor.
     @Override
-    public Cursor<ReadAccessRow> createCursor() {
-        @SuppressWarnings("unchecked")
-        final Cursor<ReadAccessRow>[] delegateCursors = new Cursor[m_delegateTables.size()];
-        for (int i = 0; i < delegateCursors.length; i++) {
-            delegateCursors[i] = m_delegateTables.get(i).createCursor();
-        }
-        return new AppendedCursor(delegateCursors, m_tableOffsets, m_schema);
+    public LookaheadCursor<ReadAccessRow> createCursor() {
+        return new AppendedCursor();
     }
 
     @Override
@@ -75,20 +75,21 @@ class AppendedRowAccessible implements RowAccessible {
         }
     }
 
-    private static final class AppendedCursor implements Cursor<ReadAccessRow> {
+    private final class AppendedCursor implements LookaheadCursor<ReadAccessRow> {
 
-        private final Cursor<ReadAccessRow>[] m_delegateCursors;
+        private final LookaheadCursor<ReadAccessRow>[] m_delegateCursors;
 
         private final AppendedReadAccessRow m_access;
 
-        public AppendedCursor(final Cursor<ReadAccessRow>[] delegateCursors, final int[] tableOffsets,
-            final ColumnarSchema schema) {
-            m_delegateCursors = delegateCursors;
-            final ReadAccessRow[] delegateAccesses = new ReadAccessRow[m_delegateCursors.length];
-            for (int i = 0; i < delegateAccesses.length; i++) {
-                delegateAccesses[i] = m_delegateCursors[i].access();
-            }
-            m_access = new AppendedReadAccessRow(delegateAccesses, tableOffsets, schema);
+        @SuppressWarnings("unchecked")
+        AppendedCursor() {
+            m_delegateCursors = m_delegateTables.stream()//
+                .map(LookaheadRowAccessible::createCursor)//
+                .toArray(LookaheadCursor[]::new);
+            final ReadAccessRow[] delegateAccesses = Stream.of(m_delegateCursors)//
+                .map(Cursor::access)//
+                .toArray(ReadAccessRow[]::new);
+            m_access = new AppendedReadAccessRow(delegateAccesses);
         }
 
         @Override
@@ -98,8 +99,8 @@ class AppendedRowAccessible implements RowAccessible {
 
         @Override
         public boolean forward() {
-            boolean anyCursorForwarded = false;
-            for (int i = 0; i < m_delegateCursors.length; i++) {
+            var anyCursorForwarded = false;
+            for (int i = 0; i < m_delegateCursors.length; i++) {//NOSONAR
                 final boolean cursorForwarded = m_delegateCursors[i].forward();
                 if (!cursorForwarded) {
                     m_access.setColumnAccessesOfTableToMissing(i);
@@ -110,44 +111,46 @@ class AppendedRowAccessible implements RowAccessible {
         }
 
         @Override
+        public boolean canForward() {
+            for (var cursor : m_delegateCursors) {
+                if (cursor.canForward()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
         public void close() throws IOException {
             for (final Cursor<ReadAccessRow> cursor : m_delegateCursors) {
                 cursor.close();
             }
         }
 
-        private static final class AppendedReadAccessRow implements ReadAccessRow {
+        private final class AppendedReadAccessRow implements ReadAccessRow {
 
             private final DelegatingReadAccess<?>[] m_columnAccesses;
 
-            private final int[] m_tableOffsets;
-
-            private final ColumnarSchema m_schema;
-
-            public AppendedReadAccessRow(final ReadAccessRow[] delegateAccesses, final int[] tableOffsets,
-                final ColumnarSchema schema) {
-                m_tableOffsets = tableOffsets;
-                m_schema = schema;
-                m_columnAccesses = createColumnAccesses(delegateAccesses, tableOffsets, schema);
+            public AppendedReadAccessRow(final ReadAccessRow[] delegateAccesses) {
+                m_columnAccesses = createColumnAccesses(delegateAccesses);
             }
 
-            private static DelegatingReadAccess<?>[] createColumnAccesses(final ReadAccessRow[] delegateRowAccesses,
-                final int[] tableOffsets, final ColumnarSchema schema) {
-                final DelegatingReadAccess<?>[] columnAccesses = new DelegatingReadAccess[schema.numColumns()];
-                int delegateTableIndex = 0;
-                int delegateColumnIndex = 0;
-                for (int i = 0; i < columnAccesses.length; i++) {
-                    while (delegateTableIndex < tableOffsets.length && tableOffsets[delegateTableIndex] <= i) {
+            private DelegatingReadAccess<?>[] createColumnAccesses(final ReadAccessRow[] delegateRowAccesses) {
+                final var columnAccesses = new DelegatingReadAccess[m_schema.numColumns()];
+                int delegateTableIndex = 0;//NOSONAR
+                int delegateColumnIndex = 0;//NOSONAR
+                for (int i = 0; i < columnAccesses.length; i++) {//NOSONAR
+                    while (delegateTableIndex < m_tableOffsets.length && m_tableOffsets[delegateTableIndex] <= i) {
                         delegateTableIndex++;
                     }
                     delegateTableIndex--;
-                    delegateColumnIndex = i - tableOffsets[delegateTableIndex];
+                    delegateColumnIndex = i - m_tableOffsets[delegateTableIndex];
                     final ReadAccess delegateColumnAccess =
                         delegateRowAccesses[delegateTableIndex].getAccess(delegateColumnIndex);
                     @SuppressWarnings("unchecked") // Type safety is ensured by data-spec matching at runtime.
                     final DelegatingReadAccess<ReadAccess> delegatingColumnAccess =
                         (DelegatingReadAccess<ReadAccess>)DelegatingReadAccesses
-                            .createDelegatingAccess(schema.getSpec(i));
+                            .createDelegatingAccess(m_schema.getSpec(i));
                     delegatingColumnAccess.setDelegateAccess(delegateColumnAccess);
                     columnAccesses[i] = delegatingColumnAccess;
                 }
@@ -176,7 +179,7 @@ class AppendedRowAccessible implements RowAccessible {
             @Override
             public <A extends ReadAccess> A getAccess(final int index) {
                 @SuppressWarnings("unchecked")
-                final A casted = (A)m_columnAccesses[index];
+                final A casted = (A)m_columnAccesses[index];//NOSONAR
                 return casted;
             }
         }
