@@ -75,4 +75,14 @@ public class DefaultListDataTraits extends DefaultDataTraits implements ListData
         return 31 * super.hashCode() + 37 * m_inner.hashCode();
     }
 
+    @Override
+    public String toString() {
+        return new StringBuilder("[outer: ")//
+                .append(super.toString())//
+                .append(", inner: ")//
+                .append(m_inner.toString())//
+                .append("]")//
+                .toString();
+    }
+
 }

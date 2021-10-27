@@ -23,6 +23,8 @@ package org.knime.core.table.schema.traits;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Special implementation of {@link DefaultDataTraits} for structs
@@ -87,6 +89,15 @@ public class DefaultStructDataTraits extends DefaultDataTraits implements Struct
         return 37 * super.hashCode() + 31 * innerHashCode;
     }
 
+    @Override
+    public String toString() {
+        return new StringBuilder("{outer: ")//
+            .append(super.toString())//
+            .append(", inner: ")//
+            .append(Stream.of(m_inner).map(Object::toString).collect(Collectors.joining(",", "{", "}")))//
+            .append("}")//
+            .toString();
+    }
 
     public static Builder builder() {
         return new Builder();

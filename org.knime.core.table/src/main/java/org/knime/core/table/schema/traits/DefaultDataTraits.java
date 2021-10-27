@@ -87,4 +87,9 @@ public class DefaultDataTraits implements DataTraits {
         return Arrays.hashCode(m_traits);
     }
 
+    @Override
+    public String toString() {
+        return Arrays.toString(m_traits);
+    }
+
 }
