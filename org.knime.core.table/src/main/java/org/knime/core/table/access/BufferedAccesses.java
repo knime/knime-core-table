@@ -147,18 +147,6 @@ public final class BufferedAccesses {
     }
 
     /**
-     * Convenience method for creating an array of BufferedAccesses for a provided schema.
-     *
-     * @param schema for which to create the BufferedAccesses
-     * @return BufferedAccesses corresponding to the DataSpecs in the provided schema
-     */
-    private static BufferedAccess[] createBufferedAccesses(final ColumnarSchema schema) {
-        return schema.specStream()//
-            .map(BufferedAccesses::createBufferedAccess)//
-            .toArray(BufferedAccess[]::new);
-    }
-
-    /**
      * Both a {@link ReadAccessRow} and {@link WriteAccessRow} that is based on {@link BufferedAccess BufferedAccesses}.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
@@ -184,6 +172,18 @@ public final class BufferedAccesses {
 
         private DefaultBufferedAccessRow(final ColumnarSchema schema) {
             m_accesses = createBufferedAccesses(schema);
+        }
+
+        /**
+         * Convenience method for creating an array of BufferedAccesses for a provided schema.
+         *
+         * @param schema for which to create the BufferedAccesses
+         * @return BufferedAccesses corresponding to the DataSpecs in the provided schema
+         */
+        private static BufferedAccess[] createBufferedAccesses(final ColumnarSchema schema) {
+            return schema.specStream()//
+                .map(BufferedAccesses::createBufferedAccess)//
+                .toArray(BufferedAccess[]::new);
         }
 
         @Override
@@ -524,7 +524,7 @@ public final class BufferedAccesses {
                 m_size = size;
                 if (m_inner.length < size) {
                     var newInner = Arrays.copyOf(m_inner, size);
-                    for (int i = m_inner.length; i < size; i++) {
+                    for (int i = m_inner.length; i < size; i++) {//NOSONAR
                         newInner[i] = createInnerBuffer();
                     }
                     m_inner = newInner;
@@ -552,7 +552,7 @@ public final class BufferedAccesses {
                     final ListReadAccess listAccess = (ListReadAccess)access;
                     final int listSize = listAccess.size();
                     create(listSize);
-                    for (int i = 0; i < listSize; i++) {
+                    for (int i = 0; i < listSize; i++) {//NOSONAR
                         m_inner[i].setFrom(listAccess.getAccess(i));
                     }
                 }
@@ -653,7 +653,7 @@ public final class BufferedAccesses {
             public void setFrom(final ReadAccess access) {
                 final StructReadAccess structAccess = (StructReadAccess)access;
                 final int numInnerReadAccesses = structAccess.size();
-                for (int i = 0; i < numInnerReadAccesses; i++) {
+                for (int i = 0; i < numInnerReadAccesses; i++) {//NOSONAR
                     m_inner[i].setFrom(structAccess.getAccess(i));
                 }
             }
@@ -661,7 +661,7 @@ public final class BufferedAccesses {
             @Override
             public String toString() {
                 var sb = new StringBuilder("{");
-                for (int i = 0; i < m_inner.length; i++) {
+                for (int i = 0; i < m_inner.length; i++) {//NOSONAR
                     sb.append(i).append(": ");
                     sb.append(m_inner[i]);
                 }
