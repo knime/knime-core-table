@@ -482,12 +482,15 @@ public final class BufferedAccesses {
 
         }
 
-        // TODO: this implementation looks pretty inefficient
         private static final class BufferedListAccess implements ListReadAccess, ListWriteAccess, BufferedAccess {
 
             private final ListDataSpec m_spec;
 
-            private BufferedAccess[] m_inner;
+            private BufferedAccess[] m_inner = new BufferedAccess[0];
+
+            private boolean m_isMissing = true;
+
+            private int m_size;
 
             BufferedListAccess(final ListDataSpec spec) {
                 m_spec = spec;
@@ -495,12 +498,12 @@ public final class BufferedAccesses {
 
             @Override
             public boolean isMissing() {
-                return m_inner == null;
+                return m_isMissing;
             }
 
             @Override
             public int size() {
-                return m_inner.length;
+                return m_size;
             }
 
             @Override
@@ -512,22 +515,26 @@ public final class BufferedAccesses {
 
             @Override
             public void setMissing() {
-                m_inner = null;
+                m_isMissing = true;
             }
 
             @Override
             public void create(final int size) {
-                if (m_inner == null) {
-                    m_inner = new BufferedAccess[size];
-                } else if (m_inner.length < size) {
+                m_isMissing = false;
+                m_size = size;
+                if (m_inner.length < size) {
                     var newInner = Arrays.copyOf(m_inner, size);
                     for (int i = m_inner.length; i < size; i++) {
-                        newInner[i] = createBufferedAccess(m_spec.getInner());
+                        newInner[i] = createInnerBuffer();
                     }
                     m_inner = newInner;
                 } else {
                     // reuse the existing buffers
                 }
+            }
+
+            private BufferedAccess createInnerBuffer() {
+                return createBufferedAccess(m_spec.getInner());
             }
 
             @Override
