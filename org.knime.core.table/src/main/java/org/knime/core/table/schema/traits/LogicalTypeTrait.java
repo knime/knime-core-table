@@ -56,4 +56,23 @@ public final class LogicalTypeTrait implements DataTrait {
     public String toString() {
         return m_logicalType;
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == this) {
+            return true;
+        }
+
+        if (!(obj instanceof LogicalTypeTrait)) {
+            return false;
+        }
+
+        final var other = (LogicalTypeTrait)obj;
+        return other.m_logicalType.equals(m_logicalType);
+    }
+
+    @Override
+    public int hashCode() {
+        return m_logicalType.hashCode();
+    }
 }
