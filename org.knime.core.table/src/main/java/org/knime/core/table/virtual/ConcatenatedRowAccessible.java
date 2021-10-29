@@ -50,6 +50,7 @@ package org.knime.core.table.virtual;
 
 import static java.util.stream.Collectors.toList;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -60,6 +61,8 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccessRow;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the operation specified by {@link ConcatenateTransformSpec}.
@@ -74,12 +77,11 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
 
     ConcatenatedRowAccessible(final List<RowAccessible> tablesToConcatenate) {
         m_delegates = tablesToConcatenate.stream()//
-                .map(RowAccessibles::toLookahead)//
-                .collect(toList());
-        m_schema = ColumnarSchemas
-            .concatenate(tablesToConcatenate.stream()//
-                .map(RowAccessible::getSchema)//
-                .collect(toList()));
+            .map(RowAccessibles::toLookahead)//
+            .collect(toList());
+        m_schema = ColumnarSchemas.concatenate(tablesToConcatenate.stream()//
+            .map(RowAccessible::getSchema)//
+            .collect(toList()));
     }
 
     /**
@@ -110,6 +112,8 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
     // knime-core-columnar. Consolidate some of the "multiple-underlying-partitions" handling logic?
     private static final class ConcatenatedRowCursor implements LookaheadCursor<ReadAccessRow> {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(ConcatenatedRowCursor.class);
+
         private final Iterator<LookaheadRowAccessible> m_delegateTables;
 
         private final DelegatingReadAccessRow m_access;
@@ -129,9 +133,19 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
                 if (cursor.canForward()) {
                     m_access.setDelegateAccess(cursor.access());
                     return cursor;
+                } else {
+                    closeWithDebug(cursor);
                 }
             }
             return null;
+        }
+
+        private static void closeWithDebug(final Closeable closeable) {
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                LOGGER.debug("Failed to close delegate cursor.", e);
+            }
         }
 
         @Override
@@ -153,6 +167,7 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
             if (m_currentDelegateCursor == null) {
                 return false;
             } else if (!m_currentDelegateCursor.canForward()) {
+                closeWithDebug(m_currentDelegateCursor);
                 m_currentDelegateCursor = findNextNonEmptyCursor();
                 return canForward();
             } else {
