@@ -8,6 +8,7 @@ import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.schema.traits.DefaultListDataTraits;
 import org.knime.core.table.schema.traits.DefaultStructDataTraits;
+import org.knime.core.table.schema.traits.LogicalTypeTrait;
 
 /**
  * Defines constants and methods that each combine a {@link DataSpec} with {@link DataTrait}s. This is used for
@@ -72,6 +73,23 @@ public final class DataSpecs {
      */
     public static final DataTrait DICT_ENCODING(final DictEncodingTrait.KeyType keyType) { // NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
         return new DictEncodingTrait(keyType);
+    }
+
+    /**
+     * Construct a {@link LogicalTypeTrait} from a string.
+     *
+     * <pre>
+     * {
+     *     &#64;code
+     *     var schema = ColumnarSchema.of(LONG(LOGICAL_TYPE("UUID")));
+     * }
+     * </pre>
+     *
+     * @param logicalType The logical type identifier
+     * @return The logical type trait
+     */
+    public static final DataTrait LOGICAL_TYPE(final String logicalType) { // NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
+        return new LogicalTypeTrait(logicalType);
     }
 
     public static final DataSpecWithTraits BOOLEAN = new DataSpecWithTraits(BooleanDataSpec.INSTANCE);
