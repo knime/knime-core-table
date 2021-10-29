@@ -78,14 +78,13 @@ public class BufferingLookaheadCursorTest {
         m_testInstance = new BufferingLookaheadCursor(SCHEMA, m_underlyingCursor);
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testAccessEmptyAfterFirstCanForward() {
+    public void testAccessNotEmptyAfterFirstCanForward() {
         stubAccess();
         stubAccesses("foo", 7);
         when(m_underlyingCursor.forward()).thenReturn(true);
         assertTrue(m_testInstance.canForward());
-        ReadAccessRow readAccessRow = m_testInstance.access();
-        readAccessRow.getAccess(0).isMissing();
+        var readAccessRow = m_testInstance.access();
+        assertTrue(readAccessRow.getAccess(0).isMissing());
     }
 
     @Test

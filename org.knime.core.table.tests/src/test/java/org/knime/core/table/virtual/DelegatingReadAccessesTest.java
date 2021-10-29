@@ -39,7 +39,6 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
@@ -69,7 +68,6 @@ import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccess;
 @SuppressWarnings("javadoc")
 public class DelegatingReadAccessesTest {
 
-    @Ignore
     @Test
     public void testInt() {
         // Constructor Test
@@ -247,11 +245,11 @@ public class DelegatingReadAccessesTest {
 
     @Test
     public void testStruct() {
-        // Constructor Test
+        final var spec = new StructDataSpec(DataSpec.stringSpec(), DataSpec.intSpec());
         var delegatingStructReadAccess = (StructReadAccess)DelegatingReadAccesses
-            .createDelegatingAccess(new StructDataSpec(DataSpec.stringSpec()));
+            .createDelegatingAccess(spec);
         // Size Test
-        assertEquals(1, delegatingStructReadAccess.size());
+        assertEquals(2, delegatingStructReadAccess.size());
 
         // setDelegateAccess
         var structReadAccess = mock(StructReadAccess.class);
@@ -273,7 +271,7 @@ public class DelegatingReadAccessesTest {
         assertFalse(delegatingStructReadAccess.isMissing());
 
         // Spec Test outer
-        assertEquals(new StructDataSpec(DataSpec.stringSpec()), delegatingStructReadAccess.getDataSpec());
+        assertEquals(spec, delegatingStructReadAccess.getDataSpec());
     }
 
     @SuppressWarnings("unchecked")
