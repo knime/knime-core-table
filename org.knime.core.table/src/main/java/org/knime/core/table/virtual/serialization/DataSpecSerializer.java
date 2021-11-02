@@ -24,20 +24,14 @@ import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -77,30 +71,18 @@ public final class DataSpecSerializer {
                     return ByteDataSpec.INSTANCE;
                 case "double":
                     return DoubleDataSpec.INSTANCE;
-                case "duration":
-                    return DurationDataSpec.INSTANCE;
                 case "float":
                     return FloatDataSpec.INSTANCE;
                 case "int":
                     return IntDataSpec.INSTANCE;
-                case "local_date":
-                    return LocalDateDataSpec.INSTANCE;
-                case "local_date_time":
-                    return LocalDateTimeDataSpec.INSTANCE;
-                case "local_time":
-                    return LocalTimeDataSpec.INSTANCE;
                 case "long":
                     return LongDataSpec.INSTANCE;
-                case "period":
-                    return PeriodDataSpec.INSTANCE;
                 case "string":
                     return StringDataSpec.INSTANCE;
                 case "variable_width_binary":
                     return VarBinaryDataSpec.INSTANCE;
                 case "void":
                     return VoidDataSpec.INSTANCE;
-                case "zoned_date_time":
-                    return ZonedDateTimeDataSpec.INSTANCE;
                 default:
                     throw new IllegalStateException("Unknown data spec type identifier: " + typeIdentifier);
             }
@@ -143,11 +125,6 @@ public final class DataSpecSerializer {
         }
 
         @Override
-        public JsonNode visit(final DurationDataSpec spec) {
-            return m_factory.textNode("duration");
-        }
-
-        @Override
         public JsonNode visit(final FloatDataSpec spec) {
             return m_factory.textNode("float");
         }
@@ -167,28 +144,8 @@ public final class DataSpecSerializer {
         }
 
         @Override
-        public JsonNode visit(final LocalDateDataSpec spec) {
-            return m_factory.textNode("local_date");
-        }
-
-        @Override
-        public JsonNode visit(final LocalDateTimeDataSpec spec) {
-            return m_factory.textNode("local_date_time");
-        }
-
-        @Override
-        public JsonNode visit(final LocalTimeDataSpec spec) {
-            return m_factory.textNode("local_time");
-        }
-
-        @Override
         public JsonNode visit(final LongDataSpec spec) {
             return m_factory.textNode("long");
-        }
-
-        @Override
-        public JsonNode visit(final PeriodDataSpec spec) {
-            return m_factory.textNode("period");
         }
 
         @Override
@@ -211,11 +168,6 @@ public final class DataSpecSerializer {
         @Override
         public JsonNode visit(final VoidDataSpec spec) {
             return m_factory.textNode("void");
-        }
-
-        @Override
-        public JsonNode visit(final ZonedDateTimeDataSpec spec) {
-            return m_factory.textNode("zoned_date_time");
         }
 
         @Override

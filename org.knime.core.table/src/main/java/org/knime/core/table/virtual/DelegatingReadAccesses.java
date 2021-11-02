@@ -20,52 +20,34 @@
  */
 package org.knime.core.table.virtual;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
-import org.knime.core.table.access.DurationAccess.DurationReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
-import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
-import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeReadAccess;
-import org.knime.core.table.access.LocalTimeAccess.LocalTimeReadAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
-import org.knime.core.table.access.PeriodAccess.PeriodReadAccess;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
-import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeReadAccess;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 /**
  * Provides implementations of {@link ReadAccess ReadAccesses} that simply delegate to another {@link ReadAccess}.
@@ -191,11 +173,6 @@ public final class DelegatingReadAccesses {
         }
 
         @Override
-        public DelegatingReadAccess visit(final DurationDataSpec spec) {
-            return new DelegatingDurationReadAccess(spec);
-        }
-
-        @Override
         public DelegatingReadAccess visit(final FloatDataSpec spec) {
             return new DelegatingFloatReadAccess(spec);
         }
@@ -206,28 +183,8 @@ public final class DelegatingReadAccesses {
         }
 
         @Override
-        public DelegatingReadAccess visit(final LocalDateDataSpec spec) {
-            return new DelegatingLocalDateReadAccess(spec);
-        }
-
-        @Override
-        public DelegatingReadAccess visit(final LocalDateTimeDataSpec spec) {
-            return new DelegatingLocalDateTimeReadAccess(spec);
-        }
-
-        @Override
-        public DelegatingReadAccess visit(final LocalTimeDataSpec spec) {
-            return new DelegatingLocalTimeReadAccess(spec);
-        }
-
-        @Override
         public DelegatingReadAccess visit(final LongDataSpec spec) {
             return new DelegatingLongReadAccess(spec);
-        }
-
-        @Override
-        public DelegatingReadAccess visit(final PeriodDataSpec spec) {
-            return new DelegatingPeriodReadAccess(spec);
         }
 
         @Override
@@ -249,11 +206,6 @@ public final class DelegatingReadAccesses {
         @Override
         public DelegatingReadAccess visit(final ListDataSpec spec) {
             return new DelegatingListReadAccess(spec);
-        }
-
-        @Override
-        public DelegatingReadAccess visit(final ZonedDateTimeDataSpec spec) {
-            return new DelegatingZonedDateTimeReadAccess(spec);
         }
 
         @Override
@@ -442,90 +394,6 @@ public final class DelegatingReadAccesses {
         public <T> T getObject(final ObjectDeserializer<T> deserializer) {
             return m_delegateAccess.getObject(deserializer);
         }
-    }
-
-    private static final class DelegatingDurationReadAccess extends AbstractDelegatingReadAccess<DurationReadAccess>
-        implements DurationReadAccess {
-
-        private DelegatingDurationReadAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public Duration getDurationValue() {
-            return m_delegateAccess.getDurationValue();
-        }
-
-    }
-
-    private static final class DelegatingPeriodReadAccess extends AbstractDelegatingReadAccess<PeriodReadAccess>
-        implements PeriodReadAccess {
-
-        private DelegatingPeriodReadAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public Period getPeriodValue() {
-            return m_delegateAccess.getPeriodValue();
-        }
-
-    }
-
-    private static final class DelegatingZonedDateTimeReadAccess
-        extends AbstractDelegatingReadAccess<ZonedDateTimeReadAccess> implements ZonedDateTimeReadAccess {
-
-        private DelegatingZonedDateTimeReadAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public ZonedDateTime getZonedDateTimeValue() {
-            return m_delegateAccess.getZonedDateTimeValue();
-        }
-
-    }
-
-    private static final class DelegatingLocalTimeReadAccess extends AbstractDelegatingReadAccess<LocalTimeReadAccess>
-        implements LocalTimeReadAccess {
-
-        private DelegatingLocalTimeReadAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public LocalTime getLocalTimeValue() {
-            return m_delegateAccess.getLocalTimeValue();
-        }
-
-    }
-
-    private static final class DelegatingLocalDateTimeReadAccess
-        extends AbstractDelegatingReadAccess<LocalDateTimeReadAccess> implements LocalDateTimeReadAccess {
-
-        private DelegatingLocalDateTimeReadAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public LocalDateTime getLocalDateTimeValue() {
-            return m_delegateAccess.getLocalDateTimeValue();
-        }
-
-    }
-
-    private static final class DelegatingLocalDateReadAccess extends AbstractDelegatingReadAccess<LocalDateReadAccess>
-        implements LocalDateReadAccess {
-
-        private DelegatingLocalDateReadAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public LocalDate getLocalDateValue() {
-            return m_delegateAccess.getLocalDateValue();
-        }
-
     }
 
     private abstract static class AbstractDelegatingReadAccess<A extends ReadAccess> implements DelegatingReadAccess {

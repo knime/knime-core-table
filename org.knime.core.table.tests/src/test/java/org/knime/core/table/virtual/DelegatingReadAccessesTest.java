@@ -32,12 +32,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.DataInput;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 import org.junit.Test;
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
@@ -46,15 +40,10 @@ import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
-import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
-import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeReadAccess;
-import org.knime.core.table.access.LocalTimeAccess.LocalTimeReadAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
-import org.knime.core.table.access.PeriodAccess.PeriodReadAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
-import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeReadAccess;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.ListDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
@@ -305,118 +294,6 @@ public class DelegatingReadAccessesTest {
         }
         when(varBinaryReadAccess.getObject(deserializer)).thenReturn("Hui Buh");
         assertEquals("Hui Buh", varBinaryReadAccess.getObject(deserializer));
-    }
-
-    @Test
-    public void testPeriod() {
-        // Constructor Test
-        var delegatingPeriodReadAccess =
-            (PeriodReadAccess)DelegatingReadAccesses.createDelegatingAccess(DataSpec.periodSpec());
-        // Spec Test
-        assertEquals(DataSpec.periodSpec(), delegatingPeriodReadAccess.getDataSpec());
-        // 1. isMissing Test
-        assertTrue(delegatingPeriodReadAccess.isMissing()); // m_delegateAccesss == null, thus is missing
-        // Mock Setup
-        var periodReadAccess = mock(PeriodReadAccess.class);
-        // Set Test
-        ((DelegatingReadAccess)delegatingPeriodReadAccess).setDelegateAccess(periodReadAccess);
-        // 2. isMissing Test
-        assertFalse(delegatingPeriodReadAccess.isMissing());
-        // getPeriodValue Test
-        when(periodReadAccess.getPeriodValue()).thenReturn(Period.of(2, 1, 0));
-        assertEquals(Period.of(2, 1, 0), delegatingPeriodReadAccess.getPeriodValue());
-        verify(periodReadAccess).getPeriodValue();
-    }
-
-    @Test
-    public void testZonedDateTime() {
-        // Constructor Test
-        var delegatingZonedDateTimeReadAccess =
-            (ZonedDateTimeReadAccess)DelegatingReadAccesses.createDelegatingAccess(DataSpec.zonedDateTimeSpec());
-        // Spec Test
-        assertEquals(DataSpec.zonedDateTimeSpec(), delegatingZonedDateTimeReadAccess.getDataSpec());
-        // 1. isMissing Test
-        assertTrue(delegatingZonedDateTimeReadAccess.isMissing()); // m_delegateAccesss == null, thus is missing
-        // Mock Setup
-        var zonedDateTimeReadAccess = mock(ZonedDateTimeReadAccess.class);
-        // Set Test
-        ((DelegatingReadAccess)delegatingZonedDateTimeReadAccess)
-            .setDelegateAccess(zonedDateTimeReadAccess);
-        // 2. isMissing Test
-        assertFalse(delegatingZonedDateTimeReadAccess.isMissing());
-        // getZonedDateTimeValue Test
-        var localDateTime = LocalDateTime.of(2021, 10, 18, 11, 53);
-        when(zonedDateTimeReadAccess.getZonedDateTimeValue())
-            .thenReturn(ZonedDateTime.of(localDateTime, ZoneId.of("Europe/Paris")));
-        assertEquals(ZonedDateTime.of(localDateTime, ZoneId.of("Europe/Paris")),
-            delegatingZonedDateTimeReadAccess.getZonedDateTimeValue());
-        verify(zonedDateTimeReadAccess).getZonedDateTimeValue();
-    }
-
-    @Test
-    public void testLocalTime() {
-        // Constructor Test
-        var delegatingLocalTimeReadAccess =
-            (LocalTimeReadAccess)DelegatingReadAccesses.createDelegatingAccess(DataSpec.localTimeSpec());
-        // Spec Test
-        assertEquals(DataSpec.localTimeSpec(), delegatingLocalTimeReadAccess.getDataSpec());
-        // 1. isMissing Test
-        assertTrue(delegatingLocalTimeReadAccess.isMissing()); // m_delegateAccesss == null, thus is missing
-        // Mock Setup
-        var localTimeReadAccess = mock(LocalTimeReadAccess.class);
-        // Set Test
-        ((DelegatingReadAccess)delegatingLocalTimeReadAccess)
-            .setDelegateAccess(localTimeReadAccess);
-        // 2. isMissing Test
-        assertFalse(delegatingLocalTimeReadAccess.isMissing());
-        // getLocalTimeValue Test
-        when(localTimeReadAccess.getLocalTimeValue()).thenReturn(LocalTime.of(12, 24));
-        assertEquals(LocalTime.of(12, 24), delegatingLocalTimeReadAccess.getLocalTimeValue());
-        verify(localTimeReadAccess).getLocalTimeValue();
-    }
-
-    @Test
-    public void testLocalDateTime() {
-        // Constructor Test
-        var delegatingLocalDateTimeReadAccess =
-            (LocalDateTimeReadAccess)DelegatingReadAccesses.createDelegatingAccess(DataSpec.localDateTimeSpec());
-        // Spec Test
-        assertEquals(DataSpec.localDateTimeSpec(), delegatingLocalDateTimeReadAccess.getDataSpec());
-        // 1. isMissing Test
-        assertTrue(delegatingLocalDateTimeReadAccess.isMissing()); // m_delegateAccesss == null, thus is missing
-        // Mock Setup
-        var localDateTimeReadAccess = mock(LocalDateTimeReadAccess.class);
-        // Set Test
-        ((DelegatingReadAccess)delegatingLocalDateTimeReadAccess)
-            .setDelegateAccess(localDateTimeReadAccess);
-        // 2. isMissing Test
-        assertFalse(delegatingLocalDateTimeReadAccess.isMissing());
-        // getLocalDateTimeValue Test
-        when(localDateTimeReadAccess.getLocalDateTimeValue()).thenReturn(LocalDateTime.of(2021, 10, 18, 11, 53));
-        assertEquals(LocalDateTime.of(2021, 10, 18, 11, 53), delegatingLocalDateTimeReadAccess.getLocalDateTimeValue());
-        verify(localDateTimeReadAccess).getLocalDateTimeValue();
-    }
-
-    @Test
-    public void testLocalDate() {
-        // Constructor Test
-        var delegatingLocalDateReadAccess =
-            (LocalDateReadAccess)DelegatingReadAccesses.createDelegatingAccess(DataSpec.localDateSpec());
-        // Spec Test
-        assertEquals(DataSpec.localDateSpec(), delegatingLocalDateReadAccess.getDataSpec());
-        // 1. isMissing Test
-        assertTrue(delegatingLocalDateReadAccess.isMissing()); // m_delegateAccesss == null, thus is missing
-        // Mock Setup
-        var localDateReadAccess = mock(LocalDateReadAccess.class);
-        // Set Test
-        ((DelegatingReadAccess)delegatingLocalDateReadAccess)
-            .setDelegateAccess(localDateReadAccess);
-        // 2. isMissing Test
-        assertFalse(delegatingLocalDateReadAccess.isMissing());
-        // getLocalDateValue Test
-        when(localDateReadAccess.getLocalDateValue()).thenReturn(LocalDate.ofYearDay(2021, 32));
-        assertEquals(LocalDate.ofYearDay(2021, 32), delegatingLocalDateReadAccess.getLocalDateValue());
-        verify(localDateReadAccess).getLocalDateValue();
     }
 
 }

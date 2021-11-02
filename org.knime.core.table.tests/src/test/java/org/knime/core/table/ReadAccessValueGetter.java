@@ -63,20 +63,14 @@ import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 final class ReadAccessValueGetter {
 
@@ -116,11 +110,6 @@ final class ReadAccessValueGetter {
         }
 
         @Override
-        public Object visit(final DurationDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-
-        @Override
         public Object visit(final FloatDataSpec spec) {
             return ((FloatReadAccess)m_access).getFloatValue();
         }
@@ -131,28 +120,8 @@ final class ReadAccessValueGetter {
         }
 
         @Override
-        public Object visit(final LocalDateDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-
-        @Override
-        public Object visit(final LocalDateTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-
-        @Override
-        public Object visit(final LocalTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-
-        @Override
         public Object visit(final LongDataSpec spec) {
             return ((LongReadAccess)m_access).getLongValue();
-        }
-
-        @Override
-        public Object visit(final PeriodDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
         }
 
         @Override
@@ -183,11 +152,6 @@ final class ReadAccessValueGetter {
                 listValue[i] = getValue(listDataSpec.getInner(), listAccess.getAccess(i));
             }
             return listValue;
-        }
-
-        @Override
-        public Object visit(final ZonedDateTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
         }
 
         @Override

@@ -49,12 +49,6 @@
 package org.knime.core.table.access;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
@@ -63,32 +57,20 @@ import org.knime.core.table.access.ByteAccess.ByteReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteWriteAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
-import org.knime.core.table.access.DurationAccess.DurationReadAccess;
-import org.knime.core.table.access.DurationAccess.DurationWriteAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatWriteAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.IntAccess.IntWriteAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
 import org.knime.core.table.access.ListAccess.ListWriteAccess;
-import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
-import org.knime.core.table.access.LocalDateAccess.LocalDateWriteAccess;
-import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeReadAccess;
-import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeWriteAccess;
-import org.knime.core.table.access.LocalTimeAccess.LocalTimeReadAccess;
-import org.knime.core.table.access.LocalTimeAccess.LocalTimeWriteAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
 import org.knime.core.table.access.LongAccess.LongWriteAccess;
-import org.knime.core.table.access.PeriodAccess.PeriodReadAccess;
-import org.knime.core.table.access.PeriodAccess.PeriodWriteAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StringAccess.StringWriteAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.StructAccess.StructWriteAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryWriteAccess;
-import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeReadAccess;
-import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeWriteAccess;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.WriteAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
@@ -96,22 +78,16 @@ import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 import com.google.common.io.ByteStreams;
 
@@ -279,36 +255,6 @@ public final class BufferedAccesses {
         }
 
         @Override
-        public BufferedAccess visit(final LocalDateDataSpec spec) {
-            return new BufferedLocalDateAccess();
-        }
-
-        @Override
-        public BufferedAccess visit(final LocalTimeDataSpec spec) {
-            return new BufferedLocalTimeAccess();
-        }
-
-        @Override
-        public BufferedAccess visit(final LocalDateTimeDataSpec spec) {
-            return new BufferedLocalDateTimeAccess();
-        }
-
-        @Override
-        public BufferedAccess visit(final DurationDataSpec spec) {
-            return new BufferedDurationAccess();
-        }
-
-        @Override
-        public BufferedAccess visit(final PeriodDataSpec spec) {
-            return new BufferedPeriodAccess();
-        }
-
-        @Override
-        public BufferedAccess visit(final ZonedDateTimeDataSpec spec) {
-            return new BufferedZonedDateTimeAccess();
-        }
-
-        @Override
         public BufferedAccess visit(final StringDataSpec spec) {
             return new BufferedStringAccess();
         }
@@ -403,26 +349,6 @@ public final class BufferedAccesses {
             @Override
             protected String valueToString() {
                 return Double.toString(m_value);
-            }
-
-        }
-
-        private static final class BufferedDurationAccess extends AbstractBufferedObjectAccess<Duration>
-            implements DurationReadAccess, DurationWriteAccess {
-
-            @Override
-            public void setDurationValue(final Duration value) {
-                m_value = value;
-            }
-
-            @Override
-            public Duration getDurationValue() {
-                return m_value;
-            }
-
-            @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((DurationReadAccess)access).getDurationValue();
             }
 
         }
@@ -670,86 +596,6 @@ public final class BufferedAccesses {
             }
         }
 
-        private static final class BufferedLocalDateAccess extends AbstractBufferedObjectAccess<LocalDate>
-            implements LocalDateReadAccess, LocalDateWriteAccess {
-
-            @Override
-            public void setLocalDateValue(final LocalDate value) {
-                m_value = value;
-            }
-
-            @Override
-            public LocalDate getLocalDateValue() {
-                return m_value;
-            }
-
-            @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((LocalDateReadAccess)access).getLocalDateValue();
-            }
-
-        }
-
-        private static final class BufferedLocalDateTimeAccess extends AbstractBufferedObjectAccess<LocalDateTime>
-            implements LocalDateTimeReadAccess, LocalDateTimeWriteAccess {
-
-            @Override
-            public void setLocalDateTimeValue(final LocalDateTime value) {
-                m_value = value;
-            }
-
-            @Override
-            public LocalDateTime getLocalDateTimeValue() {
-                return m_value;
-            }
-
-            @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((LocalDateTimeReadAccess)access).getLocalDateTimeValue();
-            }
-
-        }
-
-        private static final class BufferedLocalTimeAccess extends AbstractBufferedObjectAccess<LocalTime>
-            implements LocalTimeReadAccess, LocalTimeWriteAccess {
-
-            @Override
-            public void setLocalTimeValue(final LocalTime value) {
-                m_value = value;
-            }
-
-            @Override
-            public LocalTime getLocalTimeValue() {
-                return m_value;
-            }
-
-            @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((LocalTimeReadAccess)access).getLocalTimeValue();
-            }
-
-        }
-
-        private static final class BufferedPeriodAccess extends AbstractBufferedObjectAccess<Period>
-            implements PeriodReadAccess, PeriodWriteAccess {
-
-            @Override
-            public void setPeriodValue(final Period value) {
-                m_value = value;
-            }
-
-            @Override
-            public Period getPeriodValue() {
-                return m_value;
-            }
-
-            @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((PeriodReadAccess)access).getPeriodValue();
-            }
-
-        }
-
         private static final class BufferedStringAccess extends AbstractBufferedObjectAccess<String>
             implements StringReadAccess, StringWriteAccess {
 
@@ -869,26 +715,6 @@ public final class BufferedAccesses {
             public DataSpec getDataSpec() {
                 return DataSpec.voidSpec();
             }
-        }
-
-        private static final class BufferedZonedDateTimeAccess extends AbstractBufferedObjectAccess<ZonedDateTime>
-            implements ZonedDateTimeReadAccess, ZonedDateTimeWriteAccess {
-
-            @Override
-            public void setZonedDateTimeValue(final ZonedDateTime value) {
-                m_value = value;
-            }
-
-            @Override
-            public ZonedDateTime getZonedDateTimeValue() {
-                return m_value;
-            }
-
-            @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((ZonedDateTimeReadAccess)access).getZonedDateTimeValue();
-            }
-
         }
 
         private abstract static class AbstractBufferedAccess implements BufferedAccess {

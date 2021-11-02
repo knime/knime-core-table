@@ -110,12 +110,6 @@ public final class DataSpecs {
         return new DataSpecWithTraits(DoubleDataSpec.INSTANCE, traits);
     }
 
-    public static final DataSpecWithTraits DURATION = new DataSpecWithTraits(DurationDataSpec.INSTANCE);
-
-    public static DataSpecWithTraits DURATION(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
-        return new DataSpecWithTraits(DurationDataSpec.INSTANCE, traits);
-    }
-
     public static final DataSpecWithTraits FLOAT = new DataSpecWithTraits(FloatDataSpec.INSTANCE);
 
     public static DataSpecWithTraits FLOAT(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
@@ -128,34 +122,10 @@ public final class DataSpecs {
         return new DataSpecWithTraits(IntDataSpec.INSTANCE, traits);
     }
 
-    public static final DataSpecWithTraits LOCALDATE = new DataSpecWithTraits(LocalDateDataSpec.INSTANCE);
-
-    public static DataSpecWithTraits LOCALDATE(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
-        return new DataSpecWithTraits(LocalDateDataSpec.INSTANCE, traits);
-    }
-
-    public static final DataSpecWithTraits LOCALDATETIME = new DataSpecWithTraits(LocalDateTimeDataSpec.INSTANCE);
-
-    public static DataSpecWithTraits LOCALDATETIME(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
-        return new DataSpecWithTraits(LocalDateTimeDataSpec.INSTANCE, traits);
-    }
-
-    public static final DataSpecWithTraits LOCALTIME = new DataSpecWithTraits(LocalTimeDataSpec.INSTANCE);
-
-    public static DataSpecWithTraits LOCALTIME(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
-        return new DataSpecWithTraits(LocalTimeDataSpec.INSTANCE, traits);
-    }
-
     public static final DataSpecWithTraits LONG = new DataSpecWithTraits(LongDataSpec.INSTANCE);
 
     public static DataSpecWithTraits LONG(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
         return new DataSpecWithTraits(LongDataSpec.INSTANCE, traits);
-    }
-
-    public static final DataSpecWithTraits PERIOD = new DataSpecWithTraits(PeriodDataSpec.INSTANCE);
-
-    public static DataSpecWithTraits PERIOD(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
-        return new DataSpecWithTraits(PeriodDataSpec.INSTANCE, traits);
     }
 
     public static final DataSpecWithTraits STRING = new DataSpecWithTraits(StringDataSpec.INSTANCE);
@@ -176,11 +146,6 @@ public final class DataSpecs {
         return new DataSpecWithTraits(VoidDataSpec.INSTANCE, traits);
     }
 
-    public static final DataSpecWithTraits ZONEDDATETIME = new DataSpecWithTraits(ZonedDateTimeDataSpec.INSTANCE);
-
-    public static DataSpecWithTraits ZONEDDATETIME(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
-        return new DataSpecWithTraits(ZonedDateTimeDataSpec.INSTANCE, traits);
-    }
 
     /**
      * Helper class to construct DataSpecWithTraits of lists. In conjunction with the definition below (which can be

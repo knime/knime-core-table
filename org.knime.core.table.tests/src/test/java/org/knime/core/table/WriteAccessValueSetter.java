@@ -63,20 +63,14 @@ import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 final class WriteAccessValueSetter {
 
@@ -119,11 +113,6 @@ final class WriteAccessValueSetter {
         }
 
         @Override
-        public Void visit(final DurationDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-
-        @Override
         public Void visit(final FloatDataSpec spec) {
             ((FloatWriteAccess)m_access).setFloatValue((float)m_value);
             return null;
@@ -136,29 +125,9 @@ final class WriteAccessValueSetter {
         }
 
         @Override
-        public Void visit(final LocalDateDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-
-        @Override
-        public Void visit(final LocalDateTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-
-        @Override
-        public Void visit(final LocalTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
-        }
-
-        @Override
         public Void visit(final LongDataSpec spec) {
             ((LongWriteAccess)m_access).setLongValue((long)m_value);
             return null;
-        }
-
-        @Override
-        public Void visit(final PeriodDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
         }
 
         @Override
@@ -192,11 +161,6 @@ final class WriteAccessValueSetter {
                 setValue(spec.getInner(), listAccess.getWriteAccess(i), listValue[i]);
             }
             return null;
-        }
-
-        @Override
-        public Void visit(final ZonedDateTimeDataSpec spec) {
-            throw new IllegalStateException("not yet implemented"); // TODO: implement
         }
 
         @Override

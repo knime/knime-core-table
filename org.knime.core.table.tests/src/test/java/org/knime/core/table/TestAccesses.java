@@ -48,16 +48,12 @@
  */
 package org.knime.core.table;
 
-import java.time.Duration;
-
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteWriteAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
-import org.knime.core.table.access.DurationAccess.DurationReadAccess;
-import org.knime.core.table.access.DurationAccess.DurationWriteAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatWriteAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
@@ -75,22 +71,16 @@ import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 /**
  * A collection of Test access implementations that can be retrieved by mapping from a given {@link DataSpec}.
@@ -179,11 +169,6 @@ public final class TestAccesses {
         }
 
         @Override
-        public TestAccess visit(final DurationDataSpec spec) {
-            return new TestDurationAccess();
-        }
-
-        @Override
         public TestAccess visit(final StringDataSpec spec) {
             return new TestStringAccess();
         }
@@ -203,30 +188,6 @@ public final class TestAccesses {
             throw new UnsupportedOperationException("nyi");
         }
 
-        @Override
-        public TestAccess visit(final LocalDateDataSpec spec) {
-            throw new UnsupportedOperationException("nyi");
-        }
-
-        @Override
-        public TestAccess visit(final LocalTimeDataSpec spec) {
-            throw new UnsupportedOperationException("nyi");
-        }
-
-        @Override
-        public TestAccess visit(final LocalDateTimeDataSpec spec) {
-            throw new UnsupportedOperationException("nyi");
-        }
-
-        @Override
-        public TestAccess visit(final PeriodDataSpec spec) {
-            throw new UnsupportedOperationException("nyi");
-        }
-
-        @Override
-        public TestAccess visit(final ZonedDateTimeDataSpec spec) {
-            throw new UnsupportedOperationException("nyi");
-        }
 
         private static final class TestBooleanAccess extends AbstractTestAccess<Boolean>
             implements BooleanReadAccess, BooleanWriteAccess {
@@ -284,26 +245,6 @@ public final class TestAccesses {
             @Override
             protected void setFromNonMissing(final ReadAccess access) {
                 set(((DoubleReadAccess)access).getDoubleValue());
-            }
-
-        }
-
-        private static final class TestDurationAccess extends AbstractTestAccess<Duration>
-            implements DurationReadAccess, DurationWriteAccess {
-
-            @Override
-            public void setDurationValue(final Duration duration) {
-                set(duration);
-            }
-
-            @Override
-            public Duration getDurationValue() {
-                return get();
-            }
-
-            @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((DurationReadAccess)access).getDurationValue());
             }
 
         }

@@ -81,13 +81,6 @@ public interface DataSpec {
     }
 
     /**
-     * @return singleton Duration spec
-     */
-    static DurationDataSpec durationSpec() {
-        return DurationDataSpec.INSTANCE;
-    }
-
-    /**
      * @return singleton float spec
      */
     static FloatDataSpec floatSpec() {
@@ -102,38 +95,10 @@ public interface DataSpec {
     }
 
     /**
-     * @return singleton LocalDate spec
-     */
-    static LocalDateDataSpec localDateSpec() {
-        return LocalDateDataSpec.INSTANCE;
-    }
-
-    /**
-     * @return singleton LocalDateTime spec
-     */
-    static LocalDateTimeDataSpec localDateTimeSpec() {
-        return LocalDateTimeDataSpec.INSTANCE;
-    }
-
-    /**
-     * @return singleton LocalTime spec
-     */
-    static LocalTimeDataSpec localTimeSpec() {
-        return LocalTimeDataSpec.INSTANCE;
-    }
-
-    /**
      * @return singleton long spec
      */
     static LongDataSpec longSpec() {
         return LongDataSpec.INSTANCE;
-    }
-
-    /**
-     * @return singleton Period spec
-     */
-    static PeriodDataSpec periodSpec() {
-        return PeriodDataSpec.INSTANCE;
     }
 
     /**
@@ -159,13 +124,6 @@ public interface DataSpec {
     }
 
     /**
-     * @return singleton ZonedDateTime spec
-     */
-    static ZonedDateTimeDataSpec zonedDateTimeSpec() {
-        return ZonedDateTimeDataSpec.INSTANCE;
-    }
-
-    /**
      * A visitor that visits {@link DataSpec DataSpecs}, mapping them to other objects of a certain type R.
      *
      * @param <R> the return type of the mapping
@@ -178,21 +136,11 @@ public interface DataSpec {
 
         R visit(DoubleDataSpec spec);
 
-        R visit(DurationDataSpec spec);
-
         R visit(FloatDataSpec spec);
 
         R visit(IntDataSpec spec);
 
-        R visit(LocalDateDataSpec spec);
-
-        R visit(LocalDateTimeDataSpec spec);
-
-        R visit(LocalTimeDataSpec spec);
-
         R visit(LongDataSpec spec);
-
-        R visit(PeriodDataSpec spec);
 
         R visit(VarBinaryDataSpec spec);
 
@@ -201,8 +149,6 @@ public interface DataSpec {
         R visit(StructDataSpec spec);
 
         R visit(ListDataSpec listDataSpec);
-
-        R visit(ZonedDateTimeDataSpec spec);
 
         R visit(StringDataSpec spec);
     }
@@ -221,21 +167,11 @@ public interface DataSpec {
 
         R visit(DoubleDataSpec spec, DataTraits traits);
 
-        R visit(DurationDataSpec spec, DataTraits traits);
-
         R visit(FloatDataSpec spec, DataTraits traits);
 
         R visit(IntDataSpec spec, DataTraits traits);
 
-        R visit(LocalDateDataSpec spec, DataTraits traits);
-
-        R visit(LocalDateTimeDataSpec spec, DataTraits traits);
-
-        R visit(LocalTimeDataSpec spec, DataTraits traits);
-
         R visit(LongDataSpec spec, DataTraits traits);
-
-        R visit(PeriodDataSpec spec, DataTraits traits);
 
         R visit(VarBinaryDataSpec spec, DataTraits traits);
 
@@ -244,8 +180,6 @@ public interface DataSpec {
         R visit(StructDataSpec spec, StructDataTraits traits);
 
         R visit(ListDataSpec listDataSpec, ListDataTraits traits);
-
-        R visit(ZonedDateTimeDataSpec spec, DataTraits traits);
 
         R visit(StringDataSpec spec, DataTraits traits);
 

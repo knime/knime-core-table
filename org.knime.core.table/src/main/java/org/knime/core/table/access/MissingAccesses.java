@@ -48,51 +48,33 @@
  */
 package org.knime.core.table.access;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
-import org.knime.core.table.access.DurationAccess.DurationReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
-import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
-import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeReadAccess;
-import org.knime.core.table.access.LocalTimeAccess.LocalTimeReadAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
-import org.knime.core.table.access.PeriodAccess.PeriodReadAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
-import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeReadAccess;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 /**
  * A collection of access implementations that are all {@code isMissing} and can be
@@ -205,36 +187,6 @@ public final class MissingAccesses {
         }
 
         @Override
-        public MissingAccess visit(final LocalDateDataSpec spec) {
-            return MissingLocalDateAccess.INSTANCE;
-        }
-
-        @Override
-        public MissingAccess visit(final LocalTimeDataSpec spec) {
-            return MissingLocalTimeAccess.INSTANCE;
-        }
-
-        @Override
-        public MissingAccess visit(final LocalDateTimeDataSpec spec) {
-            return MissingLocalDateTimeAccess.INSTANCE;
-        }
-
-        @Override
-        public MissingAccess visit(final DurationDataSpec spec) {
-            return MissingDurationAccess.INSTANCE;
-        }
-
-        @Override
-        public MissingAccess visit(final PeriodDataSpec spec) {
-            return MissingPeriodAccess.INSTANCE;
-        }
-
-        @Override
-        public MissingAccess visit(final ZonedDateTimeDataSpec spec) {
-            return MissingZonedDateTimeAccess.INSTANCE;
-        }
-
-        @Override
         public MissingAccess visit(final StringDataSpec spec) {
             return MissingStringAccess.INSTANCE;
         }
@@ -279,16 +231,6 @@ public final class MissingAccesses {
             }
         }
 
-        private static final class MissingDurationAccess implements MissingAccess, DurationReadAccess {
-
-            static final MissingDurationAccess INSTANCE = new MissingDurationAccess();
-
-            @Override
-            public Duration getDurationValue() {
-                return null;
-            }
-        }
-
         private static final class MissingFloatAccess implements MissingAccess, FloatReadAccess {
 
             static final MissingFloatAccess INSTANCE = new MissingFloatAccess();
@@ -316,46 +258,6 @@ public final class MissingAccesses {
             @Override
             public long getLongValue() {
                 return 0;
-            }
-        }
-
-        private static final class MissingLocalDateAccess implements MissingAccess, LocalDateReadAccess {
-
-            static final MissingLocalDateAccess INSTANCE = new MissingLocalDateAccess();
-
-            @Override
-            public LocalDate getLocalDateValue() {
-                return null;
-            }
-        }
-
-        private static final class MissingLocalDateTimeAccess implements MissingAccess, LocalDateTimeReadAccess {
-
-            static final MissingLocalDateTimeAccess INSTANCE = new MissingLocalDateTimeAccess();
-
-            @Override
-            public LocalDateTime getLocalDateTimeValue() {
-                return null;
-            }
-        }
-
-        private static final class MissingLocalTimeAccess implements MissingAccess, LocalTimeReadAccess {
-
-            static final MissingLocalTimeAccess INSTANCE = new MissingLocalTimeAccess();
-
-            @Override
-            public LocalTime getLocalTimeValue() {
-                return null;
-            }
-        }
-
-        private static final class MissingPeriodAccess implements MissingAccess, PeriodReadAccess {
-
-            static final MissingPeriodAccess INSTANCE = new MissingPeriodAccess();
-
-            @Override
-            public Period getPeriodValue() {
-                return null;
             }
         }
 
@@ -391,16 +293,6 @@ public final class MissingAccesses {
             @Override
             public DataSpec getDataSpec() {
                 return DataSpec.voidSpec();
-            }
-        }
-
-        private static final class MissingZonedDateTimeAccess implements MissingAccess, ZonedDateTimeReadAccess {
-
-            static final MissingZonedDateTimeAccess INSTANCE = new MissingZonedDateTimeAccess();
-
-            @Override
-            public ZonedDateTime getZonedDateTimeValue() {
-                return null;
             }
         }
 

@@ -59,20 +59,14 @@ import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 import org.knime.core.table.schema.traits.DataTrait;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
@@ -96,19 +90,13 @@ public final class DataSpecSerializerTest<T extends DataSpec> {
             BooleanDataSpec.INSTANCE, //
             ByteDataSpec.INSTANCE, //
             DoubleDataSpec.INSTANCE, //
-            DurationDataSpec.INSTANCE, //
             FloatDataSpec.INSTANCE, //
             IntDataSpec.INSTANCE, //
-            LocalDateDataSpec.INSTANCE, //
-            LocalDateTimeDataSpec.INSTANCE, //
-            LocalTimeDataSpec.INSTANCE, //
             LongDataSpec.INSTANCE, //
-            PeriodDataSpec.INSTANCE, //
             VarBinaryDataSpec.INSTANCE, //
             VoidDataSpec.INSTANCE, //
             new StructDataSpec(DoubleDataSpec.INSTANCE, IntDataSpec.INSTANCE, StringDataSpec.INSTANCE), //
             new ListDataSpec(DoubleDataSpec.INSTANCE), //
-            ZonedDateTimeDataSpec.INSTANCE, //
             StringDataSpec.INSTANCE, //
             //
             new StructDataSpec( //
