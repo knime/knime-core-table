@@ -88,13 +88,21 @@ public class DelegatingReadAccessesTest {
         // setDelegateAccess
         var listReadAccess = mock(ListReadAccess.class);
         var stringReadAccess = mock(StringReadAccess.class);
-        when(listReadAccess.getAccess(0)).thenReturn(stringReadAccess);
+        when(listReadAccess.getAccess()).thenReturn(stringReadAccess);
         ((DelegatingReadAccess)delegatingListReadAccess).setDelegateAccess(listReadAccess);
 
         // getAccess Test
         when(stringReadAccess.getStringValue()).thenReturn("Hui Buh");
-        var stringOfFirstElement = ((StringReadAccess)delegatingListReadAccess.getAccess(0)).getStringValue();
+        var stringOfFirstElement =
+            ((StringReadAccess)((ListReadAccess)delegatingListReadAccess.getAccess()).getAccess()).getStringValue();
         assertThat(stringOfFirstElement).isEqualTo("Hui Buh");
+
+        // setIndex Test
+        delegatingListReadAccess.setIndex(1);
+        when(stringReadAccess.getStringValue()).thenReturn("Hui Bui");
+        var stringOfSecondElement =
+            ((StringReadAccess)((ListReadAccess)delegatingListReadAccess.getAccess()).getAccess()).getStringValue();
+        assertThat(stringOfSecondElement).isEqualTo("Hui Bui");
 
         // isMissing List
         assertFalse(delegatingListReadAccess.isMissing());
@@ -235,8 +243,7 @@ public class DelegatingReadAccessesTest {
     @Test
     public void testStruct() {
         final var spec = new StructDataSpec(DataSpec.stringSpec(), DataSpec.intSpec());
-        var delegatingStructReadAccess = (StructReadAccess)DelegatingReadAccesses
-            .createDelegatingAccess(spec);
+        var delegatingStructReadAccess = (StructReadAccess)DelegatingReadAccesses.createDelegatingAccess(spec);
         // Size Test
         assertEquals(2, delegatingStructReadAccess.size());
 
@@ -276,8 +283,7 @@ public class DelegatingReadAccessesTest {
         // Mock Setup
         var varBinaryReadAccess = mock(VarBinaryReadAccess.class);
         // Set Test
-        ((DelegatingReadAccess)delegatingVarBinaryReadAccess)
-            .setDelegateAccess(varBinaryReadAccess);
+        ((DelegatingReadAccess)delegatingVarBinaryReadAccess).setDelegateAccess(varBinaryReadAccess);
         // 2. isMissing Test
         assertFalse(delegatingVarBinaryReadAccess.isMissing());
         // getVarBinaryValue Test
@@ -295,5 +301,4 @@ public class DelegatingReadAccessesTest {
         when(varBinaryReadAccess.getObject(deserializer)).thenReturn("Hui Buh");
         assertEquals("Hui Buh", varBinaryReadAccess.getObject(deserializer));
     }
-
 }
