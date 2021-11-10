@@ -312,6 +312,7 @@ public final class MissingAccesses {
                 return 0;
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             public <R extends ReadAccess> R getAccess() {
                 return (R)m_elementAccess;
