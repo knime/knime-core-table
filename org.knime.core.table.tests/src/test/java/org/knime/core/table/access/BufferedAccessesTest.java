@@ -31,7 +31,6 @@ import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StringAccess.StringWriteAccess;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.mockito.ArgumentMatchers;
 
 /**
  * Contains unit tests for the {@link BufferedAccesses}.
@@ -57,23 +56,28 @@ public class BufferedAccessesTest {
         assertThat(readList.size()).isEqualTo(3);
         assertThat(readList.isMissing()).isFalse();
         assertThat(readList.isMissing(0)).isTrue();
-        StringWriteAccess firstWriteAccess = writeList.getWriteAccess(0);
-        firstWriteAccess.setStringValue("foo");
+        writeList.setWriteIndex(0);
+        StringWriteAccess writeAccess = writeList.getWriteAccess();
+        writeAccess.setStringValue("foo");
         assertThat(readList.isMissing(0)).isFalse();
-        assertThat(readList.<StringReadAccess>getAccess(0).getStringValue()).isEqualTo("foo");
+        readList.setIndex(0);
+        assertThat(((StringReadAccess)readList.getAccess()).getStringValue()).isEqualTo("foo");
+        assertThat(readList.<StringReadAccess>getAccess().getStringValue()).isEqualTo("foo");
         assertThat(readList.isMissing(1)).isTrue();
         assertThat(readList.isMissing(2)).isTrue();
-        writeList.<StringWriteAccess>getWriteAccess(2).setStringValue("bar");
+        writeList.setWriteIndex(2);
+        readList.setIndex(2);
+        writeAccess.setStringValue("bar");
         assertThat(readList.isMissing(1)).isTrue();
         assertThat(readList.isMissing(2)).isFalse();
-        assertThat(readList.<StringReadAccess>getAccess(2).getStringValue()).isEqualTo("bar");
+        assertThat(readList.<StringReadAccess>getAccess().getStringValue()).isEqualTo("bar");
 
         writeList.setMissing();
         assertThat(readList.isMissing()).isTrue();
 
         var mockListReadAccess = mock(ListReadAccess.class);
         var mockStringReadAccess = mock(StringReadAccess.class);
-        when(mockListReadAccess.getAccess(ArgumentMatchers.anyInt())).thenReturn(mockStringReadAccess);
+        when(mockListReadAccess.getAccess()).thenReturn(mockStringReadAccess);
         when(mockListReadAccess.size()).thenReturn(2);
         when(mockStringReadAccess.isMissing()).thenReturn(true, false);
         when(mockStringReadAccess.getStringValue()).thenReturn("baz");
@@ -82,7 +86,8 @@ public class BufferedAccessesTest {
         assertThat(readList.size()).isEqualTo(2);
         assertThat(readList.isMissing(0)).isTrue();
         assertThat(readList.isMissing(1)).isFalse();
-        assertThat(readList.<StringReadAccess>getAccess(1).getStringValue()).isEqualTo("baz");
+        readList.setIndex(1);
+        assertThat(readList.<StringReadAccess>getAccess().getStringValue()).isEqualTo("baz");
 
         when(mockListReadAccess.isMissing()).thenReturn(true);
         writeList.setFrom(mockListReadAccess);

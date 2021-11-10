@@ -55,6 +55,7 @@ import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteWriteAccess;
+import org.knime.core.table.access.DelegatingWriteAccesses.DelegatingWriteAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
@@ -422,11 +423,12 @@ public final class BufferedAccesses {
 
             private final DelegatingReadAccess m_readAccess;
 
-            private int m_writeIdx = -1;
+            private final DelegatingWriteAccess m_writeAccess;
 
             BufferedListAccess(final ListDataSpec spec) {
                 m_spec = spec;
-                m_readAccess = DelegatingReadAccesses.createDelegatingAccess(spec);
+                m_readAccess = DelegatingReadAccesses.createDelegatingAccess(spec.getInner());
+                m_writeAccess = DelegatingWriteAccesses.createDelegatingWriteAccess(spec.getInner());
             }
 
             @Override
@@ -447,12 +449,20 @@ public final class BufferedAccesses {
 
             @Override
             public void setIndex(final int index) {
+                checkIndex(index);
                 m_readAccess.setDelegateAccess(m_inner[index]);
+            }
+
+            private void checkIndex(final int index) {
+                if (index < 0 || index >= size()) {
+                    throw new IndexOutOfBoundsException();
+                }
             }
 
             @Override
             public void setWriteIndex(final int index) {
-                m_writeIdx = index;
+                checkIndex(index);
+                m_writeAccess.setDelegateAccess(m_inner[index]);
             }
 
             @Override
@@ -481,9 +491,8 @@ public final class BufferedAccesses {
 
             @Override
             public <W extends WriteAccess> W getWriteAccess() {
-                // FIXME we need a DelegatingWriteAccess, that we can return (see getAccess and setIndex)
                 @SuppressWarnings("unchecked")
-                final W access = (W)m_inner[m_writeIdx];
+                final W access = (W)m_writeAccess;
                 return access;
             }
 
@@ -577,6 +586,7 @@ public final class BufferedAccesses {
                 final R cast = (R)m_inner[index];
                 return cast;
             }
+
 
             @Override
             public void setMissing() {
