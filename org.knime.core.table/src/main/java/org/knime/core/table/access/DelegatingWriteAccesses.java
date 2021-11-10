@@ -20,49 +20,31 @@
  */
 package org.knime.core.table.access;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
 import org.knime.core.table.access.ByteAccess.ByteWriteAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
-import org.knime.core.table.access.DurationAccess.DurationWriteAccess;
 import org.knime.core.table.access.FloatAccess.FloatWriteAccess;
 import org.knime.core.table.access.IntAccess.IntWriteAccess;
 import org.knime.core.table.access.ListAccess.ListWriteAccess;
-import org.knime.core.table.access.LocalDateAccess.LocalDateWriteAccess;
-import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeWriteAccess;
-import org.knime.core.table.access.LocalTimeAccess.LocalTimeWriteAccess;
 import org.knime.core.table.access.LongAccess.LongWriteAccess;
-import org.knime.core.table.access.PeriodAccess.PeriodWriteAccess;
 import org.knime.core.table.access.StringAccess.StringWriteAccess;
 import org.knime.core.table.access.StructAccess.StructWriteAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryWriteAccess;
-import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeWriteAccess;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 /**
  * Provides implementations of {@link WriteAccess WriteAccesses} that simply delegate to another {@link WriteAccess}.
@@ -117,11 +99,6 @@ public final class DelegatingWriteAccesses {
         }
 
         @Override
-        public DelegatingWriteAccess visit(final DurationDataSpec spec) {
-            return new DelegatingDurationWriteAccess(spec);
-        }
-
-        @Override
         public DelegatingWriteAccess visit(final FloatDataSpec spec) {
             return new DelegatingFloatWriteAccess(spec);
         }
@@ -132,28 +109,8 @@ public final class DelegatingWriteAccesses {
         }
 
         @Override
-        public DelegatingWriteAccess visit(final LocalDateDataSpec spec) {
-            return new DelegatingLocalDateWriteAccess(spec);
-        }
-
-        @Override
-        public DelegatingWriteAccess visit(final LocalDateTimeDataSpec spec) {
-            return new DelegatingLocalDateTimeWriteAccess(spec);
-        }
-
-        @Override
-        public DelegatingWriteAccess visit(final LocalTimeDataSpec spec) {
-            return new DelegatingLocalTimeWriteAccess(spec);
-        }
-
-        @Override
         public DelegatingWriteAccess visit(final LongDataSpec spec) {
             return new DelegatingLongWriteAccess(spec);
-        }
-
-        @Override
-        public DelegatingWriteAccess visit(final PeriodDataSpec spec) {
-            return new DelegatingPeriodWriteAccess(spec);
         }
 
         @Override
@@ -169,11 +126,6 @@ public final class DelegatingWriteAccesses {
         @Override
         public DelegatingWriteAccess visit(final ListDataSpec spec) {
             return new DelegatingListWriteAccess(spec);
-        }
-
-        @Override
-        public DelegatingWriteAccess visit(final ZonedDateTimeDataSpec spec) {
-            return new DelegatingZonedDateTimeWriteAccess(spec);
         }
 
         @Override
@@ -344,71 +296,6 @@ public final class DelegatingWriteAccesses {
         }
     }
 
-    private static final class DelegatingDurationWriteAccess extends AbstractDelegatingWriteAccess<DurationWriteAccess>
-        implements DurationWriteAccess {
-
-        public DelegatingDurationWriteAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public void setDurationValue(final Duration value) {
-            m_delegateAccess.setDurationValue(value);
-        }
-    }
-
-    private static final class DelegatingLocalDateWriteAccess
-        extends AbstractDelegatingWriteAccess<LocalDateWriteAccess> implements LocalDateWriteAccess {
-
-        public DelegatingLocalDateWriteAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public void setLocalDateValue(final LocalDate value) {
-            m_delegateAccess.setLocalDateValue(value);
-        }
-    }
-
-    private static final class DelegatingLocalDateTimeWriteAccess
-        extends AbstractDelegatingWriteAccess<LocalDateTimeWriteAccess> implements LocalDateTimeWriteAccess {
-
-        public DelegatingLocalDateTimeWriteAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public void setLocalDateTimeValue(final LocalDateTime value) {
-            m_delegateAccess.setLocalDateTimeValue(value);
-        }
-    }
-
-    private static final class DelegatingLocalTimeWriteAccess
-        extends AbstractDelegatingWriteAccess<LocalTimeWriteAccess> implements LocalTimeWriteAccess {
-
-        public DelegatingLocalTimeWriteAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public void setLocalTimeValue(final LocalTime value) {
-            m_delegateAccess.setLocalTimeValue(value);
-        }
-    }
-
-    private static final class DelegatingPeriodWriteAccess extends AbstractDelegatingWriteAccess<PeriodWriteAccess>
-        implements PeriodWriteAccess {
-
-        public DelegatingPeriodWriteAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public void setPeriodValue(final Period value) {
-            m_delegateAccess.setPeriodValue(value);
-        }
-    }
-
     private static final class DelegatingVarBinaryWriteAccess
         extends AbstractDelegatingWriteAccess<VarBinaryWriteAccess> implements VarBinaryWriteAccess {
 
@@ -429,19 +316,6 @@ public final class DelegatingWriteAccesses {
         @Override
         public <T> void setObject(final T value, final ObjectSerializer<T> serializer) {
             m_delegateAccess.setObject(value, serializer);
-        }
-    }
-
-    private static final class DelegatingZonedDateTimeWriteAccess
-        extends AbstractDelegatingWriteAccess<ZonedDateTimeWriteAccess> implements ZonedDateTimeWriteAccess {
-
-        public DelegatingZonedDateTimeWriteAccess(final DataSpec spec) {
-            super(spec);
-        }
-
-        @Override
-        public void setZonedDateTimeValue(final ZonedDateTime value) {
-            m_delegateAccess.setZonedDateTimeValue(value);
         }
     }
 

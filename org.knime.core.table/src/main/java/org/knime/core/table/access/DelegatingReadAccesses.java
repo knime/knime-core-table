@@ -18,7 +18,7 @@
  * History
  *   Created on May 11, 2021 by marcel
  */
-package org.knime.core.table.virtual;
+package org.knime.core.table.access;
 
 import java.util.Arrays;
 
@@ -29,7 +29,6 @@ import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
-import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
@@ -90,14 +89,14 @@ public final class DelegatingReadAccesses {
         DefaultDelegatingReadAccessRow(final ColumnarSchema schema) {
             m_schema = schema;
             m_accesses = new DelegatingReadAccess[m_schema.numColumns()];
-            for (int i = 0; i < m_accesses.length; i++) {
+            for (int i = 0; i < m_accesses.length; i++) {//NOSONAR
                 m_accesses[i] = DelegatingReadAccesses.createDelegatingAccess(m_schema.getSpec(i));
             }
         }
 
         @Override
         public void setDelegateAccess(final ReadAccessRow delegateAccess) {
-            for (int i = 0; i < m_schema.numColumns(); i++) {
+            for (int i = 0; i < m_schema.numColumns(); i++) {//NOSONAR
                 m_accesses[i].setDelegateAccess(delegateAccess.getAccess(i));
             }
         }
@@ -110,7 +109,7 @@ public final class DelegatingReadAccesses {
         @Override
         public <A extends ReadAccess> A getAccess(final int index) {
             @SuppressWarnings("unchecked")
-            final A casted = (A)m_accesses[index];
+            final A casted = (A)m_accesses[index];//NOSONAR
             return casted;
         }
 

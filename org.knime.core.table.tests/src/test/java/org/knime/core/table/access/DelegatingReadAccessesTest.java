@@ -18,7 +18,7 @@
  * History
  *   Created on 14 Oct 2021 by Steffen Fissler, KNIME GmbH, Konstanz, Germany
  */
-package org.knime.core.table.virtual;
+package org.knime.core.table.access;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertArrayEquals;
@@ -36,6 +36,7 @@ import java.io.IOException;
 import org.junit.Test;
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
+import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
@@ -48,7 +49,6 @@ import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.ListDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
-import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccess;
 
 /**
  *

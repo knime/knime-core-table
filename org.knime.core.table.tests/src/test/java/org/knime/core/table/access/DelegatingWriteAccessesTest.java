@@ -19,19 +19,12 @@
  *   Created on 8 Nov 2021 by Steffen Fissler, KNIME GmbH, Konstanz, Germany
  */
 package org.knime.core.table.access;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 import org.junit.Test;
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
@@ -41,32 +34,20 @@ import org.knime.core.table.access.ByteAccess.ByteWriteAccess;
 import org.knime.core.table.access.DelegatingWriteAccesses.DelegatingWriteAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
-import org.knime.core.table.access.DurationAccess.DurationReadAccess;
-import org.knime.core.table.access.DurationAccess.DurationWriteAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatWriteAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.IntAccess.IntWriteAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
 import org.knime.core.table.access.ListAccess.ListWriteAccess;
-import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
-import org.knime.core.table.access.LocalDateAccess.LocalDateWriteAccess;
-import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeReadAccess;
-import org.knime.core.table.access.LocalDateTimeAccess.LocalDateTimeWriteAccess;
-import org.knime.core.table.access.LocalTimeAccess.LocalTimeReadAccess;
-import org.knime.core.table.access.LocalTimeAccess.LocalTimeWriteAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
 import org.knime.core.table.access.LongAccess.LongWriteAccess;
-import org.knime.core.table.access.PeriodAccess.PeriodReadAccess;
-import org.knime.core.table.access.PeriodAccess.PeriodWriteAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StringAccess.StringWriteAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.StructAccess.StructWriteAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryWriteAccess;
-import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeReadAccess;
-import org.knime.core.table.access.ZonedDateTimeAccess.ZonedDateTimeWriteAccess;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.ListDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
@@ -81,7 +62,8 @@ public class DelegatingWriteAccessesTest {
     @Test
     public void testBoolean() {
         // Constructor Test
-        var delegatingBooleanWriteAccess = (BooleanWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.booleanSpec());
+        var delegatingBooleanWriteAccess =
+            (BooleanWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.booleanSpec());
         // Mock Setup
         var booleanWriteAccess = mock(BooleanWriteAccess.class);
         var booleanReadAccess = mock(BooleanReadAccess.class);
@@ -102,11 +84,11 @@ public class DelegatingWriteAccessesTest {
         verify(booleanWriteAccess).setBooleanValue(true);
     }
 
-
     @Test
     public void testByte() {
         // Constructor Test
-        var delegatingByteWriteAccess = (ByteWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.byteSpec());
+        var delegatingByteWriteAccess =
+            (ByteWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.byteSpec());
         // Mock Setup
         var byteWriteAccess = mock(ByteWriteAccess.class);
         var byteReadAccess = mock(ByteReadAccess.class);
@@ -127,11 +109,11 @@ public class DelegatingWriteAccessesTest {
         verify(byteWriteAccess).setByteValue((byte)5);
     }
 
-
     @Test
     public void testDouble() {
         // Constructor Test
-        var delegatingDoubleWriteAccess = (DoubleWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.doubleSpec());
+        var delegatingDoubleWriteAccess =
+            (DoubleWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.doubleSpec());
         // Mock Setup
         var doubleWriteAccess = mock(DoubleWriteAccess.class);
         var doubleReadAccess = mock(DoubleReadAccess.class);
@@ -152,11 +134,11 @@ public class DelegatingWriteAccessesTest {
         verify(doubleWriteAccess).setDoubleValue(.5);
     }
 
-
     @Test
     public void testFloat() {
         // Constructor Test
-        var delegatingFloatWriteAccess = (FloatWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.floatSpec());
+        var delegatingFloatWriteAccess =
+            (FloatWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.floatSpec());
         // Mock Setup
         var floatWriteAccess = mock(FloatWriteAccess.class);
         var floatReadAccess = mock(FloatReadAccess.class);
@@ -177,11 +159,11 @@ public class DelegatingWriteAccessesTest {
         verify(floatWriteAccess).setFloatValue(5f);
     }
 
-
     @Test
     public void testInt() {
         // Constructor Test
-        var delegatingIntWriteAccess = (IntWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.intSpec());
+        var delegatingIntWriteAccess =
+            (IntWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.intSpec());
         // Mock Setup
         var intWriteAccess = mock(IntWriteAccess.class);
         var intReadAccess = mock(IntReadAccess.class);
@@ -205,13 +187,14 @@ public class DelegatingWriteAccessesTest {
     @Test
     public void testList() {
         // Constructor Test
-        var delegatingListWriteAccess = (ListWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(new ListDataSpec(DataSpec.stringSpec()));
+        var delegatingListWriteAccess = (ListWriteAccess)DelegatingWriteAccesses
+            .createDelegatingWriteAccess(new ListDataSpec(DataSpec.stringSpec()));
         // Mock Setup
         var listWriteAccess = mock(ListWriteAccess.class);
         var listReadAccess = mock(ListReadAccess.class);
 
         // getWriteAccess 1st test
-        assertThat(delegatingListWriteAccess.<WriteAccess>getWriteAccess()).isInstanceOf(StringWriteAccess.class);
+        assertThat(delegatingListWriteAccess.<WriteAccess> getWriteAccess()).isInstanceOf(StringWriteAccess.class);
 
         // setDelegate Test
         ((DelegatingWriteAccess)delegatingListWriteAccess).setDelegateAccess(listWriteAccess);
@@ -246,12 +229,11 @@ public class DelegatingWriteAccessesTest {
         verify(((StringWriteAccess)listWriteAccess2.getWriteAccess())).setStringValue("foo");
     }
 
-
-
     @Test
     public void testLong() {
         // Constructor Test
-        var delegatingLongWriteAccess = (LongWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.longSpec());
+        var delegatingLongWriteAccess =
+            (LongWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.longSpec());
         // Mock Setup
         var longWriteAccess = mock(LongWriteAccess.class);
         var longReadAccess = mock(LongReadAccess.class);
@@ -272,11 +254,11 @@ public class DelegatingWriteAccessesTest {
         verify(longWriteAccess).setLongValue(5l);
     }
 
-
     @Test
     public void testString() {
         // Constructor Test
-        var delegatingStringWriteAccess = (StringWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.stringSpec());
+        var delegatingStringWriteAccess =
+            (StringWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.stringSpec());
         // Mock Setup
         var stringWriteAccess = mock(StringWriteAccess.class);
         var stringReadAccess = mock(StringReadAccess.class);
@@ -297,8 +279,6 @@ public class DelegatingWriteAccessesTest {
         verify(stringWriteAccess).setStringValue("Ho Ho");
     }
 
-
-
     @Test
     public void testStruct() {
         // Constructor Test
@@ -316,7 +296,7 @@ public class DelegatingWriteAccessesTest {
         when(mockStructWriteAccess.getWriteAccess(1)).thenReturn(mockIntWriteAccess);
 
         // getWriteAccess 1st test
-        assertThat(delegatingStructWriteAccess.<WriteAccess>getWriteAccess(0)).isInstanceOf(StringWriteAccess.class);
+        assertThat(delegatingStructWriteAccess.<WriteAccess> getWriteAccess(0)).isInstanceOf(StringWriteAccess.class);
 
         // setDelegate Test
         ((DelegatingWriteAccess)delegatingStructWriteAccess).setDelegateAccess(mockStructWriteAccess);
@@ -348,139 +328,12 @@ public class DelegatingWriteAccessesTest {
 
     }
 
-
-
-
-    @Test
-    public void testDuration() {
-        // Constructor Test
-        var delegatingDurationWriteAccess = (DurationWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.durationSpec());
-        // Mock Setup
-        var durationWriteAccess = mock(DurationWriteAccess.class);
-        var durationReadAccess = mock(DurationReadAccess.class);
-        // setDelegate Test
-        ((DelegatingWriteAccess)delegatingDurationWriteAccess).setDelegateAccess(durationWriteAccess);
-        assertThat(delegatingDurationWriteAccess.toString()).isNotNull(); // This asserts that the access is set. If it is not set, we would get a NPE here.
-
-        // setFrom Test
-        delegatingDurationWriteAccess.setFrom(durationReadAccess);
-        verify(durationWriteAccess).setFrom(durationReadAccess);
-
-        // setMissing Test
-        delegatingDurationWriteAccess.setMissing();
-        verify(durationWriteAccess).setMissing();
-
-        // setDurationValue Test
-        delegatingDurationWriteAccess.setDurationValue(Duration.ofDays(2));
-        verify(durationWriteAccess).setDurationValue(Duration.ofDays(2));
-    }
-
-
-    @Test
-    public void testLocalDate() {
-        // Constructor Test
-        var delegatingLocalDateWriteAccess = (LocalDateWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.localDateSpec());
-        // Mock Setup
-        var localDateWriteAccess = mock(LocalDateWriteAccess.class);
-        var localDateReadAccess = mock(LocalDateReadAccess.class);
-        // setDelegate Test
-        ((DelegatingWriteAccess)delegatingLocalDateWriteAccess).setDelegateAccess(localDateWriteAccess);
-        assertThat(delegatingLocalDateWriteAccess.toString()).isNotNull(); // This asserts that the access is set. If it is not set, we would get a NPE here.
-
-        // setFrom Test
-        delegatingLocalDateWriteAccess.setFrom(localDateReadAccess);
-        verify(localDateWriteAccess).setFrom(localDateReadAccess);
-
-        // setMissing Test
-        delegatingLocalDateWriteAccess.setMissing();
-        verify(localDateWriteAccess).setMissing();
-
-        // setLocalDateValue Test
-        delegatingLocalDateWriteAccess.setLocalDateValue(LocalDate.ofYearDay(2021, 32));
-        verify(localDateWriteAccess).setLocalDateValue(LocalDate.ofYearDay(2021, 32));
-    }
-
-
-    @Test
-    public void testLocalDateTime() {
-        // Constructor Test
-        var delegatingLocalDateTimeWriteAccess = (LocalDateTimeWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.localDateTimeSpec());
-        // Mock Setup
-        var localDateTimeWriteAccess = mock(LocalDateTimeWriteAccess.class);
-        var localDateTimeReadAccess = mock(LocalDateTimeReadAccess.class);
-        // setDelegate Test
-        ((DelegatingWriteAccess)delegatingLocalDateTimeWriteAccess).setDelegateAccess(localDateTimeWriteAccess);
-        assertThat(delegatingLocalDateTimeWriteAccess.toString()).isNotNull(); // This asserts that the access is set. If it is not set, we would get a NPE here.
-
-        // setFrom Test
-        delegatingLocalDateTimeWriteAccess.setFrom(localDateTimeReadAccess);
-        verify(localDateTimeWriteAccess).setFrom(localDateTimeReadAccess);
-
-        // setMissing Test
-        delegatingLocalDateTimeWriteAccess.setMissing();
-        verify(localDateTimeWriteAccess).setMissing();
-
-        // setLocalDateTimeValue Test
-        delegatingLocalDateTimeWriteAccess.setLocalDateTimeValue(LocalDateTime.of(2021, 10, 18, 11, 53));
-        verify(localDateTimeWriteAccess).setLocalDateTimeValue(LocalDateTime.of(2021, 10, 18, 11, 53));
-    }
-
-
-    @Test
-    public void testLocalTime() {
-        // Constructor Test
-        var delegatingLocalTimeWriteAccess = (LocalTimeWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.localTimeSpec());
-        // Mock Setup
-        var localTimeWriteAccess = mock(LocalTimeWriteAccess.class);
-        var localTimeReadAccess = mock(LocalTimeReadAccess.class);
-        // setDelegate Test
-        ((DelegatingWriteAccess)delegatingLocalTimeWriteAccess).setDelegateAccess(localTimeWriteAccess);
-        assertThat(delegatingLocalTimeWriteAccess.toString()).isNotNull(); // This asserts that the access is set. If it is not set, we would get a NPE here.
-
-        // setFrom Test
-        delegatingLocalTimeWriteAccess.setFrom(localTimeReadAccess);
-        verify(localTimeWriteAccess).setFrom(localTimeReadAccess);
-
-        // setMissing Test
-        delegatingLocalTimeWriteAccess.setMissing();
-        verify(localTimeWriteAccess).setMissing();
-
-        // setLocalTimeValue Test
-        delegatingLocalTimeWriteAccess.setLocalTimeValue(LocalTime.of(12, 24));
-        verify(localTimeWriteAccess).setLocalTimeValue(LocalTime.of(12, 24));
-    }
-
-
-    @Test
-    public void testPeriod() {
-        // Constructor Test
-        var delegatingPeriodWriteAccess = (PeriodWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.periodSpec());
-        // Mock Setup
-        var periodWriteAccess = mock(PeriodWriteAccess.class);
-        var periodReadAccess = mock(PeriodReadAccess.class);
-        // setDelegate Test
-        ((DelegatingWriteAccess)delegatingPeriodWriteAccess).setDelegateAccess(periodWriteAccess);
-        assertThat(delegatingPeriodWriteAccess.toString()).isNotNull(); // This asserts that the access is set. If it is not set, we would get a NPE here.
-
-        // setFrom Test
-        delegatingPeriodWriteAccess.setFrom(periodReadAccess);
-        verify(periodWriteAccess).setFrom(periodReadAccess);
-
-        // setMissing Test
-        delegatingPeriodWriteAccess.setMissing();
-        verify(periodWriteAccess).setMissing();
-
-        // setPeriodValue Test
-        delegatingPeriodWriteAccess.setPeriodValue(Period.of(2, 1, 0));
-        verify(periodWriteAccess).setPeriodValue(Period.of(2, 1, 0));
-    }
-
-
     @SuppressWarnings("unchecked")
     @Test
     public void testVarBinary() {
         // Constructor Test
-        var delegatingVarBinaryWriteAccess = (VarBinaryWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.varBinarySpec());
+        var delegatingVarBinaryWriteAccess =
+            (VarBinaryWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.varBinarySpec());
         // Mock Setup
         var varBinaryWriteAccess = mock(VarBinaryWriteAccess.class);
         var varBinaryReadAccess = mock(VarBinaryReadAccess.class);
@@ -504,40 +357,10 @@ public class DelegatingWriteAccessesTest {
         delegatingVarBinaryWriteAccess.setByteArray(new byte[]{0, 1}, 5, 10);
         verify(varBinaryWriteAccess).setByteArray(new byte[]{0, 1}, 5, 10);
 
-
         // setObject Test
         var serializer = mock(ObjectSerializer.class);
         delegatingVarBinaryWriteAccess.setObject(varBinaryReadAccess, serializer); // could be any object instad of varBinaryWriteAccess
         verify(varBinaryWriteAccess).setObject(varBinaryReadAccess, serializer);
     }
-
-
-    @Test
-    public void testZonedDateTime() {
-        // Constructor Test
-        var delegatingZonedDateTimeWriteAccess = (ZonedDateTimeWriteAccess)DelegatingWriteAccesses.createDelegatingWriteAccess(DataSpec.zonedDateTimeSpec());
-        // Mock Setup
-        var zonedDateTimeWriteAccess = mock(ZonedDateTimeWriteAccess.class);
-        var zonedDateTimeReadAccess = mock(ZonedDateTimeReadAccess.class);
-        // setDelegate Test
-        ((DelegatingWriteAccess)delegatingZonedDateTimeWriteAccess).setDelegateAccess(zonedDateTimeWriteAccess);
-        assertThat(delegatingZonedDateTimeWriteAccess.toString()).isNotNull(); // This asserts that the access is set. If it is not set, we would get a NPE here.
-
-        // setFrom Test
-        delegatingZonedDateTimeWriteAccess.setFrom(zonedDateTimeReadAccess);
-        verify(zonedDateTimeWriteAccess).setFrom(zonedDateTimeReadAccess);
-
-        // setMissing Test
-        delegatingZonedDateTimeWriteAccess.setMissing();
-        verify(zonedDateTimeWriteAccess).setMissing();
-
-        // setZonedDateTimeValue Test
-        var localDateTime = LocalDateTime.of(2021, 10, 18, 11, 53);
-        var zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("Europe/Paris"));
-        delegatingZonedDateTimeWriteAccess.setZonedDateTimeValue(zonedDateTime);
-        verify(zonedDateTimeWriteAccess).setZonedDateTimeValue(zonedDateTime);
-    }
-
-
 
 }

@@ -55,6 +55,7 @@ import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteWriteAccess;
+import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccess;
 import org.knime.core.table.access.DelegatingWriteAccesses.DelegatingWriteAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
@@ -89,8 +90,6 @@ import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.virtual.DelegatingReadAccesses;
-import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccess;
 
 import com.google.common.io.ByteStreams;
 

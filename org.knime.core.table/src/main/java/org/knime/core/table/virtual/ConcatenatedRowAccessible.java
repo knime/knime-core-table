@@ -55,11 +55,12 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import org.knime.core.table.access.DelegatingReadAccesses;
+import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccessRow;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccessRow;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

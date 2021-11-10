@@ -23,11 +23,11 @@ package org.knime.core.table.cursor;
 import java.io.IOException;
 
 import org.knime.core.table.access.BufferedAccesses;
+import org.knime.core.table.access.DelegatingReadAccesses;
 import org.knime.core.table.access.BufferedAccesses.BufferedAccessRow;
+import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccessRow;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.DelegatingReadAccesses;
-import org.knime.core.table.virtual.DelegatingReadAccesses.DelegatingReadAccessRow;
 
 /**
  * {@link LookaheadCursor} based on a non-lookahead {@link Cursor} that reads one row ahead in order to implement
