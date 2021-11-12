@@ -40,6 +40,7 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
+import org.knime.core.table.virtual.spec.IdentityTransformSpec.IdentityTransformSpecSerializer;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -200,6 +201,8 @@ public final class TableTransformSerializer {
                 return new SliceTransformSpec.SliceTransformSpecSerializer();
             case "source":
                 return new SourceTransformSpec.SourceTransformSpecSerializer();
+            case "identity":
+                return new IdentityTransformSpecSerializer();
             default:
                 throw new UnsupportedOperationException("Unkown transformation: " + transformIdentifier);
         }
