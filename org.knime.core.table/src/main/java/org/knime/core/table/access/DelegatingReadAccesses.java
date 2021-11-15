@@ -299,7 +299,7 @@ public final class DelegatingReadAccesses {
         @SuppressWarnings("unchecked")
         @Override
         public <R extends ReadAccess> R getAccess() {
-            return (R)m_delegateAccess;
+            return (R)m_innerAccess;
         }
 
         @Override
