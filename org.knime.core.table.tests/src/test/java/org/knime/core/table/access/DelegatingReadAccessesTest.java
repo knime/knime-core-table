@@ -93,15 +93,13 @@ public class DelegatingReadAccessesTest {
 
         // getAccess Test
         when(stringReadAccess.getStringValue()).thenReturn("Hui Buh");
-        var stringOfFirstElement =
-            ((StringReadAccess)((ListReadAccess)delegatingListReadAccess.getAccess()).getAccess()).getStringValue();
+        var stringOfFirstElement = ((StringReadAccess)delegatingListReadAccess.getAccess()).getStringValue();
         assertThat(stringOfFirstElement).isEqualTo("Hui Buh");
 
         // setIndex Test
         delegatingListReadAccess.setIndex(1);
         when(stringReadAccess.getStringValue()).thenReturn("Hui Bui");
-        var stringOfSecondElement =
-            ((StringReadAccess)((ListReadAccess)delegatingListReadAccess.getAccess()).getAccess()).getStringValue();
+        var stringOfSecondElement = ((StringReadAccess)delegatingListReadAccess.getAccess()).getStringValue();
         assertThat(stringOfSecondElement).isEqualTo("Hui Bui");
 
         // isMissing List
