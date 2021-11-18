@@ -50,6 +50,8 @@ package org.knime.core.table.access;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
@@ -410,13 +412,12 @@ public final class BufferedAccesses {
 
         }
 
-        private static final class BufferedListAccess implements ListReadAccess, ListWriteAccess, BufferedAccess {
+        private static final class BufferedListAccess extends AbstractBufferedAccess
+            implements ListReadAccess, ListWriteAccess {
 
             private final ListDataSpec m_spec;
 
             private BufferedAccess[] m_inner = new BufferedAccess[0];
-
-            private boolean m_isMissing = true;
 
             private int m_size;
 
@@ -428,11 +429,6 @@ public final class BufferedAccesses {
                 m_spec = spec;
                 m_readAccess = DelegatingReadAccesses.createDelegatingAccess(spec.getInner());
                 m_writeAccess = DelegatingWriteAccesses.createDelegatingWriteAccess(spec.getInner());
-            }
-
-            @Override
-            public boolean isMissing() {
-                return m_isMissing;
             }
 
             @Override
@@ -465,22 +461,23 @@ public final class BufferedAccesses {
             }
 
             @Override
-            public void setMissing() {
-                m_isMissing = true;
-            }
-
-            @Override
             public void create(final int size) {
                 m_isMissing = false;
                 m_size = size;
+                for (var buffer : m_inner) {
+                    buffer.setMissing();
+                }
                 if (m_inner.length < size) {
                     var newInner = Arrays.copyOf(m_inner, size);
+                    for (int i = 0; i < m_inner.length; i++) {//NOSONAR
+                        newInner[i].setMissing();
+                    }
                     for (int i = m_inner.length; i < size; i++) {//NOSONAR
                         newInner[i] = createInnerBuffer();
                     }
                     m_inner = newInner;
                 } else {
-                    // reuse the existing buffers
+                    // reuse existing buffers
                 }
             }
 
@@ -496,21 +493,8 @@ public final class BufferedAccesses {
             }
 
             @Override
-            public void setFrom(final ReadAccess access) {
-                if (access.isMissing()) {
-                    setMissing();
-                } else {
-                    final ListReadAccess listAccess = (ListReadAccess)access;
-                    final int listSize = listAccess.size();
-                    create(listSize);
-                    for (int i = 0; i < listSize; i++) {//NOSONAR
-                        m_inner[i].setFrom(listAccess.getAccess());
-                    }
-                }
-            }
-
-            @Override
             public boolean isMissing(final int index) {
+                checkIndex(index);
                 return m_inner[index].isMissing();
             }
 
@@ -520,8 +504,23 @@ public final class BufferedAccesses {
             }
 
             @Override
-            public String toString() {
-                return Arrays.toString(m_inner);
+            protected void setFromNonMissing(final ReadAccess access) {
+                final ListReadAccess listAccess = (ListReadAccess)access;
+                final int listSize = listAccess.size();
+                create(listSize);
+                final var elementAccess = listAccess.getAccess();
+                for (int i = 0; i < listSize; i++) {//NOSONAR
+                    listAccess.setIndex(i);
+                    m_inner[i].setFrom(elementAccess);
+                }
+            }
+
+            @Override
+            protected String valueToString() {
+                return Stream.of(m_inner)//
+                        .limit(m_size)//
+                        .map(Object::toString)//
+                        .collect(Collectors.joining(",", "[", "]"));
             }
 
         }

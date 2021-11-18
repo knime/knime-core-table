@@ -93,4 +93,46 @@ public class BufferedAccessesTest {
         writeList.setFrom(mockListReadAccess);
         assertThat(readList.isMissing()).isTrue();
     }
+
+    @Test
+    public void testBufferedListAccessCreatesSetsBuffersToMissing() throws Exception {
+        var spec = new ListDataSpec(DataSpec.stringSpec());
+        var buffer = BufferedAccesses.createBufferedAccess(spec);
+        var write = (ListWriteAccess)buffer;
+        var read = (ListReadAccess)buffer;
+
+        String[] values = {"foo", "bar", "baz"};
+        writeToListAccess(write, values);
+        assertThat(listToArray(read)).containsExactly(values);
+
+        String[] valuesWithMissing = {"bli", null, "blub"};
+        writeToListAccess(write, valuesWithMissing);
+        assertThat(listToArray(read)).containsExactly("bli", "?", "blub");
+    }
+
+    private static String[] listToArray(final ListReadAccess readAccess) {
+        var values = new String[readAccess.size()];
+        StringReadAccess elementAccess = readAccess.getAccess();
+        for (int i = 0; i < values.length; i++) {
+            readAccess.setIndex(i);
+            if (readAccess.isMissing(i)) {
+                values[i] = "?";
+            } else {
+                values[i] = elementAccess.getStringValue();
+            }
+        }
+        return values;
+    }
+
+    private static void writeToListAccess(final ListWriteAccess writeAccess, final String ...values) {
+        StringWriteAccess elementAccess = writeAccess.getWriteAccess();
+        writeAccess.create(values.length);
+        for (int i = 0; i < values.length; i++) {
+            writeAccess.setWriteIndex(i);
+            var value = values[i];
+            if (value != null) {
+                elementAccess.setStringValue(value);
+            }
+        }
+    }
 }
