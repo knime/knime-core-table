@@ -304,7 +304,7 @@ public final class MissingAccesses {
 
             MissingListAccess(final ListDataSpec spec) {
                 m_spec = spec;
-                m_elementAccess = getMissingAccess(spec);
+                m_elementAccess = getMissingAccess(spec.getInner());
             }
 
             @Override
