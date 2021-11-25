@@ -52,6 +52,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import org.knime.core.table.io.ReadableDataInput;
 import org.knime.core.table.schema.traits.DataTraits;
 
 /**
@@ -94,7 +95,7 @@ public final class VarBinaryDataSpec implements DataSpec {
          * @return the  deserialized object
          * @throws IOException if an I/O problem occurs
          */
-        T deserialize(DataInput input) throws IOException;
+        T deserialize(ReadableDataInput input) throws IOException;
     }
 
     /**

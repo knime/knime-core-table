@@ -30,7 +30,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.DataInput;
 import java.io.IOException;
 
 import org.junit.Test;
@@ -45,6 +44,7 @@ import org.knime.core.table.access.LongAccess.LongReadAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
+import org.knime.core.table.io.ReadableDataInput;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.ListDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
@@ -290,7 +290,7 @@ public class DelegatingReadAccessesTest {
         verify(varBinaryReadAccess).getByteArray();
         // getObject Test
         var deserializer = mock(ObjectDeserializer.class);
-        DataInput input = null;
+        ReadableDataInput input = mock(ReadableDataInput.class);
         try {
             when(deserializer.deserialize(input)).thenReturn("Hui Buh");
         } catch (IOException e) {

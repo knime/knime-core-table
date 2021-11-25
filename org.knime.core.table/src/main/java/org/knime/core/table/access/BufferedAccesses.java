@@ -48,6 +48,7 @@
  */
 package org.knime.core.table.access;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -75,6 +76,7 @@ import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.StructAccess.StructWriteAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryWriteAccess;
+import org.knime.core.table.io.ReadableDataInputStream;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.WriteAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
@@ -92,8 +94,6 @@ import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
-
-import com.google.common.io.ByteStreams;
 
 /**
  * A collection of buffered access implementations that can be retrieved by mapping from a given {@link DataSpec}.
@@ -688,7 +688,8 @@ public final class BufferedAccesses {
                     return casted;
                 } else if (m_storage != null) {
                     try {
-                        T object = deserializer.deserialize(ByteStreams.newDataInput(m_storage));//NOSONAR
+                        T object = //NOSONAR
+                            deserializer.deserialize(new ReadableDataInputStream(new ByteArrayInputStream(m_storage)));
                         m_value = object;
                         return object;
                     } catch (IOException e) {
