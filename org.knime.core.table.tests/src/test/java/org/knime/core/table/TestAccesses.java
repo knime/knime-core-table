@@ -125,6 +125,11 @@ public final class TestAccesses {
          * @param index the index in the object array the access is currently pointing to
          */
         void setIndex(int index);
+
+        /**
+         * @return a new TestAccess on the same data, but with an independent index.
+         */
+        TestAccess copy();
     }
 
     private static final class DataSpecToTestAccessMapper implements DataSpec.Mapper<TestAccess> {
@@ -207,6 +212,10 @@ public final class TestAccesses {
                 set(((BooleanReadAccess)access).getBooleanValue());
             }
 
+            @Override
+            public TestAccess copy() {
+                return new TestBooleanAccess().setData(m_data);
+            }
         }
 
         private static final class TestByteAccess extends AbstractTestAccess<Byte>
@@ -227,6 +236,10 @@ public final class TestAccesses {
                 set(((ByteReadAccess)access).getByteValue());
             }
 
+            @Override
+            public TestAccess copy() {
+                return new TestByteAccess().setData(m_data);
+            }
         }
 
         private static final class TestDoubleAccess extends AbstractTestAccess<Double>
@@ -247,6 +260,10 @@ public final class TestAccesses {
                 set(((DoubleReadAccess)access).getDoubleValue());
             }
 
+            @Override
+            public TestAccess copy() {
+                return new TestDoubleAccess().setData(m_data);
+            }
         }
 
         private static final class TestFloatAccess extends AbstractTestAccess<Float>
@@ -267,6 +284,10 @@ public final class TestAccesses {
                 set(((FloatReadAccess)access).getFloatValue());
             }
 
+            @Override
+            public TestAccess copy() {
+                return new TestFloatAccess().setData(m_data);
+            }
         }
 
         private static final class TestIntAccess extends AbstractTestAccess<Integer>
@@ -287,6 +308,10 @@ public final class TestAccesses {
                 set(((IntReadAccess)access).getIntValue());
             }
 
+            @Override
+            public TestAccess copy() {
+                return new TestIntAccess().setData(m_data);
+            }
         }
 
         private static final class TestLongAccess extends AbstractTestAccess<Long>
@@ -307,6 +332,10 @@ public final class TestAccesses {
                 set(((LongReadAccess)access).getLongValue());
             }
 
+            @Override
+            public TestAccess copy() {
+                return new TestLongAccess().setData(m_data);
+            }
         }
 
         private static final class TestStringAccess extends AbstractTestAccess<String>
@@ -327,6 +356,10 @@ public final class TestAccesses {
                 set(((StringReadAccess)access).getStringValue());
             }
 
+            @Override
+            public TestAccess copy() {
+                return new TestStringAccess().setData(m_data);
+            }
         }
 
         private static final class TestVarBinaryAccess extends AbstractTestAccess<byte[]>
@@ -364,6 +397,10 @@ public final class TestAccesses {
                 set(((VarBinaryReadAccess)access).getByteArray());
             }
 
+            @Override
+            public TestAccess copy() {
+                return new TestVarBinaryAccess().setData(m_data);
+            }
         }
 
         private static final class TestVoidAccess implements TestAccess {
@@ -397,11 +434,16 @@ public final class TestAccesses {
             public void setIndex(final int index) {
                 // not to be called
             }
+
+            @Override
+            public TestAccess copy() {
+                return new TestVoidAccess();
+            }
         }
 
         private abstract static class AbstractTestAccess<T> implements TestAccess {
 
-            private Object[] m_data;
+            protected Object[] m_data;
 
             private int m_index = 0;
 
@@ -450,6 +492,11 @@ public final class TestAccesses {
                 @SuppressWarnings("unchecked")
                 final T cast = (T)m_data[m_index];
                 return cast;
+            }
+
+            protected AbstractTestAccess<T> setData(Object[] data) {
+                this.m_data = data;
+                return this;
             }
 
             protected abstract void setFromNonMissing(ReadAccess access);

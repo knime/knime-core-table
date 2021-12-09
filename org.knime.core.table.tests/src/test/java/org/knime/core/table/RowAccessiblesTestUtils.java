@@ -53,6 +53,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 
 import org.knime.core.table.TestAccesses.TestAccess;
 import org.knime.core.table.access.ReadAccess;
@@ -114,7 +115,8 @@ public final class RowAccessiblesTestUtils {
             private int m_index = -1;
 
             TestRowAccessCursor(final TestAccess[] accesses, final long length) {
-                m_accesses = accesses;
+                m_accesses = new TestAccess[accesses.length];
+                Arrays.setAll(m_accesses, i -> accesses[i].copy());
                 m_length = length;
             }
 
