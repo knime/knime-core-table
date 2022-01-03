@@ -48,8 +48,11 @@
  */
 package org.knime.core.table.virtual;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -69,6 +72,20 @@ public final class TableTransform {
     public TableTransform(final List<TableTransform> precedingTransforms, final TableTransformSpec spec) {
         m_precedingTransforms = Collections.unmodifiableList(precedingTransforms);
         m_spec = spec;
+    }
+
+    public TableTransform reSource(final Map<UUID, TableTransform> sourceMap) {
+        if (m_spec instanceof SourceTransformSpec) {
+            var sourceSpec = (SourceTransformSpec)m_spec;
+            var newTransform = sourceMap.get(sourceSpec.getSourceIdentifier());
+            return newTransform == null ? this : newTransform;
+        } else {
+            var reSourcedPrecedingTransforms = new ArrayList<TableTransform>(m_precedingTransforms.size());
+            for (var precedingTransform : m_precedingTransforms) {
+                reSourcedPrecedingTransforms.add(precedingTransform.reSource(sourceMap));
+            }
+            return new TableTransform(reSourcedPrecedingTransforms, m_spec);
+        }
     }
 
     /**

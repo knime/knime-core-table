@@ -51,7 +51,9 @@ package org.knime.core.table.virtual;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
@@ -179,7 +181,7 @@ public final class VirtualTable {
 
     public VirtualTable appendMissingValueColumns(final List<DataSpec> columns, final List<DataTraits> traits) {
         final AppendMissingValuesTransformSpec transformSpec =
-                new AppendMissingValuesTransformSpec(columns.toArray(DataSpec[]::new), traits.toArray(DataTraits[]::new));
+            new AppendMissingValuesTransformSpec(columns.toArray(DataSpec[]::new), traits.toArray(DataTraits[]::new));
         final ColumnarSchema schema = ColumnarSchemas.append(List.of(m_schema, transformSpec.getAppendedSchema()));
         return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), schema);
     }
@@ -218,6 +220,14 @@ public final class VirtualTable {
     public VirtualTable filterRows(final int[] columnIndices, final RowFilterTransformSpec.RowFilter filter) {
         final TableTransformSpec transformSpec = new RowFilterTransformSpec(columnIndices, filter);
         return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), m_schema);
+    }
+
+    public VirtualTable resolveSources(final Map<UUID, VirtualTable> sourceMap) {
+        var reSourcedTransform = m_transform.reSource(
+            sourceMap.entrySet().stream()//
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getProducingTransform()))
+            );
+        return new VirtualTable(reSourcedTransform, m_schema);
     }
 
     //    /**
