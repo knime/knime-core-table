@@ -144,7 +144,7 @@ public final class VirtualTable {
         this(sourceIdentifier, new SourceTableProperties(schema, false));
     }
 
-    private VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {
+    public VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {
         m_transform = producingTransform;
         m_schema = schema;
     }
