@@ -131,7 +131,7 @@ public class RagBuilder {
         final List<DataTraits> columnTraits = new ArrayList<>();
         for (AccessId input : node.getInputs()) {
             columnSpecs.add(getSpec(input));
-            columnTraits.add(DefaultDataTraits.EMPTY);
+            columnTraits.add(getTraits(input));
         }
         return new DefaultColumnarSchema(columnSpecs, columnTraits);
     }
@@ -155,6 +155,31 @@ public class RagBuilder {
             case MAP: {
                 final MapTransformSpec spec = producer.getTransformSpec();
                 return spec.getSchema().getSpec(accessId.getColumnIndex());
+            }
+            default:
+                throw new IllegalArgumentException("unexpected node type " + producer.type());
+        }
+    }
+
+    private static DataTraits getTraits(final AccessId accessId) {
+        var producer = accessId.getProducer();
+        switch (producer.type()) {
+            case SOURCE: {
+                final SourceTransformSpec spec = producer.getTransformSpec();
+                return spec.getSchema().getTraits(accessId.getColumnIndex());
+            }
+            case MISSING: {
+                // FIXME missing column might also have traits (e.g. LogicalTypeTrait in KNIME)
+                return DefaultDataTraits.EMPTY;
+            }
+            case APPEND:
+            case CONCATENATE: {
+                final int slot = producer.getOutputs().slotIndexOf(accessId);
+                return getTraits(producer.getInputs(0).getAtSlot(slot));
+            }
+            case MAP: {
+                final MapTransformSpec spec = producer.getTransformSpec();
+                return spec.getSchema().getTraits(accessId.getColumnIndex());
             }
             default:
                 throw new IllegalArgumentException("unexpected node type " + producer.type());
