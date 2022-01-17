@@ -117,16 +117,18 @@ public class RagBuilder {
         // (it should not be connected by ORDER edges)
         // TODO: Avoid this special case logic?
         final RagNode missingValuesSource = specs.graph.getMissingValuesSource();
-        if ( !missingValuesSource.getOutputs().isEmpty() )
+        if ( !missingValuesSource.getOutputs().isEmpty() ) {
             order.add(0, missingValuesSource);
+        }
 
         return order;
     }
 
-    public static ColumnarSchema createSchema(List<RagNode> orderedRag) {
+    public static ColumnarSchema createSchema(final List<RagNode> orderedRag) {
         final RagNode node = orderedRag.get(orderedRag.size() - 1);
-        if (node.type() != RagNodeType.CONSUMER)
+        if (node.type() != RagNodeType.CONSUMER) {
             throw new IllegalArgumentException();
+        }
         final List<DataSpec> columnSpecs = new ArrayList<>();
         final List<DataTraits> columnTraits = new ArrayList<>();
         for (AccessId input : node.getInputs()) {
@@ -136,7 +138,7 @@ public class RagBuilder {
         return new DefaultColumnarSchema(columnSpecs, columnTraits);
     }
 
-    private static DataSpec getSpec(AccessId accessId) {
+    private static DataSpec getSpec(final AccessId accessId) {
         RagNode producer = accessId.getProducer();
         switch (producer.type()) {
             case SOURCE: {
@@ -244,7 +246,7 @@ public class RagBuilder {
      * @return
      */
     // TODO: make iterative instead of recursive
-    private RagNode createNodes(final TableTransform transform, Map<TableTransform, RagNode> nodeLookup) {
+    private RagNode createNodes(final TableTransform transform, final Map<TableTransform, RagNode> nodeLookup) {
         RagNode node = nodeLookup.get(transform);
         if (node == null) {
             // create node for current TableTransform
@@ -322,13 +324,15 @@ public class RagBuilder {
         graph.nodes(MAP).forEach(node -> node.setMark(0));
 
         final RagNode root = graph.getRoot();
-        for (int i = 0; i < root.numColumns(); i++)
+        for (int i = 0; i < root.numColumns(); i++) {
             traceAndLinkAccess(i, root);
+        }
 
         graph.nodes(ROWFILTER).forEach(node -> {
                     final int numInputColumns = node.<RowFilterTransformSpec>getTransformSpec().getColumnSelection().length;
-                    for (int j = 0; j < numInputColumns; j++)
+                    for (int j = 0; j < numInputColumns; j++) {
                         traceAndLinkAccess(j, node);
+                    }
         });
 
         final List<RagEdge> edges = new ArrayList<>(graph.getMissingValuesSource().outgoingEdges(DATA));
@@ -416,8 +420,9 @@ public class RagBuilder {
                 if (node.getMark() == 0) {
                     node.setMark(1);
                     final int numInputColumns = ((MapTransformSpec)spec).getColumnSelection().length;
-                    for (int j = 0; j < numInputColumns; j++)
+                    for (int j = 0; j < numInputColumns; j++) {
                         traceAndLinkAccess(j, node);
+                    }
                 }
                 return node.getOrCreateOutput(i);
             case ROWFILTER:
@@ -432,9 +437,9 @@ public class RagBuilder {
                 return traceAccess(i, node.predecessor(SPEC));
             case APPENDMISSING:
                 final int numPredecessorColumns = node.predecessor(SPEC).numColumns();
-                if (i < numPredecessorColumns)
+                if (i < numPredecessorColumns) {
                     return traceAccess(i, node.predecessor(SPEC));
-                else {
+                } else {
                     // get the DataSpec of output i
                     final ColumnarSchema appendedSchema = ((AppendMissingValuesTransformSpec)spec).getAppendedSchema();
                     final DataSpec dataSpec = appendedSchema.getSpec(i - numPredecessorColumns);
@@ -464,8 +469,9 @@ public class RagBuilder {
      * executable nodes, starting in turn from each node of the graph.
      */
     void traceExec() {
-        for (final RagNode node : graph.nodes())
+        for (final RagNode node : graph.nodes()) {
             traceExec(node);
+        }
     }
 
     /**
@@ -564,13 +570,14 @@ public class RagBuilder {
 
     boolean mergeSlices() {
         for (final RagNode node : graph.nodes()) {
-            if (node.type() == SLICE && tryMergeSlice(node))
+            if (node.type() == SLICE && tryMergeSlice(node)) {
                 return true;
+            }
         }
         return false;
     }
 
-    private boolean tryMergeSlice(RagNode slice) {
+    private boolean tryMergeSlice(final RagNode slice) {
         final List<RagNode> predecessors = slice.predecessors(EXEC);
         if (predecessors.size() == 1 && predecessors.get(0).type() == SLICE) {
             mergeSlice(slice);
@@ -579,7 +586,7 @@ public class RagBuilder {
         return false;
     }
 
-    private void mergeSlice(RagNode slice) {
+    private void mergeSlice(final RagNode slice) {
         final RagNode predecessor = slice.predecessor(EXEC);
 
         // merge indices from predecessor and slice
@@ -597,12 +604,14 @@ public class RagBuilder {
         final RagNode merged = graph.addNode(mergedTableTransform);
 
         // link all predecessors of predecessor to merged
-        for (RagNode node : predecessor.predecessors(EXEC))
+        for (RagNode node : predecessor.predecessors(EXEC)) {
             graph.getOrAddEdge(node, merged, EXEC);
+        }
 
         // link merged to all successors of slice
-        for (RagNode node : slice.successors(EXEC))
+        for (RagNode node : slice.successors(EXEC)) {
             graph.getOrAddEdge(merged, node, EXEC);
+        }
 
         // remove all EXEC edges from slice and predecessor
         final List<RagEdge> edgesToRemove = new ArrayList<>(slice.incomingEdges(EXEC));
@@ -610,8 +619,9 @@ public class RagBuilder {
         edgesToRemove.addAll(predecessor.incomingEdges(EXEC));
         // this would only be the one outgoing edge to slice, which we have already added:
         // edgesToRemove.addAll(predecessor.outgoingEdges(EXEC));
-        for (final RagEdge edge : edgesToRemove)
+        for (final RagEdge edge : edgesToRemove) {
             graph.remove(edge);
+        }
     }
 
 
@@ -622,26 +632,29 @@ public class RagBuilder {
     private boolean eliminateAppends() {
         boolean modified = false;
         for (final RagNode node : graph.nodes()) {
-            if (node.type() == APPEND && !isDisconnected(node))
+            if (node.type() == APPEND && !isDisconnected(node)) {
                 modified |= tryEliminateAppend(node);
+            }
         }
         return modified;
     }
 
-    private boolean isDisconnected(RagNode node) {
+    private boolean isDisconnected(final RagNode node) {
         return node.incomingEdges(DATA).isEmpty() && //
                 node.outgoingEdges(DATA).isEmpty() && //
                 node.incomingEdges(EXEC).isEmpty() && //
                 node.outgoingEdges(EXEC).isEmpty();
     }
 
-    private boolean tryEliminateAppend(RagNode append) {
+    private boolean tryEliminateAppend(final RagNode append) {
         final Collection<AccessId> inputs = append.getInputs();
         final Set<RagNode> producers = new HashSet<>();
         for (AccessId input : inputs) {
             producers.addAll(getEffectiveProducers(input));
             if(producers.size() > 1)
+             {
                 return false; // cannot be eliminated
+            }
         }
         eliminateAppend(append);
         return true;
@@ -680,11 +693,13 @@ public class RagBuilder {
         }
     }
 
-    private void eliminateAppend(RagNode append) {
+    private void eliminateAppend(final RagNode append) {
         // Short-circuit EXEC edges from predecessors to successors
-        for (RagNode predecessor : append.predecessors(EXEC))
-            for (RagNode successor : append.successors(EXEC))
+        for (RagNode predecessor : append.predecessors(EXEC)) {
+            for (RagNode successor : append.successors(EXEC)) {
                 graph.getOrAddEdge(predecessor, successor, EXEC);
+            }
+        }
 
         // Remove DATA and EXEC edges to/from APPEND
         //
@@ -695,8 +710,9 @@ public class RagBuilder {
         edgesToRemove.addAll(append.outgoingEdges(DATA));
         edgesToRemove.addAll(append.incomingEdges(EXEC));
         edgesToRemove.addAll(append.outgoingEdges(EXEC));
-        for (final RagEdge edge : edgesToRemove)
+        for (final RagEdge edge : edgesToRemove) {
             graph.remove(edge);
+        }
 
         // For each output in APPEND.outputs[i]:
         //   For each consumer in output.getConsumers():
@@ -714,8 +730,9 @@ public class RagBuilder {
                     final int j = consumerInputs.slotIndexOf(output);
                     consumerInputs.putAtColumnIndex(input, j);
                     input.addConsumer(consumer);
-                    if (input.getProducer().type() != MISSING)
+                    if (input.getProducer().type() != MISSING) {
                         graph.getOrAddEdge(input.getProducer(), consumer, DATA);
+                    }
                 }
             }
         }
