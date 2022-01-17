@@ -56,12 +56,10 @@ import static org.knime.core.table.schema.DataSpecs.STRING;
 import java.io.IOException;
 
 import org.junit.Test;
-import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
-import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.RowAccessibles;
-import org.knime.core.table.virtual.spec.MapTransformSpec.Map;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
 /**
  * @author Tobias Pietzsch
@@ -79,14 +77,8 @@ public final class MapTransformTest {
         };
 
         final int[] columnIndices = {0};
-        final ColumnarSchema outputSchema = ColumnarSchema.of(DOUBLE);
-        final Map map =  (inputs, outputs) -> {
-            final double value = ((DoubleReadAccess)inputs[0]).getDoubleValue();
-            final double result = value + 1.0;
-            ((DoubleWriteAccess)outputs[0]).setDoubleValue(result);
-        };
-
-        final ColumnarSchema expectedSchema = outputSchema;
+        final MapperFactory addOne = MapperFactory.doublesToDouble(v -> v + 1);
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(DOUBLE);
         final Object[][] expectedValues = new Object[][] { //
                 new Object[]{1.1}, //
                 new Object[]{1.2}, //
@@ -95,8 +87,8 @@ public final class MapTransformTest {
 
         try (final RowAccessible originalTable = createRowAccessibleFromRowWiseValues(schema, values)) {
             @SuppressWarnings("resource")
-            final RowAccessible result = RowAccessibles.map(originalTable, columnIndices, outputSchema, map);
-            RowAccessiblesTestUtils.assertRowAccessibleEquals(result, outputSchema, expectedValues);
+            final RowAccessible result = RowAccessibles.map(originalTable, columnIndices, addOne);
+            RowAccessiblesTestUtils.assertRowAccessibleEquals(result, expectedSchema, expectedValues);
         }
     }
 

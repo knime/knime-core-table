@@ -156,7 +156,7 @@ public class RagBuilder {
             }
             case MAP: {
                 final MapTransformSpec spec = producer.getTransformSpec();
-                return spec.getSchema().getSpec(accessId.getColumnIndex());
+                return spec.getMapperFactory().getOutputSchema().getSpec(accessId.getColumnIndex());
             }
             default:
                 throw new IllegalArgumentException("unexpected node type " + producer.type());
@@ -181,7 +181,7 @@ public class RagBuilder {
             }
             case MAP: {
                 final MapTransformSpec spec = producer.getTransformSpec();
-                return spec.getSchema().getTraits(accessId.getColumnIndex());
+                return spec.getMapperFactory().getOutputSchema().getTraits(accessId.getColumnIndex());
             }
             default:
                 throw new IllegalArgumentException("unexpected node type " + producer.type());
@@ -296,7 +296,7 @@ public class RagBuilder {
                     numColumns = ((PermuteTransformSpec)spec).getPermutation().length;
                     break;
                 case MAP:
-                    numColumns = ((MapTransformSpec)spec).getSchema().numColumns();
+                    numColumns = ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
                     break;
                 case MISSING:
                     break;

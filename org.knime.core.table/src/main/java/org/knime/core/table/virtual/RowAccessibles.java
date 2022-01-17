@@ -29,7 +29,7 @@ import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.spec.MapTransformSpec.Map;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilter;
 
 /**
@@ -79,8 +79,8 @@ public final class RowAccessibles {
         return new SlicedRowAccessible(in, selection.fromIndex(), selection.toIndex());
     }
 
-    public static RowAccessible map(final RowAccessible in, final int[] columnIndices, final ColumnarSchema outputSchema, final Map map) {
-        return new MappedRowAccessible(in, columnIndices, outputSchema, map);
+    public static RowAccessible map(final RowAccessible in, final int[] columnIndices, final MapperFactory mapperFactory) {
+        return new MappedRowAccessible(in, columnIndices, mapperFactory);
     }
 
     public static RowAccessible filterRows(final RowAccessible in, final int[] columnIndices, final RowFilter filter)

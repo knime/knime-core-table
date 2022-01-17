@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.virtual.graph.cap.Branches.Branch;
@@ -91,11 +90,10 @@ public class CapBuilder {
                     final MapTransformSpec spec = node.getTransformSpec();
                     final Branch branch = branches.getPredecessorBranch(node);
                     final CapAccessId[] inputs = capAccessIdsFor(node.getInputs());
-                    final List<DataSpec> mapOutputSpecs = spec.getSchema().specStream().collect(Collectors.toList());
                     final Collection<AccessId> outputs = node.getOutputs();
                     final int[] cols = columnIndicesFor(outputs);// column indices of map() outputs that are consumed
                     final CapNodeMap capNode =
-                            new CapNodeMap(index, inputs, headIndex(branch), mapOutputSpecs, cols, spec.getMap());
+                            new CapNodeMap(index, inputs, headIndex(branch), cols, spec.getMapperFactory());
                     append(node, capNode);
                     createCapAccessIdsFor(outputs, capNode);
                     branch.append(node);

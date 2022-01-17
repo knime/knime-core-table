@@ -20,10 +20,8 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
-import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
@@ -31,11 +29,10 @@ import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
-import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilter;
 
 public class VirtualTableExamples {
-
 
     private static void testTransformedTable(
             final ColumnarSchema expectedSchema,
@@ -390,20 +387,10 @@ public class VirtualTableExamples {
 
     public static VirtualTable vtSimpleMap(final UUID[] sourceIdentifiers) {
         final ColumnarSchema schema = ColumnarSchema.of(INT, STRING, DOUBLE, DOUBLE);
-//        final MapTransformSpec.Map multiply = (ReadAccess[] inputs, WriteAccess[] outputs) -> {
-//            final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
-//            final DoubleReadAccess i1 = (DoubleReadAccess)inputs[1];
-//            final DoubleWriteAccess o = (DoubleWriteAccess)outputs[0];
-//            o.setDoubleValue(i0.getDoubleValue() * i1.getDoubleValue());
-//        };
-        final MapTransformSpec.Map add = (ReadAccess[] inputs, WriteAccess[] outputs) -> {
-            final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
-            final DoubleReadAccess i1 = (DoubleReadAccess)inputs[1];
-            final DoubleWriteAccess o = (DoubleWriteAccess)outputs[0];
-            o.setDoubleValue(i0.getDoubleValue() + i1.getDoubleValue());
-        };
+//        final MapperFactory multiply = MapperFactory.doublesToDouble((a, b) -> a * b);
+        final MapperFactory add = MapperFactory.doublesToDouble((a, b) -> a + b);
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], schema);
-        final VirtualTable mappedCols = table.map(new int[]{2, 3}, ColumnarSchema.of(DOUBLE), add);
+        final VirtualTable mappedCols = table.map(new int[]{2, 3}, add);
         return table
                 .filterColumns(0,1)
                 .append(List.of(mappedCols));
@@ -537,12 +524,6 @@ public class VirtualTableExamples {
 
     public static VirtualTable vtMapsAndFilters(final UUID[] sourceIdentifiers) {
         final ColumnarSchema schema = ColumnarSchema.of(INT, DOUBLE, DOUBLE, STRING);
-        final MapTransformSpec.Map add = (ReadAccess[] inputs, WriteAccess[] outputs) -> {
-            final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
-            final DoubleReadAccess i1 = (DoubleReadAccess)inputs[1];
-            final DoubleWriteAccess o = (DoubleWriteAccess)outputs[0];
-            o.setDoubleValue(i0.getDoubleValue() + i1.getDoubleValue());
-        };
         final RowFilter isEven = (ReadAccess[] inputs) -> {
             final IntReadAccess i0 = (IntReadAccess)inputs[0];
             return i0.getIntValue() % 2 == 0;
@@ -552,7 +533,7 @@ public class VirtualTableExamples {
             return i0.getDoubleValue() > 5;
         };
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], schema);
-        final VirtualTable mappedCols = table.map(new int[]{1, 2}, ColumnarSchema.of(DOUBLE), add);
+        final VirtualTable mappedCols = table.map(new int[]{1, 2}, MapperFactory.doublesToDouble((a, b) -> a + b));
         return table //
                 .append(List.of(mappedCols)) //
                 .filterRows(new int[]{4}, isGreaterThanFive) //

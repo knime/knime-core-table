@@ -5,18 +5,21 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.knime.core.table.access.BufferedAccesses;
+import org.knime.core.table.access.BufferedAccesses.BufferedAccess;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
 class NodeImpMap implements NodeImp {
     private final AccessImp[] inputs;
 
     private final ReadAccess[] mapInputs;
 
-    private final BufferedAccesses.BufferedAccess[] mapOutputs;
+    private final BufferedAccess[] mapOutputs;
 
-    private final MapTransformSpec.Map map;
+    private final MapperFactory mapperFactory;
+
+    private Runnable mapper;
 
     private final ReadAccess[] outputs;
 
@@ -25,16 +28,16 @@ class NodeImpMap implements NodeImp {
     /**
      * @param mapOutputSpecs these accesses are needed as outputs for the {@code map()} function.
      * @param cols           these indices among {@code mapOutputSpecs} are the outputs of this NodeImp
-     * @param map
+     * @param mapperFactory
      */
     public NodeImpMap(final AccessImp[] inputs, final NodeImp predecessor, final List<DataSpec> mapOutputSpecs,
-            final int[] cols, MapTransformSpec.Map map) {
+            final int[] cols, final MapperFactory mapperFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;
 
         mapInputs = new ReadAccess[inputs.length];
-        mapOutputs = new BufferedAccesses.BufferedAccess[mapOutputSpecs.size()];
-        this.map = map;
+        mapOutputs = new BufferedAccess[mapOutputSpecs.size()];
+        this.mapperFactory = mapperFactory;
         Arrays.setAll(mapOutputs, i -> BufferedAccesses.createBufferedAccess(mapOutputSpecs.get(i)));
 
         outputs = new ReadAccess[cols.length];
@@ -51,6 +54,7 @@ class NodeImpMap implements NodeImp {
             AccessImp input = inputs[i];
             mapInputs[i] = input.node.getOutput(input.i);
         }
+        mapper = mapperFactory.createMapper(mapInputs, mapOutputs);
     }
 
     @Override
@@ -62,7 +66,7 @@ class NodeImpMap implements NodeImp {
     @Override
     public boolean forward() {
         final boolean result = predecessor.forward();
-        map.map(mapInputs, mapOutputs);
+        mapper.run();
         return result;
     }
 

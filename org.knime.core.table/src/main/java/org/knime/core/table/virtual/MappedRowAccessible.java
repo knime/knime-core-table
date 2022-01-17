@@ -60,7 +60,7 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
-import org.knime.core.table.virtual.spec.MapTransformSpec.Map;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
 /**
  * Implementation of the operation specified by {@link MapTransformSpec}.
@@ -73,26 +73,23 @@ class MappedRowAccessible implements RowAccessible {
 
     private final int[] m_inputs;
 
-    private final ColumnarSchema m_schema;
+    private final MapperFactory m_mapperFactory;
 
-    private final Map m_map;
-
-    public MappedRowAccessible(final RowAccessible tableToMapFrom, final int[] inputColumns, final ColumnarSchema outputSchema, final Map map) {
+    public MappedRowAccessible(final RowAccessible tableToMapFrom, final int[] inputColumns, final MapperFactory mapperFactory) {
         m_delegateTable = tableToMapFrom;
         m_inputs = inputColumns;
-        m_schema = outputSchema;
-        m_map = map;
+        m_mapperFactory = mapperFactory;
     }
 
     @Override
     public ColumnarSchema getSchema() {
-        return m_schema;
+        return m_mapperFactory.getOutputSchema();
     }
 
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
     @Override
     public Cursor<ReadAccessRow> createCursor() {
-        return new MappedCursor(m_delegateTable.createCursor(), m_inputs, m_schema, m_map);
+        return new MappedCursor(m_delegateTable.createCursor(), m_inputs, m_mapperFactory);
     }
 
     @Override
@@ -103,21 +100,18 @@ class MappedRowAccessible implements RowAccessible {
     private static final class MappedCursor implements Cursor<ReadAccessRow> {
 
         private final Cursor<ReadAccessRow> m_delegateCursor;
-        private final Map m_map;
+        private final Runnable m_mapper;
         private final BufferedAccessRow m_access;
 
-        private final ReadAccess[] m_inputs;
-        private final WriteAccess[] m_outputs;
-
-        public MappedCursor(final Cursor<ReadAccessRow> delegateCursor, final int[] inputColumns, final ColumnarSchema outputSchema, final Map map) {
+        public MappedCursor(final Cursor<ReadAccessRow> delegateCursor, final int[] inputColumns, final MapperFactory mapperFactory) {
             m_delegateCursor = delegateCursor;
-            m_map = map;
-            m_access = BufferedAccesses.createBufferedAccessRow(outputSchema);
+            m_access = BufferedAccesses.createBufferedAccessRow(mapperFactory.getOutputSchema());
 
-            m_inputs = new ReadAccess[inputColumns.length];
-            Arrays.setAll(m_inputs, i -> m_delegateCursor.access().getAccess(inputColumns[i]));
-            m_outputs = new WriteAccess[m_access.size()];
-            Arrays.setAll(m_outputs, m_access::getWriteAccess);
+            final ReadAccess[] inputs = new ReadAccess[inputColumns.length];
+            Arrays.setAll(inputs, i -> m_delegateCursor.access().getAccess(inputColumns[i]));
+            final WriteAccess[] outputs = new WriteAccess[m_access.size()];
+            Arrays.setAll(outputs, m_access::getWriteAccess);
+            m_mapper = mapperFactory.createMapper(inputs, outputs);
         }
 
         @Override
@@ -128,7 +122,7 @@ class MappedRowAccessible implements RowAccessible {
         @Override
         public boolean forward() {
             if (m_delegateCursor.forward()) {
-                m_map.map(m_inputs, m_outputs);
+                m_mapper.run();
                 return true;
             }
             return false;

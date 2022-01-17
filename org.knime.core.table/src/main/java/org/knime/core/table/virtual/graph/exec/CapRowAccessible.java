@@ -88,7 +88,7 @@ class CapRowAccessible implements RowAccessible {
                         final CapNodeMap map = (CapNodeMap)node;
                         final AccessImp[] inputs = accessImps(map.inputs());
                         imps.add(new NodeImpMap(inputs, imps.get(map.predecessor()), map.mapOutputSpecs(), map.cols(),
-                                map.map()));
+                                map.mapperFactory()));
                         break;
                     }
                     case APPEND: {

@@ -2,9 +2,10 @@ package org.knime.core.table.virtual.graph.cap;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
 /**
  * Represents a map operation in the CAP.
@@ -20,16 +21,16 @@ public class CapNodeMap extends CapNode {
     private final int predecessor;
     private final List<DataSpec> mapOutputSpecs;
     private final int[] cols;
-    private final MapTransformSpec.Map map;
+    private final MapperFactory mapperFactory;
 
-    public CapNodeMap(final int index, final CapAccessId[] inputs, final int predecessor, List<DataSpec> mapOutputSpecs,
-            int[] cols, MapTransformSpec.Map map) {
+    public CapNodeMap(final int index, final CapAccessId[] inputs, final int predecessor,
+            final int[] cols, final MapperFactory mapperFactory) {
         super(index, CapNodeType.MAP);
         this.inputs = inputs;
         this.predecessor = predecessor;
-        this.mapOutputSpecs = mapOutputSpecs;
+        this.mapOutputSpecs = mapperFactory.getOutputSchema().specStream().collect(Collectors.toList());
         this.cols = cols;
-        this.map = map;
+        this.mapperFactory = mapperFactory;
     }
 
     @Override
@@ -39,7 +40,7 @@ public class CapNodeMap extends CapNode {
         sb.append(", predecessor=").append(predecessor);
         sb.append(", mapOutputSpecs=").append(mapOutputSpecs);
         sb.append(", cols=").append(Arrays.toString(cols));
-        sb.append(", map=").append(map);
+        sb.append(", mapperFactory=").append(mapperFactory);
         sb.append(')');
         return sb.toString();
     }
@@ -83,9 +84,9 @@ public class CapNodeMap extends CapNode {
     }
 
     /**
-     * @return the map function
+     * @return the mapper factory
      */
-    public MapTransformSpec.Map map() {
-        return map;
+    public MapperFactory mapperFactory() {
+        return mapperFactory;
     }
 }
