@@ -60,6 +60,7 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
+import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -171,6 +172,11 @@ public final class VirtualTable {
     public VirtualTable slice(final long from, final long to) {
         final TableTransformSpec transformSpec = new SliceTransformSpec(from, to);
         return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), m_schema);
+    }
+
+    public VirtualTable map(final int[] columnIndices, final ColumnarSchema outputSchema, final MapTransformSpec.Map map) {
+        final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, outputSchema, map);
+        return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), outputSchema);
     }
 
     //    /**
