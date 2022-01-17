@@ -204,7 +204,7 @@ public final class RowAccessiblesTestUtils {
             }
 
             @Override
-            public void close() throws IOException {
+            public void close() {
             }
 
             @Override
@@ -264,7 +264,7 @@ public final class RowAccessiblesTestUtils {
      */
     @SuppressWarnings("resource")
     public static RowAccessible createRowAccessibleFromRowWiseValues(final ColumnarSchema schema,
-        final Object[][] valuesPerRow) throws IOException {
+        final Object[][] valuesPerRow) {
         final TestRowWriteAccessible table = createRowWriteAccessible(schema);
         try (final Cursor<WriteAccessRow> cursor = table.getWriteCursor()) {
             final WriteAccessRow row = cursor.access();
@@ -274,6 +274,8 @@ public final class RowAccessiblesTestUtils {
                     WriteAccessValueSetter.setValue(schema.getSpec(c), row.getWriteAccess(c), valuesPerRow[r][c]);
                 }
             }
+        } catch (IOException e) {
+            // will not happen
         }
         return toRowAccessible(table);
     }
@@ -301,7 +303,7 @@ public final class RowAccessiblesTestUtils {
         assertTableEqualsValues(expectedValues, result);
     }
 
-    static void assertTableEqualsValues(final Object[][] expectedValues, final RowAccessible actualTable) {
+    public static void assertTableEqualsValues(final Object[][] expectedValues, final RowAccessible actualTable) {
         final ColumnarSchema schema = actualTable.getSchema();
         try (final Cursor<ReadAccessRow> cursor = actualTable.createCursor()) {
             final ReadAccessRow actualRow = cursor.access();
