@@ -62,6 +62,7 @@ import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -177,6 +178,11 @@ public final class VirtualTable {
     public VirtualTable map(final int[] columnIndices, final ColumnarSchema outputSchema, final MapTransformSpec.Map map) {
         final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, outputSchema, map);
         return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), outputSchema);
+    }
+
+    public VirtualTable filterRows(final int[] columnIndices, final RowFilterTransformSpec.RowFilter filter) {
+        final TableTransformSpec transformSpec = new RowFilterTransformSpec(columnIndices, filter);
+        return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), m_schema);
     }
 
     //    /**

@@ -30,6 +30,7 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.MapTransformSpec.Map;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilter;
 
 /**
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
@@ -65,6 +66,7 @@ public final class RowAccessibles {
         return new ConcatenatedRowAccessible(list);
     }
 
+    // TODO rename to filterColumns()
     public static RowAccessible filter(final RowAccessible in, final int[] selection) {
         return new ColumnFilteredRowAccessible(in, selection);
     }
@@ -79,6 +81,11 @@ public final class RowAccessibles {
 
     public static RowAccessible map(final RowAccessible in, final int[] columnIndices, final ColumnarSchema outputSchema, final Map map) {
         return new MappedRowAccessible(in, columnIndices, outputSchema, map);
+    }
+
+    public static RowAccessible filterRows(final RowAccessible in, final int[] columnIndices, final RowFilter filter)
+    {
+        return new FilteredRowAccessible(in, columnIndices, filter);
     }
 
     static LookaheadRowAccessible toLookahead(final RowAccessible rowAccessible) {
