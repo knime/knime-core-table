@@ -65,9 +65,12 @@ class NodeImpMap implements NodeImp {
 
     @Override
     public boolean forward() {
-        final boolean result = predecessor.forward();
-        mapper.run();
-        return result;
+        if (predecessor.forward()) {
+            mapper.run();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
