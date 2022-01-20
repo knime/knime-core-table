@@ -480,8 +480,8 @@ public final class TestAccesses {
 
             @Override
             public void setIndex(final int index) {
-                ensureSize();
                 m_index = index;
+                ensureSize();
             }
 
             protected void set(final T data) {
