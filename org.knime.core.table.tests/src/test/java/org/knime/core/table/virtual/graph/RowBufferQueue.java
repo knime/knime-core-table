@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class RowQueue<R> {
+public class RowBufferQueue<R> {
 
     private final ArrayDeque<R> items;
 
@@ -25,13 +25,13 @@ public class RowQueue<R> {
      *
      * @param capacity the capacity of this queue
      */
-    public RowQueue(final int capacity) {
+    public RowBufferQueue(final int capacity) {
         items = new ArrayDeque<>(capacity);
         lock = new ReentrantLock();
         notEmpty = lock.newCondition();
     }
 
-    public RowQueue() {
+    public RowBufferQueue() {
         this(64);
     }
 
