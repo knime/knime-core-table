@@ -25,13 +25,16 @@ public class SplitterPlayground {
         for (int t = 1; t <= nThreads; t++) {
             final int threadIndex = t;
             new Thread(() -> {
-                try (final Cursor<ReadAccessRow> cursor = new SplitCursor(source)) {
+                try (final SplitCursor cursor = new SplitCursor(source)) {
                     while (cursor.forward()) {
+                        final long millis = (long)(Math.random() * 100);
+                        Thread.sleep(millis);
                         final StringBuffer sb = new StringBuffer("[thread ").append(threadIndex).append("]: ");
+                        sb.append("row ").append(cursor.rowIndex()).append(", ");
                         for (int i = 0; i < cursor.access().size(); i++)
-                            sb.append(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                            sb.append(ReadAccessUtils.toString(cursor.access().getAccess(i))).append(", ");
+                        sb.append("millis=").append(millis);
                         System.out.println(sb);
-                        Thread.sleep((long)(Math.random() * 100));
                     }
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
@@ -44,19 +47,22 @@ public class SplitterPlayground {
 
         private final ColumnarSchema schema;
         private final Cursor<ReadAccessRow> cursor;
+        private long rowIndex;
 
         public SplitSource(final RowAccessible rows) {
             schema = rows.getSchema();
             cursor = rows.createCursor();
+            rowIndex = 0;
         }
 
         public ColumnarSchema getSchema() {
             return schema;
         }
 
-        public synchronized boolean forward(final BufferedAccessRow buffer) {
+        public synchronized boolean forward(final SplitCursor splitCursor) {
             if (cursor.forward()) {
-                buffer.setFrom(cursor.access());
+                splitCursor.bufferedAccessRow.setFrom(cursor.access());
+                splitCursor.rowIndex = rowIndex++;
                 return true;
             }
             return false;
@@ -66,8 +72,8 @@ public class SplitterPlayground {
     static class SplitCursor implements Cursor<ReadAccessRow> {
 
         private final SplitSource source;
-
         private final BufferedAccessRow bufferedAccessRow;
+        private long rowIndex;
 
         public SplitCursor(final SplitSource source) {
             this.source = source;
@@ -79,9 +85,13 @@ public class SplitterPlayground {
             return bufferedAccessRow;
         }
 
+        public long rowIndex() {
+            return rowIndex;
+        }
+
         @Override
         public boolean forward() {
-            return source.forward(bufferedAccessRow);
+            return source.forward(this);
         }
 
         @Override
@@ -89,4 +99,5 @@ public class SplitterPlayground {
             // TODO?
         }
     }
+
 }
