@@ -2,7 +2,7 @@ package org.knime.core.table.virtual.graph;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
 
 public class RowOrderList<R> {
     // TODO: Recycle OrderEntry objects
@@ -28,7 +28,7 @@ public class RowOrderList<R> {
         }
     }
 
-    private final BlockingDeque<R> outputQueue;
+    private final BlockingQueue<R> outputQueue;
 
     private final ArrayList<OrderEntry<R>> entries = new ArrayList<>();
             // TODO: Would it be more efficient to replace this with a (growable) RingBuffer? (But start by profiling...)
@@ -37,7 +37,7 @@ public class RowOrderList<R> {
 
     private long pendingIndex;
 
-    RowOrderList(final BlockingDeque<R> outputQueue, final RowBufferQueue<R> rowBufferQueue, final long pendingIndex) {
+    RowOrderList(final BlockingQueue<R> outputQueue, final RowBufferQueue<R> rowBufferQueue, final long pendingIndex) {
         this.outputQueue = outputQueue;
         this.rowBufferQueue = rowBufferQueue;
         this.pendingIndex = pendingIndex;

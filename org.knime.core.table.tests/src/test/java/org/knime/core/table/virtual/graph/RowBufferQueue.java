@@ -67,10 +67,10 @@ public class RowBufferQueue<R> {
     /**
      * Inserts the specified element at the tail of this queue.
      */
-    public void put(R rowBuffer) throws InterruptedException {
+    public void put(R rowBuffer) {
         Objects.requireNonNull(rowBuffer);
         final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
+        lock.lock();
         try {
             items.add(rowBuffer);
             ++count;
