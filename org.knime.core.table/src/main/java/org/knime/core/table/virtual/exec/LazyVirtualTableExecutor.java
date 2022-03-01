@@ -34,9 +34,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.RowAccessibles;
-import org.knime.core.table.virtual.RowRangeSelection;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;

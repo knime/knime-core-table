@@ -57,8 +57,8 @@ import java.io.IOException;
 
 import org.junit.Test;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.DefaultRowRangeSelection;
 import org.knime.core.table.virtual.RowAccessibles;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 
@@ -233,7 +233,7 @@ public final class SliceTransformTest {
             createRowAccessibleFromRowWiseValues(expectedAndOriginalSchema, originalValues)) {
             @SuppressWarnings("resource")
             final RowAccessible result =
-                RowAccessibles.slice(originalTable, new DefaultRowRangeSelection(sliceFrom, sliceTo));
+                RowAccessibles.slice(originalTable, RowRangeSelection.all().retain(sliceFrom, sliceTo));
             RowAccessiblesTestUtils.assertRowAccessibleEquals(result, expectedAndOriginalSchema, expectedValues);
         }
     }

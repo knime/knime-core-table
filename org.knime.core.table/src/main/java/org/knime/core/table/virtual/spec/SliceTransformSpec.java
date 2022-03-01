@@ -48,8 +48,7 @@
  */
 package org.knime.core.table.virtual.spec;
 
-import org.knime.core.table.virtual.DefaultRowRangeSelection;
-import org.knime.core.table.virtual.RowRangeSelection;
+import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -65,7 +64,16 @@ public final class SliceTransformSpec implements TableTransformSpec {
      * @param to The end index of the slice (exclusive).
      */
     public SliceTransformSpec(final long from, final long to) {
-        m_range = new DefaultRowRangeSelection(from, to);
+        m_range = RowRangeSelection.all().retain(from, to);
+    }
+
+    /**
+     * @param rowRange The rows of the slice.
+     */
+    public SliceTransformSpec(RowRangeSelection rowRange) {
+        if (rowRange.allSelected())
+            throw new IllegalArgumentException();
+        m_range = rowRange;
     }
 
     /**

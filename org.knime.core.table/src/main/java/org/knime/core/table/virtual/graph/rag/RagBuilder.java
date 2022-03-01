@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
@@ -591,16 +592,13 @@ public class RagBuilder {
 
         // merge indices from predecessor and slice
         final SliceTransformSpec predecessorSpec = predecessor.getTransformSpec();
-        final long from0 = predecessorSpec.getRowRangeSelection().fromIndex();
-        final long to0 = predecessorSpec.getRowRangeSelection().toIndex();
         final SliceTransformSpec sliceSpec = slice.getTransformSpec();
-        final long from1 = sliceSpec.getRowRangeSelection().fromIndex();
-        final long to1 = sliceSpec.getRowRangeSelection().toIndex();
-        final long from = from0 + from1;
-        final long to = Math.min(to0, from0 + to1);
+        final RowRangeSelection predecessorRange = predecessorSpec.getRowRangeSelection();
+        final RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
+        final RowRangeSelection mergedRange = predecessorRange.retain(sliceRange);
 
         // create new merged SLICE Node
-        final TableTransform mergedTableTransform = new TableTransform(Collections.emptyList(), new SliceTransformSpec(from, to));
+        final TableTransform mergedTableTransform = new TableTransform(Collections.emptyList(), new SliceTransformSpec(mergedRange));
         final RagNode merged = graph.addNode(mergedTableTransform);
 
         // link all predecessors of predecessor to merged
