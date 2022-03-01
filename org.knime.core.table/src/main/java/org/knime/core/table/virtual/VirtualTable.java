@@ -65,6 +65,7 @@ import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
+import org.knime.core.table.virtual.spec.SourceTableProperties;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
@@ -104,8 +105,12 @@ public final class VirtualTable {
     // characteristics").
 
     public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema) {
-        m_transform = new TableTransform(new SourceTransformSpec(sourceIdentifier, schema));
-        m_schema = schema;
+        this(sourceIdentifier, new SourceTableProperties(schema));
+    }
+
+    public VirtualTable(final UUID sourceIdentifier, final SourceTableProperties properties) {
+        m_transform = new TableTransform(new SourceTransformSpec(sourceIdentifier, properties));
+        m_schema = properties.getSchema();
     }
 
     private VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {

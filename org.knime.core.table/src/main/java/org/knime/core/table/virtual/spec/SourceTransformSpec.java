@@ -20,8 +20,10 @@
  */
 package org.knime.core.table.virtual.spec;
 
+import java.util.Objects;
 import java.util.UUID;
 
+import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
 
@@ -35,35 +37,60 @@ public final class SourceTransformSpec implements TableTransformSpec {
 
     private final UUID m_sourceIdentifier;
 
-    private final ColumnarSchema m_schema;
+    private final SourceTableProperties m_properties;
 
-    public SourceTransformSpec(final UUID sourceIdentifier, final ColumnarSchema schema) {
+    private final RowRangeSelection m_rowRange;
+
+    public SourceTransformSpec(final UUID sourceIdentifier, final SourceTableProperties properties) {
+        this(sourceIdentifier, properties, RowRangeSelection.all());
+    }
+
+    public SourceTransformSpec(final UUID sourceIdentifier, final SourceTableProperties properties, final RowRangeSelection rowRange) {
         m_sourceIdentifier = sourceIdentifier;
-        m_schema = schema;
+        m_properties = properties;
+        m_rowRange = rowRange;
     }
 
     public UUID getSourceIdentifier() {
         return m_sourceIdentifier;
     }
 
+    public SourceTableProperties getProperties() {
+        return m_properties;
+    }
+
     public ColumnarSchema getSchema() {
-        return m_schema;
+        return m_properties.getSchema();
+    }
+
+    public RowRangeSelection getRowRange() {
+        return m_rowRange;
     }
 
     @Override
     public int hashCode() {
-        return m_sourceIdentifier.hashCode();
+        return Objects.hash(m_sourceIdentifier, m_rowRange);
     }
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof SourceTransformSpec &&
-            m_sourceIdentifier.equals(((SourceTransformSpec)obj).m_sourceIdentifier);
+        if (this == obj)
+            return true;
+        if (! (obj instanceof SourceTransformSpec))
+            return false;
+        final SourceTransformSpec that = (SourceTransformSpec)obj;
+        return m_sourceIdentifier.equals(that.m_sourceIdentifier) && m_rowRange.equals(that.m_rowRange);
     }
 
     @Override
     public String toString() {
-        return "Source " + m_sourceIdentifier.toString();
+        final StringBuffer sb = new StringBuffer("Source");
+        if (!m_rowRange.allSelected()) {
+            sb.append(" from ").append(m_rowRange.fromIndex());
+            sb.append(" to ").append(m_rowRange.toIndex());
+        }
+        sb.append(" m_sourceIdentifier=").append(m_sourceIdentifier);
+        return sb.toString();
     }
 
     public static final class SourceTransformSpecSerializer
@@ -73,7 +100,8 @@ public final class SourceTransformSpec implements TableTransformSpec {
             super("source", 0);
         }
 
-        // TODO: de/serialize m_schema
+        // TODO: de/serialize m_properties
+        // TODO: de/serialize m_rowRange
 
         @Override
         protected JsonNode saveInternal(final SourceTransformSpec spec, final JsonNodeFactory factory) {
