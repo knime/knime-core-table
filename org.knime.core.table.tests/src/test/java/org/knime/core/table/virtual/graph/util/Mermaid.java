@@ -53,7 +53,7 @@ public class Mermaid {
                     break;
                 case EXEC:
                     sb.append("  linkStyle " + edgeId + " stroke:" + //
-                            (darkMode ? "read" : "#FF8888,anything") + ";\n");
+                            (darkMode ? "red" : "#FF8888,anything") + ";\n");
                     break;
                 case ORDER:
                     sb.append("  linkStyle " + edgeId + " stroke:" + //
