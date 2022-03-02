@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.virtual.graph.cap.Branches.Branch;
 import org.knime.core.table.virtual.graph.rag.AccessId;
@@ -50,7 +51,8 @@ public class CapBuilder {
                     final SourceTransformSpec spec = node.getTransformSpec();
                     final UUID uuid = spec.getSourceIdentifier();
                     final Collection<AccessId> outputs = node.getOutputs();
-                    final CapNodeSource capNode = new CapNodeSource(index, uuid, columnIndicesFor(outputs));
+                    final RowRangeSelection range = spec.getRowRange();
+                    final CapNodeSource capNode = new CapNodeSource(index, uuid, columnIndicesFor(outputs), range);
                     append(node, capNode);
                     createCapAccessIdsFor(outputs, capNode);
                     branches.createBranch(node);

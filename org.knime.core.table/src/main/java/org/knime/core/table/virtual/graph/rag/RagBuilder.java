@@ -565,7 +565,6 @@ public class RagBuilder {
     }
 
 
-
     // --------------------------------------------------------------------
     // mergeSlices()
 
@@ -580,14 +579,68 @@ public class RagBuilder {
 
     private boolean tryMergeSlice(final RagNode slice) {
         final List<RagNode> predecessors = slice.predecessors(EXEC);
-        if (predecessors.size() == 1 && predecessors.get(0).type() == SLICE) {
-            mergeSlice(slice);
-            return true;
+        if (predecessors.size() == 1) {
+            switch(predecessors.get(0).type()) {
+                case SOURCE:
+                    return mergeSliceToSource(slice);
+                case SLICE:
+                    mergeSliceToSlice(slice);
+                    return true;
+                default:
+                    return false;
+            }
         }
         return false;
     }
 
-    private void mergeSlice(final RagNode slice) {
+    private boolean mergeSliceToSource(final RagNode slice) {
+        final RagNode source = slice.predecessor(EXEC);
+
+        // check whether the source supports efficient row range slicing
+        final SourceTransformSpec sourceSpec = source.getTransformSpec();
+        if ( !sourceSpec.getProperties().supportsRowRange() ) {
+            return false;
+        }
+
+        // merge indices from predecessor and slice
+        final SliceTransformSpec sliceSpec = slice.getTransformSpec();
+        final RowRangeSelection sourceRange = sourceSpec.getRowRange();
+        final RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
+        final RowRangeSelection mergedRange = sourceRange.retain(sliceRange);
+
+        // create new merged SOURCE Node
+        final SourceTransformSpec mergedSpec = new SourceTransformSpec(sourceSpec.getSourceIdentifier(), sourceSpec.getProperties(), mergedRange);
+        final TableTransform mergedTableTransform = new TableTransform(Collections.emptyList(), mergedSpec);
+        final RagNode merged = graph.addNode(mergedTableTransform);
+
+        // re-link accesses outputs of source to merged
+        merged.setNumColumns(source.numColumns());
+        for (AccessId oldId : source.getOutputs()) {
+            AccessId newId = merged.getOrCreateOutput(oldId.getColumnIndex());
+            for (RagNode consumer : oldId.getConsumers()) {
+                if (consumer.replaceInput(oldId, newId)) {
+                    newId.addConsumer(consumer);
+                }
+            }
+        }
+        // re-link DATA edges of source to merged
+        for (RagEdge edge : source.outgoingEdges(DATA)) {
+            graph.addEdge(merged, edge.getTarget(), DATA);
+        }
+
+        // link merged to all EXEC successors of slice
+        for (RagNode node : slice.successors(EXEC)) {
+            graph.getOrAddEdge(merged, node, EXEC);
+        }
+
+        // remove source and slice (and associated edges)
+        graph.remove(source);
+        graph.remove(slice);
+
+        return true;
+    }
+
+    private void mergeSliceToSlice(final RagNode slice) {
         final RagNode predecessor = slice.predecessor(EXEC);
 
         // merge indices from predecessor and slice

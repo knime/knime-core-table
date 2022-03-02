@@ -74,7 +74,7 @@ class CapRowAccessible implements RowAccessible {
                 switch (node.type()) {
                     case SOURCE: {
                         final CapNodeSource source = (CapNodeSource)node;
-                        imps.add(new NodeImpSource(sourceIter.next(), source.cols()));
+                        imps.add(new NodeImpSource(sourceIter.next(), source.cols(), source.fromRow(), source.toRow()));
                         break;
                     }
                     case MISSING: {
