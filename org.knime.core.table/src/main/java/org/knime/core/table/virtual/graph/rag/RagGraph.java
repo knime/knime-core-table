@@ -78,10 +78,14 @@ public class RagGraph {
     }
 
     public void remove(final RagNode node) {
-        for (final RagEdge edge : node.incoming.unmodifiable())
+        for (final RagEdge edge : node.incoming.unmodifiable()) {
             edge.getSource().outgoing.remove(edge);
-        for (final RagEdge edge : node.outgoing.unmodifiable())
+            edges.remove(edge);
+        }
+        for (final RagEdge edge : node.outgoing.unmodifiable()) {
             edge.getTarget().incoming.remove(edge);
+            edges.remove(edge);
+        }
         nodes.remove(node);
     }
 

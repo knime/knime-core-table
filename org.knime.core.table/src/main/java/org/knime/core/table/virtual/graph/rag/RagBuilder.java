@@ -674,7 +674,7 @@ public class RagBuilder {
      * <p>
      * We can "skip over" MAP nodes, because they just pass through forward behaviour
      * to their predecessor Node. The set of effective producers of {@code access} is
-     * then the union over the effective producers of all of the MAPs inputs.
+     * then the union over the effective producers of all the MAP's inputs.
      */
     private Set<RagNode> getEffectiveProducers(final AccessId access) {
         final RagNode producer = access.getProducer();
@@ -724,9 +724,7 @@ public class RagBuilder {
             final AccessId input = inputs.getAtSlot(i);
             input.removeConsumer(append);
             for (RagNode consumer : output.getConsumers()) {
-                for (AccessIds consumerInputs : consumer.getInputssArray()) {
-                    final int j = consumerInputs.slotIndexOf(output);
-                    consumerInputs.putAtColumnIndex(input, j);
+                if (consumer.replaceInput(output, input)) {
                     input.addConsumer(consumer);
                     if (input.getProducer().type() != MISSING) {
                         graph.getOrAddEdge(input.getProducer(), consumer, DATA);

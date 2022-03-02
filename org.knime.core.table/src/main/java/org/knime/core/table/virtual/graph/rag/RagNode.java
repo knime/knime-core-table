@@ -232,6 +232,24 @@ public final class RagNode implements Typed<RagNodeType> {
         return inputs;
     }
 
+    /**
+     * Replace all uses of {@code oldId} as an input to this node with {@code newId}.
+     * <p>
+     * Note that neither the consumers of {@code oldId} nor the consumers of {@code
+     * newId} are updated.
+     *
+     * @param oldId access to be replaced
+     * @param newId access to replace it with
+     * @return {@code true} iff any replacement was made (that is, iff {@code oldId} occurred as an input to this node)
+     */
+    public boolean replaceInput(final AccessId oldId, final AccessId newId) {
+        boolean replaced = false;
+        for (AccessIds ids : inputs) {
+            replaced |= ids.replace(oldId, newId);
+        }
+        return replaced;
+    }
+
     public int getMark() {
         return mark;
     }

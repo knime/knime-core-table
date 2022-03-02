@@ -103,9 +103,28 @@ public class AccessIds extends AbstractCollection<AccessId> {
 
     public int slotIndexOf(final AccessId accessId) {
         for (int i = 0; i < size; i++) {
-            if(ids[i].equals(accessId))
+            if(ids[i].equals(accessId)) {
                 return i;
+            }
         }
         return -1;
+    }
+
+    /**
+     * Replace all instances of {@code oldId} in this collection with {@code newId}.
+     *
+     * @param oldId access to be replaced
+     * @param newId access to replace it with
+     * @return {@code true} iff any replacement was made (that is, iff {@code oldId} occurred in this collection)
+     */
+    public boolean replace(final AccessId oldId, final AccessId newId) {
+        boolean replaced = false;
+        for (int i = 0; i < size; i++) {
+            if(ids[i].equals(oldId)) {
+                ids[i] = newId;
+                replaced = true;
+            }
+        }
+        return replaced;
     }
 }
