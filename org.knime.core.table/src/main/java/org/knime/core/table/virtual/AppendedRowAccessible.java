@@ -3,17 +3,19 @@ package org.knime.core.table.virtual;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.knime.core.table.access.DelegatingReadAccesses;
+import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccess;
 import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 
@@ -69,6 +71,25 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
     }
 
     @Override
+    public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
+        final int numTables = m_delegateTables.size();
+        final Selection[] delegateSelections = new Selection[numTables];
+        if (selection.columns().allSelected()) {
+            Arrays.fill(delegateSelections, selection);
+        } else {
+            for (int t = 0; t < numTables; t++) {
+                final int fromIndex = m_tableOffsets[t];
+                final int toIndex = t + 1 < numTables ? m_tableOffsets[t + 1] : m_schema.numColumns();
+                final int[] selected = selection.columns().getSelected(fromIndex, toIndex);
+                final int[] delegateCols = new int[selected.length];
+                Arrays.setAll(delegateCols, i -> selected[i] - fromIndex);
+                delegateSelections[t] = Selection.all().retainRows(selection.rows()).retainColumns(delegateCols);
+            }
+        }
+        return new AppendedCursor(delegateSelections);
+    }
+
+    @Override
     public void close() throws IOException {
         for (final RowAccessible table : m_delegateTables) {
             table.close();
@@ -89,6 +110,15 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
             final ReadAccessRow[] delegateAccesses = Stream.of(m_delegateCursors)//
                 .map(Cursor::access)//
                 .toArray(ReadAccessRow[]::new);
+            m_access = new AppendedReadAccessRow(delegateAccesses);
+        }
+
+        AppendedCursor(final Selection[] delegateSelections) {
+            final int numTables = m_delegateTables.size();
+            m_delegateCursors = new LookaheadCursor[numTables];
+            Arrays.setAll(m_delegateCursors, i -> m_delegateTables.get(i).createCursor(delegateSelections[i]));
+            final ReadAccessRow[] delegateAccesses = new ReadAccessRow[numTables];
+            Arrays.setAll(delegateAccesses, i -> m_delegateCursors[i].access());
             m_access = new AppendedReadAccessRow(delegateAccesses);
         }
 

@@ -49,11 +49,13 @@
 package org.knime.core.table.virtual;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 
@@ -84,9 +86,30 @@ final class ColumnFilteredRowAccessible implements LookaheadRowAccessible {
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor() {
-        return m_schema.numColumns() != 0 //
-            ? new ColumnFilteredCursor(m_delegateTable.createCursor(), m_columnIndices, m_schema) //
-            : new EmptyCursor(m_schema);
+        if ( m_schema.numColumns() == 0 ) {
+            return new EmptyCursor(m_schema);
+        } else {
+            final Selection selection = Selection.all().retainColumns(m_columnIndices);
+            return new ColumnFilteredCursor(m_delegateTable.createCursor(selection), m_columnIndices, m_schema);
+        }
+    }
+
+    @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
+    @Override
+    public LookaheadCursor<ReadAccessRow> createCursor(Selection selection) {
+        if ( m_schema.numColumns() == 0 ) {
+            return new EmptyCursor(m_schema);
+        } else {
+            if (selection.columns().allSelected()) {
+                selection = selection.retainColumns(m_columnIndices);
+            } else {
+                final int[] selected = selection.columns().getSelected(0, m_schema.numColumns());
+                final int[] cols = new int[selected.length];
+                Arrays.setAll(cols, i -> m_columnIndices[selected[i]]);
+                selection = Selection.all().retainRows(selection.rows()).retainColumns(cols);
+            }
+            return new ColumnFilteredCursor(m_delegateTable.createCursor(selection), m_columnIndices, m_schema);
+        }
     }
 
     @Override

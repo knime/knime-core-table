@@ -78,6 +78,7 @@ import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryWriteAccess;
 import org.knime.core.table.io.ReadableDataInputStream;
 import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.row.Selection.ColumnSelection;
 import org.knime.core.table.row.WriteAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
@@ -127,6 +128,19 @@ public final class BufferedAccesses {
     }
 
     /**
+     * Creates a {@link BufferedAccessRow} with the provided {@link ColumnarSchema}. {@code BufferedAccess}es of
+     * non-selected columns will be {@code null} in the returned {@code BufferedAccessRow}.
+     *
+     * @param schema defining the number of columns and their types
+     * @param columnSelection selected columns
+     * @return a {@link BufferedAccessRow} with the provided {@link ColumnarSchema}
+     */
+    public static BufferedAccessRow createBufferedAccessRow(final ColumnarSchema schema,
+        final ColumnSelection columnSelection) {
+        return new DefaultBufferedAccessRow(schema, columnSelection);
+    }
+
+    /**
      * Both a {@link ReadAccessRow} and {@link WriteAccessRow} that is based on {@link BufferedAccess BufferedAccesses}.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
@@ -151,19 +165,15 @@ public final class BufferedAccesses {
         private final BufferedAccess[] m_accesses;
 
         private DefaultBufferedAccessRow(final ColumnarSchema schema) {
-            m_accesses = createBufferedAccesses(schema);
+            m_accesses = new BufferedAccess[schema.numColumns()];
+            Arrays.setAll(m_accesses, i -> createBufferedAccess(schema.getSpec(i)));
         }
 
-        /**
-         * Convenience method for creating an array of BufferedAccesses for a provided schema.
-         *
-         * @param schema for which to create the BufferedAccesses
-         * @return BufferedAccesses corresponding to the DataSpecs in the provided schema
-         */
-        private static BufferedAccess[] createBufferedAccesses(final ColumnarSchema schema) {
-            return schema.specStream()//
-                .map(BufferedAccesses::createBufferedAccess)//
-                .toArray(BufferedAccess[]::new);
+        private DefaultBufferedAccessRow(final ColumnarSchema schema, final ColumnSelection columnSelection) {
+            m_accesses = new BufferedAccess[schema.numColumns()];
+            Arrays.setAll(m_accesses, i -> columnSelection.isSelected(i) //
+                ? createBufferedAccess(schema.getSpec(i)) //
+                : null);
         }
 
         @Override
@@ -183,7 +193,10 @@ public final class BufferedAccesses {
                     String.format("Wrong size: %d vs. %d", readAccessRow.size(), size()));
             }
             for (var i = 0; i < size(); i++) {
-                m_accesses[i].setFrom(readAccessRow.getAccess(i));
+                final BufferedAccess access = m_accesses[i];
+                if (access != null) {
+                    access.setFrom(readAccessRow.getAccess(i));
+                }
             }
         }
 

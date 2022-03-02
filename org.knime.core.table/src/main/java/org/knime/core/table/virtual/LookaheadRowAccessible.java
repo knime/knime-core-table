@@ -23,6 +23,7 @@ package org.knime.core.table.virtual;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 
 /**
  * A {@link RowAccessible} that creates {@link LookaheadCursor LookaheadCursors}.
@@ -33,4 +34,7 @@ interface LookaheadRowAccessible extends RowAccessible {
 
     @Override
     LookaheadCursor<ReadAccessRow> createCursor();
+
+    @Override
+    LookaheadCursor<ReadAccessRow> createCursor(Selection selection);
 }

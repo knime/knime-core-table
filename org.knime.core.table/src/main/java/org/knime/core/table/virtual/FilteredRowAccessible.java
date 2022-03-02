@@ -50,11 +50,14 @@ package org.knime.core.table.virtual;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.cursor.Cursors;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilter;
@@ -87,6 +90,34 @@ class FilteredRowAccessible implements RowAccessible {
     @Override
     public Cursor<ReadAccessRow> createCursor() {
         return new FilteredCursor(m_delegateTable.createCursor(), m_inputs,  m_filter);
+    }
+
+    @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
+    @Override
+    public Cursor<ReadAccessRow> createCursor(final Selection selection) {
+        // Handle column selection first. We must make sure that (at least) m_inputs are
+        // selected, because we need those to evaluate the filter.
+        final Cursor<ReadAccessRow> delegateCursor;
+        if (selection.columns().allSelected()) {
+            delegateCursor = m_delegateTable.createCursor();
+        } else {
+            final int[] cols = Stream.concat( //
+                Arrays.stream(selection.columns().getSelected()).boxed(), //
+                Arrays.stream(m_inputs).boxed() //
+            ).distinct().mapToInt(Integer::intValue).toArray();
+            delegateCursor = m_delegateTable.createCursor(Selection.all().retainColumns(cols));
+        }
+        final FilteredCursor filteredCursor = new FilteredCursor(delegateCursor, m_inputs, m_filter);
+
+        // For row selection, we can only handle this after filtering, so we have to start
+        // from the beginning of the table and skip selection.fromRowIndex() valid rows.
+        if (selection.rows().allSelected()) {
+            return filteredCursor;
+        } else {
+            final long from = selection.rows().fromIndex();
+            final long to = selection.rows().toIndex();
+            return new SlicedCursor(Cursors.toLookahead(getSchema(), filteredCursor, selection.columns()), from, to);
+        }
     }
 
     @Override

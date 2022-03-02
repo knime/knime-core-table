@@ -60,6 +60,8 @@ import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccessRo
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
+import org.knime.core.table.row.Selection.ColumnSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.slf4j.Logger;
@@ -103,6 +105,12 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
     }
 
     @Override
+    public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
+        var cursor = new ConcatenatedRowCursor(m_delegates, getSchema(), selection.columns());
+        return selection.rows().allSelected() ? cursor : new SlicedCursor(cursor, selection.rows());
+    }
+
+    @Override
     public void close() throws IOException {
         for (LookaheadRowAccessible delegate : m_delegates) {
             delegate.close();
@@ -119,18 +127,25 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
 
         private final DelegatingReadAccessRow m_access;
 
+        private final Selection m_selection;
+
         private LookaheadCursor<ReadAccessRow> m_currentDelegateCursor;
 
-        public ConcatenatedRowCursor(final List<LookaheadRowAccessible> inputs, final ColumnarSchema schema) {
+        public ConcatenatedRowCursor(final List<LookaheadRowAccessible> inputs, final ColumnarSchema schema, final ColumnSelection columnSelection) {
             m_delegateTables = inputs.iterator();
-            m_access = DelegatingReadAccesses.createDelegatingReadAccessRow(schema);
+            m_access = DelegatingReadAccesses.createDelegatingReadAccessRow(schema, columnSelection);
+            m_selection = Selection.all().retainColumns(columnSelection);
             m_currentDelegateCursor = findNextNonEmptyCursor();
+        }
+
+        public ConcatenatedRowCursor(final List<LookaheadRowAccessible> inputs, final ColumnarSchema schema) {
+            this(inputs, schema, Selection.all().columns());
         }
 
         private LookaheadCursor<ReadAccessRow> findNextNonEmptyCursor() {
             while (m_delegateTables.hasNext()) {
                 @SuppressWarnings("resource")
-                var cursor = m_delegateTables.next().createCursor();
+                var cursor = m_delegateTables.next().createCursor(m_selection);
                 if (cursor.canForward()) {
                     m_access.setDelegateAccess(cursor.access());
                     return cursor;
@@ -183,4 +198,5 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
             }
         }
     }
+
 }

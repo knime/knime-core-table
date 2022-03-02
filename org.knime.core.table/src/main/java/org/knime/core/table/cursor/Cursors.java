@@ -21,6 +21,7 @@
 package org.knime.core.table.cursor;
 
 import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.row.Selection.ColumnSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 
 /**
@@ -44,6 +45,24 @@ public final class Cursors {
             return (LookaheadCursor<ReadAccessRow>)cursor;
         } else {
             return new BufferingLookaheadCursor(schema, cursor);
+        }
+    }
+
+    /**
+     * Converts the provided Cursor into a LookaheadCursor by reading one row ahead or just returns the provided cursor
+     * if it already is a LookaheadCursor.
+     *
+     * @param schema defines the column types
+     * @param cursor the Cursor to convert
+     * @param columnSelection column selection (of both, {@code cursor} and the returned LookaheadCursor).
+     * @return a LookaheadCursor based on the provided Cursor (or itself it is already a LookaheadCursor)
+     */
+    public static LookaheadCursor<ReadAccessRow> toLookahead(final ColumnarSchema schema,
+        final Cursor<ReadAccessRow> cursor, final ColumnSelection columnSelection) {
+        if (cursor instanceof LookaheadCursor) {
+            return (LookaheadCursor<ReadAccessRow>)cursor;
+        } else {
+            return new BufferingLookaheadCursor(schema, cursor, columnSelection);
         }
     }
 

@@ -28,6 +28,7 @@ import org.knime.core.table.cursor.Cursors;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
@@ -119,6 +120,12 @@ public final class RowAccessibles {
         @Override
         public LookaheadCursor<ReadAccessRow> createCursor() {
             return Cursors.toLookahead(m_delegate.getSchema(), m_delegate.createCursor());
+        }
+
+        @SuppressWarnings("resource")
+        @Override
+        public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
+            return Cursors.toLookahead(m_delegate.getSchema(), m_delegate.createCursor(selection), selection.columns());
         }
 
     }

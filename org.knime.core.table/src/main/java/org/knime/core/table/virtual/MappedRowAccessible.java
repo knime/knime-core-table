@@ -58,6 +58,7 @@ import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
@@ -89,7 +90,17 @@ class MappedRowAccessible implements RowAccessible {
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
     @Override
     public Cursor<ReadAccessRow> createCursor() {
-        return new MappedCursor(m_delegateTable.createCursor(), m_inputs, m_mapperFactory);
+        var delegateSelection = Selection.all().retainColumns(m_inputs);
+        var delegateCursor = m_delegateTable.createCursor(delegateSelection);
+        return new MappedCursor(delegateCursor, m_inputs, m_mapperFactory);
+    }
+
+    @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
+    @Override
+    public Cursor<ReadAccessRow> createCursor(final Selection selection) {
+        var delegateSelection = Selection.all().retainColumns(m_inputs).retainRows(selection.rows());
+        var delegateCursor = m_delegateTable.createCursor(delegateSelection);
+        return new MappedCursor(delegateCursor, m_inputs, m_mapperFactory);
     }
 
     @Override

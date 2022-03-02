@@ -62,6 +62,7 @@ import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.row.WriteAccessRow;
 import org.knime.core.table.schema.ColumnarSchema;
 
@@ -106,18 +107,33 @@ public final class RowAccessiblesTestUtils {
             return new TestRowAccessCursor(m_accesses, m_length);
         }
 
+        @Override
+        public Cursor<ReadAccessRow> createCursor(final Selection selection) {
+            return new TestRowAccessCursor(m_accesses, selection, m_length);
+        }
+
         private static final class TestRowAccessCursor implements Cursor<ReadAccessRow>, ReadAccessRow {
 
             private final TestAccess[] m_accesses;
 
-            private final long m_length;
+            private final int m_length;
 
-            private int m_index = -1;
+            private int m_index;
 
             TestRowAccessCursor(final TestAccess[] accesses, final long length) {
+                this(accesses, Selection.all(), length);
+            }
+
+            TestRowAccessCursor(final TestAccess[] accesses, final Selection selection, final long length) {
                 m_accesses = new TestAccess[accesses.length];
-                Arrays.setAll(m_accesses, i -> accesses[i].copy());
-                m_length = length;
+                Arrays.setAll(m_accesses, i -> selection.columns().isSelected(i) ? accesses[i].copy() : null);
+                if (selection.rows().allSelected()) {
+                    m_index = -1;
+                    m_length = (int)length;
+                } else {
+                    m_index = (int)selection.rows().fromIndex() - 1;
+                    m_length = (int)Math.min(selection.rows().toIndex(), length);
+                }
             }
 
             @Override
@@ -135,7 +151,9 @@ public final class RowAccessiblesTestUtils {
                     return false;
                 } else {
                     for (TestAccess access : m_accesses) {
-                        access.setIndex(m_index);
+                        if (access != null) {
+                            access.setIndex(m_index);
+                        }
                     }
                 }
                 return true;

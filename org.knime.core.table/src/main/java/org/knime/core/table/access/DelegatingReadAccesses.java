@@ -33,6 +33,7 @@ import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
 import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.row.Selection.ColumnSelection;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -80,6 +81,19 @@ public final class DelegatingReadAccesses {
         return new DefaultDelegatingReadAccessRow(schema);
     }
 
+    /**
+     * Creates a {@link ReadAccessRow} that delegates to another ReadAccessRow with the same schema.
+     * {@code ReadAccess}es of non-selected columns will be {@code null} in the returned {@code ReadAccessRow}.
+     *
+     * @param schema of the ReadAccessRow
+     * @param columnSelection selected columns
+     * @return a {@link DelegatingReadAccessRow} with the provided schema
+     */
+    public static DelegatingReadAccessRow createDelegatingReadAccessRow(final ColumnarSchema schema,
+        final ColumnSelection columnSelection) {
+        return new DefaultDelegatingReadAccessRow(schema, columnSelection);
+    }
+
     private static class DefaultDelegatingReadAccessRow implements DelegatingReadAccessRow {
 
         private final DelegatingReadAccess[] m_accesses;
@@ -89,15 +103,24 @@ public final class DelegatingReadAccesses {
         DefaultDelegatingReadAccessRow(final ColumnarSchema schema) {
             m_schema = schema;
             m_accesses = new DelegatingReadAccess[m_schema.numColumns()];
-            for (int i = 0; i < m_accesses.length; i++) {//NOSONAR
-                m_accesses[i] = DelegatingReadAccesses.createDelegatingAccess(m_schema.getSpec(i));
-            }
+            Arrays.setAll(m_accesses, i -> createDelegatingAccess(schema.getSpec(i)));
+        }
+
+        DefaultDelegatingReadAccessRow(final ColumnarSchema schema, final ColumnSelection columnSelection) {
+            m_schema = schema;
+            m_accesses = new DelegatingReadAccess[m_schema.numColumns()];
+            Arrays.setAll(m_accesses, i -> columnSelection.isSelected(i) //
+                ? createDelegatingAccess(schema.getSpec(i)) //
+                : null);
         }
 
         @Override
         public void setDelegateAccess(final ReadAccessRow delegateAccess) {
             for (int i = 0; i < m_schema.numColumns(); i++) {//NOSONAR
-                m_accesses[i].setDelegateAccess(delegateAccess.getAccess(i));
+                final DelegatingReadAccess access = m_accesses[i];
+                if (access != null) {
+                    access.setDelegateAccess(delegateAccess.getAccess(i));
+                }
             }
         }
 
@@ -126,7 +149,7 @@ public final class DelegatingReadAccesses {
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public static interface DelegatingReadAccessRow extends ReadAccessRow {
+    public interface DelegatingReadAccessRow extends ReadAccessRow {
 
         /**
          * Sets the access that this instance delegates to.
@@ -142,7 +165,7 @@ public final class DelegatingReadAccesses {
      * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public static interface DelegatingReadAccess extends ReadAccess {
+    public interface DelegatingReadAccess extends ReadAccess {
 
         /**
          * Sets the access this access delegates to.

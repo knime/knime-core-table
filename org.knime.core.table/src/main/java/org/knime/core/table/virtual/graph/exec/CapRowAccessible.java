@@ -9,6 +9,7 @@ import java.util.List;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.graph.cap.CapAccessId;
 import org.knime.core.table.virtual.graph.cap.CapNode;
@@ -43,6 +44,14 @@ class CapRowAccessible implements RowAccessible {
     @Override
     public Cursor<ReadAccessRow> createCursor() {
         return new CapCursor(assembleConsumer(cap, sources));
+    }
+
+    @Override
+    public Cursor<ReadAccessRow> createCursor(final Selection selection) {
+        // TODO: What should happen here? The CAP already has column/row selection baked
+        //   in. We would have to create a new comp graph. This should probably not be done
+        //   here, though...
+        throw new UnsupportedOperationException();
     }
 
     @Override

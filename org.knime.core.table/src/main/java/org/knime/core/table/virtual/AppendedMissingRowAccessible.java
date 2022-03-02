@@ -56,6 +56,7 @@ import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 
@@ -84,6 +85,15 @@ final class AppendedMissingRowAccessible implements LookaheadRowAccessible {
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor() {
         return new AppendedMissingValuesCursor(m_delegateTable.createCursor(), m_schema);
+    }
+
+    @Override
+    public LookaheadCursor<ReadAccessRow> createCursor(Selection selection) {
+        if (!selection.columns().allSelected()) {
+            final int[] selected = selection.columns().getSelected(0, m_delegateTable.getSchema().numColumns());
+            selection = Selection.all().retainRows(selection.rows()).retainColumns(selected);
+        }
+        return new AppendedMissingValuesCursor(m_delegateTable.createCursor(selection), m_schema);
     }
 
     @Override

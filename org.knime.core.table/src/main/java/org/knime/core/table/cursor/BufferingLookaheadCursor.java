@@ -23,10 +23,11 @@ package org.knime.core.table.cursor;
 import java.io.IOException;
 
 import org.knime.core.table.access.BufferedAccesses;
-import org.knime.core.table.access.DelegatingReadAccesses;
 import org.knime.core.table.access.BufferedAccesses.BufferedAccessRow;
+import org.knime.core.table.access.DelegatingReadAccesses;
 import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccessRow;
 import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.row.Selection.ColumnSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 
 /**
@@ -54,6 +55,14 @@ final class BufferingLookaheadCursor implements LookaheadCursor<ReadAccessRow> {
         m_delegator = DelegatingReadAccesses.createDelegatingReadAccessRow(schema);
         m_buffers[0] = BufferedAccesses.createBufferedAccessRow(schema);
         m_buffers[1] = BufferedAccesses.createBufferedAccessRow(schema);
+    }
+
+    BufferingLookaheadCursor(final ColumnarSchema schema, final Cursor<ReadAccessRow> cursor,
+        final ColumnSelection columnSelection) {
+        m_cursor = cursor;
+        m_delegator = DelegatingReadAccesses.createDelegatingReadAccessRow(schema, columnSelection);
+        m_buffers[0] = BufferedAccesses.createBufferedAccessRow(schema, columnSelection);
+        m_buffers[1] = BufferedAccesses.createBufferedAccessRow(schema, columnSelection);
     }
 
     @Override

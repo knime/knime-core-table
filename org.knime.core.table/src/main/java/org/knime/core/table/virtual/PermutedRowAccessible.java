@@ -49,11 +49,13 @@
 package org.knime.core.table.virtual;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 
@@ -85,6 +87,22 @@ final class PermutedRowAccessible implements LookaheadRowAccessible {
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor() {
         return new PermutedCursor(m_delegateTable.createCursor(), m_mapping, m_delegateTable.getSchema());
+    }
+
+    @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
+    @Override
+    public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
+        if (selection.columns().allSelected()) {
+            return new PermutedCursor(m_delegateTable.createCursor(selection), m_mapping, m_delegateTable.getSchema());
+        } else {
+            final int[] cols = selection.columns().getSelected(0, m_schema.numColumns());
+            final int[] delegateCols = new int[cols.length];
+            Arrays.setAll(delegateCols, i -> m_mapping[cols[i]]);
+            final Selection delegateSelection =
+                Selection.all().retainRows(selection.rows()).retainColumns(delegateCols);
+            return new PermutedCursor(m_delegateTable.createCursor(delegateSelection), m_mapping,
+                m_delegateTable.getSchema());
+        }
     }
 
     @Override
