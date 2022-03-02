@@ -318,12 +318,13 @@ public final class RowAccessiblesTestUtils {
     static void assertRowAccessibleEquals(final RowAccessible result, final ColumnarSchema expectedSchema,
         final Object[][] expectedValues) throws IOException {
         assertEquals(expectedSchema, result.getSchema());
-        assertTableEqualsValues(expectedValues, result);
+        assertTableEqualsValues(expectedValues, result, false);
+        assertTableEqualsValues(expectedValues, result, true);
     }
 
-    public static void assertTableEqualsValues(final Object[][] expectedValues, final RowAccessible actualTable) {
+    public static void assertTableEqualsValues(final Object[][] expectedValues, final RowAccessible actualTable, final boolean selectAll) {
         final ColumnarSchema schema = actualTable.getSchema();
-        try (final Cursor<ReadAccessRow> cursor = actualTable.createCursor()) {
+        try (final Cursor<ReadAccessRow> cursor = selectAll ? actualTable.createCursor(Selection.all()) : actualTable.createCursor()) {
             final ReadAccessRow actualRow = cursor.access();
             int index;
             for (index = 0; cursor.forward(); index++) {

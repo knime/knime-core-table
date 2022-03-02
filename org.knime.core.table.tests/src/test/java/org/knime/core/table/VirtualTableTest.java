@@ -218,7 +218,8 @@ public final class VirtualTableTest {
 
         try (final RowAccessible actualMaterializedTransformedTable = result.get(0)) {
             assertEquals(expectedTransformedSchema, actualTransformedTable.getSchema());
-            assertTableEqualsValues(expectedTransformedValues, actualMaterializedTransformedTable);
+            assertTableEqualsValues(expectedTransformedValues, actualMaterializedTransformedTable, false);
+            assertTableEqualsValues(expectedTransformedValues, actualMaterializedTransformedTable, true);
         }
     }
 }

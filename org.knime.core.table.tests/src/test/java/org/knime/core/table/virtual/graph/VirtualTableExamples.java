@@ -56,7 +56,8 @@ public class VirtualTableExamples {
         final RowAccessible rowAccessible = createRowAccessible(schema, cap, sourceMap);
 
         assertEquals(expectedSchema, table.getSchema());
-        assertTableEqualsValues(expectedValues, rowAccessible);
+        assertTableEqualsValues(expectedValues, rowAccessible, false);
+//        assertTableEqualsValues(expectedValues, rowAccessible, true); // TODO
     }
 
 
