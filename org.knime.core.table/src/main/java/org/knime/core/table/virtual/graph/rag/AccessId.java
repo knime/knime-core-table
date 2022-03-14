@@ -53,7 +53,7 @@ public final class AccessId {
 
 //    @Override
 //    public String toString() {
-//        final StringBuffer sb = new StringBuffer("AccessId{");
+//        final StringBuilder sb = new StringBuilder("AccessId{");
 //        sb.append("producer=<").append(producer.id).append(">");
 //        sb.append(", columnIndex=").append(columnIndex);
 //        sb.append('}');
@@ -62,7 +62,7 @@ public final class AccessId {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("{");
+        final StringBuilder sb = new StringBuilder("{");
         sb.append("<").append(producer.id()).append(">:");
         sb.append(columnIndex);
         sb.append('}');

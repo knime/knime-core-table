@@ -22,7 +22,7 @@ public class CapNodeMissing extends CapNode {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("MISSING(");
+        final StringBuilder sb = new StringBuilder("MISSING(");
         sb.append("missingValueSpecs==").append(missingValueSpecs);
         sb.append(')');
         return sb.toString();

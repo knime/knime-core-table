@@ -18,7 +18,7 @@ public class CapNodeConcatenate extends CapNode {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("CONCATENATE(");
+        final StringBuilder sb = new StringBuilder("CONCATENATE(");
         sb.append("inputs=").append(Arrays.deepToString(inputs));
         sb.append(", predecessors=").append(Arrays.toString(predecessors));
         sb.append(')');

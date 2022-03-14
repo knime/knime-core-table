@@ -28,7 +28,7 @@ public class Mermaid {
     }
 
     public static String mermaid(final RagGraph graph) {
-        final var sb = new StringBuffer("graph TD\n");
+        final var sb = new StringBuilder("graph TD\n");
         for (final RagNode node : graph.nodes()) {
             if (hideMissingValuesSource && node.type() == RagNodeType.MISSING)
                 continue;
@@ -70,7 +70,7 @@ public class Mermaid {
     }
 
     private static String makePage(final RagGraph graph) {
-        final var sb = new StringBuffer("<!DOCTYPE html>\n");
+        final var sb = new StringBuilder("<!DOCTYPE html>\n");
         sb.append("<html lang=\"en\">\n");
         sb.append("<head>\n");
         sb.append("<meta charset=\"UTF-8\">\n");
@@ -100,10 +100,10 @@ public class Mermaid {
         return sb.toString();
     }
 
-    private final StringBuffer sb;
+    private final StringBuilder sb;
 
     public Mermaid() {
-        sb = new StringBuffer("<!DOCTYPE html>\n");
+        sb = new StringBuilder("<!DOCTYPE html>\n");
         sb.append("<html lang=\"en\">\n");
         sb.append("<head>\n");
         sb.append("<meta charset=\"UTF-8\">\n");

@@ -119,7 +119,7 @@ public class RagGraph {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer();
+        final StringBuilder sb = new StringBuilder();
         sb.append(getClass().getSimpleName());
         sb.append("{\n");
         sb.append("  nodes = {\n");

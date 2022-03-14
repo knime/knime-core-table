@@ -113,12 +113,11 @@ class DefaultColumnSelection implements ColumnSelection {
         if (allSelected()) {
             return "select all columns";
         } else {
-            final StringBuffer sb = new StringBuffer("select columns ");
-            sb.append('[');
-            for (int i = 0; i < m_cols.length; ++i)
-                sb.append(i == 0 ? "" : ", ").append(m_cols[i]);
-            sb.append(']');
-            return sb.toString();
+            return "select columns " + Arrays.toString(m_cols);
         }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString(new int[] {10, 20}));
     }
 }

@@ -52,7 +52,7 @@ public final class CapAccessId {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("(");
+        final StringBuilder sb = new StringBuilder("(");
         sb.append(producer.index());
         sb.append("::").append(slot);
         sb.append(')');

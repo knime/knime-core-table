@@ -74,7 +74,7 @@ class DefaultRowRangeSelection implements RowRangeSelection {
         if (allSelected()) {
             return "select all rows";
         } else {
-            final StringBuffer sb = new StringBuffer("select rows");
+            final StringBuilder sb = new StringBuilder("select rows");
             sb.append(" from=").append(m_from);
             sb.append(" to=").append(m_to);
             return sb.toString();

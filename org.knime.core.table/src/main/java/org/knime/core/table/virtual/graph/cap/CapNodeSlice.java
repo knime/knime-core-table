@@ -27,7 +27,7 @@ public class CapNodeSlice extends CapNode {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("SLICE(");
+        final StringBuilder sb = new StringBuilder("SLICE(");
         sb.append("predecessor=").append(predecessor);
         sb.append(", from=").append(from);
         sb.append(", to=").append(to);

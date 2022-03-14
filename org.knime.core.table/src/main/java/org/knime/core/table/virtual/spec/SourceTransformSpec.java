@@ -84,7 +84,7 @@ public final class SourceTransformSpec implements TableTransformSpec {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("Source");
+        final StringBuilder sb = new StringBuilder("Source");
         if (!m_rowRange.allSelected()) {
             sb.append(" from ").append(m_rowRange.fromIndex());
             sb.append(" to ").append(m_rowRange.toIndex());

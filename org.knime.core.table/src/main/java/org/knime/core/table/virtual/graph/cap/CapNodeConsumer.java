@@ -22,7 +22,7 @@ public class CapNodeConsumer extends CapNode {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("CONSUMER(");
+        final StringBuilder sb = new StringBuilder("CONSUMER(");
         sb.append("predecessor=").append(predecessor);
         sb.append(", inputs=").append(Arrays.toString(inputs));
         sb.append(')');

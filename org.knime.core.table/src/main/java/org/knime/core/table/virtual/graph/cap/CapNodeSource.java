@@ -35,7 +35,7 @@ public class CapNodeSource extends CapNode {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("SOURCE(");
+        final StringBuilder sb = new StringBuilder("SOURCE(");
         sb.append("uuid=").append(uuid);
         sb.append(", cols=").append(Arrays.toString(cols));
         sb.append(", fromRow=").append(fromRow);

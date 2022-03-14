@@ -27,7 +27,7 @@ public class CapNodeRowFilter extends CapNode {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("ROWFILTER(");
+        final StringBuilder sb = new StringBuilder("ROWFILTER(");
         sb.append("inputs=").append(Arrays.toString(inputs));
         sb.append(", predecessor=").append(predecessor);
         sb.append(", filter=").append(filter);

@@ -35,7 +35,7 @@ public class CapNodeMap extends CapNode {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("MAP(");
+        final StringBuilder sb = new StringBuilder("MAP(");
         sb.append("inputs=").append(Arrays.toString(inputs));
         sb.append(", predecessor=").append(predecessor);
         sb.append(", mapOutputSpecs=").append(mapOutputSpecs);

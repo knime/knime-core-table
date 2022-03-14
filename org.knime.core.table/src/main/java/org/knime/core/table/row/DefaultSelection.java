@@ -67,7 +67,7 @@ class DefaultSelection implements Selection {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("DefaultSelection{");
+        final StringBuilder sb = new StringBuilder("DefaultSelection{");
         sb.append(m_columns);
         sb.append(", ").append(m_rows);
         sb.append('}');

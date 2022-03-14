@@ -21,7 +21,7 @@ public class CapNodeAppend extends CapNode {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("APPEND(");
+        final StringBuilder sb = new StringBuilder("APPEND(");
         sb.append("inputs=").append(inputs == null ? "[]" : Arrays.asList(inputs).toString());
         sb.append(", predecessors=").append(Arrays.toString(predecessors));
         sb.append(", predecessorOutputIndices=").append(Arrays.deepToString(predecessorOutputIndices));
