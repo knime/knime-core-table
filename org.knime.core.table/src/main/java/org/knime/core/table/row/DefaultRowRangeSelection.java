@@ -16,12 +16,12 @@ class DefaultRowRangeSelection implements RowRangeSelection {
 
     public DefaultRowRangeSelection(final long from, final long to) {
         this.m_from = from;
-        this.m_to = to;
+        this.m_to = Math.max(from, to); // if (to < from), the row range is empty
     }
 
     @Override
     public boolean allSelected() {
-        return m_from == -1;
+        return m_from < 0;
     }
 
     @Override
@@ -36,14 +36,15 @@ class DefaultRowRangeSelection implements RowRangeSelection {
 
     @Override
     public RowRangeSelection retain(final long from, final long to) {
-        if (allSelected())
+        if (allSelected()) {
             return new DefaultRowRangeSelection(from, to);
-        else if (from < 0)
+        } else if (from < 0) {
             return this;
-        else
+        } else {
             return new DefaultRowRangeSelection(//
                     Math.min(this.m_to, this.m_from + from),//
                     Math.min(this.m_to, this.m_from + to));
+        }
     }
 
     @Override

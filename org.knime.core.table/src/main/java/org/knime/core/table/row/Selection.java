@@ -217,6 +217,8 @@ public interface Selection {
          * <p>
          * {@code from < 0} indicates an unconstrained range, i.e., the resulting selection
          * will be the same as {@code this}.
+         * <p>
+         * {@code to < from} is permitted and indicates an empty row range (if {@code from >= 0}).
          *
          * @param from start of row range (inclusive, relative to the start of this RowRangeSelection)
          * @param to   end of row range (exclusive, relative to the start of this RowRangeSelection)

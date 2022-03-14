@@ -60,7 +60,6 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.RowAccessibles;
-import org.knime.core.table.virtual.spec.SliceTransformSpec;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -80,6 +79,20 @@ public final class SliceTransformTest {
         };
 
         testSliceTable(schema, values, values, 0, 5);
+    }
+
+    @Test
+    public void testSliceEntireTableWithAllSelection() throws IOException {
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
+        final Object[][] values = new Object[][]{ //
+            new Object[]{0.1, 1, "First"}, //
+            new Object[]{0.2, 2, "Second"}, //
+            new Object[]{0.3, 3, "Third"}, //
+            new Object[]{0.4, 4, "Fourth"}, //
+            new Object[]{0.5, 5, "Fifth"} //
+        };
+
+        testSliceTable(schema, values, values, -1, -1);
     }
 
     @Test
@@ -213,18 +226,6 @@ public final class SliceTransformTest {
         final Object[][] slicedValues = new Object[0][0];
 
         testSliceTable(schema, slicedValues, originalValues, 1, 0);
-    }
-
-    @SuppressWarnings("unused")
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void testRejectNegativeFromIndex() {
-        new SliceTransformSpec(-1, 1);
-    }
-
-    @SuppressWarnings("unused")
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void testRejectNegativeToIndex() {
-        new SliceTransformSpec(0, -1);
     }
 
     private static void testSliceTable(final ColumnarSchema expectedAndOriginalSchema, final Object[][] expectedValues,

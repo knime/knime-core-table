@@ -64,15 +64,13 @@ public final class SliceTransformSpec implements TableTransformSpec {
      * @param to The end index of the slice (exclusive).
      */
     public SliceTransformSpec(final long from, final long to) {
-        m_range = RowRangeSelection.all().retain(from, to);
+        this(RowRangeSelection.all().retain(from, to));
     }
 
     /**
      * @param rowRange The rows of the slice.
      */
-    public SliceTransformSpec(RowRangeSelection rowRange) {
-        if (rowRange.allSelected())
-            throw new IllegalArgumentException();
+    public SliceTransformSpec(final RowRangeSelection rowRange) {
         m_range = rowRange;
     }
 
