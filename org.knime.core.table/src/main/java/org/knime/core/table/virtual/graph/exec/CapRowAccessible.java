@@ -51,6 +51,9 @@ class CapRowAccessible implements RowAccessible {
         // TODO: What should happen here? The CAP already has column/row selection baked
         //   in. We would have to create a new comp graph. This should probably not be done
         //   here, though...
+        if (selection.allSelected()) {
+            return createCursor();
+        }
         throw new UnsupportedOperationException();
     }
 
