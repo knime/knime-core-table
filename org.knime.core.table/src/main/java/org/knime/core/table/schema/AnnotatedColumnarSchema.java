@@ -31,11 +31,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 public interface AnnotatedColumnarSchema extends ColumnarSchema {
 
     /**
-     * @return The underlying {@link ColumnarSchema}
-     */
-    ColumnarSchema getColumnarSchema();
-
-    /**
      * Get the name of the column at the specified index
      *
      * @param columnIndex The index of the column

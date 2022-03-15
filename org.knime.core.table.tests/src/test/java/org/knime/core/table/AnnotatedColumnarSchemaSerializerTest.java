@@ -87,7 +87,6 @@ public final class AnnotatedColumnarSchemaSerializerTest {
         var testData = createTestData();
         final JsonNode config = AnnotatedColumnarSchemaSerializer.save(testData, JsonNodeFactory.instance);
         final var deserialized = AnnotatedColumnarSchemaSerializer.load(config);
-        assertEquals(testData.getColumnarSchema(), deserialized.getColumnarSchema());
         assertEquals(testData, deserialized);
     }
 }

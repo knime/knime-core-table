@@ -129,11 +129,6 @@ public class DefaultAnnotatedColumnarSchema implements AnnotatedColumnarSchema {
     }
 
     @Override
-    public ColumnarSchema getColumnarSchema() {
-        return m_schema;
-    }
-
-    @Override
     public String getColumnName(final int columnIndex) {
         return m_columnNames[columnIndex];
     }

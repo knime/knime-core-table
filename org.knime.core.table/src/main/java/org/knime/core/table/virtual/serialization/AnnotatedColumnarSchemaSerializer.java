@@ -41,7 +41,7 @@ public final class AnnotatedColumnarSchemaSerializer {
 
         var annotatedSchemaNode = factory.objectNode();
 
-        var schemaNode = ColumnarSchemaSerializer.save(schema.getColumnarSchema(), factory);
+        var schemaNode = ColumnarSchemaSerializer.save(schema, factory);
         annotatedSchemaNode.set("schema", schemaNode);
 
         var columnNames = annotatedSchemaNode.putArray("columnNames");
