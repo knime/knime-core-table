@@ -156,7 +156,7 @@ public class DefaultAnnotatedColumnarSchema implements AnnotatedColumnarSchema {
      */
     public static class DefaultColumnMetaData implements ColumnMetaData {
         /** the instance */
-        public static DefaultColumnMetaData instance = new DefaultColumnMetaData();
+        public static final DefaultColumnMetaData instance = new DefaultColumnMetaData();
 
         private DefaultColumnMetaData() {
         }
@@ -175,7 +175,7 @@ public class DefaultAnnotatedColumnarSchema implements AnnotatedColumnarSchema {
      */
     public static class DefaultSchemaMetaData implements SchemaMetaData {
         /** the instance */
-        public static DefaultSchemaMetaData instance = new DefaultSchemaMetaData();
+        public static final DefaultSchemaMetaData instance = new DefaultSchemaMetaData();
 
         private DefaultSchemaMetaData() {
         }
