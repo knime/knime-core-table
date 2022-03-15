@@ -105,7 +105,7 @@ public final class VirtualTable {
     // characteristics").
 
     public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema) {
-        this(sourceIdentifier, new SourceTableProperties(schema));
+        this(sourceIdentifier, new SourceTableProperties(schema, true)); // TODO !!!!
     }
 
     public VirtualTable(final UUID sourceIdentifier, final SourceTableProperties properties) {

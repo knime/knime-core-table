@@ -1,11 +1,13 @@
 package org.knime.core.table.virtual.spec;
 
+import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.LookaheadRowAccessible;
 
 /**
  * Meta-data describing a {@link RowAccessible source} of a {@code VirtualTable},
- * such as its {@code ColumnarSchema}, whether it supports LookAheadCursors,
+ * such as its {@code ColumnarSchema}, whether it supports LookaheadCursors,
  * whether the number of rows is known, etc.
  *
  * @author Tobias Pietzsch
@@ -14,8 +16,15 @@ public class SourceTableProperties {
 
     private final ColumnarSchema m_schema;
 
-    public SourceTableProperties(final ColumnarSchema schema) {
+    private final boolean m_lookahead;
+
+    public SourceTableProperties(final RowAccessible source) {
+        this(source.getSchema(), source instanceof LookaheadRowAccessible);
+    }
+
+    public SourceTableProperties(final ColumnarSchema schema, final boolean lookahead) {
         this.m_schema = schema;
+        this.m_lookahead = lookahead;
     }
 
     /**
@@ -38,8 +47,17 @@ public class SourceTableProperties {
         return true; // TODO
     }
 
+    /**
+     * Whether the source table supports {@link LookaheadCursor}s, i.e., whether the
+     * source table is a {@link LookaheadRowAccessible}.
+     *
+     * @return {@code true} if this source supports {@code LookaheadCursor}s
+     */
+    public boolean supportsLookahead() {
+        return m_lookahead;
+    }
+
     // TODO
     //   long numRows
     //   boolean knowsNumRows
-    //   boolean supportsLookAhead
 }
