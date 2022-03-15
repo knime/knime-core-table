@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.knime.core.table.cursor.Cursors;
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
@@ -45,7 +46,7 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
 
 /**
  * Create a {@code RagGraph} from a {@code VirtualTable} spec.
- **
+ *
  * <ol>
  * <li>{@link #buildSpec(TableTransform)}:
  *      Build RagGraph nodes for each TableTransform in the given VirtualTable, and SPEC
@@ -186,6 +187,57 @@ public class RagBuilder {
             }
             default:
                 throw new IllegalArgumentException("unexpected node type " + producer.type());
+        }
+    }
+
+    /**
+     * Returns {@code true} if the given linearized {@code RagGraph} supports {@code
+     * LookaheadCursor}s without additional prefetching and buffering (see {@link
+     * Cursors#toLookahead}).
+     * <p>
+     * This is possible, if all sources provide {@code LookaheadCursor}s and there are
+     * no row-filter (or other nodes that would destroy lookahead capability.)
+     *
+     * @param orderedRag a linearized {@code RagGraph}
+     * @return {@code true} if the {@code orderedRag} supports {@code LookaheadCursor}s
+     */
+    public static boolean supportsLookahead(final List<RagNode> orderedRag) {
+        final RagNode node = orderedRag.get(orderedRag.size() - 1);
+        if (node.type() != RagNodeType.CONSUMER) {
+            throw new IllegalArgumentException();
+        }
+        return supportsLookahead(node);
+    }
+
+    private static boolean supportsLookahead(final RagNode node) {
+        switch (node.type()) {
+            case SOURCE: {
+                final SourceTransformSpec spec = node.getTransformSpec();
+                return spec.getProperties().supportsLookahead();
+            }
+            case ROWFILTER: {
+                return false;
+            }
+            case SLICE:
+            case APPEND:
+            case CONCATENATE:
+            case CONSUMER: {
+                for (RagNode predecessor : node.predecessors(EXEC)) {
+                    if (!supportsLookahead(predecessor)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            case MISSING:
+            case MAP:
+            case COLFILTER:
+            case COLPERMUTE:
+            case APPENDMISSING:
+                throw new IllegalArgumentException(
+                        "Unexpected RagNode type " + node.type() + ".");
+            default:
+                throw new IllegalStateException("Unexpected value: " + node.type());
         }
     }
 
