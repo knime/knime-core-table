@@ -30,7 +30,7 @@ import org.knime.core.table.row.Selection;
  *
  * @author Eric Axt, KNIME GmbH, Konstanz, Germany
  */
-interface LookaheadRowAccessible extends RowAccessible {
+public interface LookaheadRowAccessible extends RowAccessible {
 
     @Override
     LookaheadCursor<ReadAccessRow> createCursor();
