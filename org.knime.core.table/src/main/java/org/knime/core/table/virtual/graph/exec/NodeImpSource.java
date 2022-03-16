@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
@@ -18,6 +19,8 @@ class NodeImpSource implements NodeImp {
     private final ReadAccess[] outputs;
 
     private Cursor<ReadAccessRow> cursor;
+
+    private LookaheadCursor<ReadAccessRow> lookahead;
 
     public NodeImpSource(RowAccessible accessible, int[] cols, long fromRow, long toRow) {
         this.accessible = accessible;
@@ -37,11 +40,19 @@ class NodeImpSource implements NodeImp {
         for (int i = 0; i < outputs.length; i++) {
             outputs[i] = cursor.access().getAccess(cols[i]);
         }
+        if (cursor instanceof LookaheadCursor) {
+            lookahead = (LookaheadCursor<ReadAccessRow>)cursor;
+        }
     }
 
     @Override
     public boolean forward() {
         return cursor.forward();
+    }
+
+    @Override
+    public boolean canForward() {
+        return lookahead.canForward();
     }
 
     @Override

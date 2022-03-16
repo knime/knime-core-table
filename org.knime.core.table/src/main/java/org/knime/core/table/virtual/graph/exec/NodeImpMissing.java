@@ -34,6 +34,12 @@ class NodeImpMissing implements NodeImp {
     }
 
     @Override
+    public boolean canForward() {
+        // should never be called
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void close() throws IOException {
         // should never be called
         throw new UnsupportedOperationException();

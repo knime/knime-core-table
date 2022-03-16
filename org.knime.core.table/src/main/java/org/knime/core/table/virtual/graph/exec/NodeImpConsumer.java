@@ -46,6 +46,11 @@ class NodeImpConsumer implements NodeImp {
     }
 
     @Override
+    public boolean canForward() {
+        return predecessor.canForward();
+    }
+
+    @Override
     public void close() throws IOException {
         predecessor.close();
     }

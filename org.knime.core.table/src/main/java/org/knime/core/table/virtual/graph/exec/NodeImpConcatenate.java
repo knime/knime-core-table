@@ -21,6 +21,8 @@ class NodeImpConcatenate implements NodeImp {
 
     private NodeImp predecessor;
 
+    private NodeImp linkedPredecessor;
+
     public NodeImpConcatenate(AccessImp[][] inputs, NodeImp[] predecessors) {
         if (inputs.length != predecessors.length)
             throw new IllegalArgumentException();
@@ -36,23 +38,62 @@ class NodeImpConcatenate implements NodeImp {
         outputs = new DelegatingReadAccesses.DelegatingReadAccess[numOutputs];
     }
 
-    private void link(final int predecessorIndex) {
+    /**
+     * Close {@code node}, catch and record {@code IOException} for re-throwing later.
+     */
+    private void tryClose(final NodeImp node) {
+        try {
+            node.close();
+        } catch (IOException e) {
+            exceptionsWhileClosing.add(e);
+        }
+    }
+
+    /**
+     * Close {@code linkedPredecessor} and set to {@code null}.
+     */
+    private void closeLinkedPredecessor() {
+        if (linkedPredecessor != null) {
+            tryClose(linkedPredecessor);
+            linkedPredecessor = null;
+        }
+    }
+
+    /**
+     * Point our delegate {@code outputs} to predecessor {@code predecessorIndex}.
+     * Also set {@code linkedPredecessor} to that predecessor.
+     * {@code outputs} delegates are initialized on first call.
+     */
+    private void link() {
         if (predecessorIndex < predecessors.length) {
             AccessImp[] inputs = inputss[predecessorIndex];
             for (int i = 0; i < inputs.length; i++) {
                 AccessImp input = inputs[i];
                 final ReadAccess access = input.node.getOutput(input.i);
-                if (predecessorIndex == 0) {
-                    final DelegatingReadAccesses.DelegatingReadAccess delegated =
-                            DelegatingReadAccesses.createDelegatingAccess(access.getDataSpec());
-                    outputs[i] = delegated;
+                if (outputs[i] == null) {
+                    outputs[i] = DelegatingReadAccesses.createDelegatingAccess(access.getDataSpec());
                 }
                 outputs[i].setDelegateAccess(access);
             }
+            linkedPredecessor = predecessors[predecessorIndex];
         } else {
             for (DelegatingReadAccesses.DelegatingReadAccess output : outputs) {
                 output.setDelegateAccess(MissingAccesses.getMissingAccess(output.getDataSpec()));
             }
+        }
+    }
+
+    /**
+     * Move to the next predecessor.
+     * This sets {@code predecessor} and {@code predecessorIndex}, but does not link the predecessor yet.
+     */
+    private void nextPredecessor() {
+        ++predecessorIndex;
+        if (predecessorIndex < predecessors.length) {
+            predecessors[predecessorIndex].create();
+            predecessor = predecessors[predecessorIndex];
+        } else {
+            predecessor = null;
         }
     }
 
@@ -61,40 +102,46 @@ class NodeImpConcatenate implements NodeImp {
         return outputs[i];
     }
 
-    private void nextPredecessor() {
-        closePredecessor();
-        ++predecessorIndex;
-        if (predecessorIndex < predecessors.length) {
-            predecessors[predecessorIndex].create();
-            predecessor = predecessors[predecessorIndex];
-        } else {
-            predecessor = null;
-        }
-        link(predecessorIndex);
-    }
-
-    private void closePredecessor() {
-        if (predecessor != null) {
-            try {
-                predecessor.close();
-            } catch (IOException e) {
-                exceptionsWhileClosing.add(e);
-            }
-        }
-    }
-
     @Override
     public void create() {
         predecessorIndex = -1;
         nextPredecessor();
+        link();
     }
 
     @Override
     public boolean forward() {
         while (predecessor != null) {
-            if (predecessor.forward()) {
+            // NB: canForward() might have moved predecessor ahead of the currently
+            // linkedPredecessor.
+            if (linkedPredecessor != predecessor) {
+                closeLinkedPredecessor();
+                link();
+            } else {
+                if (predecessor.forward()) {
+                    return true;
+                } else {
+                    nextPredecessor();
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean canForward() {
+        while (predecessor != null) {
+            if (predecessor.canForward()) {
                 return true;
             } else {
+                // We are at the last row of the current predecessor. Go to the next non-empty
+                // predecessor, but don't link it yet.
+                if ( predecessor != linkedPredecessor ) {
+                    // This can happen if one of the concatenated tables is empty... We are still
+                    // linked to the last row of linkedPredecessor. The current predecessor is empty
+                    // (and was never linked), so we close it here before skipping to the next one.
+                    tryClose(predecessor);
+                }
                 nextPredecessor();
             }
         }
@@ -103,7 +150,7 @@ class NodeImpConcatenate implements NodeImp {
 
     @Override
     public void close() throws IOException {
-        closePredecessor();
+        closeLinkedPredecessor();
         if (!exceptionsWhileClosing.isEmpty())
             // TODO use IOExceptionList once org.apache.commons.io >= 2.7.0 is available in the nightlies
             throw exceptionsWhileClosing.get(0);

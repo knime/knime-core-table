@@ -33,15 +33,29 @@ class NodeImpSlice implements NodeImp {
 
     @Override
     public boolean forward() {
-        while (m_currentIndex < m_from) {
-            predecessor.forward();
-            m_currentIndex++;
-        }
+        forwardToStart();
         if (m_currentIndex < m_to) {
             m_currentIndex++;
             return predecessor.forward();
         } else {
             return false;
+        }
+    }
+
+    @Override
+    public boolean canForward() {
+        forwardToStart();
+        if (m_currentIndex < m_to) {
+            return predecessor.canForward();
+        } else {
+            return false;
+        }
+    }
+
+    private void forwardToStart() {
+        while (m_currentIndex < m_from) {
+            predecessor.forward();
+            m_currentIndex++;
         }
     }
 

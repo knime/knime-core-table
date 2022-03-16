@@ -11,5 +11,7 @@ interface NodeImp {
 
     boolean forward();
 
+    boolean canForward();
+
     void close() throws IOException;
 }

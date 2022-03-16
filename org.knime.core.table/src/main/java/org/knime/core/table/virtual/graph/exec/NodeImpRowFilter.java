@@ -51,6 +51,12 @@ class NodeImpRowFilter implements NodeImp {
     }
 
     @Override
+    public boolean canForward() {
+        // RowFilter doesn't have lookahead
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void close() throws IOException {
         predecessor.close();
     }
