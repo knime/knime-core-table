@@ -11,16 +11,17 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
+import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 
 public class CapExecutor {
 
     public static RowAccessible createRowAccessible(
             final ColumnarSchema schema,
-            final List<CapNode> cap,
+            final CursorAssemblyPlan cap,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap ) {
 
         final List<RowAccessible> sources = new ArrayList<>();
-        for (CapNode node : cap) {
+        for (CapNode node : cap.nodes()) {
             if (node.type() == SOURCE) {
                 final UUID uuid = ((CapNodeSource)node).uuid();
                 final RowAccessible a = uuidRowAccessibleMap.get(uuid);

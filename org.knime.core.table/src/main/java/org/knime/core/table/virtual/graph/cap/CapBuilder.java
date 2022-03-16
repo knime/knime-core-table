@@ -15,6 +15,7 @@ import org.knime.core.table.virtual.graph.cap.Branches.Branch;
 import org.knime.core.table.virtual.graph.rag.AccessId;
 import org.knime.core.table.virtual.graph.rag.AccessIds;
 import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec;
+import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
@@ -23,7 +24,7 @@ import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
 public class CapBuilder {
 
-    public static List<CapNode> createCursorAssemblyPlan(final List<RagNode> orderedRag) {
+    public static CursorAssemblyPlan createCursorAssemblyPlan(final List<RagNode> orderedRag) {
         return new CapBuilder(orderedRag).createCAP();
     }
 
@@ -43,7 +44,7 @@ public class CapBuilder {
         cursorAssemblyPlan = new ArrayList<>(orderedRag.size());
     }
 
-    private List<CapNode> createCAP() {
+    private CursorAssemblyPlan createCAP() {
         for (int index = 0; index < orderedRag.size(); index++) {
             final RagNode node = orderedRag.get(index);
             switch (node.type()) {
@@ -212,7 +213,7 @@ public class CapBuilder {
             }
         }
 
-        return cursorAssemblyPlan;
+        return new CursorAssemblyPlan(cursorAssemblyPlan, RagBuilder.supportsLookahead(orderedRag)); // TODO: avoid calling RagBuilder here?
     }
 
     /**

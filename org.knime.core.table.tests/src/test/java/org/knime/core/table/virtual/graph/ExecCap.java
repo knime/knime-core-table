@@ -15,7 +15,7 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
-import org.knime.core.table.virtual.graph.cap.CapNode;
+import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
@@ -73,7 +73,7 @@ public class ExecCap {
 
         final List<RagNode> orderedRag = RagBuilder.createOrderedRag(table);
         final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-        final List<CapNode> cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
+        final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
         final RowAccessible rows = createRowAccessible(schema, cursorAssemblyPlan, uuidRowAccessibleMap);
 
         try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {

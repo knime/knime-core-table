@@ -10,14 +10,14 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
-import org.knime.core.table.virtual.graph.cap.CapNode;
+import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 
 public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
     private final ColumnarSchema schema;
-    private final List<CapNode> cursorAssemblyPlan;
+    private final CursorAssemblyPlan cursorAssemblyPlan;
 
     public GraphVirtualTableExecutor(final TableTransform leafTransform)
     {

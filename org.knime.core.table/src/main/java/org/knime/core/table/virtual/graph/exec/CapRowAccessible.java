@@ -21,16 +21,17 @@ import org.knime.core.table.virtual.graph.cap.CapNodeMissing;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
+import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 
 class CapRowAccessible implements RowAccessible {
 
     private final ColumnarSchema schema;
 
-    private final List<CapNode> cap;
+    private final CursorAssemblyPlan cap;
 
     private final List<RowAccessible> sources;
 
-    CapRowAccessible(final ColumnarSchema schema, final List<CapNode> cap, final List<RowAccessible> sources) {
+    CapRowAccessible(final ColumnarSchema schema, final CursorAssemblyPlan cap, final List<RowAccessible> sources) {
         this.schema = schema;
         this.cap = cap;
         this.sources = sources;
@@ -43,7 +44,7 @@ class CapRowAccessible implements RowAccessible {
 
     @Override
     public Cursor<ReadAccessRow> createCursor() {
-        return new CapCursor(assembleConsumer(cap, sources));
+        return new CapCursor(assembleConsumer(cap.nodes(), sources));
     }
 
     @Override
