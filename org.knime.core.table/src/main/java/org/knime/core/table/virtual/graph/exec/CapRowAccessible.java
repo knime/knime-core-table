@@ -44,7 +44,7 @@ class CapRowAccessible implements RowAccessible {
 
     @Override
     public Cursor<ReadAccessRow> createCursor() {
-        return new CapCursor(assembleConsumer(cap.nodes(), sources));
+        return new CapCursor(assembleConsumer());
     }
 
     @Override
@@ -63,8 +63,8 @@ class CapRowAccessible implements RowAccessible {
         // TODO ?
     }
 
-    private static NodeImpConsumer assembleConsumer(final List<CapNode> cap, final List<RowAccessible> sources) {
-        return new AssembleConsumer().get(cap, sources);
+    NodeImpConsumer assembleConsumer() {
+        return new AssembleConsumer().get(cap.nodes(), sources);
     }
 
     static class AssembleConsumer {

@@ -7,7 +7,7 @@ import org.knime.core.table.row.ReadAccessRow;
 
 class CapCursor implements Cursor<ReadAccessRow> {
 
-    private final NodeImpConsumer node;
+    final NodeImpConsumer node;
 
     private final CapReadAccessRow access;
 
