@@ -142,6 +142,11 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
             this(inputs, schema, Selection.all().columns());
         }
 
+        // TODO FIX BUG: access() might be invalidated by calling canForward()
+        //  findNextNonEmptyCursor() points the delegating m_access to the next cursor.
+        //  canForward() calls findNextNonEmptyCursor(). So at the last row of each of
+        //  concatenated table, access() values will be invalid after canForward().
+
         private LookaheadCursor<ReadAccessRow> findNextNonEmptyCursor() {
             while (m_delegateTables.hasNext()) {
                 @SuppressWarnings("resource")
