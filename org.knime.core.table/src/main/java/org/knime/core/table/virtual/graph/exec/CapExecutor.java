@@ -30,6 +30,8 @@ public class CapExecutor {
                 sources.add(a);
             }
         }
-        return new CapRowAccessible(schema, cap, sources);
+        return cap.supportsLookahead() //
+                ? new CapLookaheadRowAccessible(schema, cap, sources) //
+                : new CapRowAccessible(schema, cap, sources);
     }
 }
