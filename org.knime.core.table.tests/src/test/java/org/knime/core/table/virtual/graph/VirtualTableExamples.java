@@ -57,7 +57,7 @@ public class VirtualTableExamples {
 
         assertEquals(expectedSchema, table.getSchema());
         assertTableEqualsValues(expectedValues, rowAccessible, false);
-//        assertTableEqualsValues(expectedValues, rowAccessible, true); // TODO
+        assertTableEqualsValues(expectedValues, rowAccessible, true);
     }
 
 
