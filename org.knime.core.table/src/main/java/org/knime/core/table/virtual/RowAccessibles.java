@@ -90,7 +90,7 @@ public final class RowAccessibles {
         return new FilteredRowAccessible(in, columnIndices, filter);
     }
 
-    static LookaheadRowAccessible toLookahead(final RowAccessible rowAccessible) {
+    public static LookaheadRowAccessible toLookahead(final RowAccessible rowAccessible) {
         if (rowAccessible instanceof LookaheadRowAccessible) {
             return (LookaheadRowAccessible)rowAccessible;
         } else {
