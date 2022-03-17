@@ -50,6 +50,8 @@ package org.knime.core.table;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -59,12 +61,14 @@ import org.knime.core.table.TestAccesses.TestAccess;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.row.WriteAccessRow;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.RowAccessibles;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -367,6 +371,25 @@ public final class RowAccessiblesTestUtils {
             } catch (final AssertionError e) {
                 throw new AssertionError("At column index " + i + ": " + e.getMessage(), e);
             }
+        }
+    }
+
+    public static RowAccessible[] toLookahead(final RowAccessible[] accessibles) {
+        return Arrays.stream(accessibles) //
+            .map(RowAccessibles::toLookahead) //
+            .toArray(RowAccessible[]::new);
+    }
+
+    public static void assertCanForwardPredictsForward(final RowAccessible rowAccessible) {
+        try (final LookaheadCursor<ReadAccessRow> cursor = RowAccessibles.toLookahead(rowAccessible).createCursor()) {
+            boolean predictedForward = cursor.canForward();
+            while (cursor.forward()) {
+                assertTrue("canForward() was false, but then forward() returned true", predictedForward);
+                predictedForward = cursor.canForward();
+            }
+            assertFalse("canForward() was true, but then forward() returned false", predictedForward);
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
         }
     }
 }
