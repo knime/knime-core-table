@@ -1,5 +1,6 @@
 package org.knime.core.table.virtual.graph;
 
+import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
 import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
 
 import java.io.IOException;
@@ -36,8 +37,8 @@ public class ExecCap {
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataForkJoin();
 
         final UUID[] sourceIdentifiers = createSourceIds(1);
-        final VirtualTable table = VirtualTableExamples.vtForkJoinLookALike(sourceIdentifiers);
-        final RowAccessible[] accessibles = VirtualTableExamples.dataForkJoinLookALike();
+        final RowAccessible[] accessibles = toLookahead(VirtualTableExamples.dataForkJoinLookALike());
+        final VirtualTable table = VirtualTableExamples.vtForkJoinLookALike(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
 //        final VirtualTable table = VirtualTableExamples.vtConcatenate(sourceIdentifiers, sourceIdentifiers);

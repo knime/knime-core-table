@@ -2,7 +2,9 @@ package org.knime.core.table.virtual.graph;
 
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
+import static org.knime.core.table.RowAccessiblesTestUtils.assertCanForwardPredictsForward;
 import static org.knime.core.table.RowAccessiblesTestUtils.assertTableEqualsValues;
+import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.STRING;
@@ -14,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.junit.Test;
@@ -24,6 +26,7 @@ import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.LookaheadRowAccessible;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
@@ -31,6 +34,7 @@ import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilter;
+import org.knime.core.table.virtual.spec.SourceTableProperties;
 
 public class VirtualTableExamples {
 
@@ -38,12 +42,12 @@ public class VirtualTableExamples {
             final ColumnarSchema expectedSchema,
             final Object[][] expectedValues,
             final Supplier<RowAccessible[]> sourcesSupplier,
-            final Function<UUID[], VirtualTable> virtualTableSupplier) {
+            final BiFunction<UUID[], RowAccessible[], VirtualTable> virtualTableSupplier) {
 
         final RowAccessible[] sources = sourcesSupplier.get();
         final UUID[] sourceIds = new UUID[sources.length];
         Arrays.setAll(sourceIds, i -> randomUUID());
-        final VirtualTable table = virtualTableSupplier.apply(sourceIds);
+        final VirtualTable table = virtualTableSupplier.apply(sourceIds, sources);
 
         final List<RagNode> rag = RagBuilder.createOrderedRag(table);
         final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
@@ -60,15 +64,42 @@ public class VirtualTableExamples {
         assertTableEqualsValues(expectedValues, rowAccessible, true);
     }
 
+    private static void testTransformedTableLookahead(
+            final boolean expectedLookahead,
+            final Supplier<RowAccessible[]> sourcesSupplier,
+            final BiFunction<UUID[], RowAccessible[], VirtualTable> virtualTableSupplier) {
+
+        final RowAccessible[] sources = toLookahead(sourcesSupplier.get());
+        final UUID[] sourceIds = new UUID[sources.length];
+        Arrays.setAll(sourceIds, i -> randomUUID());
+        final VirtualTable table = virtualTableSupplier.apply(sourceIds, sources);
+
+        final List<RagNode> rag = RagBuilder.createOrderedRag(table);
+        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
+        final ColumnarSchema schema = RagBuilder.createSchema(rag);
+
+        final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
+        for (int i = 0; i < sourceIds.length; ++i) {
+            sourceMap.put(sourceIds[i], sources[i]);
+        }
+        final RowAccessible rowAccessible = createRowAccessible(schema, cap, sourceMap);
+        final boolean lookahead = rowAccessible instanceof LookaheadRowAccessible;
+
+        assertEquals(expectedLookahead, lookahead);
+        if (lookahead) {
+            assertCanForwardPredictsForward(rowAccessible);
+        }
+    }
 
 
-    public static VirtualTable vtMinimal(final UUID[] sourceIdentifiers) {
+
+    public static VirtualTable vtMinimal(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
-        return new VirtualTable(sourceIdentifiers[0], schema).permute(0, 2, 1).filterColumns(1);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).permute(0, 2, 1).filterColumns(1);
     }
 
     public static VirtualTable vtMinimal() {
-        return vtMinimal(new UUID[]{randomUUID()});
+        return vtMinimal(new UUID[]{randomUUID()}, dataMinimal());
     }
 
     public static RowAccessible[] dataMinimal() {
@@ -94,17 +125,18 @@ public class VirtualTableExamples {
                 new Object[]{"Fifth"} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtMinimal);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtMinimal);
     }
 
 
+
+    public static VirtualTable vtLinear(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).slice(1, 6).filterColumns(1);
+    }
 
     public static VirtualTable vtLinear() {
-        return vtLinear(new UUID[]{randomUUID()});
-    }
-
-    public static VirtualTable vtLinear(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
-        return new VirtualTable(sourceIdentifiers[0], schema).slice(1, 6).filterColumns(1);
+        return vtLinear(new UUID[]{randomUUID()}, dataLinear());
     }
 
     public static RowAccessible[] dataLinear() {
@@ -121,13 +153,14 @@ public class VirtualTableExamples {
                 new Object[]{5}, //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataLinear, VirtualTableExamples::vtLinear);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataLinear, VirtualTableExamples::vtLinear);
     }
 
 
 
-    public static VirtualTable vtForkJoin(final UUID[] sourceIdentifiers) {
+    public static VirtualTable vtForkJoin(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
-        final VirtualTable transformedTable = new VirtualTable(sourceIdentifiers[0], schema).slice(1, 6);
+        final VirtualTable transformedTable = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).slice(1, 6);
 //        final VirtualTable forkedTable1 = transformedTable.filterColumns(1);
         final VirtualTable forkedTable1 = transformedTable.filterColumns(1).appendMissingValueColumns(List.of(DOUBLE.spec()), List.of(DOUBLE.traits()));
         final VirtualTable forkedTable2 = transformedTable.permute(2, 1, 0);
@@ -136,7 +169,7 @@ public class VirtualTableExamples {
     }
 
     public static VirtualTable vtForkJoin() {
-        return vtForkJoin(new UUID[]{randomUUID()});
+        return vtForkJoin(new UUID[]{randomUUID()}, dataForkJoin());
     }
 
     public static RowAccessible[] dataForkJoin() {
@@ -164,13 +197,14 @@ public class VirtualTableExamples {
                 new Object[]{6, null, "Sixth",  6, 0.6}, //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataForkJoin, VirtualTableExamples::vtForkJoin);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataForkJoin, VirtualTableExamples::vtForkJoin);
     }
 
 
 
-    public static VirtualTable vtForkJoinLookALike(final UUID[] sourceIdentifiers) {
+    public static VirtualTable vtForkJoinLookALike(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
-        final VirtualTable transformedTable = new VirtualTable(sourceIdentifiers[0], schema).slice(1, 6);
+        final VirtualTable transformedTable = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).slice(1, 6);
 //        final VirtualTable transformedTable = new VirtualTable(sourceIdentifier, schema).filterRows(new int[] {1}, inputs -> ((IntReadAccess)inputs[0]).getIntValue() < 6);
 //        final VirtualTable forkedTable1 = transformedTable.filterColumns(1);
         final VirtualTable forkedTable1 = transformedTable.filterColumns(1).appendMissingValueColumns(List.of(DOUBLE.spec()), List.of(DOUBLE.traits()));
@@ -180,7 +214,7 @@ public class VirtualTableExamples {
     }
 
     public static VirtualTable vtForkJoinLookALike() {
-        return vtForkJoinLookALike(new UUID[]{randomUUID()});
+        return vtForkJoinLookALike(new UUID[]{randomUUID()}, dataForkJoinLookALike());
     }
 
     public static RowAccessible[] dataForkJoinLookALike() {
@@ -198,20 +232,19 @@ public class VirtualTableExamples {
                 new Object[]{6, null, null, null, null}, //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataForkJoinLookALike, VirtualTableExamples::vtForkJoinLookALike);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataForkJoinLookALike, VirtualTableExamples::vtForkJoinLookALike);
     }
 
 
 
-    public static VirtualTable vtAppend(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema1 = ColumnarSchema.of(DOUBLE, INT, STRING);
-        final ColumnarSchema schema2 = ColumnarSchema.of(INT, DOUBLE);
-        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], schema2).permute(1, 0);
-        return new VirtualTable(sourceIdentifiers[0], schema1).filterColumns(1, 2).append(List.of(transformedTable2))
+    public static VirtualTable vtAppend(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).permute(1, 0);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).filterColumns(1, 2).append(List.of(transformedTable2))
                 .permute(1, 0, 2, 3).filterColumns(1, 2);
     }
 
     public static VirtualTable vtAppend() {
-        return vtAppend(new UUID[]{randomUUID(), randomUUID()});
+        return vtAppend(new UUID[]{randomUUID(), randomUUID()}, dataAppend());
     }
 
     public static RowAccessible[] dataAppend() {
@@ -248,24 +281,23 @@ public class VirtualTableExamples {
                 new Object[]{5, 1.5} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataAppend, VirtualTableExamples::vtAppend);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataAppend, VirtualTableExamples::vtAppend);
     }
 
 
 
-    public static VirtualTable vtAppendAndAppendMissing(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema1 = ColumnarSchema.of(DOUBLE, INT, STRING);
-        final ColumnarSchema schema2 = ColumnarSchema.of(INT, DOUBLE);
-        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], schema2)
+    public static VirtualTable vtAppendAndAppendMissing(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]))
                 .permute(1, 0)
                 .appendMissingValueColumns(List.of(DOUBLE.spec()), List.of(DOUBLE.traits()));
-        return new VirtualTable(sourceIdentifiers[0], schema1)
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
                 .filterColumns(1, 2)
                 .append(List.of(transformedTable2))
                 .permute(1, 0, 2, 3, 4).filterColumns(1, 2, 4);
     }
 
     public static VirtualTable vtAppendAndAppendMissing() {
-        return vtAppendAndAppendMissing(new UUID[]{randomUUID(), randomUUID()});
+        return vtAppendAndAppendMissing(new UUID[]{randomUUID(), randomUUID()}, dataAppendAndAppendMissing());
     }
 
     public static RowAccessible[] dataAppendAndAppendMissing() {
@@ -283,19 +315,18 @@ public class VirtualTableExamples {
                 new Object[]{5, 1.5, null} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataAppendAndAppendMissing, VirtualTableExamples::vtAppendAndAppendMissing);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataAppendAndAppendMissing, VirtualTableExamples::vtAppendAndAppendMissing);
     }
 
 
 
-    public static VirtualTable vtConcatenate(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema1 = ColumnarSchema.of(DOUBLE, INT, STRING);
-        final ColumnarSchema schema2 = ColumnarSchema.of(INT, DOUBLE);
-        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], schema2).permute(1, 0);
-        return new VirtualTable(sourceIdentifiers[0], schema1).filterColumns(0,1).concatenate(List.of(transformedTable2)).filterColumns(1);
+    public static VirtualTable vtConcatenate(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).permute(1, 0);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).filterColumns(0,1).concatenate(List.of(transformedTable2)).filterColumns(1);
     }
 
     public static VirtualTable vtConcatenate() {
-        return vtConcatenate(new UUID[]{randomUUID(), randomUUID()});
+        return vtConcatenate(new UUID[]{randomUUID(), randomUUID()}, dataConcatenate());
     }
 
     public static RowAccessible[] dataConcatenate() {
@@ -331,22 +362,21 @@ public class VirtualTableExamples {
                 new Object[]{12} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataConcatenate, VirtualTableExamples::vtConcatenate);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenate, VirtualTableExamples::vtConcatenate);
     }
 
 
 
-    public static VirtualTable vtAppendMissing(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema1 = ColumnarSchema.of(INT, STRING);
-        final ColumnarSchema schema2 = ColumnarSchema.of(INT, DOUBLE);
-        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], schema2);
-        return new VirtualTable(sourceIdentifiers[0], schema1)
+    public static VirtualTable vtAppendMissing(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]));
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
                 .filterColumns(0)
                 .appendMissingValueColumns(List.of(DOUBLE.spec()), List.of(DOUBLE.traits()))
                 .concatenate(List.of(transformedTable2));
     }
 
     public static VirtualTable vtAppendMissing() {
-        return vtAppendMissing(new UUID[]{randomUUID(), randomUUID()});
+        return vtAppendMissing(new UUID[]{randomUUID(), randomUUID()}, dataAppendMissing());
     }
 
     public static RowAccessible[] dataAppendMissing() {
@@ -382,15 +412,15 @@ public class VirtualTableExamples {
                 new Object[]{12, 1.2} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataAppendMissing, VirtualTableExamples::vtAppendMissing);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataAppendMissing, VirtualTableExamples::vtAppendMissing);
     }
 
 
 
-    public static VirtualTable vtSimpleMap(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema = ColumnarSchema.of(INT, STRING, DOUBLE, DOUBLE);
+    public static VirtualTable vtSimpleMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
 //        final MapperFactory multiply = MapperFactory.doublesToDouble((a, b) -> a * b);
         final MapperFactory add = MapperFactory.doublesToDouble((a, b) -> a + b);
-        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], schema);
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols = table.map(new int[]{2, 3}, add);
         return table
                 .filterColumns(0,1)
@@ -400,7 +430,7 @@ public class VirtualTableExamples {
     }
 
     public static VirtualTable vtSimpleMap() {
-        return vtSimpleMap(new UUID[]{randomUUID()});
+        return vtSimpleMap(new UUID[]{randomUUID()}, dataSimpleMap());
     }
 
     public static RowAccessible[] dataSimpleMap() {
@@ -430,23 +460,23 @@ public class VirtualTableExamples {
                 new Object[]{7, "Seventh", 7.7} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataSimpleMap, VirtualTableExamples::vtSimpleMap);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataSimpleMap, VirtualTableExamples::vtSimpleMap);
     }
 
 
 
-    public static VirtualTable vtSimpleRowFilter(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema = ColumnarSchema.of(INT, STRING, DOUBLE, DOUBLE);
+    public static VirtualTable vtSimpleRowFilter(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final RowFilter isNonNegative = (ReadAccess[] inputs) -> {
             final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
             return i0.getDoubleValue() >= 0;
         };
-        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], schema);
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable filtered = table.filterRows(new int[]{2}, isNonNegative);
         return filtered;
     }
 
     public static VirtualTable vtSimpleRowFilter() {
-        return vtSimpleRowFilter(new UUID[]{randomUUID()});
+        return vtSimpleRowFilter(new UUID[]{randomUUID()}, dataSimpleRowFilter());
     }
 
     public static RowAccessible[] dataSimpleRowFilter() {
@@ -472,12 +502,12 @@ public class VirtualTableExamples {
                 new Object[]{6, "Sixth", 0.6, 6.0} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataSimpleRowFilter, VirtualTableExamples::vtSimpleRowFilter);
+        testTransformedTableLookahead(false, VirtualTableExamples::dataSimpleRowFilter, VirtualTableExamples::vtSimpleRowFilter);
     }
 
 
 
-    public static VirtualTable vtConsecutiveRowFilters(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema = ColumnarSchema.of(INT, STRING, DOUBLE, DOUBLE);
+    public static VirtualTable vtConsecutiveRowFilters(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final RowFilter isNonNegative = (ReadAccess[] inputs) -> {
             final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
             return i0.getDoubleValue() >= 0;
@@ -486,13 +516,13 @@ public class VirtualTableExamples {
             final IntReadAccess i0 = (IntReadAccess)inputs[0];
             return i0.getIntValue() % 2 == 0;
         };
-        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], schema);
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable filtered = table.filterRows(new int[]{2}, isNonNegative).filterRows(new int[]{0}, isEven);
         return filtered;
     }
 
     public static VirtualTable vtConsecutiveRowFilters() {
-        return vtConsecutiveRowFilters(new UUID[]{randomUUID()});
+        return vtConsecutiveRowFilters(new UUID[]{randomUUID()}, dataConsecutiveRowFilters());
     }
 
     public static RowAccessible[] dataConsecutiveRowFilters() {
@@ -519,12 +549,12 @@ public class VirtualTableExamples {
                 new Object[]{8, "Eighth", 0.8, 8.0} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataConsecutiveRowFilters, VirtualTableExamples::vtConsecutiveRowFilters);
+        testTransformedTableLookahead(false, VirtualTableExamples::dataConsecutiveRowFilters, VirtualTableExamples::vtConsecutiveRowFilters);
     }
 
 
 
-    public static VirtualTable vtMapsAndFilters(final UUID[] sourceIdentifiers) {
-        final ColumnarSchema schema = ColumnarSchema.of(INT, DOUBLE, DOUBLE, STRING);
+    public static VirtualTable vtMapsAndFilters(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final RowFilter isEven = (ReadAccess[] inputs) -> {
             final IntReadAccess i0 = (IntReadAccess)inputs[0];
             return i0.getIntValue() % 2 == 0;
@@ -533,7 +563,7 @@ public class VirtualTableExamples {
             final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
             return i0.getDoubleValue() > 5;
         };
-        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], schema);
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols = table.map(new int[]{1, 2}, MapperFactory.doublesToDouble((a, b) -> a + b));
         return table //
                 .append(List.of(mappedCols)) //
@@ -543,7 +573,7 @@ public class VirtualTableExamples {
     }
 
     public static VirtualTable vtMapsAndFilters() {
-        return vtMapsAndFilters(new UUID[]{randomUUID()});
+        return vtMapsAndFilters(new UUID[]{randomUUID()}, dataMapsAndFilters());
     }
 
     public static RowAccessible[] dataMapsAndFilters() {
@@ -568,5 +598,6 @@ public class VirtualTableExamples {
                 new Object[]{"Fourth"} //
         };
         testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataMapsAndFilters, VirtualTableExamples::vtMapsAndFilters);
+        testTransformedTableLookahead(false, VirtualTableExamples::dataMapsAndFilters, VirtualTableExamples::vtMapsAndFilters);
     }
 }
