@@ -5,10 +5,14 @@ import java.util.Arrays;
 /**
  * Selects a subset of {@link #columns() columns} and a contiguous range of {@link #rows() rows} from a table.
  * <p>
- * {@code Selection} is immutable and has methods to created derived selections. A selection should be typically
+ * {@code Selection} is immutable and has methods to create derived selections. A selection should be typically
  * constructed by taking the selection of the whole table, and restricting it. For example, a selection comprising
  * columns 1..4 and rows 100..199, would be constructed like this:
  * {@code Selection.all().retainColumns(1, 2, 3, 4).retainRows(100, 200)}.
+ * <p>
+ * The {@link #columns() column selection} works like a mask. {@code
+ * Selection.all()} starts with all columns selected. {@link #retainColumns} restricts this selection by retaining only
+ * the selected columns. (The order in which the column indices are provided is ignored.)
  *
  * @author Tobias Pietzsch
  */
@@ -48,7 +52,8 @@ public interface Selection {
 
     /**
      * Returns a new {@code Selection} that restricts this one by retaining only the
-     * given {@code columns}.
+     * given {@code columns}. (The order in which the column indices are provided is
+     * ignored.)
      *
      * @param columns column indices that should be retained
      * @return a new {@code Selection}
@@ -99,7 +104,11 @@ public interface Selection {
     Selection retain(Selection selection);
 
     /**
-     * Selects a subset of of columns from a table.
+     * Selects a subset of columns from a table.
+     * <p>
+     * {@code ColumnSelection} works like a mask. {@code ColumnSelection.all()} starts with everything selected.
+     * {@link #retain(int...)}} restricts this selection by retaining only the given columns. (The order in which the
+     * column indices are given is ignored.)
      *
      * @author Tobias Pietzsch
      */
@@ -154,6 +163,7 @@ public interface Selection {
 
         /**
          * Restrict this {@code ColumnSelection} by retaining only the given {@code columns}.
+         * (The order in which the column indices are provided is ignored.)
          *
          * @param columns column indices that should be retained
          * @return a new {@link ColumnSelection}
