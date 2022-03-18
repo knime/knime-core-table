@@ -37,15 +37,16 @@ class DefaultColumnSelection implements ColumnSelection {
     }
 
     @Override
-    public int[] getSelected(int fromIndex, int toIndex) {
+    public int[] getSelected(final int fromIndex, final int toIndex) {
         if (fromIndex > toIndex) {
             throw new IllegalArgumentException("fromIndex(" + fromIndex + ") > toIndex(" + toIndex + ")");
         }
         if (allSelected()) {
             return IntStream.range(fromIndex, toIndex).toArray();
         } else {
-            if ( m_cols.length == 0 || (m_cols[0] >= fromIndex && m_cols[m_cols.length-1] < toIndex) )
+            if ( m_cols.length == 0 || (m_cols[0] >= fromIndex && m_cols[m_cols.length-1] < toIndex) ) {
                 return m_cols;
+            }
             int i = Arrays.binarySearch(m_cols, fromIndex);
             if (i < 0) {
                 i = -(i + 1);
@@ -59,9 +60,10 @@ class DefaultColumnSelection implements ColumnSelection {
     }
 
     @Override
-    public ColumnSelection retain(int... columns) {
-        if (columns == null)
+    public ColumnSelection retain(final int... columns) {
+        if (columns == null) {
             throw new NullPointerException();
+        }
 
         final int[] cols2 = columns.clone();
         Arrays.sort(cols2);
