@@ -116,8 +116,4 @@ class DefaultColumnSelection implements ColumnSelection {
             return "select columns " + Arrays.toString(m_cols);
         }
     }
-
-    public static void main(String[] args) {
-        System.out.println(Arrays.toString(new int[] {10, 20}));
-    }
 }
