@@ -100,8 +100,8 @@ final class ColumnFilteredRowAccessible implements LookaheadRowAccessible {
         if ( m_schema.numColumns() == 0 ) {
             return new EmptyCursor(m_schema);
         } else {
-            if (selection.columns().allSelected()) {
-                selection = selection.retainColumns(m_columnIndices);
+            if (selection.columns().allSelected(getSchema())) {
+                selection = Selection.all().retainRows(selection.rows()).retainColumns(m_columnIndices);
             } else {
                 final int[] selected = selection.columns().getSelected(0, m_schema.numColumns());
                 final int[] cols = new int[selected.length];

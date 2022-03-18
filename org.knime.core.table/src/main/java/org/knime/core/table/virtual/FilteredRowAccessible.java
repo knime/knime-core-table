@@ -98,7 +98,7 @@ class FilteredRowAccessible implements RowAccessible {
         // Handle column selection first. We must make sure that (at least) m_inputs are
         // selected, because we need those to evaluate the filter.
         final Cursor<ReadAccessRow> delegateCursor;
-        if (selection.columns().allSelected()) {
+        if (selection.columns().allSelected(getSchema())) {
             delegateCursor = m_delegateTable.createCursor();
         } else {
             final int[] cols = Stream.concat( //

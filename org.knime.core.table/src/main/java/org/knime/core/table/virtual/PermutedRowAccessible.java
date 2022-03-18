@@ -92,7 +92,7 @@ final class PermutedRowAccessible implements LookaheadRowAccessible {
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
-        if (selection.columns().allSelected()) {
+        if (selection.columns().allSelected(m_schema)) {
             return new PermutedCursor(m_delegateTable.createCursor(selection), m_mapping, m_delegateTable.getSchema());
         } else {
             final int[] cols = selection.columns().getSelected(0, m_schema.numColumns());

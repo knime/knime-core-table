@@ -89,7 +89,7 @@ final class AppendedMissingRowAccessible implements LookaheadRowAccessible {
 
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor(Selection selection) {
-        if (!selection.columns().allSelected()) {
+        if (!selection.columns().allSelected(m_schema)) {
             final int[] selected = selection.columns().getSelected(0, m_delegateTable.getSchema().numColumns());
             selection = Selection.all().retainRows(selection.rows()).retainColumns(selected);
         }
