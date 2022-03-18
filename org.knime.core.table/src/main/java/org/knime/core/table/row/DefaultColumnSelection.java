@@ -16,8 +16,9 @@ class DefaultColumnSelection implements ColumnSelection {
         if (cols == null || cols.length == 0) {
             this.m_cols = null;
         } else {
-            this.m_cols = cols.clone();
-            Arrays.sort(this.m_cols);
+            final int[] cols2 = cols.clone();
+            Arrays.sort(cols2);
+            this.m_cols = removeDuplicates(cols2);
         }
     }
 
@@ -64,8 +65,11 @@ class DefaultColumnSelection implements ColumnSelection {
 
         final int[] cols2 = columns.clone();
         Arrays.sort(cols2);
-        if (!allSelected()) {
+        if (allSelected()) {
+            return new DefaultColumnSelection(removeDuplicates(cols2), false);
+        } else {
             int j = 0;
+            // merge m_cols and cols2, removing duplicates from cols2 in the process
             for (int i = 0, i2 = 0; i < m_cols.length && i2 < cols2.length; ) {
                 if (m_cols[i] == cols2[i2]) {
                     cols2[j] = m_cols[i];
@@ -78,11 +82,19 @@ class DefaultColumnSelection implements ColumnSelection {
                     ++i2;
                 }
             }
-            if (j < cols2.length)
-                return new DefaultColumnSelection(Arrays.copyOf(cols2, j), true);
+            return new DefaultColumnSelection((j < cols2.length) ? Arrays.copyOf(cols2, j) : cols2, false);
         }
+    }
 
-        return new DefaultColumnSelection(cols2, false);
+    private static int[] removeDuplicates(final int[] sorted) {
+        int j = 1;
+        for (int i = 1; i < sorted.length; ++i) {
+            if (sorted[i] > sorted[j - 1]) {
+                sorted[j] = sorted[i];
+                ++j;
+            }
+        }
+        return (j < sorted.length) ? Arrays.copyOf(sorted, j) : sorted;
     }
 
     @Override
