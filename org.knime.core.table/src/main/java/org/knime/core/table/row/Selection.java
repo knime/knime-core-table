@@ -103,7 +103,7 @@ public interface Selection {
      *
      * @author Tobias Pietzsch
      */
-    interface ColumnSelection {
+    public interface ColumnSelection {
 
         /**
          * Get the {@code ColumnSelection} containing all columns.
@@ -177,7 +177,7 @@ public interface Selection {
      *
      * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
      */
-    interface RowRangeSelection {
+    public interface RowRangeSelection {
 
         /**
          * Get the {@code RowRangeSelection} containing all rows.
