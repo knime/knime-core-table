@@ -228,6 +228,15 @@ public interface Selection {
         boolean allSelected();
 
         /**
+         * Returns {@code true} if all rows in the given range are selected, otherwise {@code false}.
+         *
+         * @param from start of row range (inclusive)
+         * @param to   end of row range (exclusive)
+         * @return {@code true} if all rows in the given range are selected, otherwise {@code false}.
+         */
+        boolean allSelected(long from, long to);
+
+        /**
          * Get the start of row range (inclusive).
          * If {@link #allSelected()}{@code ==true}, then {@code fromIndex() < 0}.
          *

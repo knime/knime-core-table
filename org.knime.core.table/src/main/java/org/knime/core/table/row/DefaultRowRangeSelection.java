@@ -25,6 +25,11 @@ class DefaultRowRangeSelection implements RowRangeSelection {
     }
 
     @Override
+    public boolean allSelected(final long from, final long to) {
+        return allSelected() || (from >= m_from && to <= m_to);
+    }
+
+    @Override
     public long fromIndex() {
         return m_from;
     }
