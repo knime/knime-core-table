@@ -2,6 +2,8 @@ package org.knime.core.table.row;
 
 import java.util.Arrays;
 
+import org.knime.core.table.schema.ColumnarSchema;
+
 /**
  * Selects a subset of {@link #columns() columns} and a contiguous range of {@link #rows() rows} from a table.
  * <p>
@@ -129,6 +131,26 @@ public interface Selection {
          * @return {@code true} if all columns are selected, otherwise {@code false}.
          */
         boolean allSelected();
+
+        /**
+         * Returns {@code true} if all columns in the specified column range are selected,
+         * otherwise {@code false}.
+         *
+         * @param fromIndex start of columns range (inclusive)
+         * @param toIndex end of column range (exclusive)
+         * @return {@code true} if all columns in the specified range are selected, otherwise {@code false}.
+         * @throws IllegalArgumentException
+         *         if {@code fromIndex > toIndex}
+         */
+        boolean allSelected(int fromIndex, int toIndex);
+
+        /**
+         * Returns {@code true} if all columns in the specified schema, otherwise {@code false}.
+         * This is a just short-cut for {@code allSelected(0, schema.numColumns())}.
+         */
+        default boolean allSelected(final ColumnarSchema schema) {
+            return allSelected(0, schema.numColumns());
+        }
 
         /**
          * Get the indices of selected columns in a sorted array.

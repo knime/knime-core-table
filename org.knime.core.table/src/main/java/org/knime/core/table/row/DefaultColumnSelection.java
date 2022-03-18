@@ -32,6 +32,34 @@ class DefaultColumnSelection implements ColumnSelection {
     }
 
     @Override
+    public boolean allSelected(final int fromIndex, final int toIndex) {
+        if (fromIndex > toIndex) {
+            throw new IllegalArgumentException("fromIndex (==" + fromIndex + ") > toIndex (==" + toIndex + ")");
+        }
+        if (fromIndex < 0) {
+            throw new IllegalArgumentException("fromIndex (==" + fromIndex + ") < 0");
+        }
+        if (allSelected() || fromIndex == toIndex) {
+            return true;
+        } else {
+            // For all columns in the given range to be selected:
+            // - fromIndex should be in the selection (at some index i)
+            // - toIndex - 1 should be in the selection (at some index j)
+            // - and all columns in between should also be in the selection
+            //   (meaning j-i+1==toIndex-fromIndex, because there are no duplicates in m_cols)
+            int i = Arrays.binarySearch(m_cols, fromIndex);
+            if (i < 0) {
+                return false;
+            }
+            int j = Arrays.binarySearch(m_cols, i, m_cols.length, toIndex - 1);
+            if (j < 0) {
+                return false;
+            }
+            return j - i + 1 == toIndex - fromIndex;
+        }
+    }
+
+    @Override
     public int[] getSelected() {
         return m_cols;
     }
