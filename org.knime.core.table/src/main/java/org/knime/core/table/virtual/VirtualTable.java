@@ -104,13 +104,42 @@ public final class VirtualTable {
     // Regarding the sized vs unsized, unsorted vs sorted, etc. distinctions: check how Java 8 streams do this ("stream
     // characteristics").
 
-    public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema) {
-        this(sourceIdentifier, new SourceTableProperties(schema, true)); // TODO !!!!
-    }
-
+    /**
+     * Construct a VirtualTable that wraps a source table with the given UUID and properties.
+     *
+     * @param sourceIdentifier unique identifier for the source. This is later used by the {@code VirtualTableExecutor}
+     *            to attach a {@code RowAccessible}.
+     * @param properties properties of the source table, such as its {@code ColumnarSchema}, whether it supports
+     *            LookaheadCursors, etc.
+     */
     public VirtualTable(final UUID sourceIdentifier, final SourceTableProperties properties) {
         m_transform = new TableTransform(new SourceTransformSpec(sourceIdentifier, properties));
         m_schema = properties.getSchema();
+    }
+
+    /**
+     * Construct a VirtualTable that wraps a source table with the given UUID and schema.
+     *
+     * @param sourceIdentifier unique identifier for the source. This is later used by the {@code VirtualTableExecutor}
+     *            to attach a {@code RowAccessible}.
+     * @param schema the {@code ColumnarSchema} of the source
+     * @param lookahead whether the source supports LookaheadCursors (meaning the {@code RowAccessible} attached to this
+     *            source will be {@code LookaheadRowAccessible})
+     */
+    public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema, final boolean lookahead) {
+        this(sourceIdentifier, new SourceTableProperties(schema, lookahead));
+    }
+
+    /**
+     * Construct a VirtualTable that wraps a source table with the given UUID and schema. It is assumed that the source
+     * table does not support LookaheadCursors.
+     *
+     * @param sourceIdentifier unique identifier for the source. This is later used by the {@code VirtualTableExecutor}
+     *            to attach a {@code RowAccessible}.
+     * @param schema the {@code ColumnarSchema} of the source
+     */
+    public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema) {
+        this(sourceIdentifier, new SourceTableProperties(schema, false));
     }
 
     private VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {
