@@ -612,9 +612,50 @@ public class RagBuilder {
             changed = false;
             changed |= eliminateAppends();
             changed |= mergeSlices();
+            changed |= moveSlicesBeforeAppends();
             // TODO other optimizations
         }
     }
+
+
+
+    // --------------------------------------------------------------------
+    // moveSliceBeforeAppend()
+
+    boolean moveSlicesBeforeAppends() {
+        for (final RagNode node : graph.nodes()) {
+            if (node.type() == SLICE && tryMoveSliceBeforeAppend(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryMoveSliceBeforeAppend(final RagNode slice) {
+        final List<RagNode> predecessors = slice.predecessors(EXEC);
+        if (predecessors.size() == 1 && predecessors.get(0).type() == APPEND) {
+            final RagNode append = predecessors.get(0);
+
+            // remove "slice":
+            // short-circuit "append" to successors of "slice"
+            for (RagNode node : slice.successors(EXEC)) {
+                graph.getOrAddEdge(append, node, EXEC);
+            }
+            // remove "slice" node and associated edges
+            graph.remove(slice);
+
+            // insert equivalent "preslice" between "append" and each predecessor
+            final TableTransform presliceTransform = new TableTransform(Collections.emptyList(), slice.getTransformSpec());
+            for (RagNode node : append.predecessors(EXEC)) {
+                final RagNode preslice = graph.addNode(presliceTransform);
+                graph.addEdge(node, preslice, EXEC);
+                graph.addEdge(preslice, append, EXEC);
+            }
+            return true;
+        }
+        return false;
+    }
+
 
 
     // --------------------------------------------------------------------
