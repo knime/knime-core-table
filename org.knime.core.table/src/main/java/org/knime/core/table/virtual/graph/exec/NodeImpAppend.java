@@ -77,8 +77,7 @@ class NodeImpAppend implements NodeImp {
 
     @Override
     public boolean canForward() {
-        for (int i = 0; i < predecessors.length; i++) {
-            final NodeImp predecessor = predecessors[i];
+        for (var predecessor : predecessors) {
             if (predecessor.canForward()) {
                 return true;
             }
