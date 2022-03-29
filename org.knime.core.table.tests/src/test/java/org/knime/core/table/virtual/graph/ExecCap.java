@@ -29,16 +29,20 @@ public class ExecCap {
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataMinimal();
 
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
-//        final VirtualTable table = VirtualTableExamples.vtAppend(sourceIdentifiers, sourceIdentifiers[1]);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataAppend();
+//        final VirtualTable table = VirtualTableExamples.vtAppend(sourceIdentifiers, accessibles);
+
+        final UUID[] sourceIdentifiers = createSourceIds(2);
+        final RowAccessible[] accessibles = toLookahead(VirtualTableExamples.dataAppendAndSlice());
+        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final VirtualTable table = VirtualTableExamples.vtForkJoin(sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataForkJoin();
 
-        final UUID[] sourceIdentifiers = createSourceIds(1);
-        final RowAccessible[] accessibles = toLookahead(VirtualTableExamples.dataForkJoinLookALike());
-        final VirtualTable table = VirtualTableExamples.vtForkJoinLookALike(sourceIdentifiers, accessibles);
+//        final UUID[] sourceIdentifiers = createSourceIds(1);
+//        final RowAccessible[] accessibles = toLookahead(VirtualTableExamples.dataForkJoinLookALike());
+//        final VirtualTable table = VirtualTableExamples.vtForkJoinLookALike(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
 //        final VirtualTable table = VirtualTableExamples.vtConcatenate(sourceIdentifiers, sourceIdentifiers);

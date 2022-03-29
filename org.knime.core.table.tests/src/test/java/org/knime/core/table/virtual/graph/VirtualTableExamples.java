@@ -286,6 +286,34 @@ public class VirtualTableExamples {
 
 
 
+    public static VirtualTable vtAppendAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).permute(1, 0);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).filterColumns(1, 2).append(List.of(transformedTable2))
+                .permute(1, 0, 2, 3).filterColumns(1, 2).slice(1, 4);
+    }
+
+    public static VirtualTable vtAppendAndSlice() {
+        return vtAppendAndSlice(new UUID[]{randomUUID(), randomUUID()}, dataAppendAndSlice());
+    }
+
+    public static RowAccessible[] dataAppendAndSlice() {
+        return dataAppend();
+    }
+
+    @Test
+    public void testAppendAndSlice() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, DOUBLE);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{2, 1.2}, //
+                new Object[]{3, 1.3}, //
+                new Object[]{4, 1.4} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, VirtualTableExamples::dataAppendAndSlice, VirtualTableExamples::vtAppendAndSlice);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataAppendAndSlice, VirtualTableExamples::vtAppendAndSlice);
+    }
+
+
+
     public static VirtualTable vtAppendAndAppendMissing(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]))
                 .permute(1, 0)
