@@ -36,6 +36,11 @@ public enum IdentityTransformSpec implements TableTransformSpec {
      */
     INSTANCE;
 
+    @Override
+    public String toString() {
+        return "Identity";
+    }
+
     /**
      * Serializer for {@link IdentityTransformSpec}.
      *

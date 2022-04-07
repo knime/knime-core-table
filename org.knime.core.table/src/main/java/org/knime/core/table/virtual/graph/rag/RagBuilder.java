@@ -330,6 +330,7 @@ public class RagBuilder {
                 case CONSUMER:
                 case SLICE:
                 case ROWFILTER:
+                case IDENTITY:
                     numColumns = node.predecessor(SPEC).numColumns();
                     break;
                 case CONCATENATE:
@@ -479,15 +480,13 @@ public class RagBuilder {
                 }
                 return node.getOrCreateOutput(i);
             case ROWFILTER:
+            case SLICE:
+            case IDENTITY:
                 return traceAccess(i, node.predecessor(SPEC));
             case APPEND:
             case CONCATENATE:
                 traceAndLinkAccess(i, node);
                 return node.getOrCreateOutput(i);
-            case CONSUMER:
-                throw new IllegalArgumentException();
-            case SLICE:
-                return traceAccess(i, node.predecessor(SPEC));
             case APPENDMISSING:
                 final int numPredecessorColumns = node.predecessor(SPEC).numColumns();
                 if (i < numPredecessorColumns) {
@@ -507,6 +506,8 @@ public class RagBuilder {
             case COLPERMUTE:
                 final int[] permutation = ((PermuteTransformSpec)spec).getPermutation();
                 return traceAccess(permutation[i], node.predecessor(SPEC));
+            case CONSUMER:
+            case MISSING:
             default:
                 throw new IllegalArgumentException();
         }
@@ -539,6 +540,7 @@ public class RagBuilder {
             case MISSING:
             case APPENDMISSING:
             case MAP:
+            case IDENTITY:
                 // do nothing
                 break;
             case SLICE:

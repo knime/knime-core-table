@@ -4,6 +4,7 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
+import org.knime.core.table.virtual.spec.IdentityTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
@@ -22,7 +23,8 @@ public enum RagNodeType {
     COLPERMUTE, //
     MAP, //
     ROWFILTER, //
-    CONSUMER;
+    CONSUMER,
+    IDENTITY;
 
     public static RagNodeType forSpec(final TableTransformSpec spec) {
         if (spec instanceof SourceTransformSpec)
@@ -47,6 +49,8 @@ public enum RagNodeType {
             return RagNodeType.ROWFILTER;
         else if (spec instanceof ConsumerTransformSpec)
             return RagNodeType.CONSUMER;
+        else if (spec instanceof IdentityTransformSpec)
+            return RagNodeType.IDENTITY;
         else
             throw new IllegalArgumentException();
     }
