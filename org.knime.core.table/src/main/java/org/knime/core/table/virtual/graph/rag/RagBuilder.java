@@ -777,20 +777,12 @@ public class RagBuilder {
     // eliminateAppends()
 
     private boolean eliminateAppends() {
-        boolean modified = false;
         for (final RagNode node : graph.nodes()) {
-            if (node.type() == APPEND && !isDisconnected(node)) {
-                modified |= tryEliminateAppend(node);
+            if (node.type() == APPEND && tryEliminateAppend(node)) {
+                return true;
             }
         }
-        return modified;
-    }
-
-    private boolean isDisconnected(final RagNode node) {
-        return node.incomingEdges(DATA).isEmpty() && //
-                node.outgoingEdges(DATA).isEmpty() && //
-                node.incomingEdges(EXEC).isEmpty() && //
-                node.outgoingEdges(EXEC).isEmpty();
+        return false;
     }
 
     private boolean tryEliminateAppend(final RagNode append) {
@@ -860,18 +852,7 @@ public class RagBuilder {
             }
         }
 
-        // Remove DATA and EXEC edges to/from APPEND
-        //
-        // Ror debugging/visualization purposes, the APPEND node itself is left in (so that
-        // SPEC edges still make sense). In principle, we could also just remove the node
-        // in the end which would also take care of these edges... (TODO?)
-        final List<RagEdge> edgesToRemove = new ArrayList<>(append.incomingEdges(DATA));
-        edgesToRemove.addAll(append.outgoingEdges(DATA));
-        edgesToRemove.addAll(append.incomingEdges(EXEC));
-        edgesToRemove.addAll(append.outgoingEdges(EXEC));
-        for (final RagEdge edge : edgesToRemove) {
-            graph.remove(edge);
-        }
+        graph.remove(append);
 
         // For each output in APPEND.outputs[i]:
         //   For each consumer in output.getConsumers():
