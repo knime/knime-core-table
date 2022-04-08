@@ -609,6 +609,7 @@ public class RagBuilder {
     // optimize()
 
     void optimize() {
+        graph.trim();
         boolean changed = true;
         while (changed) {
             changed = false;

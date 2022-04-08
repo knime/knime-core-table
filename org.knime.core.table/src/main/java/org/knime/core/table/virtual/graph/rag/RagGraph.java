@@ -1,6 +1,11 @@
 package org.knime.core.table.virtual.graph.rag;
 
+import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
+
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.knime.core.table.virtual.TableTransform;
 
@@ -115,6 +120,27 @@ public class RagGraph {
 
     public void setMissingValuesSource(final RagNode missingValuesSource) {
         this.missingValuesSource = missingValuesSource;
+    }
+
+    /**
+     * Trim unnecessary nodes and edges.
+     * <p>
+     * Removes {@code SPEC} edges, and then removes orphaned nodes.
+     * Obviously this should only be called after {@code SPEC} edges are no longer needed.
+     */
+    void trim() {
+        final List<RagEdge> edgesToRemove = new ArrayList<>(edges.unmodifiable(SPEC));
+        edgesToRemove.forEach(this::remove);
+
+        final List<RagNode> nodesToRemove = new ArrayList<>();
+        for (final RagNode node : nodes()) {
+            if (node.type() != MISSING //
+                    && node.incoming.unmodifiable().isEmpty() //
+                    && node.outgoing.unmodifiable().isEmpty()) {
+                nodesToRemove.add(node);
+            }
+        }
+        nodesToRemove.forEach(this::remove);
     }
 
     @Override
