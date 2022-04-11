@@ -18,13 +18,20 @@ public class SourceTableProperties {
 
     private final boolean m_lookahead;
 
+    private final long m_numRows;
+
     public SourceTableProperties(final RowAccessible source) {
         this(source.getSchema(), source instanceof LookaheadRowAccessible);
     }
 
     public SourceTableProperties(final ColumnarSchema schema, final boolean lookahead) {
+        this(schema, lookahead, -1);
+    }
+
+    public SourceTableProperties(final ColumnarSchema schema, final boolean lookahead, final long numRows) {
         this.m_schema = schema;
         this.m_lookahead = lookahead;
+        this.m_numRows = numRows;
     }
 
     /**
@@ -57,7 +64,21 @@ public class SourceTableProperties {
         return m_lookahead;
     }
 
-    // TODO
-    //   long numRows
-    //   boolean knowsNumRows
+    /**
+     * TODO javadoc
+     * @return
+     */
+    public long numRows()
+    {
+        return m_numRows;
+    }
+
+    /**
+     * TODO javadoc
+     * @return
+     */
+    public boolean knowsNumRows()
+    {
+        return m_numRows >= 0;
+    }
 }

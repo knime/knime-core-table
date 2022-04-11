@@ -241,6 +241,101 @@ public class RagBuilder {
         }
     }
 
+    /**
+     * Returns the number of rows of the given linearized {@code RagGraph}, or a negative value
+     * if the number of rows is unknown.
+     *
+     * @param orderedRag a linearized {@code RagGraph}
+     * @return number of rows at the consumer node of the {@code orderedRag}
+     */
+    public static long numRows(final List<RagNode> orderedRag) {
+        final RagNode node = orderedRag.get(orderedRag.size() - 1);
+        if (node.type() != RagNodeType.CONSUMER) {
+            throw new IllegalArgumentException();
+        }
+        return numRows(node);
+    }
+
+    /**
+     * Recursively trace along reverse EXEC edges to determine number of rows.
+     */
+    private static long numRows(final RagNode node) {
+        switch (node.type()) {
+            case SOURCE: {
+                final SourceTransformSpec spec = node.getTransformSpec();
+                long numRows = spec.getProperties().numRows();
+                if ( numRows < 0 ) {
+                    return -1;
+                }
+                final RowRangeSelection range = spec.getRowRange();
+                if ( range.allSelected() ) {
+                    return numRows;
+                } else {
+                    final long from = range.fromIndex();
+                    final long to = range.toIndex();
+                    return Math.max(0, Math.min(numRows, to) - from);
+                }
+            }
+            case SLICE: {
+                final SliceTransformSpec spec = node.getTransformSpec();
+                final long from = spec.getRowRangeSelection().fromIndex();
+                final long to = spec.getRowRangeSelection().toIndex();
+                final long s = maxPredecessorNumRows(node);
+                return s < 0 ? s : Math.max(0, Math.min(s, to) - from);
+            }
+            case CONSUMER:
+            case APPEND: {
+                // If any predecessor doesn't know its size, the size of this node is also unknown.
+                // Otherwise, the size of this node is max of its predecessors.
+                return maxPredecessorNumRows(node);
+            }
+            case CONCATENATE: {
+                // If any predecessor doesn't know its size, the size of this node is also unknown.
+                // Otherwise, the size of this is the sum of its predecessors.
+                long size = 0;
+                for (final RagNode predecessor : node.predecessors(EXEC)) {
+                    final long s = numRows(predecessor);
+                    if ( s < 0 ) {
+                        return -1;
+                    }
+                    size += s;
+                }
+                return size;
+            }
+            case ROWFILTER:
+                return -1;
+            case MISSING:
+            case APPENDMISSING:
+            case COLFILTER:
+            case COLPERMUTE:
+            case MAP:
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
+
+    /**
+     * Get the maximum numRows of EXEC predecessors of {@code node}.
+     * Returns -1, if at least one predecessor doesn't know its numRows.
+     * Returns 0 if there are no predecessors.
+     */
+    private static long maxPredecessorNumRows(final RagNode node) {
+        // If any predecessor doesn't know its size, the size of this node is also unknown.
+        // Otherwise, the size of this node is max of its predecessors.
+        long size = 0;
+        for (final RagNode predecessor : node.predecessors(EXEC)) {
+            final long s = numRows(predecessor);
+            if ( s < 0 ) {
+                return -1;
+            }
+            size = Math.max(s, size);
+        }
+        return size;
+    }
+
+
+
+
     final RagGraph graph = new RagGraph();
 
     private final MissingValueColumns missingValueColumns = new MissingValueColumns();
@@ -548,7 +643,8 @@ public class RagBuilder {
             case CONSUMER:
             case APPEND:
             case ROWFILTER:
-                traceExecConsumer(node, node);
+                traceExecConsumer(node, node, false);
+//                traceExecConsumer(node, node);
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -600,6 +696,42 @@ public class RagBuilder {
         // recurse along reverse SPEC edges
         for (RagNode predecessor : current.predecessors(SPEC)) {
             traceExecConsumer(dest, predecessor);
+        }
+    }
+    private void traceExecConsumer(final RagNode dest, final RagNode current, boolean rowFilterHit) {
+
+//      From an executable node (except RowFilter) dest: follow spec edges recursively.
+//        If an executable node is hit:
+//          - insert an EXEC edge (node --> dest).
+//          - if node is not a RowFilter, stop tracing.
+//      From a RowFilter node dest: follow spec edges recursively.
+//        If a RowFilter node is hit:
+//          - don't insert an edge
+//          - keep on tracing
+//        If an executable node (except RowFilter) is hit:
+//          - insert an EXEC edge node --> dest
+//          - stop tracing
+
+        if (!dest.equals(current)) {
+            final RagNodeType ctype = current.type();
+            if (executableNodeTypes.contains(ctype)) {
+                if (ctype == ROWFILTER) {
+                    rowFilterHit = true;
+                    if (dest.type() != ROWFILTER) {
+                        graph.getOrAddEdge(current, dest, EXEC);
+                    }
+                    // continue tracing recursively
+                } else {
+                    if (dest.type() == ROWFILTER || !rowFilterHit) {
+                        graph.getOrAddEdge(current, dest, EXEC);
+                    }
+                    return; // no further recursion
+                }
+            }
+        }
+        // recurse along reverse SPEC edges
+        for (RagNode predecessor : current.predecessors(SPEC)) {
+            traceExecConsumer(dest, predecessor, rowFilterHit);
         }
     }
 

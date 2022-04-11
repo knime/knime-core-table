@@ -30,6 +30,8 @@ public class CursorAssemblyPlan {
 
     private final boolean supportsLookahead;
 
+    private final long numRows;
+
     /**
      * Create a {@code CursorAssemblyPlan} with the sequence of {@code nodes}.
      *
@@ -37,10 +39,12 @@ public class CursorAssemblyPlan {
      *            front-to-back to instantiate a {@code Cursor<ReadAccessRow>}. Each node may only refer back to earlier
      *            nodes in the sequence.
      * @param supportsLookahead whether the constructed cursor should be a {@code LookaheadCursor}.
+     * @param numRows number of rows. {@code numRows<0} if the number of rows is unknown.
      */
-    public CursorAssemblyPlan(final List<CapNode> nodes, final boolean supportsLookahead) {
+    public CursorAssemblyPlan(final List<CapNode> nodes, final boolean supportsLookahead, final long numRows) {
         this.nodes = nodes;
         this.supportsLookahead = supportsLookahead;
+        this.numRows = numRows;
     }
 
     /**
@@ -59,5 +63,15 @@ public class CursorAssemblyPlan {
      */
     public boolean supportsLookahead() {
         return supportsLookahead;
+    }
+
+    /**
+     * Get the number of rows.
+     * {@code numRows()<0} if the number of rows is unknown.
+     *
+     * @return number of rows
+     */
+    public long numRows() {
+        return numRows;
     }
 }

@@ -220,7 +220,9 @@ public class CapBuilder {
             }
         }
 
-        return new CursorAssemblyPlan(cursorAssemblyPlan, RagBuilder.supportsLookahead(orderedRag)); // TODO: avoid calling RagBuilder here?
+        return new CursorAssemblyPlan(cursorAssemblyPlan, //
+                RagBuilder.supportsLookahead(orderedRag), // TODO: avoid calling RagBuilder here?
+                RagBuilder.numRows(orderedRag)); // TODO: avoid calling RagBuilder here?
     }
 
     /**
