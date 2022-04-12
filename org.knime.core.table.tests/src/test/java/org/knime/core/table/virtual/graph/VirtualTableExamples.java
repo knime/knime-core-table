@@ -441,6 +441,60 @@ public class VirtualTableExamples {
 
 
 
+    public static VirtualTable vtConcatenateAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).permute(1, 0);
+        final VirtualTable transformedTable3 = new VirtualTable(sourceIdentifiers[2], new SourceTableProperties(sources[2])).permute(1, 0);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).filterColumns(0,1).concatenate(List.of(transformedTable2, transformedTable3)).filterColumns(1).slice(6,10);
+    }
+
+    public static VirtualTable vtConcatenateAndSlice() {
+        return vtConcatenateAndSlice(new UUID[]{randomUUID(), randomUUID(), randomUUID()}, dataConcatenateAndSlice());
+    }
+
+    public static RowAccessible[] dataConcatenateAndSlice() {
+        final ColumnarSchema schema1 = ColumnarSchema.of(DOUBLE, INT, STRING);
+        final Object[][] values1 = new Object[][]{ //
+                new Object[]{0.1, 1, "First"}, //
+                new Object[]{0.2, 2, "Second"}, //
+                new Object[]{0.3, 3, "Third"}, //
+                new Object[]{0.4, 4, "Fourth"}, //
+                new Object[]{0.5, 5, "Fifth"} //
+        };
+        final ColumnarSchema schema2 = ColumnarSchema.of(INT, DOUBLE);
+        final Object[][] values2 = new Object[][]{ //
+                new Object[]{11, 1.1}, //
+                new Object[]{12, 1.2}, //
+                new Object[]{13, 1.3}, //
+                new Object[]{14, 1.4}, //
+        };
+        final ColumnarSchema schema3 = ColumnarSchema.of(INT, DOUBLE);
+        final Object[][] values3 = new Object[][]{ //
+                new Object[]{16, 1.6}, //
+                new Object[]{17, 1.7}, //
+                new Object[]{18, 1.8}, //
+        };
+        return new RowAccessible[] {
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema1, values1),
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema2, values2),
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema3, values3),
+        };
+    }
+
+    @Test
+    public void testConcatenateAndSlice() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{12}, //
+                new Object[]{13}, //
+                new Object[]{14}, //
+                new Object[]{16}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSlice);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSlice);
+    }
+
+
+
     public static VirtualTable vtAppendMissing(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]));
         return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
