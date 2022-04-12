@@ -63,4 +63,14 @@ public interface RowAccessible extends Closeable {
      * @return a new {@link Cursor} over the selected rows and columns in this {@link RowAccessible}
      */
     Cursor<ReadAccessRow> createCursor(Selection selection);
+
+    /**
+     * TODO javadoc
+     *
+     * Number of rows.
+     * If {@code size()<0}, the number of rows is not known.
+     *
+     * @return
+     */
+    long size();
 }

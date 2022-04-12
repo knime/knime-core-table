@@ -21,7 +21,7 @@ public class SourceTableProperties {
     private final long m_numRows;
 
     public SourceTableProperties(final RowAccessible source) {
-        this(source.getSchema(), source instanceof LookaheadRowAccessible);
+        this(source.getSchema(), source instanceof LookaheadRowAccessible, source.size());
     }
 
     public SourceTableProperties(final ColumnarSchema schema, final boolean lookahead) {

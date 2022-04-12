@@ -78,6 +78,8 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
 
     private final ColumnarSchema m_schema;
 
+    private final long m_size;
+
     ConcatenatedRowAccessible(final List<RowAccessible> tablesToConcatenate) {
         m_delegates = tablesToConcatenate.stream()//
             .map(RowAccessibles::toLookahead)//
@@ -85,6 +87,19 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
         m_schema = ColumnarSchemas.concatenate(tablesToConcatenate.stream()//
             .map(RowAccessible::getSchema)//
             .collect(toList()));
+        long size = 0;
+        // The size of the appended table is the sum of input table sizes. Unless one of
+        // the input table sizes is unknown. Then the size of the appended table is also
+        // unknown.
+        for (final RowAccessible table : tablesToConcatenate) {
+            if ( table.size() >= 0 ) {
+                size += table.size();
+            } else {
+                size = -1;
+                break;
+            }
+        }
+        m_size = size;
     }
 
     /**
@@ -108,6 +123,11 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
     public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
         var cursor = new ConcatenatedRowCursor(m_delegates, getSchema(), selection.columns());
         return selection.rows().allSelected() ? cursor : new SlicedCursor(cursor, selection.rows());
+    }
+
+    @Override
+    public long size() {
+        return m_size;
     }
 
     @Override

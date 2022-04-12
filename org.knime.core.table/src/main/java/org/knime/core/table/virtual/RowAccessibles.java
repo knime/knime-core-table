@@ -112,6 +112,11 @@ public final class RowAccessibles {
         }
 
         @Override
+        public long size() {
+            return m_delegate.size();
+        }
+
+        @Override
         public void close() throws IOException {
             m_delegate.close();
         }
@@ -127,6 +132,5 @@ public final class RowAccessibles {
         public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
             return Cursors.toLookahead(m_delegate.getSchema(), m_delegate.createCursor(selection), selection.columns());
         }
-
     }
 }

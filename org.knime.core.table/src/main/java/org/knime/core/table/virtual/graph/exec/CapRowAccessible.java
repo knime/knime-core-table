@@ -59,6 +59,11 @@ class CapRowAccessible implements RowAccessible {
     }
 
     @Override
+    public long size() {
+        return cap.numRows();
+    }
+
+    @Override
     public void close() throws IOException {
         // TODO ?
     }

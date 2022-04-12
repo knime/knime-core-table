@@ -121,6 +121,16 @@ class FilteredRowAccessible implements RowAccessible {
         }
     }
 
+    /**
+     * Returns {@code -1}, because it is unknown how many rows will be filtered out.
+     *
+     * @return {@code -1}, indicating that the number of rows is unknown.
+     */
+    @Override
+    public long size() {
+        return -1;
+    }
+
     @Override
     public void close() throws IOException {
         m_delegateTable.close();

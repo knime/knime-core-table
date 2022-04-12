@@ -106,6 +106,11 @@ final class PermutedRowAccessible implements LookaheadRowAccessible {
     }
 
     @Override
+    public long size() {
+        return m_delegateTable.size();
+    }
+
+    @Override
     public void close() throws IOException {
         m_delegateTable.close();
     }

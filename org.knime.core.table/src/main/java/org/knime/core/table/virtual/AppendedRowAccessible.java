@@ -32,6 +32,8 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
 
     private final int[] m_tableOffsets;
 
+    private final long m_size;
+
     public AppendedRowAccessible(final List<RowAccessible> tablesToAppend) {
         this(tablesToAppend, ColumnarSchemas.append(tablesToAppend.stream()//
             .map(RowAccessible::getSchema)//
@@ -45,12 +47,23 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
         m_schema = schema;
         m_tableOffsets = new int[tablesToAppend.size()];
         int currentOffset = 0;//NOSONAR
+        long size = 0;
         for (int i = 0; i < tablesToAppend.size(); i++) {//NOSONAR
             m_tableOffsets[i] = currentOffset;
             @SuppressWarnings("resource") // Tables will be closed when this instance is being closed.
             final RowAccessible table = tablesToAppend.get(i);
             currentOffset += table.getSchema().numColumns();
+
+            // If any source table doesn't know its size, size of the appended table is also
+            // unknown. Otherwise, the size of the appended table is the size of the largest
+            // input table.
+            if ( table.size() >= 0 && size >= 0 ) {
+                size = Math.max(table.size(), size);
+            } else {
+                size = -1;
+            }
         }
+        m_size = size;
     }
 
     /**
@@ -87,6 +100,11 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
             }
         }
         return new AppendedCursor(delegateSelections);
+    }
+
+    @Override
+    public long size() {
+        return m_size;
     }
 
     @Override

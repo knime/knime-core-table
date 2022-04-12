@@ -116,6 +116,11 @@ public final class RowAccessiblesTestUtils {
             return new TestRowAccessCursor(m_accesses, selection, m_length);
         }
 
+        @Override
+        public long size() {
+            return m_length;
+        }
+
         private static final class TestRowAccessCursor implements Cursor<ReadAccessRow>, ReadAccessRow {
 
             private final TestAccess[] m_accesses;

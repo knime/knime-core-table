@@ -26,10 +26,15 @@ final class SlicedRowAccessible implements LookaheadRowAccessible {
 
     private final long m_to;
 
+    private final long m_size;
+
     public SlicedRowAccessible(final RowAccessible tableToSlice, final long from, final long to) {
         m_delegateTable = RowAccessibles.toLookahead(tableToSlice);
         m_from = from;
         m_to = to;
+
+        final long s = m_delegateTable.size();
+        m_size = s < 0 ? s : Math.max(0, Math.min(s, to) - from);
     }
 
     @Override
@@ -45,6 +50,11 @@ final class SlicedRowAccessible implements LookaheadRowAccessible {
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
         return m_delegateTable.createCursor(Selection.all().retainRows(m_from, m_to).retain(selection));
+    }
+
+    @Override
+    public long size() {
+        return m_size;
     }
 
     @Override
