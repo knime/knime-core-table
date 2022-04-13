@@ -711,4 +711,61 @@ public class VirtualTableExamples {
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableExamples::dataMapsAndFilters, VirtualTableExamples::vtMapsAndFilters);
         testTransformedTableLookahead(false, VirtualTableExamples::dataMapsAndFilters, VirtualTableExamples::vtMapsAndFilters);
     }
+
+
+
+    public static VirtualTable vtFiltersMapAndConcatenate(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final RowFilterFactory isEven = RowFilterFactory.intPredicate(i -> i % 2 == 0);
+        final RowFilterFactory isGreaterThanThree = RowFilterFactory.doublePredicate(d -> d > 3);
+
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable table1 = table //
+                .filterRows(new int[]{2}, isGreaterThanThree) //
+                .filterRows(new int[]{0}, isEven);
+        final VirtualTable mappedCols = table1.map(new int[]{1, 2}, MapperFactory.doublesToDouble(Double::sum));
+        final VirtualTable table2 = table1 //
+                .append(List.of(mappedCols)) //
+                .filterColumns(3, 4);
+        final VirtualTable table3 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).slice(0,1);
+        return table2.concatenate(List.of(table3));
+//        return table3.concatenate(List.of(table2));
+    }
+
+    public static VirtualTable vtFiltersMapAndConcatenate() {
+        return vtFiltersMapAndConcatenate(new UUID[]{randomUUID(), randomUUID()}, dataFiltersMapAndConcatenate());
+    }
+
+    public static RowAccessible[] dataFiltersMapAndConcatenate() {
+        final ColumnarSchema schema1 = ColumnarSchema.of(INT, DOUBLE, DOUBLE, STRING);
+        final Object[][] values1 = new Object[][]{ //
+                new Object[]{1, 0.5, 1.0, "First"}, //
+                new Object[]{2, 1.2, 4.0, "Second"}, //
+                new Object[]{3, 0.7, 3.0, "Third"}, //
+                new Object[]{4, 4.9, 0.2, "Fourth"}, //
+                new Object[]{5, 4.7, 3.0, "Fifth"}, //
+                new Object[]{6, 1.0, 3.8, "Sixth"}, //
+                new Object[]{7, 3.3, 3.2, "Seventh"}, //
+        };
+        final ColumnarSchema schema2 = ColumnarSchema.of(STRING, DOUBLE);
+        final Object[][] values2 = new Object[][]{ //
+                new Object[]{"2_First", 1.0}, //
+                new Object[]{"2_Second", 2.0}, //
+        };
+        return new RowAccessible[]{
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema1, values1),
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema2, values2)
+        };
+    }
+
+    @Test
+    public void testFiltersMapAndConcatenate() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(STRING, DOUBLE);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{"Second", 5.2}, //
+                new Object[]{"Sixth", 4.8}, //
+                new Object[]{"2_First", 1.0} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
+        testTransformedTableLookahead(false, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
+    }
 }
