@@ -36,7 +36,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public class DefaultAnnotatedColumnarSchema implements AnnotatedColumnarSchema {
+public final class DefaultAnnotatedColumnarSchema implements AnnotatedColumnarSchema {
 
     private final SchemaMetaData m_schemaMetaData;
 
@@ -149,7 +149,7 @@ public class DefaultAnnotatedColumnarSchema implements AnnotatedColumnarSchema {
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    public static class DefaultColumnMetaData implements ColumnMetaData {
+    public static final class DefaultColumnMetaData implements ColumnMetaData {
         /** the instance */
         public static final DefaultColumnMetaData INSTANCE = new DefaultColumnMetaData();
 
@@ -168,7 +168,7 @@ public class DefaultAnnotatedColumnarSchema implements AnnotatedColumnarSchema {
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    public static class DefaultSchemaMetaData implements SchemaMetaData {
+    public static final class DefaultSchemaMetaData implements SchemaMetaData {
         /** the instance */
         public static final DefaultSchemaMetaData INSTANCE = new DefaultSchemaMetaData();
 
@@ -188,15 +188,20 @@ public class DefaultAnnotatedColumnarSchema implements AnnotatedColumnarSchema {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof DefaultAnnotatedColumnarSchema)) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (obj.getClass() != this.getClass()) {
             return false;
         }
         final var other = (DefaultAnnotatedColumnarSchema)obj;
 
         return m_schema.equals(other.m_schema) //
             && Arrays.equals(m_columnNames, other.m_columnNames) //
-            && ((m_schemaMetaData == null && other.m_schemaMetaData == null)
-                || m_schemaMetaData.equals(other.m_schemaMetaData)) //
+            && Objects.equals(m_schemaMetaData, other.m_schemaMetaData) //
             && Arrays.equals(m_columnMetaData, other.m_columnMetaData);
     }
 
