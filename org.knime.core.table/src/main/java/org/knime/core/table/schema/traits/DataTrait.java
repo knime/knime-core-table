@@ -21,12 +21,16 @@
 package org.knime.core.table.schema.traits;
 
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.virtual.serialization.DataTraitsSerializer;
 
 /**
  * A single piece of additional information about a {@link DataSpec}.
  *
  * To quote Bjarne Stroustrup (C++): Think of a trait as a small object whose main purpose is to carry information used
  * by another object or algorithm to determine "policy" or "implementation details".
+ *
+ * Note: If you add more traits, remember to implement their JSON serialization and deserialization in
+ * {@link DataTraitsSerializer}.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */

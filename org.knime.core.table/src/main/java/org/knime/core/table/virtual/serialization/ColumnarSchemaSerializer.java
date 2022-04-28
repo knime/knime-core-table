@@ -37,6 +37,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
  */
 public final class ColumnarSchemaSerializer {
 
+    private ColumnarSchemaSerializer() {
+    }
+
     /**
      * Note that this method is <b>not</b> thread-safe.
      */
@@ -67,7 +70,8 @@ public final class ColumnarSchemaSerializer {
         }
 
         if (specs.size() != traits.size()) {
-            throw new IllegalStateException("ColumnarSchema requires JSON children 'specs' and 'traits' to be of same length");
+            throw new IllegalStateException(
+                "ColumnarSchema requires JSON children 'specs' and 'traits' to be of same length");
         }
 
         List<DataSpec> dataSpecs = new ArrayList<>();

@@ -43,8 +43,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public final class DataSpecSerializer {
 
-    // FIXME: serialize traits!
-
     private Mapper m_mapper = new Mapper();
 
     /**

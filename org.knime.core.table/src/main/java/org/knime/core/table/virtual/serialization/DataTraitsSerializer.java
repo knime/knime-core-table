@@ -167,8 +167,7 @@ public final class DataTraitsSerializer {
             return DefaultDataTraits.EMPTY;
         }
 
-        DataTraits dataTraits = new DefaultDataTraits(traits.toArray(DataTrait[]::new));
-        return dataTraits;
+        return new DefaultDataTraits(traits.toArray(DataTrait[]::new));
     }
 
     private static String getId(final DataTrait trait) {
