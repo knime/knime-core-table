@@ -793,24 +793,36 @@ public class RagBuilder {
     }
 
     private boolean tryEliminateAppend(final RagNode append) {
-        final Collection<AccessId> inputs = append.getInputs();
-        final Set<RagNode> producers = new HashSet<>();
-        for (AccessId input : inputs) {
-            producers.addAll(getEffectiveProducers(input));
-            if(producers.size() > 1)
-             {
-                return false; // cannot be eliminated
-            }
+        if (getAncestorSources(append).size() == 1) {
+            eliminateAppend(append);
+            return true;
+        } else {
+            return false;
         }
-        eliminateAppend(append);
-        return true;
+    }
+
+    /**
+     * Recursively trace EXEC edges backwards from {@code node} to SOURCE nodes.
+     * <p>
+     * This is used to determine whether an APPEND node can be eliminated. (An APPEND
+     * can be eliminated if all EXEC edges link back to a single SOURCE.)
+     *
+     * @return the set of SOURCE nodes transitively linking to {@code node} via EXEC edges.
+     */
+    private Set<RagNode> getAncestorSources(final RagNode node) {
+        if (node.type() == SOURCE)
+            return Set.of(node);
+
+        final Set<RagNode> sources = new HashSet<>();
+        List<RagNode> predecessors = node.predecessors(EXEC);
+        for (RagNode predecessor : predecessors) {
+            sources.addAll(getAncestorSources(predecessor));
+        }
+        return sources;
     }
 
     /**
      * Get the set of effective producers for a given {@code access}.
-     * <p>
-     * This is used to determine whether an APPEND node can be eliminated. (An APPEND
-     * can be eliminated if all inputs come from a unique effective producer,
      * <p>
      * The set of effective producers for an {@code access} is the singleton set
      * containing the producer of the access, except when the producer is a MISSING or

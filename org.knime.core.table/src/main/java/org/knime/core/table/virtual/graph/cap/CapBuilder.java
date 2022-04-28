@@ -151,10 +151,17 @@ public class CapBuilder {
                     Arrays.setAll(inputs, i -> capAccessIds.get(slots[i].ragInput));
 
                     final int[] predecessorColRange = new int[predecessors.length + 1];
+                    int j = 0;
                     for (int i = 0; i < slots.length; i++) {
                         final int p = slots[i].predecessorIndex;
-                        predecessorColRange[p + 1] = i + 1;
+                        while (j <= p) {
+                            predecessorColRange[j++] = i;
+                        }
                     }
+                    while (j <= predecessors.length) {
+                        predecessorColRange[j++] = slots.length;
+                    }
+
                     final int[][] predecessorOutputIndices = new int[predecessors.length][];
                     Arrays.setAll(predecessorOutputIndices, p -> {
                         final int from = predecessorColRange[p];
