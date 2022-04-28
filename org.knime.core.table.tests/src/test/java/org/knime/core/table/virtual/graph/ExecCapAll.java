@@ -61,6 +61,13 @@ public class ExecCapAll {
 
         {
             final UUID[] sourceIdentifiers = createSourceIds(2);
+            final RowAccessible[] accessibles = VirtualTableExamples.dataAppendAndFilterColumns();
+            final VirtualTable table = VirtualTableExamples.vtAppendAndFilterColumns(sourceIdentifiers, accessibles);
+            printResults("vtAppendAndFilterColumns", sourceIdentifiers, table, accessibles);
+        }
+
+        {
+            final UUID[] sourceIdentifiers = createSourceIds(2);
             final RowAccessible[] accessibles = VirtualTableExamples.dataAppendAndAppendMissing();
             final VirtualTable table = VirtualTableExamples.vtAppendAndAppendMissing(sourceIdentifiers, accessibles);
             printResults("vtAppendAndAppendMissing", sourceIdentifiers, table, accessibles);
