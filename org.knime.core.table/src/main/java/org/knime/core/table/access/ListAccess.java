@@ -101,9 +101,6 @@ public final class ListAccess {
 
         @Override
         default DataSpec getDataSpec() {
-            if (size() < 1) {
-                throw new IllegalStateException("Cannot get the DataSpec of a list without inner accesses");
-            }
             final var innerSpec = getAccess().getDataSpec();
             return new ListDataSpec(innerSpec);
         }
