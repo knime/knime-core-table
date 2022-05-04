@@ -72,12 +72,11 @@ public final class ListAccess {
     public interface ListReadAccess extends ReadAccess {
 
         /**
-         * Get the {@link ReadAccess} at the given index in the list. Note that this object should only be used until
+         * Get the {@link ReadAccess} at the current index in the list. Note that this object should only be used until
          * this method is called again. Implementations are allowed to reuse the object when this method is called
          * again.
          *
          * @param <R> the type of the {@link ReadAccess}
-         * @param index the index in the list
          * @return the {@link ReadAccess} at the given index
          */
         <R extends ReadAccess> R getAccess();
