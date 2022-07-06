@@ -30,6 +30,7 @@ import java.io.InputStream;
  * array. This is akin to {@link InputStream#read(byte[], int, int)}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public interface ReadableDataInput extends DataInput {
 
@@ -51,4 +52,18 @@ public interface ReadableDataInput extends DataInput {
      * @see InputStream#read(byte[], int, int)
      */
     int read(byte[] b, int off, int len) throws IOException;
+
+    /**
+     * Read all available bytes until the end of the stream. This is similar to {@link #readFully(byte[])}, however no
+     * preallocated buffer must be passed to the function. The amount of data to be read is determined by reading all
+     * remaining data until EOF is reached.
+     *
+     * @return The bytes read from the input stream until
+     *
+     * @throws EOFException if we are already at the EOF before reading anything
+     * @throws IOException if any other IO problems are encountered
+     * @throws IndexOutOfBoundsException if the input data contains more than MAX_INT bytes to read, because no byte[]
+     *             can be created to contain all the data.
+     */
+    byte[] readBytes() throws EOFException, IOException;
 }

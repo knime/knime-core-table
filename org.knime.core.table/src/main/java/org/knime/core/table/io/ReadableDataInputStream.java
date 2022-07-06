@@ -20,7 +20,10 @@
  */
 package org.knime.core.table.io;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -29,6 +32,7 @@ import java.io.InputStream;
  * {@link InputStream#read(byte[], int, int)}, hence no special implementation is needed.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public final class ReadableDataInputStream extends DataInputStream implements ReadableDataInput {
 
@@ -39,6 +43,21 @@ public final class ReadableDataInputStream extends DataInputStream implements Re
      */
     public ReadableDataInputStream(final InputStream input) {
         super(input);
+    }
+
+    @Override
+    public byte[] readBytes() throws EOFException, IOException {
+        // This is probably not extremely efficient, but this way we definitely read all available
+        // bytes before reaching EOF.
+        var out = new ByteArrayOutputStream();
+
+        while (true) {
+            try {
+                out.write(readByte());
+            } catch (EOFException e) {
+                return out.toByteArray();
+            }
+        }
     }
 
 }

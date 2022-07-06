@@ -49,6 +49,8 @@
 package org.knime.core.table.access;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -531,9 +533,9 @@ public final class BufferedAccesses {
             @Override
             protected String valueToString() {
                 return Stream.of(m_inner)//
-                        .limit(m_size)//
-                        .map(Object::toString)//
-                        .collect(Collectors.joining(",", "[", "]"));
+                    .limit(m_size)//
+                    .map(Object::toString)//
+                    .collect(Collectors.joining(",", "[", "]"));
             }
 
         }
@@ -598,7 +600,6 @@ public final class BufferedAccesses {
                 return cast;
             }
 
-
             @Override
             public void setMissing() {
                 for (final BufferedAccess access : m_inner) {
@@ -657,37 +658,66 @@ public final class BufferedAccesses {
         private static final class BufferedVarBinaryAccess extends AbstractBufferedAccess
             implements VarBinaryReadAccess, VarBinaryWriteAccess {
 
+            // The value is only a cache in case setObject or getObject were called
             private Object m_value;
 
+            // The object serializer, cached for on-demand conversion to bytes.
+            @SuppressWarnings("rawtypes")
+            private ObjectSerializer m_serializer;
+
+            // The storage bytes. get/setByteArray will operate on those bytes.
             private byte[] m_storage;
+
+            /**
+             * @return Retrieves the bytes either from the storage bytes, or by serializing the cached object. This
+             *         allows us to call serialize() only in case the bytes are needed.
+             */
+            @SuppressWarnings("unchecked")
+            private byte[] getStorage() {
+                if (m_storage == null) {
+                    if (m_serializer == null) { // the object could really have the value null, so we can only check for the serializer
+                        throw new IllegalStateException(
+                            "Cannot retrieve storage bytes from an object without a serializer set");
+                    }
+
+                    try {
+                        var outStream = new ByteArrayOutputStream();
+                        m_serializer.serialize(new DataOutputStream(outStream), m_value);
+                        m_storage = outStream.toByteArray();
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException("Serializer failed to serialize the given object.", e);
+                    }
+                }
+
+                return m_storage;
+            }
 
             @Override
             public void setByteArray(final byte[] value) {
-                m_value = value;
+                m_storage = value;
+                m_value = null;
+                m_serializer = null;
                 m_isMissing = false;
             }
 
             @Override
             public void setByteArray(final byte[] array, final int index, final int length) {
-                m_value = new byte[length];
-                System.arraycopy(array, index, m_value, 0, length);
+                m_storage = new byte[length];
+                System.arraycopy(array, index, m_storage, 0, length);
                 m_isMissing = false;
+                m_value = null;
+                m_serializer = null;
             }
 
             @Override
             public byte[] getByteArray() {
-                if (m_storage != null) {
-                    return m_storage;
-                } else if (m_value != null) {
-                    throw new IllegalStateException("There is a value set but no byte array. "
-                        + "This usage pattern of setting a value and getting a byte array is not supported.");
-                } else {
-                    throw new IllegalStateException("No data has been set.");
-                }
+                return getStorage();
             }
 
             @Override
             public <T> void setObject(final T value, final ObjectSerializer<T> serializer) {
+                // we only populate m_storage if getByteArray() is accessed after an object was set.
+                m_serializer = serializer;
                 m_storage = null;
                 m_value = value;
                 m_isMissing = false;
@@ -723,7 +753,7 @@ public final class BufferedAccesses {
 
             @Override
             protected String valueToString() {
-                return m_value != null ? m_value.toString() : "null";
+                return m_value != null ? m_value.toString() : (m_storage != null ? m_storage.toString() : "null");
             }
 
         }

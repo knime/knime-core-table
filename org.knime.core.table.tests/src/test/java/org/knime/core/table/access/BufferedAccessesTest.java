@@ -21,16 +21,24 @@
 package org.knime.core.table.access;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.io.IOException;
 
 import org.junit.Test;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
 import org.knime.core.table.access.ListAccess.ListWriteAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StringAccess.StringWriteAccess;
+import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
+import org.knime.core.table.access.VarBinaryAccess.VarBinaryWriteAccess;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.ListDataSpec;
+import org.knime.core.table.schema.VarBinaryDataSpec;
+import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
+import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 
 /**
  * Contains unit tests for the {@link BufferedAccesses}.
@@ -62,7 +70,7 @@ public class BufferedAccessesTest {
         assertThat(readList.isMissing(0)).isFalse();
         readList.setIndex(0);
         assertThat(((StringReadAccess)readList.getAccess()).getStringValue()).isEqualTo("foo");
-        assertThat(readList.<StringReadAccess>getAccess().getStringValue()).isEqualTo("foo");
+        assertThat(readList.<StringReadAccess> getAccess().getStringValue()).isEqualTo("foo");
         assertThat(readList.isMissing(1)).isTrue();
         assertThat(readList.isMissing(2)).isTrue();
         writeList.setWriteIndex(2);
@@ -70,7 +78,7 @@ public class BufferedAccessesTest {
         writeAccess.setStringValue("bar");
         assertThat(readList.isMissing(1)).isTrue();
         assertThat(readList.isMissing(2)).isFalse();
-        assertThat(readList.<StringReadAccess>getAccess().getStringValue()).isEqualTo("bar");
+        assertThat(readList.<StringReadAccess> getAccess().getStringValue()).isEqualTo("bar");
 
         writeList.setMissing();
         assertThat(readList.isMissing()).isTrue();
@@ -87,7 +95,7 @@ public class BufferedAccessesTest {
         assertThat(readList.isMissing(0)).isTrue();
         assertThat(readList.isMissing(1)).isFalse();
         readList.setIndex(1);
-        assertThat(readList.<StringReadAccess>getAccess().getStringValue()).isEqualTo("baz");
+        assertThat(readList.<StringReadAccess> getAccess().getStringValue()).isEqualTo("baz");
 
         when(mockListReadAccess.isMissing()).thenReturn(true);
         writeList.setFrom(mockListReadAccess);
@@ -110,6 +118,34 @@ public class BufferedAccessesTest {
         assertThat(listToArray(read)).containsExactly("bli", "?", "blub");
     }
 
+    /**
+     * Test whether switching between ByteArray and Object access works in BufferedVarBinaryAcces, no matter whether a
+     * ByteArray or an Object was set.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testBufferedVarBinaryAccess() throws IOException {
+        var buffer = BufferedAccesses.createBufferedAccess(VarBinaryDataSpec.INSTANCE);
+        byte[] blob = "TestData".getBytes();
+        byte[] blob2 = "FooBar".getBytes();
+
+        ObjectSerializer<byte[]> serializer = (out, v) -> out.write(v);
+        ObjectDeserializer<byte[]> deserializer = (in) -> in.readBytes();
+
+        ((VarBinaryWriteAccess)buffer).setByteArray(blob);
+        assertArrayEquals(blob, ((VarBinaryReadAccess)buffer).getByteArray());
+        assertArrayEquals(blob, ((VarBinaryReadAccess)buffer).getObject(deserializer));
+
+        ((VarBinaryWriteAccess)buffer).setObject(blob2, serializer);
+        assertArrayEquals(blob2, ((VarBinaryReadAccess)buffer).getByteArray());
+        assertArrayEquals(blob2, ((VarBinaryReadAccess)buffer).getObject(deserializer));
+
+        ((VarBinaryWriteAccess)buffer).setByteArray(blob);
+        assertArrayEquals(blob, ((VarBinaryReadAccess)buffer).getByteArray());
+        assertArrayEquals(blob, ((VarBinaryReadAccess)buffer).getObject(deserializer));
+    }
+
     private static String[] listToArray(final ListReadAccess readAccess) {
         var values = new String[readAccess.size()];
         StringReadAccess elementAccess = readAccess.getAccess();
@@ -124,7 +160,7 @@ public class BufferedAccessesTest {
         return values;
     }
 
-    private static void writeToListAccess(final ListWriteAccess writeAccess, final String ...values) {
+    private static void writeToListAccess(final ListWriteAccess writeAccess, final String... values) {
         StringWriteAccess elementAccess = writeAccess.getWriteAccess();
         writeAccess.create(values.length);
         for (int i = 0; i < values.length; i++) {
