@@ -2,9 +2,12 @@ package org.knime.core.table.virtual.spec;
 
 import java.util.Arrays;
 import java.util.function.BooleanSupplier;
+import java.util.function.DoublePredicate;
+import java.util.function.IntPredicate;
 
+import org.knime.core.table.access.DoubleAccess;
+import org.knime.core.table.access.IntAccess;
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.access.WriteAccess;
 
 public final class RowFilterTransformSpec implements TableTransformSpec {
 
@@ -29,6 +32,32 @@ public final class RowFilterTransformSpec implements TableTransformSpec {
          * @return a row filter reading from {@code inputs}.
          */
         BooleanSupplier createRowFilter(final ReadAccess[] inputs);
+
+        static RowFilterFactory intPredicate(final IntPredicate predicate) {
+            return inputs -> {
+                verify(inputs, 1);
+                final IntAccess.IntReadAccess i0 = (IntAccess.IntReadAccess)inputs[0];
+                return () -> predicate.test(i0.getIntValue());
+            };
+        }
+
+        static RowFilterFactory doublePredicate(final DoublePredicate predicate) {
+            return inputs -> {
+                verify(inputs, 1);
+                final DoubleAccess.DoubleReadAccess i0 = (DoubleAccess.DoubleReadAccess)inputs[0];
+                return () -> predicate.test(i0.getDoubleValue());
+            };
+        }
+
+        private static void verify(final ReadAccess[] inputs, final int expectedNumInputs) {
+            if (inputs == null) {
+                throw new NullPointerException();
+            }
+            if (inputs.length != expectedNumInputs) {
+                throw new IllegalArgumentException(
+                        "expected " + expectedNumInputs + " inputs (instead of " + inputs.length + ")");
+            }
+        }
     }
 
     private final int[] inputColumnIndices;
