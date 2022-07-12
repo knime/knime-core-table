@@ -50,6 +50,7 @@ package org.knime.core.table.virtual;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 import org.knime.core.table.access.ReadAccess;
@@ -60,7 +61,7 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
-import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilter;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
 /**
  * Implementation of the operation specified by {@link RowFilterTransformSpec}.
@@ -73,12 +74,12 @@ class FilteredRowAccessible implements RowAccessible {
 
     private final int[] m_inputs;
 
-    private final RowFilterTransformSpec.RowFilter m_filter;
+    private final RowFilterFactory m_filterFactory;
 
-    public FilteredRowAccessible(final RowAccessible tableToFilter, final int[] inputColumns, final RowFilter filter) {
+    public FilteredRowAccessible(final RowAccessible tableToFilter, final int[] inputColumns, final RowFilterFactory filterFactory) {
         m_delegateTable = tableToFilter;
         m_inputs = inputColumns;
-        m_filter = filter;
+        m_filterFactory = filterFactory;
     }
 
     @Override
@@ -89,7 +90,7 @@ class FilteredRowAccessible implements RowAccessible {
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
     @Override
     public Cursor<ReadAccessRow> createCursor() {
-        return new FilteredCursor(m_delegateTable.createCursor(), m_inputs,  m_filter);
+        return new FilteredCursor(m_delegateTable.createCursor(), m_inputs,  m_filterFactory);
     }
 
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
@@ -107,7 +108,7 @@ class FilteredRowAccessible implements RowAccessible {
             ).distinct().mapToInt(Integer::intValue).toArray();
             delegateCursor = m_delegateTable.createCursor(Selection.all().retainColumns(cols));
         }
-        final FilteredCursor filteredCursor = new FilteredCursor(delegateCursor, m_inputs, m_filter);
+        final FilteredCursor filteredCursor = new FilteredCursor(delegateCursor, m_inputs, m_filterFactory);
 
         // For row selection, we can only handle this after filtering, so we have to start
         // from the beginning of the table and skip selection.fromRowIndex() valid rows.
@@ -128,16 +129,14 @@ class FilteredRowAccessible implements RowAccessible {
     private static final class FilteredCursor implements Cursor<ReadAccessRow> {
 
         private final Cursor<ReadAccessRow> m_delegateCursor;
-        private final RowFilterTransformSpec.RowFilter m_filter;
+        private final BooleanSupplier m_filter;
 
-        private final ReadAccess[] m_inputs;
-
-        public FilteredCursor(final Cursor<ReadAccessRow> delegateCursor, final int[] inputColumns, final RowFilterTransformSpec.RowFilter filter) {
+        public FilteredCursor(final Cursor<ReadAccessRow> delegateCursor, final int[] inputColumns, final RowFilterFactory filterFactory) {
             m_delegateCursor = delegateCursor;
-            m_filter = filter;
 
-            m_inputs = new ReadAccess[inputColumns.length];
-            Arrays.setAll(m_inputs, i -> m_delegateCursor.access().getAccess(inputColumns[i]));
+            final ReadAccess[] inputs = new ReadAccess[inputColumns.length];
+            Arrays.setAll(inputs, i -> m_delegateCursor.access().getAccess(inputColumns[i]));
+            m_filter = filterFactory.createRowFilter(inputs);
         }
 
         @Override
@@ -148,7 +147,7 @@ class FilteredRowAccessible implements RowAccessible {
         @Override
         public boolean forward() {
             while (m_delegateCursor.forward()) {
-                if (m_filter.test(m_inputs)) {
+                if (m_filter.getAsBoolean()) {
                     return true;
                 }
             }

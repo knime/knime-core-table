@@ -1,26 +1,42 @@
 package org.knime.core.table.virtual.spec;
 
 import java.util.Arrays;
+import java.util.function.BooleanSupplier;
 
 import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.access.WriteAccess;
 
 public final class RowFilterTransformSpec implements TableTransformSpec {
 
-    public interface RowFilter {
+    /**
+     * A {@code RowFilterFactory} creates {@code BooleanSupplier} row filters.
+     * <p>
+     * A row filter is created with pre-defined input accesses. Whenever the
+     * filter is {@link BooleanSupplier#getAsBoolean run}, it reads the current
+     * values from the inputs and returns {@code true} if the row passes the
+     * filter.
+     */
+    public interface RowFilterFactory {
 
         /**
-         * @return {@code true} if this row should be included in the filtered table, or
-         *         {@code false} if it should be filtered out.
+         * Create a row filter with the specified {@code inputs}. Whenever the
+         * returned filter is {@link BooleanSupplier#getAsBoolean run}, it reads
+         * the current values from the inputs. The filter returns {@code true}
+         * if the current row should be included in the filtered table, or
+         * {@code false} if it should be filtered out.
+         *
+         * @param inputs  accesses to read input values from
+         * @return a row filter reading from {@code inputs}.
          */
-        boolean test(final ReadAccess[] inputs);
+        BooleanSupplier createRowFilter(final ReadAccess[] inputs);
     }
 
     private final int[] inputColumnIndices;
-    private final RowFilter filter;
+    private final RowFilterFactory filterFactory;
 
-    public RowFilterTransformSpec(final int[] columnIndices, final RowFilter filter) {
+    public RowFilterTransformSpec(final int[] columnIndices, final RowFilterFactory filterFactory) {
         this.inputColumnIndices = columnIndices;
-        this.filter = filter;
+        this.filterFactory = filterFactory;
     }
 
     /**
@@ -30,8 +46,8 @@ public final class RowFilterTransformSpec implements TableTransformSpec {
         return inputColumnIndices.clone();
     }
 
-    public RowFilter getFilter() {
-        return filter;
+    public RowFilterFactory getFilterFactory() {
+        return filterFactory;
     }
 
     @Override
@@ -47,15 +63,16 @@ public final class RowFilterTransformSpec implements TableTransformSpec {
             return false;
 
         final RowFilterTransformSpec that = (RowFilterTransformSpec)o;
-        if (!Arrays.equals(inputColumnIndices, that.inputColumnIndices))
+        if (!Arrays.equals(inputColumnIndices, that.inputColumnIndices)) {
             return false;
-        return filter.equals(that.filter);
+        }
+        return filterFactory.equals(that.filterFactory);
     }
 
     @Override
     public int hashCode() {
         int result = Arrays.hashCode(inputColumnIndices);
-        result = 31 * result + filter.hashCode();
+        result = 31 * result + filterFactory.hashCode();
         return result;
     }
 }

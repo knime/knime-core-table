@@ -3,6 +3,7 @@ package org.knime.core.table.virtual.graph.cap;
 import java.util.Arrays;
 
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
 /**
  * Represents a row-filter operation in the CAP.
@@ -15,14 +16,14 @@ public class CapNodeRowFilter extends CapNode {
 
     private final CapAccessId[] inputs;
     private final int predecessor;
-    private final RowFilterTransformSpec.RowFilter filter;
+    private final RowFilterFactory filterFactory;
 
     public CapNodeRowFilter(final int index, final CapAccessId[] inputs, final int predecessor,
-            RowFilterTransformSpec.RowFilter filter) {
+            RowFilterFactory filterFactory) {
         super(index, CapNodeType.ROWFILTER);
         this.inputs = inputs;
         this.predecessor = predecessor;
-        this.filter = filter;
+        this.filterFactory = filterFactory;
     }
 
     @Override
@@ -30,7 +31,7 @@ public class CapNodeRowFilter extends CapNode {
         final StringBuilder sb = new StringBuilder("ROWFILTER(");
         sb.append("inputs=").append(Arrays.toString(inputs));
         sb.append(", predecessor=").append(predecessor);
-        sb.append(", filter=").append(filter);
+        sb.append(", filterFactory=").append(filterFactory);
         sb.append(')');
         return sb.toString();
     }
@@ -55,9 +56,9 @@ public class CapNodeRowFilter extends CapNode {
     }
 
     /**
-     * @return the filter predicate
+     * @return the filter factory
      */
-    public RowFilterTransformSpec.RowFilter filter() {
-        return filter;
+    public RowFilterFactory filterFactory() {
+        return filterFactory;
     }
 }

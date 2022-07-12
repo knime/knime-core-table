@@ -84,7 +84,7 @@ public class CapBuilder {
                     final Branch branch = branches.getPredecessorBranch(node);
                     final CapAccessId[] inputs = capAccessIdsFor(node.getInputs());
                     final CapNodeRowFilter capNode =
-                            new CapNodeRowFilter(index, inputs, headIndex(branch), spec.getFilter());
+                            new CapNodeRowFilter(index, inputs, headIndex(branch), spec.getFilterFactory());
                     append(node, capNode);
                     branch.append(node);
                     break;

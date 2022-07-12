@@ -33,7 +33,7 @@ import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
-import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilter;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
 
 public class VirtualTableExamples {
@@ -541,9 +541,9 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtSimpleRowFilter(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final RowFilter isNonNegative = (ReadAccess[] inputs) -> {
+        final RowFilterFactory isNonNegative = (ReadAccess[] inputs) -> {
             final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
-            return i0.getDoubleValue() >= 0;
+            return () -> i0.getDoubleValue() >= 0;
         };
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable filtered = table.filterRows(new int[]{2}, isNonNegative);
@@ -583,13 +583,13 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtConsecutiveRowFilters(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final RowFilter isNonNegative = (ReadAccess[] inputs) -> {
+        final RowFilterFactory isNonNegative = (ReadAccess[] inputs) -> {
             final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
-            return i0.getDoubleValue() >= 0;
+            return () -> i0.getDoubleValue() >= 0;
         };
-        final RowFilter isEven = (ReadAccess[] inputs) -> {
+        final RowFilterFactory isEven = (ReadAccess[] inputs) -> {
             final IntReadAccess i0 = (IntReadAccess)inputs[0];
-            return i0.getIntValue() % 2 == 0;
+            return () -> i0.getIntValue() % 2 == 0;
         };
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable filtered = table.filterRows(new int[]{2}, isNonNegative).filterRows(new int[]{0}, isEven);
@@ -630,13 +630,13 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtMapsAndFilters(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final RowFilter isEven = (ReadAccess[] inputs) -> {
+        final RowFilterFactory isEven = (ReadAccess[] inputs) -> {
             final IntReadAccess i0 = (IntReadAccess)inputs[0];
-            return i0.getIntValue() % 2 == 0;
+            return () -> i0.getIntValue() % 2 == 0;
         };
-        final RowFilter isGreaterThanFive = (ReadAccess[] inputs) -> {
+        final RowFilterFactory isGreaterThanFive = (ReadAccess[] inputs) -> {
             final DoubleReadAccess i0 = (DoubleReadAccess)inputs[0];
-            return i0.getDoubleValue() > 5;
+            return () -> i0.getDoubleValue() > 5;
         };
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols = table.map(new int[]{1, 2}, MapperFactory.doublesToDouble((a, b) -> a + b));

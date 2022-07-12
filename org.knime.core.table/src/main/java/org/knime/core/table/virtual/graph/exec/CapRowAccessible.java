@@ -94,7 +94,7 @@ class CapRowAccessible implements RowAccessible {
                     case ROWFILTER: {
                         final CapNodeRowFilter rowfilter = (CapNodeRowFilter)node;
                         final AccessImp[] inputs = accessImps(rowfilter.inputs());
-                        imps.add(new NodeImpRowFilter(inputs, imps.get(rowfilter.predecessor()), rowfilter.filter()));
+                        imps.add(new NodeImpRowFilter(inputs, imps.get(rowfilter.predecessor()), rowfilter.filterFactory()));
                         break;
                     }
                     case MAP: {

@@ -60,7 +60,7 @@ import org.knime.core.table.access.IntAccess;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.RowAccessibles;
-import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilter;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
 /**
  * @author Tobias Pietzsch
@@ -79,7 +79,10 @@ public final class RowFilterTransformTest {
         };
 
         final int[] columnIndices = {1};
-        final RowFilter filter =  inputs -> ((IntAccess.IntReadAccess)inputs[0]).getIntValue() >= 0;
+        final RowFilterFactory filterFactory = inputs -> {
+            final IntAccess.IntReadAccess i0 = (IntAccess.IntReadAccess)inputs[0];
+            return () -> i0.getIntValue() >= 0;
+        };
 
         final ColumnarSchema expectedSchema = schema;
         final Object[][] expectedValues = new Object[][] { //
@@ -91,7 +94,7 @@ public final class RowFilterTransformTest {
 
         try (final RowAccessible originalTable = createRowAccessibleFromRowWiseValues(schema, values)) {
             @SuppressWarnings("resource")
-            final RowAccessible result = RowAccessibles.filterRows(originalTable, columnIndices, filter);
+            final RowAccessible result = RowAccessibles.filterRows(originalTable, columnIndices, filterFactory);
             RowAccessiblesTestUtils.assertRowAccessibleEquals(result, expectedSchema, expectedValues);
         }
     }

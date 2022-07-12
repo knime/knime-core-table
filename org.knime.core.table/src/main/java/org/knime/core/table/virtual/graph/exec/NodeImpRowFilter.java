@@ -1,9 +1,11 @@
 package org.knime.core.table.virtual.graph.exec;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
 class NodeImpRowFilter implements NodeImp {
     private final AccessImp[] inputs;
@@ -12,13 +14,16 @@ class NodeImpRowFilter implements NodeImp {
 
     private final NodeImp predecessor;
 
-    private final RowFilterTransformSpec.RowFilter filter;
+    private final RowFilterFactory filterFactory;
+
+    private BooleanSupplier filter;
+
 
     public NodeImpRowFilter(final AccessImp[] inputs, final NodeImp predecessor,
-            final RowFilterTransformSpec.RowFilter filter) {
+            final RowFilterFactory filterFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;
-        this.filter = filter;
+        this.filterFactory = filterFactory;
         filterInputs = new ReadAccess[inputs.length];
     }
 
@@ -33,6 +38,7 @@ class NodeImpRowFilter implements NodeImp {
             AccessImp input = inputs[i];
             filterInputs[i] = input.node.getOutput(input.i);
         }
+        filter = filterFactory.createRowFilter(filterInputs);
     }
 
     @Override
@@ -44,7 +50,7 @@ class NodeImpRowFilter implements NodeImp {
     @Override
     public boolean forward() {
         while (predecessor.forward()) {
-            if (filter.test(filterInputs))
+            if (filter.getAsBoolean())
                 return true;
         }
         return false;
