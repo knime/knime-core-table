@@ -34,7 +34,7 @@ public final class MapTransformSpec implements TableTransformSpec {
 
         /**
          * Create a mapper with the specified {@code inputs} and {@code outputs}. Whenever
-         * the returned is {@code run()}, it reads the current values from the input
+         * the returned mapper is {@code run()}, it reads the current values from the input
          * accesses, computes the map function, and sets the result values to the output
          * accesses.
          *
