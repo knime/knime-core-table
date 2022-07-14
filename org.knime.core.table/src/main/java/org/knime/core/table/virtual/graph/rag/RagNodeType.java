@@ -23,7 +23,8 @@ public enum RagNodeType {
     COLPERMUTE, //
     MAP, //
     ROWFILTER, //
-    CONSUMER,
+    CONSUMER, //
+    WRAPPER, //
     IDENTITY;
 
     public static RagNodeType forSpec(final TableTransformSpec spec) {
@@ -49,6 +50,8 @@ public enum RagNodeType {
             return RagNodeType.ROWFILTER;
         else if (spec instanceof ConsumerTransformSpec)
             return RagNodeType.CONSUMER;
+        else if (spec instanceof WrapperTransformSpec)
+            return RagNodeType.WRAPPER;
         else if (spec instanceof IdentityTransformSpec)
             return RagNodeType.IDENTITY;
         else

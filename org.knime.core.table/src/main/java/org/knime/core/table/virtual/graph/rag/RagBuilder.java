@@ -12,6 +12,7 @@ import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.ROWFILTER;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.SLICE;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.SOURCE;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.WRAPPER;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -111,6 +112,7 @@ public class RagBuilder {
         specs.traceExec();
         specs.optimize();
         specs.createExecutionOrderingEdges();
+        specs.removeWrapperNodes();
 
         final List<RagNode> order = specs.getFlattenedExecutionOrder(policy);
 
@@ -140,7 +142,7 @@ public class RagBuilder {
     }
 
     private static DataSpec getSpec(final AccessId accessId) {
-        RagNode producer = accessId.getProducer();
+        final RagNode producer = accessId.getProducer();
         switch (producer.type()) {
             case SOURCE: {
                 final SourceTransformSpec spec = producer.getTransformSpec();
@@ -346,7 +348,7 @@ public class RagBuilder {
      * depend on each other for executing forward steps in order to determine that
      * everybody is on the same row (without looking at produced/consumed data).
      */
-    private static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER);
+    private static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER);
 
     /**
      * Spawning nodes create new sub-trees of their SPEC predecessor nodes. This
@@ -404,7 +406,14 @@ public class RagBuilder {
             for (final TableTransform t : transform.getPrecedingTransforms()) {
                 Map<TableTransform, RagNode> lookup = spawningNodeTypes.contains(node.type()) ? new HashMap<>() : nodeLookup;
                 final RagNode input = createNodes(t, lookup);
-                graph.addEdge(input, node, SPEC);
+                if (node.type() == CONCATENATE) {
+                    final var wrapTransform = new TableTransform(Collections.emptyList(), new WrapperTransformSpec());
+                    final RagNode wrap = graph.addNode(wrapTransform);
+                    graph.addEdge(input, wrap, SPEC);
+                    graph.addEdge(wrap, node, SPEC);
+                } else {
+                    graph.addEdge(input, node, SPEC);
+                }
             }
         }
         return node;
@@ -425,6 +434,7 @@ public class RagBuilder {
                 case SLICE:
                 case ROWFILTER:
                 case IDENTITY:
+                case WRAPPER:
                     numColumns = node.predecessor(SPEC).numColumns();
                     break;
                 case CONCATENATE:
@@ -530,6 +540,7 @@ public class RagBuilder {
                 accessIds[0] = traceAccess(selection[i], node.predecessor(SPEC));
                 break;
             }
+            case WRAPPER:
             case CONSUMER: {
                 accessIds[0] = traceAccess(i, node.predecessor(SPEC));
                 break;
@@ -579,6 +590,7 @@ public class RagBuilder {
                 return traceAccess(i, node.predecessor(SPEC));
             case APPEND:
             case CONCATENATE:
+            case WRAPPER:
                 traceAndLinkAccess(i, node);
                 return node.getOrCreateOutput(i);
             case APPENDMISSING:
@@ -642,6 +654,7 @@ public class RagBuilder {
             case CONSUMER:
             case APPEND:
             case ROWFILTER:
+            case WRAPPER:
                 traceExecConsumer(node, node, false);
 //                traceExecConsumer(node, node);
                 break;
@@ -1038,6 +1051,38 @@ public class RagBuilder {
         final List<RagNode> vertices = new ArrayList<>(graph.nodes());
         RagGraphUtils.addEdges(graph, vertices, RagGraphUtils.transitiveReduction(
                 RagGraphUtils.adjacency(vertices, DATA, EXEC)), ORDER);
+    }
+
+
+
+    // --------------------------------------------------------------------
+    // removeWrapperNodes()
+
+    /**
+     * Remove the WRAPPER nodes that represent CONCATENATE inputs. Short-circuit
+     * edges going into WRAPPER to the CONCATENATE. (This will add the incoming
+     * edges to CONCATENATE in the correct order.)
+     */
+    void removeWrapperNodes() {
+        final ArrayList<RagNode> concatenates = new ArrayList<>(graph.nodes(CONCATENATE));
+        for (RagNode concatenate : concatenates) {
+            final List<RagNode> wrappers = concatenate.predecessors(ORDER);
+            for (int i = 0; i < wrappers.size(); i++) {
+                final AccessIds concatenateInputs = concatenate.getInputs(i);
+                final RagNode wrapper = wrappers.get(i);
+                final AccessIds wrapperInputs = wrapper.getInputs();
+                for (int slot = 0; slot < wrapperInputs.size(); slot++) {
+                    AccessId id = wrapperInputs.getAtSlot(slot);
+                    id.removeConsumer(wrapper);
+                    id.addConsumer(concatenate);
+                    concatenateInputs.putAtColumnIndex(id, wrapperInputs.columnAtSlot(slot));
+                }
+                relinkPredecessorsToNewTarget(wrapper, concatenate, EXEC);
+                relinkPredecessorsToNewTarget(wrapper, concatenate, DATA);
+                relinkPredecessorsToNewTarget(wrapper, concatenate, ORDER);
+                graph.remove(wrapper);
+            }
+        }
     }
 
 

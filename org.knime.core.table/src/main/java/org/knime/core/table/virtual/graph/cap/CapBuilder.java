@@ -213,6 +213,7 @@ public class CapBuilder {
                 case COLFILTER:
                 case COLPERMUTE:
                 case APPENDMISSING:
+                case WRAPPER:
                     throw new IllegalArgumentException(
                             "Unexpected RagNode type " + node.type() + ". This node should not be present in the processed RAG.");
                 default:

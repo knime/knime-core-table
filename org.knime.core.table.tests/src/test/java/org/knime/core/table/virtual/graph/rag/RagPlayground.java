@@ -40,6 +40,9 @@ public class RagPlayground {
         rag.createExecutionOrderingEdges();
         mermaid.append("after createExecutionOrderingEdges()", "adds ORDER edges", rag.graph);
 
+        rag.removeWrapperNodes();
+        mermaid.append("after removeWrapperNodes()", "short-circuit wrappers before concatenate", rag.graph);
+
         System.out.println("\n\n=========================\n");
         System.out.println("graph = " + rag.graph);
 
@@ -84,6 +87,9 @@ public class RagPlayground {
 
         rag.createExecutionOrderingEdges();
         mermaid.append("after createExecutionOrderingEdges()", "adds ORDER edges", rag.graph);
+
+        rag.removeWrapperNodes();
+        mermaid.append("after removeWrapperNodes()", "short-circuit wrappers before concatenate", rag.graph);
 
         final List<RagNode> order = rag.getFlattenedExecutionOrder(RagBuilder.DEFAULT_POLICY);
         for (int i = 0; i < order.size() - 1; i++)
