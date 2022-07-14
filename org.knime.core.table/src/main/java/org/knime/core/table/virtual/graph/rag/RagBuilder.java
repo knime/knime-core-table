@@ -14,7 +14,6 @@ import static org.knime.core.table.virtual.graph.rag.RagNodeType.SLICE;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.SOURCE;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -665,7 +664,7 @@ public class RagBuilder {
      *                {@code current} node is an executable node.
      */
     // TODO: rename??? Why is it called "Consumer"???
-    private void traceExecConsumer(final RagNode dest, final RagNode current) {
+    private void traceExecConsumer(final RagNode dest, final RagNode current) { // TODO REMOVE!
 
 //      From an executable node (except RowFilter) dest: follow spec edges recursively.
 //        If an executable node is hit:
@@ -755,6 +754,33 @@ public class RagBuilder {
 
 
     // --------------------------------------------------------------------
+    // helpers
+
+    /**
+     * For each successor (of the specified {@code edgeType}) of {@code
+     * oldNode}: Replace the edge linking {@code oldNode} to successor with an
+     * edge linking {@code newNode} to successor.
+     */
+    private void relinkSuccessorsToNewSource(final RagNode oldNode, final RagNode newNode, final RagEdgeType edgeType)
+    {
+        final List<RagEdge> edges = new ArrayList<>(oldNode.outgoingEdges(edgeType));
+        edges.forEach(edge -> graph.replaceEdgeSource(edge, newNode));
+    }
+
+    /**
+     * For each predecessor (of the specified {@code edgeType}) of {@code
+     * oldNode}: Replace the edge linking predecessor to {@code oldNode} with an
+     * edge linking predecessor to {@code newNode}.
+     */
+    private void relinkPredecessorsToNewTarget(final RagNode oldNode, final RagNode newNode, final RagEdgeType edgeType)
+    {
+        final List<RagEdge> edges = new ArrayList<>(oldNode.incomingEdges(edgeType));
+        edges.forEach(edge -> graph.replaceEdgeTarget(edge, newNode));
+    }
+
+
+
+    // --------------------------------------------------------------------
     // moveSliceBeforeAppend()
 
     boolean moveSlicesBeforeAppends() {
@@ -773,9 +799,7 @@ public class RagBuilder {
 
             // remove "slice":
             // short-circuit "append" to successors of "slice"
-            for (RagNode node : slice.successors(EXEC)) {
-                graph.getOrAddEdge(append, node, EXEC);
-            }
+            relinkSuccessorsToNewSource(slice, append, EXEC);
             // remove "slice" node and associated edges
             graph.remove(slice);
 
@@ -852,14 +876,11 @@ public class RagBuilder {
             }
         }
         // re-link DATA edges of source to merged
-        for (RagEdge edge : source.outgoingEdges(DATA)) {
-            graph.addEdge(merged, edge.getTarget(), DATA);
-        }
+        // (link merged to all DATA successors of source)
+        relinkSuccessorsToNewSource(source, merged, DATA);
 
         // link merged to all EXEC successors of slice
-        for (RagNode node : slice.successors(EXEC)) {
-            graph.getOrAddEdge(merged, node, EXEC);
-        }
+        relinkSuccessorsToNewSource(slice, merged, EXEC);
 
         // remove source and slice (and associated edges)
         graph.remove(source);
@@ -883,14 +904,10 @@ public class RagBuilder {
         final RagNode merged = graph.addNode(mergedTableTransform);
 
         // link all predecessors of predecessor to merged
-        for (RagNode node : predecessor.predecessors(EXEC)) {
-            graph.getOrAddEdge(node, merged, EXEC);
-        }
+        relinkPredecessorsToNewTarget(predecessor, merged, EXEC);
 
-        // link merged to all successors of slice
-        for (RagNode node : slice.successors(EXEC)) {
-            graph.getOrAddEdge(merged, node, EXEC);
-        }
+        // link merged to all EXEC successors of slice
+        relinkSuccessorsToNewSource(slice, merged, EXEC);
 
         // remove all EXEC edges from slice and predecessor
         final List<RagEdge> edgesToRemove = new ArrayList<>(slice.incomingEdges(EXEC));
