@@ -59,6 +59,48 @@ public class RagGraph {
     }
 
     /**
+     * Remove {@code edge} and replace it with a new edge from {@code source} to
+     * {@code edge}'s target. The new edge will be of the same {@code EdgeType}.
+     * It will be appended to the {@code source}'s outgoing edge list, and the
+     * target's incoming edge list.
+     *
+     * @param edge the edge to replace
+     * @param source the source for the new edge (target remains the same)
+     * @return the directed edge from {@code source} to {@code edge}'s target.
+     */
+    public RagEdge replaceEdgeSource(final RagEdge edge, final RagNode source) {
+        final RagNode target = edge.getTarget();
+        remove(edge);
+
+        final RagEdge newEdge = new RagEdge(source, target, edge.type());
+        source.outgoing.add(newEdge);
+        target.incoming.add(newEdge);
+        edges.add(newEdge);
+        return newEdge;
+    }
+
+    /**
+     * Remove {@code edge} and replace it with a new edge from {@code edge}'s
+     * source to {@code target}. The new edge will be of the same {@code
+     * EdgeType}. It will be appended to the source's outgoing edge list, and
+     * the {@code target}'s incoming edge list.
+     *
+     * @param edge the edge to replace
+     * @param target the target for the new edge (source remains the same)
+     * @return the directed edge from {@code edge}'s source to {@code target}.
+     */
+    public RagEdge replaceEdgeTarget(final RagEdge edge, final RagNode target) {
+        final RagNode source = edge.getSource();
+        remove(edge);
+
+        final RagEdge newEdge = new RagEdge(source, target, edge.type());
+        source.outgoing.add(newEdge);
+        target.incoming.add(newEdge);
+        edges.add(newEdge);
+        return newEdge;
+    }
+
+    /**
      * Returns the directed edge (of the given {@code edgeType}) from {@code source}
      * node to {@code target} node if it exists, or {@code null} otherwise.
      *
