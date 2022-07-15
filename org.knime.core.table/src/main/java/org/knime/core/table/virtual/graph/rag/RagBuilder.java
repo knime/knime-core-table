@@ -285,6 +285,7 @@ public class RagBuilder {
                 return s < 0 ? s : Math.max(0, Math.min(s, to) - from);
             }
             case CONSUMER:
+            case WRAPPER:
             case APPEND: {
                 // If any predecessor doesn't know its size, the size of this node is also unknown.
                 // Otherwise, the size of this node is max of its predecessors.
@@ -310,6 +311,7 @@ public class RagBuilder {
             case COLFILTER:
             case COLPERMUTE:
             case MAP:
+            case IDENTITY:
             default:
                 throw new IllegalArgumentException();
         }
@@ -760,6 +762,7 @@ public class RagBuilder {
             changed |= eliminateAppends();
             changed |= mergeSlices();
             changed |= moveSlicesBeforeAppends();
+            changed |= moveSlicesBeforeConcatenates();
             // TODO other optimizations
         }
     }
@@ -792,6 +795,144 @@ public class RagBuilder {
     }
 
 
+
+    // --------------------------------------------------------------------
+    // moveSliceBeforeConcatenate()
+
+    boolean moveSlicesBeforeConcatenates() {
+        for (final RagNode node : graph.nodes()) {
+            if (node.type() == SLICE && tryMoveSliceBeforeConcatenate(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryMoveSliceBeforeConcatenate(final RagNode slice) {
+        final List<RagNode> predecessors = slice.predecessors(EXEC);
+        if (predecessors.size() == 1 && predecessors.get(0).type() == CONCATENATE) {
+            final RagNode concatenate = predecessors.get(0);
+
+            final SliceTransformSpec sliceSpec = slice.getTransformSpec();
+            final RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
+            final long s0 = sliceRange.fromIndex();
+            final long s1 = sliceRange.toIndex();
+
+            // determine predecessors
+            final List<RagNode> concatenated = concatenate.predecessors(EXEC);
+            long r0 = 0;
+
+            // Going through the predecessors we record what needs to be done:
+            //
+            // 1.) List of predecessors to keep, and respective row ranges.
+            final class SlicedNode {
+                final RagNode node;
+                final RowRangeSelection rows;
+
+                SlicedNode( final RagNode node, final RowRangeSelection rows ) {
+                    this.node = node;
+                    this.rows = rows;
+                }
+            }
+            final List<SlicedNode> slicedConcatenated = new ArrayList<>();
+
+            // 2.) List of predecessors (indices) to remove.
+            final List<Integer> removeConcatenated = new ArrayList<>();
+
+            for (int i = 0; i < concatenated.size(); i++) {
+                final RagNode node = concatenated.get(i);
+                final long r = numRows(node);
+                if (r < 0) {
+                    // Cannot move the SLICE because slicing into a predecessor
+                    // with unknown number of rows.
+                    if ( !removeConcatenated.isEmpty() ) {
+                        // Although the SLICE can't be moved, we can still
+                        // remove input tables that fall before the start of the
+                        // sliced range,
+                        pruneConcatenatePredecessors(concatenate, concatenated, removeConcatenated);
+                        return true;
+                    }
+                    return false;
+                }
+                final long r1 = r0 + r;
+                if (r1 <= s0) {
+                    // This predecessor can be removed
+                    removeConcatenated.add(i);
+                } else if (r0 >= s1) {
+                    // This and all following predecessors, can be removed
+                    for (int j = i; j < concatenated.size(); j++) {
+                        removeConcatenated.add(j);
+                    }
+                    break;
+                } else {
+                    final long t0 = Math.max(0, s0 - r0);
+                    final long t1 = Math.min(r, s1 - r0);
+                    if (t0 == 0 && t1 == r) {
+                        // keep this predecessor (no slicing)
+                        slicedConcatenated.add(new SlicedNode(node, RowRangeSelection.all()));
+                    } else {
+                        // keep slice(t0, t1) of this predecessor
+                        slicedConcatenated.add(new SlicedNode(node, RowRangeSelection.all().retain(t0, t1)));
+                    }
+                }
+                r0 = r1;
+            }
+
+            // use slicedConcatenated to rebuild the inputs to CONCATENATE
+            if (slicedConcatenated.isEmpty()) {
+                throw new IllegalStateException();
+            }
+
+            // TODO if slicedConcatenated.size() == 1: no CONCATENATE necessary
+            //      ==> make a separate rule: eliminateSingletonConcatenate()
+
+            pruneConcatenatePredecessors(concatenate, concatenated, removeConcatenated);
+
+            for (SlicedNode slicedNode : slicedConcatenated) {
+                final RagNode wrapper = slicedNode.node;
+                final RowRangeSelection rows = slicedNode.rows;
+
+                if (!rows.allSelected()) {
+                    // create new SLICE node
+                    final TableTransform presliceTransform =
+                            new TableTransform(Collections.emptyList(), new SliceTransformSpec(rows));
+                    final RagNode preslice = graph.addNode(presliceTransform);
+
+                    // insert preslice between wrapper and its EXEC predecessors
+                    relinkPredecessorsToNewTarget(wrapper, preslice, EXEC);
+                    graph.addEdge(preslice, wrapper, EXEC);
+                }
+                // Note, that if rows.allSelected() == true then we don't have
+                // to do anything. wrapper just stays connected to CONCATENATE.
+            }
+
+            // short-circuit SLICE successors to CONCATENATE
+            relinkSuccessorsToNewSource(slice, concatenate, EXEC);
+
+            graph.remove(slice);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @param concatenate the CONCATENATE node
+     * @param predecessors EXEC predecessors of {@code concatenate}
+     * @param predecessorsToRemove indices of predecessors to remove
+     */
+    private void pruneConcatenatePredecessors(final RagNode concatenate, final List<RagNode> predecessors, final List<Integer> predecessorsToRemove) {
+        final AccessIds[] inputss = new AccessIds[predecessors.size() - predecessorsToRemove.size()];
+        for (int i = 0, j = 0, o = 0; i < predecessors.size(); ++i) {
+            if (j < predecessorsToRemove.size() && predecessorsToRemove.get(j) == i) {
+                graph.remove(predecessors.get(i));
+                ++j;
+            } else {
+                inputss[o] = concatenate.getInputs(i);
+                ++o;
+            }
+        }
+        concatenate.setInputssArray(inputss);
+    }
 
     // --------------------------------------------------------------------
     // moveSliceBeforeAppend()

@@ -38,7 +38,7 @@ public final class RagNode implements Typed<RagNodeType> {
      * An access is only "required" if its value is used. That is, column permutation
      * nodes, etc., neither require or produce any accesses.
      */
-    private final AccessIds[] inputs;
+    private AccessIds[] inputs;
 
     RagNode(final TableTransform transform) {
         this.transform = transform;
@@ -230,6 +230,10 @@ public final class RagNode implements Typed<RagNodeType> {
      */
     public AccessIds[] getInputssArray() {
         return inputs;
+    }
+
+    void setInputssArray( final AccessIds[] inputs ) {
+        this.inputs = inputs;
     }
 
     /**
