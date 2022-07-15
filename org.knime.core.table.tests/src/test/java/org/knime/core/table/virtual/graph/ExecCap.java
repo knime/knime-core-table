@@ -25,48 +25,59 @@ public class ExecCap {
 
     public static void main(final String[] args) {
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
-//        final VirtualTable table = VirtualTableExamples.vtMinimal(sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataMinimal();
+//        final VirtualTable table = VirtualTableExamples.vtMinimal(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataAppend();
 //        final VirtualTable table = VirtualTableExamples.vtAppend(sourceIdentifiers, accessibles);
 
-        final UUID[] sourceIdentifiers = createSourceIds(2);
-        final RowAccessible[] accessibles = toLookahead(VirtualTableExamples.dataAppendAndSlice());
-        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice(sourceIdentifiers, accessibles);
+//        final UUID[] sourceIdentifiers = createSourceIds(2);
+//        final RowAccessible[] accessibles = toLookahead(VirtualTableExamples.dataAppendAndSlice());
+//        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
-//        final VirtualTable table = VirtualTableExamples.vtForkJoin(sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataForkJoin();
+//        final VirtualTable table = VirtualTableExamples.vtForkJoin(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final RowAccessible[] accessibles = toLookahead(VirtualTableExamples.dataForkJoinLookALike());
 //        final VirtualTable table = VirtualTableExamples.vtForkJoinLookALike(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
-//        final VirtualTable table = VirtualTableExamples.vtConcatenate(sourceIdentifiers, sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataConcatenate();
+//        final VirtualTable table = VirtualTableExamples.vtConcatenate(sourceIdentifiers, accessibles);
+
+//        final UUID[] sourceIdentifiers = createSourceIds(3);
+//        final RowAccessible[] accessibles = VirtualTableExamples.dataConcatenateAndSlice();
+//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSlice(sourceIdentifiers, accessibles);
+//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceSingleTable(sourceIdentifiers, accessibles);
+//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceFullSingleTable(sourceIdentifiers, accessibles);
+//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceFullTable(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
-//        final VirtualTable table = VirtualTableExamples.vtAppendMissing(sourceIdentifiers, sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataAppendMissing();
+//        final VirtualTable table = VirtualTableExamples.vtAppendMissing(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
-//        final VirtualTable table = VirtualTableExamples.vtSimpleMap(sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataSimpleMap();
+//        final VirtualTable table = VirtualTableExamples.vtSimpleMap(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
-//        final VirtualTable table = VirtualTableExamples.vtSimpleRowFilter(sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataSimpleRowFilter();
+//        final VirtualTable table = VirtualTableExamples.vtSimpleRowFilter(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
-//        final VirtualTable table = VirtualTableExamples.vtConsecutiveRowFilters(sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataConsecutiveRowFilters();
+//        final VirtualTable table = VirtualTableExamples.vtConsecutiveRowFilters(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
-//        final VirtualTable table = VirtualTableExamples.vtMapsAndFilters(sourceIdentifiers);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataMapsAndFilters();
+//        final VirtualTable table = VirtualTableExamples.vtMapsAndFilters(sourceIdentifiers, accessibles);
+
+        final UUID[] sourceIdentifiers = createSourceIds(2);
+        final RowAccessible[] accessibles = VirtualTableExamples.dataFiltersMapAndConcatenate();
+        final VirtualTable table = VirtualTableExamples.vtFiltersMapAndConcatenate(sourceIdentifiers, accessibles);
 
         // ----------------------------------------------
         // create accessible

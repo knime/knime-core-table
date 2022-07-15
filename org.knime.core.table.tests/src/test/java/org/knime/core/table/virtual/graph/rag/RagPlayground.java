@@ -14,15 +14,20 @@ public class RagPlayground {
 //        final VirtualTable table = VirtualTableExamples.vtMinimal();
 //        final VirtualTable table = VirtualTableExamples.vtLinear();
 //        final VirtualTable table = VirtualTableExamples.vtAppend();
-        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice();
+//        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice();
 //        final VirtualTable table = VirtualTableExamples.vtForkJoin();
 //        final VirtualTable table = VirtualTableExamples.vtForkJoinLookALike();
 //        final VirtualTable table = VirtualTableExamples.vtConcatenate();
+//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSlice();
+//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceSingleTable();
+//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceFullSingleTable();
+//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceFullTable();
 //        final VirtualTable table = VirtualTableExamples.vtAppendMissing();
 //        final VirtualTable table = VirtualTableExamples.vtSimpleMap();
 //        final VirtualTable table = VirtualTableExamples.vtSimpleRowFilter();
 //        final VirtualTable table = VirtualTableExamples.vtConsecutiveRowFilters();
 //        final VirtualTable table = VirtualTableExamples.vtMapsAndFilters();
+        final VirtualTable table = VirtualTableExamples.vtFiltersMapAndConcatenate();
 
         var mermaid = new Mermaid();
         var rag = new RagBuilder();

@@ -88,6 +88,34 @@ public class ExecCapAll {
         }
 
         {
+            final UUID[] sourceIdentifiers = createSourceIds(3);
+            final RowAccessible[] accessibles = VirtualTableExamples.dataConcatenateAndSlice();
+            final VirtualTable table = VirtualTableExamples.vtConcatenateAndSlice(sourceIdentifiers, accessibles);
+            printResults("vtConcatenateAndSlice", sourceIdentifiers, table, accessibles);
+        }
+
+        {
+            final UUID[] sourceIdentifiers = createSourceIds(3);
+            final RowAccessible[] accessibles = VirtualTableExamples.dataConcatenateAndSlice();
+            final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceSingleTable(sourceIdentifiers, accessibles);
+            printResults("vtConcatenateAndSliceSingleTable", sourceIdentifiers, table, accessibles);
+        }
+
+        {
+            final UUID[] sourceIdentifiers = createSourceIds(3);
+            final RowAccessible[] accessibles = VirtualTableExamples.dataConcatenateAndSlice();
+            final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceFullSingleTable(sourceIdentifiers, accessibles);
+            printResults("vtConcatenateAndSliceFullSingleTable", sourceIdentifiers, table, accessibles);
+        }
+
+        {
+            final UUID[] sourceIdentifiers = createSourceIds(3);
+            final RowAccessible[] accessibles = VirtualTableExamples.dataConcatenateAndSlice();
+            final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceFullTable(sourceIdentifiers, accessibles);
+            printResults("vtConcatenateAndSliceFullTable", sourceIdentifiers, table, accessibles);
+        }
+
+        {
             final UUID[] sourceIdentifiers = createSourceIds(2);
             final RowAccessible[] accessibles = VirtualTableExamples.dataAppendMissing();
             final VirtualTable table = VirtualTableExamples.vtAppendMissing(sourceIdentifiers, accessibles);
@@ -121,6 +149,13 @@ public class ExecCapAll {
             final VirtualTable table = VirtualTableExamples.vtMapsAndFilters(sourceIdentifiers, accessibles);
             printResults("vtMapsAndFilters", sourceIdentifiers, table, accessibles);
         }
+
+        {
+            final UUID[] sourceIdentifiers = createSourceIds(2);
+            final RowAccessible[] accessibles = VirtualTableExamples.dataFiltersMapAndConcatenate();
+            final VirtualTable table = VirtualTableExamples.vtFiltersMapAndConcatenate(sourceIdentifiers, accessibles);
+            printResults("vtFiltersMapAndConcatenate", sourceIdentifiers, table, accessibles);
+        }
     }
 
     private static void printResults(
@@ -141,6 +176,7 @@ public class ExecCapAll {
 
         System.out.println(exampleName);
         System.out.println("------------------------");
+        System.out.println("size = " + rows.size());
         System.out.println(table.getSchema());
         System.out.println("------------------------");
         try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
