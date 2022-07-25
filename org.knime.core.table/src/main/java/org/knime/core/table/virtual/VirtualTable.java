@@ -218,6 +218,26 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), mapperFactory.getOutputSchema());
     }
 
+    /**
+     * Create a {@code new VirtualTable} by including only rows from this {@code
+     * VirtualTable} that match a given predicate. This is defined by an array
+     * of {@code n} column indices that form the inputs of the ({@code n}-ary}
+     * filter predicate. The predicate is evaluated on the values of the
+     * respective columns for each row. Rows for which the predicate evaluates
+     * to {@code true} will be included, rows for which the filter predicate
+     * evaluates to {@code false} will be removed (skipped). The filter is given
+     * by a {@code RowFilterFactory} which can be used to create multiple
+     * instances of the filter predicate for processing multiple lines in
+     * parallel. (Each filter predicate is used single-threaded.) The order in
+     * which {@code columnIndices} are given matters. For example if {@code
+     * columnIndices = {5,1,4}}, then values from the 5th, 1st, and 4th column
+     * are provided as inputs 0, 1, and 2, respectively, to the filter
+     * predicate.
+     *
+     * @param columnIndices the indices of the columns that are passed to the filter predicate
+     * @param filterFactory factory to create instances of the filter predicate
+     * @return the filtered table
+     */
     public VirtualTable filterRows(final int[] columnIndices, final RowFilterFactory filterFactory) {
         final TableTransformSpec transformSpec = new RowFilterTransformSpec(columnIndices, filterFactory);
         return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), m_schema);

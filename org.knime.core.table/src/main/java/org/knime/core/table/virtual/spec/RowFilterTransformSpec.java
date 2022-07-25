@@ -63,6 +63,24 @@ public final class RowFilterTransformSpec implements TableTransformSpec {
     private final int[] inputColumnIndices;
     private final RowFilterFactory filterFactory;
 
+    /**
+     * Create a {@code RowFilterTransformSpec}. This is defined by an array of
+     * {@code n} column indices that form the inputs of the ({@code n}-ary}
+     * filter predicate. The predicate is evaluated on the values of the
+     * respective columns for each row. Rows for which the predicate evaluates
+     * to {@code true} will be included in the resulting {@code VirtualTable},
+     * rows for which the filter predicate evaluates to {@code false} will be
+     * removed (skipped). The filter is given by a {@code RowFilterFactory}
+     * which can be used to create multiple instances of the filter predicate
+     * for processing multiple lines in parallel. (Each filter predicate is used
+     * single-threaded.) The order in which {@code columnIndices} are given
+     * matters. For example if {@code columnIndices = {5,1,4}}, then values from
+     * the 5th, 1st, and 4th column are provided as inputs 0, 1, and 2,
+     * respectively, to the filter predicate.
+     *
+     * @param columnIndices the indices of the columns that are passed to the filter predicate
+     * @param filterFactory factory to create instances of the filter predicate
+     */
     public RowFilterTransformSpec(final int[] columnIndices, final RowFilterFactory filterFactory) {
         this.inputColumnIndices = columnIndices;
         this.filterFactory = filterFactory;
@@ -85,11 +103,13 @@ public final class RowFilterTransformSpec implements TableTransformSpec {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o)
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
-        if (!(o instanceof RowFilterTransformSpec))
+        }
+        if (!(o instanceof RowFilterTransformSpec)) {
             return false;
+        }
 
         final RowFilterTransformSpec that = (RowFilterTransformSpec)o;
         if (!Arrays.equals(inputColumnIndices, that.inputColumnIndices)) {
