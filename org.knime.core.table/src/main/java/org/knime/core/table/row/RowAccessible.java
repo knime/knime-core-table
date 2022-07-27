@@ -65,12 +65,17 @@ public interface RowAccessible extends Closeable {
     Cursor<ReadAccessRow> createCursor(Selection selection);
 
     /**
-     * TODO javadoc
+     * Get the number of rows in this {@code RowAccessible}, if it is known.
+     * <p>
+     * Some tables do not know how many rows they contain. Examples would be streaming tables, or virtual tables which
+     * contain row filters, where the number of rows depends on the data in the rows. In this case, {@code size()<0}
+     * indicates that the number of rows is unknown.
+     * <p>
+     * The default implementation returns {@code -1} to indicate that the number of rows is unknown.
      *
-     * Number of rows.
-     * If {@code size()<0}, the number of rows is not known.
-     *
-     * @return
+     * @return the number of rows, or a negative number if the number of rows is unknown.
      */
-    long size();
+    default long size() {
+        return -1;
+    }
 }
