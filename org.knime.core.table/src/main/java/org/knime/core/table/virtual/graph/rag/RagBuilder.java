@@ -763,6 +763,7 @@ public class RagBuilder {
             changed |= mergeSlices();
             changed |= moveSlicesBeforeAppends();
             changed |= moveSlicesBeforeConcatenates();
+            changed |= eliminateSingletonConcatenates();
             // TODO other optimizations
         }
     }
@@ -792,6 +793,63 @@ public class RagBuilder {
     {
         final List<RagEdge> edges = new ArrayList<>(oldNode.incomingEdges(edgeType));
         edges.forEach(edge -> graph.replaceEdgeTarget(edge, newNode));
+    }
+
+
+
+    // --------------------------------------------------------------------
+    // eliminateSingletonConcatenates()
+
+    boolean eliminateSingletonConcatenates() {
+        for (final RagNode node : graph.nodes(CONCATENATE)) {
+            if (tryEliminateConcatenate(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryEliminateConcatenate(final RagNode concatenate) {
+        final List<RagNode> predecessors = concatenate.predecessors(EXEC);
+        if (predecessors.size() == 1) {
+            // There is exactly one WRAPPER node linked to this CONCATENATE.
+            // Both can be short-circuited and removed.
+            final RagNode wrapper = predecessors.get(0);
+
+            // Short-circuit EXEC edges from predecessors of WRAPPER to successors of CONCATENATE
+            for (RagNode predecessor : wrapper.predecessors(EXEC)) {
+                for (RagNode successor : concatenate.successors(EXEC)) {
+                    graph.getOrAddEdge(predecessor, successor, EXEC);
+                }
+            }
+
+            graph.remove(wrapper);
+            graph.remove(concatenate);
+
+            // For each output in CONCATENATE.outputs[i]:
+            //   For each consumer in output.getConsumers():
+            //     Find consumer.inputs[j] corresponding to output, and replace by WRAPPER.inputs[i]
+            // Remove WRAPPER from the consumers of its inputs, and add short-circuited consumers instead.
+            // Add new DATA edges from producers to short-circuited consumers.
+            final AccessIds inputs = wrapper.getInputs();
+            final AccessIds outputs = concatenate.getOutputs();
+            for (int i = 0; i < outputs.size(); i++) {
+                final AccessId output = outputs.getAtSlot(i);
+                final AccessId input = inputs.getAtSlot(i);
+                input.removeConsumer(wrapper);
+                for (RagNode consumer : output.getConsumers()) {
+                    if (consumer.replaceInput(output, input)) {
+                        input.addConsumer(consumer);
+                        if (input.getProducer().type() != MISSING) {
+                            graph.getOrAddEdge(input.getProducer(), consumer, DATA);
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+        return false;
     }
 
 
@@ -882,9 +940,6 @@ public class RagBuilder {
             if (slicedConcatenated.isEmpty()) {
                 throw new IllegalStateException();
             }
-
-            // TODO if slicedConcatenated.size() == 1: no CONCATENATE necessary
-            //      ==> make a separate rule: eliminateSingletonConcatenate()
 
             pruneConcatenatePredecessors(concatenate, concatenated, removeConcatenated);
 
