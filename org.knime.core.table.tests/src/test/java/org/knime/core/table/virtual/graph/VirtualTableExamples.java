@@ -441,14 +441,42 @@ public class VirtualTableExamples {
 
 
 
-    public static VirtualTable vtConcatenateAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+    public static VirtualTable vtConcatenateAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources, final long sliceFrom, final long sliceTo) {
         final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).permute(1, 0);
         final VirtualTable transformedTable3 = new VirtualTable(sourceIdentifiers[2], new SourceTableProperties(sources[2])).permute(1, 0);
-        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).filterColumns(0,1).concatenate(List.of(transformedTable2, transformedTable3)).filterColumns(1).slice(6,10);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).filterColumns(0,1).concatenate(List.of(transformedTable2, transformedTable3)).filterColumns(1).slice(sliceFrom, sliceTo);
+    }
+
+    public static VirtualTable vtConcatenateAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        return vtConcatenateAndSlice(sourceIdentifiers, sources, 6, 10);
+    }
+
+    public static VirtualTable vtConcatenateAndSliceSingleTable(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        return vtConcatenateAndSlice(sourceIdentifiers, sources, 6, 8);
+    }
+
+    public static VirtualTable vtConcatenateAndSliceFullSingleTable(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        return vtConcatenateAndSlice(sourceIdentifiers, sources, 5, 9);
+    }
+
+    public static VirtualTable vtConcatenateAndSliceFullTable(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        return vtConcatenateAndSlice(sourceIdentifiers, sources, 5, 10);
     }
 
     public static VirtualTable vtConcatenateAndSlice() {
         return vtConcatenateAndSlice(new UUID[]{randomUUID(), randomUUID(), randomUUID()}, dataConcatenateAndSlice());
+    }
+
+    public static VirtualTable vtConcatenateAndSliceSingleTable() {
+        return vtConcatenateAndSliceSingleTable(new UUID[]{randomUUID(), randomUUID(), randomUUID()}, dataConcatenateAndSlice());
+    }
+
+    public static VirtualTable vtConcatenateAndSliceFullSingleTable() {
+        return vtConcatenateAndSliceFullSingleTable(new UUID[]{randomUUID(), randomUUID(), randomUUID()}, dataConcatenateAndSlice());
+    }
+
+    public static VirtualTable vtConcatenateAndSliceFullTable() {
+        return vtConcatenateAndSliceFullTable(new UUID[]{randomUUID(), randomUUID(), randomUUID()}, dataConcatenateAndSlice());
     }
 
     public static RowAccessible[] dataConcatenateAndSlice() {
@@ -491,6 +519,44 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSlice);
         testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSlice);
+    }
+
+    @Test
+    public void testConcatenateAndSliceSingleTable() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{12}, //
+                new Object[]{13}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceSingleTable);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceSingleTable);
+    }
+
+    @Test
+    public void testConcatenateAndSliceFullSingleTable() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{11}, //
+                new Object[]{12}, //
+                new Object[]{13}, //
+                new Object[]{14}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullSingleTable);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullSingleTable);
+    }
+
+    @Test
+    public void testConcatenateAndSliceFullTable() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{11}, //
+                new Object[]{12}, //
+                new Object[]{13}, //
+                new Object[]{14}, //
+                new Object[]{16}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullTable);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullTable);
     }
 
 
