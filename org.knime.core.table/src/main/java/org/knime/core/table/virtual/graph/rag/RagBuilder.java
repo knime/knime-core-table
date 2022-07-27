@@ -678,40 +678,6 @@ public class RagBuilder {
      *                EXEC edge linking <em>from</em> the {@code current} node is created, if the
      *                {@code current} node is an executable node.
      */
-    // TODO: rename??? Why is it called "Consumer"???
-    private void traceExecConsumer(final RagNode dest, final RagNode current) { // TODO REMOVE!
-
-//      From an executable node (except RowFilter) dest: follow spec edges recursively.
-//        If an executable node is hit:
-//          - insert an EXEC edge (node --> dest).
-//          - if node is not a RowFilter, stop tracing.
-//      From a RowFilter node dest: follow spec edges recursively.
-//        If a RowFilter node is hit:
-//          - don't insert an edge
-//          - keep on tracing
-//        If an executable node (except RowFilter) is hit:
-//          - insert an EXEC edge node --> dest
-//          - stop tracing
-
-        if (!dest.equals(current)) {
-            final RagNodeType ctype = current.type();
-            if (executableNodeTypes.contains(ctype)) {
-                if (ctype == ROWFILTER) {
-                    if (dest.type() != ROWFILTER) {
-                        graph.getOrAddEdge(current, dest, EXEC);
-                    }
-                    // continue tracing recursively
-                } else {
-                    graph.getOrAddEdge(current, dest, EXEC);
-                    return; // no further recursion
-                }
-            }
-        }
-        // recurse along reverse SPEC edges
-        for (RagNode predecessor : current.predecessors(SPEC)) {
-            traceExecConsumer(dest, predecessor);
-        }
-    }
     private void traceExecConsumer(final RagNode dest, final RagNode current, boolean rowFilterHit) {
 
 //      From an executable node (except RowFilter) dest: follow spec edges recursively.
