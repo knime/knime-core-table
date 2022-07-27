@@ -858,8 +858,8 @@ public class RagBuilder {
     // moveSliceBeforeConcatenate()
 
     boolean moveSlicesBeforeConcatenates() {
-        for (final RagNode node : graph.nodes()) {
-            if (node.type() == SLICE && tryMoveSliceBeforeConcatenate(node)) {
+        for (final RagNode node : graph.nodes(SLICE)) {
+            if (tryMoveSliceBeforeConcatenate(node)) {
                 return true;
             }
         }
@@ -989,12 +989,14 @@ public class RagBuilder {
         concatenate.setInputssArray(inputss);
     }
 
+
+
     // --------------------------------------------------------------------
     // moveSliceBeforeAppend()
 
     boolean moveSlicesBeforeAppends() {
-        for (final RagNode node : graph.nodes()) {
-            if (node.type() == SLICE && tryMoveSliceBeforeAppend(node)) {
+        for (final RagNode node : graph.nodes(SLICE)) {
+            if (tryMoveSliceBeforeAppend(node)) {
                 return true;
             }
         }
@@ -1030,8 +1032,8 @@ public class RagBuilder {
     // mergeSlices()
 
     boolean mergeSlices() {
-        for (final RagNode node : graph.nodes()) {
-            if (node.type() == SLICE && tryMergeSlice(node)) {
+        for (final RagNode node : graph.nodes(SLICE)) {
+            if (tryMergeSlice(node)) {
                 return true;
             }
         }
@@ -1135,8 +1137,8 @@ public class RagBuilder {
     // eliminateAppends()
 
     private boolean eliminateAppends() {
-        for (final RagNode node : graph.nodes()) {
-            if (node.type() == APPEND && tryEliminateAppend(node)) {
+        for (final RagNode node : graph.nodes(APPEND)) {
+            if (tryEliminateAppend(node)) {
                 return true;
             }
         }
