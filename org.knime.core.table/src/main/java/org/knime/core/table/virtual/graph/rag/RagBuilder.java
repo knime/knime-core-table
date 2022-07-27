@@ -671,12 +671,25 @@ public class RagBuilder {
      * depend on each other for executing forward steps in order to determine that
      * everybody is on the same row (without looking at produced/consumed data).
      * <p>
+     * To make sure that ROWFILTER nodes (that occur sequentially in SPEC order)
+     * can be re-ordered in EXEC, edges are inserted as follows (through
+     * recursive calls of this method).
+     * <p>
+     * While tracing from a non-ROWFILTER {@code dest}: insert EXEC edge from
+     * the first non-ROWFILTER executable node to {@code dest} if there is no
+     * intermediate ROWFILTER node. Otherwise insert an EXEC edge from every
+     * intermediate ROWFILTER node to {@code dest}.
+     * <p>
+     * While tracing from a ROWFILTER {@code dest}: insert EXEC edge from the
+     * first non-ROWFILTER executable node to {@code dest}.
      *
      * @param dest    the node from which the current recursive trace started. All
      *                potentially created EXEC edges link <em>to</em> the {@code dest} node.
      * @param current the node which is currently visited along the recursive trace. An
      *                EXEC edge linking <em>from</em> the {@code current} node is created, if the
      *                {@code current} node is an executable node.
+     * @param rowFilterHit whether a ROWFILTER node was already visited on the
+     *                way from {@code dest} to {@code current}
      */
     private void traceExecConsumer(final RagNode dest, final RagNode current, boolean rowFilterHit) {
 
