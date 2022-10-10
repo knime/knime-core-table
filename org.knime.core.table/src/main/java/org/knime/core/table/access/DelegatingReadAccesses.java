@@ -366,6 +366,11 @@ public final class DelegatingReadAccesses {
         public String getStringValue() {
             return m_delegateAccess.getStringValue();
         }
+
+        @Override
+        public byte[] getBytes() {
+            return m_delegateAccess.getBytes();
+        }
     }
 
     private static final class DelegatingStructReadAccess extends AbstractDelegatingReadAccess<StructReadAccess>

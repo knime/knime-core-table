@@ -263,6 +263,11 @@ public final class DelegatingWriteAccesses {
         public void setStringValue(final String value) {
             m_delegateAccess.setStringValue(value);
         }
+
+        @Override
+        public void setBytes(final byte[] bytes) {
+            m_delegateAccess.setBytes(bytes);
+        }
     }
 
     private static final class DelegatingStructWriteAccess extends AbstractDelegatingWriteAccess<StructWriteAccess>

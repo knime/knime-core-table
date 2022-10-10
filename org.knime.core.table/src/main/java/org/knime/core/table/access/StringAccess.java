@@ -65,6 +65,8 @@ public final class StringAccess {
     public interface StringReadAccess extends ReadAccess {
         String getStringValue();
 
+        byte[] getBytes();
+
         @Override
         default DataSpec getDataSpec() {
             return DataSpec.stringSpec();
@@ -73,6 +75,8 @@ public final class StringAccess {
 
     public interface StringWriteAccess extends WriteAccess {
         void setStringValue(final String value);
+
+        void setBytes(final byte[] bytes);
     }
 
 }

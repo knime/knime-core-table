@@ -269,6 +269,11 @@ public final class MissingAccesses {
             public String getStringValue() {
                 return null;
             }
+
+            @Override
+            public byte[] getBytes() {
+                return null;
+            }
         }
 
         private static final class MissingVarBinaryAccess implements MissingAccess, VarBinaryReadAccess {

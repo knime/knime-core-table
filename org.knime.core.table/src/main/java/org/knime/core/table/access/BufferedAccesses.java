@@ -649,6 +649,16 @@ public final class BufferedAccesses {
             }
 
             @Override
+            public byte[] getBytes() {
+                throw new UnsupportedOperationException("getBytes is not supported by BufferedStringAccess");
+            }
+
+            @Override
+            public void setBytes(final byte[] bytes) {
+                throw new UnsupportedOperationException("setBytes is not supported by BufferedStringAccess");
+            }
+
+            @Override
             protected void setFromNonMissing(final ReadAccess access) {
                 m_value = ((StringReadAccess)access).getStringValue();
             }
