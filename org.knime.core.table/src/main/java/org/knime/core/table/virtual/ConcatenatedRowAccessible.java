@@ -195,6 +195,11 @@ final class ConcatenatedRowAccessible implements LookaheadRowAccessible {
         }
 
         @Override
+        public ReadAccessRow pinAccess() {
+            return m_currentDelegateCursor.pinAccess();
+        }
+
+        @Override
         public boolean forward() {
             if (canForward()) {
                 return m_currentDelegateCursor.forward();

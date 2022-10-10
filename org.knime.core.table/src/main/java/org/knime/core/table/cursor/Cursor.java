@@ -44,6 +44,13 @@ public interface Cursor<A> extends Closeable {
      */
     A access();
 
+    // TODO we need a special kind of access that is closeable in order to release
+    // any resources (e.g. ArrowVectors) the access points to
+    default A pinAccess() {
+        // TODO default implementation based on BufferedAccesses
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @return true if forwarding was successful, false otherwise (i.e. at the end)
      */

@@ -149,4 +149,5 @@ class MappedRowAccessible implements RowAccessible {
             m_delegateCursor.close();
         }
     }
+
 }

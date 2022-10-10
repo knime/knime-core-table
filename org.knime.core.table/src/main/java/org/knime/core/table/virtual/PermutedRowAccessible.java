@@ -86,22 +86,21 @@ final class PermutedRowAccessible implements LookaheadRowAccessible {
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor() {
-        return new PermutedCursor(m_delegateTable.createCursor(), m_mapping, m_delegateTable.getSchema());
+        return new PermutedCursor(m_delegateTable.createCursor(), m_mapping);
     }
 
     @SuppressWarnings("resource") // Delegate cursor will be closed upon closing of the returned cursor.
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
         if (selection.columns().allSelected(m_schema)) {
-            return new PermutedCursor(m_delegateTable.createCursor(selection), m_mapping, m_delegateTable.getSchema());
+            return new PermutedCursor(m_delegateTable.createCursor(selection), m_mapping);
         } else {
             final int[] cols = selection.columns().getSelected(0, m_schema.numColumns());
             final int[] delegateCols = new int[cols.length];
             Arrays.setAll(delegateCols, i -> m_mapping[cols[i]]);
             final Selection delegateSelection =
                 Selection.all().retainRows(selection.rows()).retainColumns(delegateCols);
-            return new PermutedCursor(m_delegateTable.createCursor(delegateSelection), m_mapping,
-                m_delegateTable.getSchema());
+            return new PermutedCursor(m_delegateTable.createCursor(delegateSelection), m_mapping);
         }
     }
 
@@ -121,15 +120,22 @@ final class PermutedRowAccessible implements LookaheadRowAccessible {
 
         private final PermutedReadAccessRow m_access;
 
-        public PermutedCursor(final LookaheadCursor<ReadAccessRow> delegateCursor, final int[] permutation,
-            final ColumnarSchema schema) {
+        private final int[] m_permutation;
+
+        public PermutedCursor(final LookaheadCursor<ReadAccessRow> delegateCursor, final int[] permutation) {
             m_delegateCursor = delegateCursor;
-            m_access = new PermutedReadAccessRow(delegateCursor.access(), permutation, schema);
+            m_access = new PermutedReadAccessRow(delegateCursor.access(), permutation);
+            m_permutation = permutation;
         }
 
         @Override
         public ReadAccessRow access() {
             return m_access;
+        }
+
+        @Override
+        public ReadAccessRow pinAccess() {
+            return new PermutedReadAccessRow(m_delegateCursor.pinAccess(), m_permutation);
         }
 
         @Override
@@ -153,18 +159,14 @@ final class PermutedRowAccessible implements LookaheadRowAccessible {
 
             private final int[] m_permutation;
 
-            private final ColumnarSchema m_schema;
-
-            public PermutedReadAccessRow(final ReadAccessRow delegateAccess, final int[] permutation,
-                final ColumnarSchema schema) {
+            public PermutedReadAccessRow(final ReadAccessRow delegateAccess, final int[] permutation) {
                 m_delegateAccess = delegateAccess;
                 m_permutation = permutation;
-                m_schema = schema;
             }
 
             @Override
             public int size() {
-                return m_schema.numColumns();
+                return m_permutation.length;
             }
 
             @Override

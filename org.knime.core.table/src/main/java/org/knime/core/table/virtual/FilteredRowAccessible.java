@@ -155,6 +155,11 @@ class FilteredRowAccessible implements RowAccessible {
         }
 
         @Override
+        public ReadAccessRow pinAccess() {
+            return m_delegateCursor.pinAccess();
+        }
+
+        @Override
         public boolean forward() {
             while (m_delegateCursor.forward()) {
                 if (m_filter.getAsBoolean()) {

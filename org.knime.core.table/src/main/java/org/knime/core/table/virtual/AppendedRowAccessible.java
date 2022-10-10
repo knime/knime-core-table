@@ -145,6 +145,10 @@ final class AppendedRowAccessible implements LookaheadRowAccessible {
             return m_access;
         }
 
+        // TODO pinAccess that gets the accesses from the m_delegateCursors
+        // and gives them to PinnedAppendedReadAccessRow that initializes
+        // its accesses lazily
+
         @Override
         public boolean forward() {
             var anyCursorForwarded = false;

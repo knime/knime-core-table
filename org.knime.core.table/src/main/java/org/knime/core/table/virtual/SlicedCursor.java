@@ -37,6 +37,11 @@ final class SlicedCursor implements LookaheadCursor<ReadAccessRow> {
     }
 
     @Override
+    public ReadAccessRow pinAccess() {
+        return m_delegateCursor.pinAccess();
+    }
+
+    @Override
     public boolean forward() {
         if (canForward()) {
             final boolean forwarded = m_delegateCursor.forward();
