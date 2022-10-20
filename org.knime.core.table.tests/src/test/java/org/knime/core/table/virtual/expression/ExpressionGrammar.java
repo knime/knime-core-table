@@ -1,16 +1,21 @@
 package org.knime.core.table.virtual.expression;
 
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.DIVIDE;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.MINUS;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.MULTIPLY;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.PLUS;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.REMAINDER;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 
-import org.knime.core.table.virtual.expression.AstNode.AstBinaryOp;
-import org.knime.core.table.virtual.expression.AstNode.AstColumnRef;
-import org.knime.core.table.virtual.expression.AstNode.AstIntConst;
-import org.knime.core.table.virtual.expression.AstNode.AstUnaryOp;
 import org.rekex.annomacro.AnnoMacro;
 import org.rekex.helper.anno.Ch;
 import org.rekex.helper.anno.StrWs;
@@ -22,103 +27,132 @@ import org.rekex.spec.Regex;
 
 public interface ExpressionGrammar {
 
-	record Expr(AstNode astNode) {}
-	record Sum(AstNode astNode) {}
-	record Term(AstNode astNode) {}
-	record Factor(AstNode astNode) {}
-	record Atom(AstNode astNode) {}
+    String genPackageName = "org.knime.core.table.virtual.expression";
+    String genClassName = "ExpressionParser";
 
-	static AstNode.BinaryOp binaryOp(String op) {
-		return switch (op) {
-			case "+" -> AstNode.BinaryOp.ADD;
-			case "-" -> AstNode.BinaryOp.SUB;
-			case "*" -> AstNode.BinaryOp.MUL;
-			case "/" -> AstNode.BinaryOp.DIV;
-			case "%" -> AstNode.BinaryOp.MOD;
-			default -> throw new IllegalArgumentException();
-		};
-	}
+    static PegParser<Expr> parser() {
+        try {
+            var klass = Class.forName(genPackageName + "." + genClassName);
+            var constructor = klass.getConstructor(CtorCatalog.class);
+            return (PegParser)constructor.newInstance(new CtorCatalog());
+        } catch (ClassNotFoundException e) {
+            return parser(Expr.class);
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    record Expr(Ast.Node ast) {}
+	record Sum(Ast.Node ast) {}
+	record Term(Ast.Node ast) {}
+	record Factor(Ast.Node ast) {}
+	record Atom(Ast.Node ast) {}
+    record StrConst(String value) {}
 
     class CtorCatalog
     {
-//		expression:
-//			| sum
+        private static final Map<String, Ast.BinaryOp.Operator> binaryOps = Map.of( //
+                "+", PLUS, //
+                "-", MINUS, //
+                "*", MULTIPLY, //
+                "/", DIVIDE, //
+                "%", REMAINDER);
+
+        private static Ast.BinaryOp.Operator binaryOperator(final String symbol) {
+            return Objects.requireNonNull(binaryOps.get(symbol), () -> "unknown binary operator: \"" + symbol + "\"");
+        }
+
+
+        //	expression:
+        //		| sum
 		public Expr expr(Sum s) {
-			return new Expr(s.astNode);
+			return new Expr(s.ast);
 		}
 
-//		sum:
-//			| a=sum '+' b=term { "add", a, b }
-//			| a=sum '-' b=term { "sub", a, b }
-//			| term
+        //	sum:
+        //		| sum '+' term
+        //		| sum '-' term
+        //		| term
         public Sum sum(SepBy1<Term, @Ch("+-")String> terms) {
             return new Sum(
                     terms.reduce(
                             f1 -> op -> f2 -> new Term(
-                                    new AstBinaryOp(f1.astNode, f2.astNode, binaryOp(op)))
-                    ).astNode);
+                                    new Ast.BinaryOp(f1.ast, f2.ast, binaryOperator(op)))
+                    ).ast);
         }
 
-//		term:
-//			| a=term '*' b=factor { "mul", a, b }
-//			| a=term '/' b=factor { "div", a, b }
-//			| factor
+        //	term:
+        //		| term '*' factor
+        //		| term '/' factor
+        //		| term '%' factor
+        //		| factor
 		public Term term(SepBy1<Factor, @Ch("*/%")String> factors) {
 			return new Term(
 					factors.reduce(
 							f1 -> op -> f2 -> new Factor(
-									new AstBinaryOp(f1.astNode, f2.astNode, binaryOp(op)))
-					).astNode);
+									new Ast.BinaryOp(f1.ast, f2.ast, binaryOperator(op)))
+					).ast);
 		}
 
-//		factor (memo):
-//			| '+' a=factor { a }
-//			| '-' a=factor { "neg", a }
-//			| atom
+        //	factor (memo):
+        //		| '+' factor
+        //		| '-' factor
+        //		| atom
 		public Factor factor(OptWs ws, @Ch("+-")String op, Factor f) {
 			if ( op.equals("-"))
-				return new Factor(new AstUnaryOp(f.astNode, AstNode.UnaryOp.NEG));
+				return new Factor(new Ast.UnaryOp(f.ast, Ast.UnaryOp.Operator.MINUS));
 			else
-				return new Factor(f.astNode);
+				return new Factor(f.ast);
 		}
 
 		public Factor factor(OptWs ws, Atom a) {
-			return new Factor(a.astNode);
+			return new Factor(a.ast);
 		}
 
-//		atom:
-//			| a=NUMBER { helpers.num(a) }
-//			| column
-//			| group
-//
-//		column:
-//			| '$' + a=NAME { "col", a[1] }
-//			| '$' + '[' + a=STRING + ']' { "col", a[0][1][1:-1] }
-//
-//		group:
-//			| '(' a=expression ')' { a }
-
-		// TODO: float numbers
-
-        public Atom intconst(OptWs ws, @Regex("[0-9]+")String str, OptWs trailingWs) {
-            return new Atom(new AstIntConst(Integer.parseInt(str)));
+        //	atom:
+        //		| column
+        //		| group
+        //		| int_literal
+        //		| string_literal
+        //  TODO: float numbers
+        //
+        //	column:
+        //		| '$' + NAME
+        //		| '$' + '[' + STRING + ']'
+        //		| '$' + '[' + INTEGER + ']'
+        public Atom column(OptWs ws, @Ch("$")Void h, @Ch("[")Void ob, StrConst columnName, @Ch("]")Void cb, OptWs trailingWs) {
+            return new Atom(new Ast.ColumnRef(columnName.value));
         }
 
-        public Atom column(OptWs ws, @Ch("$")Void h, @Ch("[")Void ob, String columnName, @Ch("]")Void cb, OptWs trailingWs) {
-            return new Atom(new AstColumnRef(columnName));
+        public Atom column(OptWs ws, @Ch("$")Void h, @Ch("[")Void ob, @Regex("[0-9]+")String columnIndex, @Ch("]")Void cb, OptWs trailingWs) {
+            return new Atom(new Ast.ColumnIndex(Integer.parseInt(columnIndex)));
         }
 
         public Atom column(OptWs ws, @Ch("$")Void h, @Ch(range={0x20, 0x10FFFF}, except=BS+QT+wsChars+"+-*/%") int[] chars, OptWs trailingWs)
         {
-            return new Atom(new AstColumnRef(new String(chars, 0, chars.length)));
+            return new Atom(new Ast.ColumnRef(new String(chars, 0, chars.length)));
         }
 
-		public Atom group(OptWs ws, @Ch("(")Void ob, Expr expr, @Ch(")")Void cb, OptWs trailingWs) {
-			return new Atom(expr.astNode);
+        //	group:
+        //		| '(' a=expression ')'
+        public Atom group(OptWs ws, @Ch("(")Void ob, Expr expr, @Ch(")")Void cb, OptWs trailingWs) {
+			return new Atom(expr.ast);
 		}
 
+        //	int_literal:
+        //      | INTEGER
+        public Atom int_literal(OptWs ws, @Regex("[0-9]+")String str, OptWs trailingWs) {
+            return new Atom(new Ast.IntConstant(Long.parseLong(str)));
+        }
 
-		// (copied from ExampleParser_Json3)
+        //  string_literal:
+        //      | STRING
+        public Atom string_literal(StrConst str) {
+            return new Atom(new Ast.StringConstant(str.value));
+        }
+
+
+        // (copied from ExampleParser_Json3)
         // string ........................
 
         static final String QT = "\"";
@@ -129,9 +163,12 @@ public interface ExpressionGrammar {
         //   `byte` represents a hex char.
         // this can be quite confusing to casual observers.
 
-        public String string(@Ch(QT)Void QL, int[] chars, @Ch(QT)Void QR, OptWs trailingWs)
+
+        // TODO: This should return StrConst or something. Then take this instead of String columnName above.
+
+        public StrConst string(@Ch(QT)Void QL, int[] chars, @Ch(QT)Void QR, OptWs trailingWs)
         {
-            return new String(chars, 0, chars.length);
+            return new StrConst(new String(chars, 0, chars.length));
         }
 
         // unescape char
@@ -186,13 +223,12 @@ public interface ExpressionGrammar {
 
     // --- testing ------------------------------------------------------------
 
-
     static void genJava(String srcDir) throws Exception {
-                new PegParserBuilder()
+        new PegParserBuilder()
                         .rootType(Expr.class)
                         .catalogClass(CtorCatalog.class)
-                        .packageName("org.knime.core.table.virtual.expression")
-                        .className("ExpressionParser")
+                        .packageName(genPackageName)
+                        .className(genClassName)
                         .outDirForJava(Paths.get(srcDir))
                         .logger(System.out::println)
                         .generateJavaFile();

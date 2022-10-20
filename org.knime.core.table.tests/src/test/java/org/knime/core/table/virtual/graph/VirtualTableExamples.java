@@ -26,6 +26,7 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.LookaheadRowAccessible;
 import org.knime.core.table.virtual.VirtualTable;
+import org.knime.core.table.virtual.expression.VT;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
@@ -610,6 +611,18 @@ public class VirtualTableExamples {
     }
 
 
+
+    public static VirtualTable vtSimpleExpressionMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable mappedCols = VT.map(table, "$[2] + $[3] * 10", DOUBLE);
+        return table
+                .filterColumns(0,1)
+                .append(List.of(mappedCols));
+    }
+
+    public static VirtualTable vtSimpleExpressionMap() {
+        return vtSimpleExpressionMap(new UUID[]{randomUUID()}, dataSimpleMap());
+    }
 
     public static VirtualTable vtSimpleMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final MapperFactory add = MapperFactory.doublesToDouble((a, b) -> a + b);
