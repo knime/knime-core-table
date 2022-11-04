@@ -1,5 +1,8 @@
 package org.knime.core.table.virtual.expression;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public interface Ast {
@@ -228,4 +231,22 @@ public interface Ast {
 //            return "AstColumnRef[" + "name=" + name + ", columnIndex=" + columnIndex + "]";
 //        }
 //    }
+
+
+    /**
+     * Collect nodes in the subtree under {@code root} by postorder traversal.
+     * @param root root of the tree
+     * @return postorder traversal of the tree
+     */
+    static List<Node> postorder(final Node root)
+    {
+        var nodes = new ArrayDeque<Node>();
+        var visited = new ArrayList<Node>();
+        for (var node = root; node != null; node = nodes.poll()) {
+            visited.add(node);
+            node.children().forEach(nodes::push);
+        }
+        Collections.reverse(visited);
+        return visited;
+    }
 }
