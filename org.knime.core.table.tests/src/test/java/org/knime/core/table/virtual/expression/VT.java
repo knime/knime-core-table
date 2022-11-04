@@ -1,6 +1,5 @@
 package org.knime.core.table.virtual.expression;
 
-import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.PLUS;
 
 import java.util.ArrayDeque;
@@ -37,7 +36,8 @@ import org.knime.core.table.schema.VoidDataSpec;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
-import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.expression.VT.Exec.Computer;
+import org.knime.core.table.virtual.spec.MapTransformSpec.DefaultMapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.rekex.parser.ParseResult;
 import org.rekex.parser.ParseResult.Full;
@@ -45,40 +45,48 @@ import org.rekex.parser.PegParser;
 
 public class VT {
 
+    /**
+     * TODO This should become a non-static method in VirtualTable, with signature
+     *      {@code     public VirtualTable map(final String expression, final MapperFactory mapperFactory)    }
+     *      similar to the existing
+     *      {@code     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory)  }
+     *
+     *
+     * @param table input table
+     * @param expression expression that computes a new column
+     * @param outputSpec DataSpec of the computed column. Must be assignable from the result type of the expression
+     * @return
+     */
     public static VirtualTable map(final VirtualTable table, final String expression, final DataSpecWithTraits outputSpec) {
-//        final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
-//        return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), mapperFactory.getOutputSchema());
-
         final PegParser<Expr> parser = ExpressionGrammar.parser();
         final ParseResult<Expr> result = parser.parse(expression);
         if (result instanceof Full<Expr> full) {
             final Ast.Node ast = full.value().ast();
-            System.out.println("ast = " + ast);
-
             final List<Ast.Node> postorder = postorder(ast);
             final Columns columns = getColumns(postorder);
-            System.out.println("columns = " + columns);
+
+//            System.out.println("ast = " + ast);
+//            System.out.println("columns = " + columns);
 
             final ColumnarSchema schema = table.getSchema();
-            final IntFunction<AstType> columnType = columnIndex -> schema.getSpec(columnIndex).accept(toAstType);
-            final Function<Ast.Node, AstType> nodeType = getTypes(postorder, columnType);
+            final IntFunction<AstType> columnIndexToAstType = columnIndex -> schema.getSpec(columnIndex).accept(toAstType);
+            final Function<Ast.Node, AstType> nodeToAstType = getTypes(postorder, columnIndexToAstType);
 
-            for (int columnIndex : columns.columnIndices()) {
-                DataSpec spec = schema.getSpec(columnIndex);
-                AstType astType = spec.accept(toAstType);
-                System.out.println("columnIndex = " + columnIndex + ", spec = " + spec + ", astType = " + astType);
-            }
+//            for (int columnIndex : columns.columnIndices()) {
+//                DataSpec spec = schema.getSpec(columnIndex);
+//                AstType astType = spec.accept(toAstType);
+//                System.out.println("columnIndex = " + columnIndex + ", spec = " + spec + ", astType = " + astType);
+//            }
 
-            final IntFunction<Function<ReadAccess[], ? extends MapBuilder.Exec.Computer>> columnIndexToComputerFactory =
+            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
                     columnIndex -> {
                         int inputIndex = columns.getInputIndex(columnIndex);
-                        Function<ReadAccess, ? extends MapBuilder.Exec.Computer> createComputer =
-                                schema.getSpec(columnIndex).accept(MapBuilder.Exec.toReaderFactory);
+                        Function<ReadAccess, ? extends Computer> createComputer =
+                                schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
                         return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
                     };
 
-            final MapperFactory mapperFactory = new MapTransformSpec.DefaultMapperFactory(ColumnarSchema.of(outputSpec),
-                    new MapBuilder.MyCreateMapper(ast, nodeType, columnIndexToComputerFactory, outputSpec.spec()));
+            var mapperFactory = Exec.createMapperFactory(ast, nodeToAstType, columnIndexToComputerFactory, outputSpec);
             return table.map(columns.columnIndices(), mapperFactory);
 
         } else {
@@ -91,6 +99,229 @@ public class VT {
     public static VirtualTable map(final VirtualTable table, final String expression, final DataSpec outputSpec) {
         return map(table, expression, new DataSpecWithTraits(outputSpec, DefaultDataTraits.EMPTY));
     }
+
+    // TODO: remove Exec wrapper interface
+    public interface Exec {
+
+        interface Computer {
+        }
+
+        interface DoubleComputer extends Computer, DoubleSupplier {
+            static DoubleComputer column(ReadAccess access)
+            {
+                var a = (DoubleAccess.DoubleReadAccess)access;
+                return () -> a.getDoubleValue();
+            }
+
+            static DoubleComputer binary(Ast.BinaryOp.Operator op, DoubleComputer arg1, DoubleComputer arg2)
+            {
+                return switch (op) {
+                    case PLUS -> () -> arg1.getAsDouble() + arg2.getAsDouble();
+                    case MINUS -> () -> arg1.getAsDouble() - arg2.getAsDouble();
+                    case MULTIPLY -> () -> arg1.getAsDouble() * arg2.getAsDouble();
+                    case DIVIDE -> () -> arg1.getAsDouble() / arg2.getAsDouble();
+                    case REMAINDER -> () -> arg1.getAsDouble() % arg2.getAsDouble();
+                };
+            }
+        }
+
+        interface IntComputer extends DoubleComputer, IntSupplier {
+            @Override
+            default double getAsDouble() {
+                return getAsInt();
+            }
+        }
+
+        // create Computer for BinaryOp
+        static Computer binary(AstType type, Ast.BinaryOp.Operator op, Computer arg1, Computer arg2)
+        {
+            return switch (type)
+            {
+                case BYTE, INT, LONG, FLOAT, BOOLEAN, STRING -> throw new UnsupportedOperationException("TODO: not implemented");
+                case DOUBLE -> DoubleComputer.binary(op, (DoubleComputer)arg1, (DoubleComputer)arg2);
+            };
+        }
+
+        // create Computer (of appropriate type) that reads from a ReadAccess
+        DataSpec.Mapper<Function<ReadAccess, ? extends Computer>> toReaderFactory = new DataSpec.Mapper<>() {
+            @Override
+            public Function<ReadAccess, Computer> visit(BooleanDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public Function<ReadAccess, Computer> visit(ByteDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public Function<ReadAccess, DoubleComputer> visit(DoubleDataSpec spec) {
+                return DoubleComputer::column;
+            }
+
+            @Override
+            public Function<ReadAccess, Computer> visit(FloatDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public Function<ReadAccess, IntComputer> visit(IntDataSpec spec) {
+                return access -> {
+                    var intAccess = (IntAccess.IntReadAccess)access;
+                    return () -> intAccess.getIntValue();
+                };
+            }
+
+            @Override
+            public Function<ReadAccess, Computer> visit(LongDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public Function<ReadAccess, Computer> visit(VarBinaryDataSpec spec) {
+                throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?");
+            }
+
+            @Override
+            public Function<ReadAccess, Computer> visit(VoidDataSpec spec) {
+                throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?");
+            }
+
+            @Override
+            public Function<ReadAccess, Computer> visit(StructDataSpec spec) {
+                throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?");
+            }
+
+            @Override
+            public Function<ReadAccess, Computer> visit(ListDataSpec listDataSpec) {
+                throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?");
+            }
+
+            @Override
+            public Function<ReadAccess, Computer> visit(StringDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+        };
+
+        // create Runnable that writes value from Computer (of appropriate type) to WriteAccess (of appropriate type)
+        DataSpec.Mapper<BiFunction<WriteAccess, Computer, Runnable>> toWriterFactory = new DataSpec.Mapper<>() {
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(BooleanDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(ByteDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(DoubleDataSpec spec) {
+                return (access, computer) -> {
+                    var a = (DoubleAccess.DoubleWriteAccess)access;
+                    var c = (DoubleComputer)computer;
+                    return () -> a.setDoubleValue(c.getAsDouble());
+                };
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(FloatDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(IntDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(LongDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(VarBinaryDataSpec spec) {
+                throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(VoidDataSpec spec) {
+                throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(StructDataSpec spec) {
+                throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(ListDataSpec listDataSpec) {
+                throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?");
+            }
+
+            @Override
+            public BiFunction<WriteAccess, Computer, Runnable> visit(StringDataSpec spec) {
+                throw new IllegalArgumentException("TODO not implemented");
+            }
+        };
+
+        static MapperFactory createMapperFactory( //
+                final Ast.Node ast, //
+                final Function<Ast.Node, AstType> nodeToAstType, //
+                final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory, //
+                final DataSpecWithTraits outputSpec) //
+        {
+            final ColumnarSchema schema = ColumnarSchema.of(outputSpec);
+
+            final List<Ast.Node> postorder = postorder(ast);
+            final BiFunction<WriteAccess, Computer, Runnable> writerFactory = outputSpec.spec().accept(toWriterFactory);
+            final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory = (readAccesses, writeAccesses) -> {
+                final Map<Ast.Node, Computer> computers = new HashMap<>();
+                for (var node : postorder) {
+                    if (node instanceof Ast.IntConstant c) {
+                        computers.put(node, (IntComputer)() -> (int)c.value());
+                        // TODO AstDoubleConst
+                    } else if (node instanceof Ast.StringConstant) {
+                        throw new UnsupportedOperationException("TODO: not implemented");
+                    } else if (node instanceof Ast.ColumnRef) {
+                        throw new UnsupportedOperationException("TODO: cannot handle named columns yet.");
+                    } else if (node instanceof Ast.ColumnIndex n) {
+                        var computer = columnIndexToComputerFactory.apply(n.columnIndex()).apply(readAccesses);
+                        computers.put(node, computer);
+                    } else if (node instanceof Ast.BinaryOp n) {
+                        var computer = binary(nodeToAstType.apply(n), n.op(), computers.get(n.arg1()),
+                                computers.get(n.arg2()));
+                        computers.put(node, computer);
+                    } else if (node instanceof Ast.UnaryOp n) {
+                        throw new UnsupportedOperationException("TODO: not implemented");
+                    }
+                }
+
+                // expression always has single output (currently)
+                return writerFactory.apply(writeAccesses[0], computers.get(ast));
+            };
+
+            return new DefaultMapperFactory(schema, factory);
+        }
+    }
+
+
+
+
+    public static List<Ast.Node> postorder(final Ast.Node root)
+    {
+        var nodes = new ArrayDeque<Ast.Node>();
+        var visited = new ArrayList<Ast.Node>();
+        for (var node = root; node != null; node = nodes.poll()) {
+            visited.add(node);
+            node.children().forEach(nodes::push);
+        }
+        Collections.reverse(visited);
+        return visited;
+    }
+
+
+
 
 
     record Columns(int[] columnIndices) {
@@ -113,238 +344,6 @@ public class VT {
     }
 
 
-    static class MapBuilder
-    {
-        // TODO: remove Exec wrapper interface
-        public interface Exec {
-
-            interface Computer {
-            }
-
-            interface DoubleComputer extends Computer, DoubleSupplier {
-                static DoubleComputer column(ReadAccess access)
-                {
-                    var a = (DoubleAccess.DoubleReadAccess)access;
-                    return () -> a.getDoubleValue();
-                }
-
-                static DoubleComputer binary(Ast.BinaryOp.Operator op, DoubleComputer arg1, DoubleComputer arg2)
-                {
-                    return switch (op) {
-                        case PLUS -> () -> arg1.getAsDouble() + arg2.getAsDouble();
-                        case MINUS -> () -> arg1.getAsDouble() - arg2.getAsDouble();
-                        case MULTIPLY -> () -> arg1.getAsDouble() * arg2.getAsDouble();
-                        case DIVIDE -> () -> arg1.getAsDouble() / arg2.getAsDouble();
-                        case REMAINDER -> () -> arg1.getAsDouble() % arg2.getAsDouble();
-                    };
-                }
-            }
-
-            interface IntComputer extends DoubleComputer, IntSupplier {
-                @Override
-                default double getAsDouble() {
-                    return getAsInt();
-                }
-            }
-
-            // create Computer for BinaryOp
-            static Computer binary(AstType type, Ast.BinaryOp.Operator op, Computer arg1, Computer arg2)
-            {
-                return switch (type)
-                {
-                    case BYTE, INT, LONG, FLOAT, BOOLEAN, STRING -> throw new UnsupportedOperationException("TODO: not implemented");
-                    case DOUBLE -> DoubleComputer.binary(op, (DoubleComputer)arg1, (DoubleComputer)arg2);
-                };
-            }
-
-            // create Computer (of appropriate type) that reads from a ReadAccess
-            DataSpec.Mapper<Function<ReadAccess, ? extends Computer>> toReaderFactory = new DataSpec.Mapper<>() {
-                @Override
-                public Function<ReadAccess, Computer> visit(BooleanDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public Function<ReadAccess, Computer> visit(ByteDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public Function<ReadAccess, DoubleComputer> visit(DoubleDataSpec spec) {
-                    return DoubleComputer::column;
-                }
-
-                @Override
-                public Function<ReadAccess, Computer> visit(FloatDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public Function<ReadAccess, IntComputer> visit(IntDataSpec spec) {
-                    return access -> {
-                        var intAccess = (IntAccess.IntReadAccess)access;
-                        return () -> intAccess.getIntValue();
-                    };
-                }
-
-                @Override
-                public Function<ReadAccess, Computer> visit(LongDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public Function<ReadAccess, Computer> visit(VarBinaryDataSpec spec) {
-                    throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?");
-                }
-
-                @Override
-                public Function<ReadAccess, Computer> visit(VoidDataSpec spec) {
-                    throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?");
-                }
-
-                @Override
-                public Function<ReadAccess, Computer> visit(StructDataSpec spec) {
-                    throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?");
-                }
-
-                @Override
-                public Function<ReadAccess, Computer> visit(ListDataSpec listDataSpec) {
-                    throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?");
-                }
-
-                @Override
-                public Function<ReadAccess, Computer> visit(StringDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-            };
-
-            // create Runnable that writes value from Computer (of appropriate type) to WriteAccess (of appropriate type)
-            DataSpec.Mapper<BiFunction<WriteAccess, Computer, Runnable>> toWriterFactory = new DataSpec.Mapper<>() {
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(BooleanDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(ByteDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(DoubleDataSpec spec) {
-                    return (access, computer) -> {
-                        var a = (DoubleAccess.DoubleWriteAccess)access;
-                        var c = (DoubleComputer)computer;
-                        return () -> a.setDoubleValue(c.getAsDouble());
-                    };
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(FloatDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(IntDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(LongDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(VarBinaryDataSpec spec) {
-                    throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(VoidDataSpec spec) {
-                    throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(StructDataSpec spec) {
-                    throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(ListDataSpec listDataSpec) {
-                    throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?");
-                }
-
-                @Override
-                public BiFunction<WriteAccess, Computer, Runnable> visit(StringDataSpec spec) {
-                    throw new IllegalArgumentException("TODO not implemented");
-                }
-            };
-        }
-
-        static class MyCreateMapper implements BiFunction<ReadAccess[], WriteAccess[], Runnable>
-        {
-            private final Ast.Node ast;
-            private final List<Ast.Node> postorder;
-            private final Function<Ast.Node, AstType> nodeType;
-            private final IntFunction<Function<ReadAccess[], ? extends MapBuilder.Exec.Computer>> columnIndexToComputerFactory;
-            private final DataSpec outputSpec;
-
-            MyCreateMapper(
-                    final Ast.Node ast,
-                    final Function<Ast.Node, AstType> nodeType,
-                    final IntFunction<Function<ReadAccess[], ? extends MapBuilder.Exec.Computer>> columnIndexToComputerFactory,
-                    final DataSpec outputSpec)
-            {
-                this.ast = ast;
-                this.postorder = postorder(ast);
-                this.nodeType = nodeType;
-                this.columnIndexToComputerFactory = columnIndexToComputerFactory;
-                this.outputSpec = outputSpec;
-            }
-
-            @Override
-            public Runnable apply(ReadAccess[] readAccesses, WriteAccess[] writeAccesses) {
-
-                final Map<Ast.Node, Exec.Computer> computers = new HashMap<>();
-                for (var node : postorder) {
-                    if (node instanceof Ast.IntConstant c) {
-                        computers.put(node, (Exec.IntComputer)() -> (int)c.value());
-                    // TODO AstDoubleConst
-                    } else if (node instanceof Ast.StringConstant) {
-                        throw new UnsupportedOperationException("TODO: not implemented");
-                    } else if (node instanceof Ast.ColumnRef) {
-                        throw new UnsupportedOperationException("TODO: cannot handle named columns yet.");
-                    } else if (node instanceof Ast.ColumnIndex n) {
-                        var computer = columnIndexToComputerFactory.apply(n.columnIndex()).apply(readAccesses);
-                        computers.put(node, computer);
-                    } else if (node instanceof Ast.BinaryOp n) {
-                        var computer = Exec.binary(nodeType.apply(n), n.op(), computers.get(n.arg1()), computers.get(n.arg2()));
-                        computers.put(node, computer);
-                    } else if ( node instanceof Ast.UnaryOp n) {
-                        throw new UnsupportedOperationException("TODO: not implemented");
-                    }
-                }
-
-                // expression always has single output (currently)
-                var output = writeAccesses[0];
-                return outputSpec.accept(Exec.toWriterFactory).apply(output, computers.get(ast));
-            }
-        }
-    }
-
-
-    public static List<Ast.Node> postorder(final Ast.Node root)
-    {
-        var nodes = new ArrayDeque<Ast.Node>();
-        var visited = new ArrayList<Ast.Node>();
-        for (var node = root; node != null; node = nodes.poll()) {
-            visited.add(node);
-            node.children().forEach(nodes::push);
-        }
-        Collections.reverse(visited);
-        return visited;
-    }
-
     /**
      * Determine the input columns occurring in the given {@code Ast.Node}s.
      * Compute a map from column index (inputs to the table, that is
@@ -354,7 +353,7 @@ public class VT {
      * indices 0 and 1, respectively.
      *
      * @param nodes
-     * @return a map from column index to mapper input index.
+     * @return mapping from column index to mapper input index, and vice versa
      */
     private static Columns getColumns(final List<Ast.Node> nodes) {
         int[] columnIndices = nodes.stream()
@@ -370,6 +369,8 @@ public class VT {
                 .toArray();
         return new Columns(columnIndices);
     }
+
+
 
     /**
      * infer Ast.Node types
@@ -427,11 +428,11 @@ public class VT {
                     throw new IllegalArgumentException("binary expression of unknown type.");
                 }
 
-                System.out.println("op " + n.op());
-                System.out.println("  t1 = " + t1);
-                System.out.println("  t2 = " + t2);
+//                System.out.println("op " + n.op());
+//                System.out.println("  t1 = " + t1);
+//                System.out.println("  t2 = " + t2);
             } else if ( node instanceof Ast.UnaryOp n) {
-
+                // TODO
             }
             System.out.println("node = " + node + ", type = " + types.get(node));
         }

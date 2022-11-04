@@ -615,6 +615,8 @@ public class VirtualTableExamples {
     public static VirtualTable vtSimpleExpressionMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols = VT.map(table, "$[2] + $[3] * 10", DOUBLE);
+//      TODO: final VirtualTable mappedCols = VT.map(table, "$[0] + 10", DOUBLE);
+//      TODO: final VirtualTable mappedCols = VT.map(table, "$[0] + 10", INT);
         return table
                 .filterColumns(0,1)
                 .append(List.of(mappedCols));
