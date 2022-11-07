@@ -40,6 +40,12 @@ public interface Exec {
             return () -> a.getDoubleValue();
         }
 
+        static DoubleComputer unary(Ast.UnaryOp.Operator op, DoubleComputer arg1) {
+            return switch (op) {
+                case MINUS -> () -> -arg1.getAsDouble();
+            };
+        }
+
         static DoubleComputer binary(Ast.BinaryOp.Operator op, DoubleComputer arg1, DoubleComputer arg2) {
             return switch (op) {
                 case PLUS -> () -> arg1.getAsDouble() + arg2.getAsDouble();
@@ -55,6 +61,12 @@ public interface Exec {
         @Override
         default double getAsDouble() {
             return getAsInt();
+        }
+
+        static IntComputer unary(Ast.UnaryOp.Operator op, IntComputer arg1) {
+            return switch (op) {
+                case MINUS -> () -> -arg1.getAsInt();
+            };
         }
 
         static IntComputer binary(Ast.BinaryOp.Operator op, IntComputer arg1, IntComputer arg2) {
@@ -75,6 +87,16 @@ public interface Exec {
                     throw new UnsupportedOperationException("TODO: not implemented");
             case INT -> IntComputer.binary(op, (IntComputer)arg1, (IntComputer)arg2);
             case DOUBLE -> DoubleComputer.binary(op, (DoubleComputer)arg1, (DoubleComputer)arg2);
+        };
+    }
+
+    // create Computer for UnaryOp
+    static Computer unary(AstType type, Ast.UnaryOp.Operator op, Computer arg1) {
+        return switch (type) {
+            case BYTE, LONG, FLOAT, BOOLEAN, STRING ->
+                    throw new UnsupportedOperationException("TODO: not implemented");
+            case INT -> IntComputer.unary(op, (IntComputer)arg1);
+            case DOUBLE -> DoubleComputer.unary(op, (DoubleComputer)arg1);
         };
     }
 
@@ -233,7 +255,9 @@ public interface Exec {
                             binary(nodeToAstType.apply(n), n.op(), computers.get(n.arg1()), computers.get(n.arg2()));
                     computers.put(node, computer);
                 } else if (node instanceof Ast.UnaryOp n) {
-                    throw new UnsupportedOperationException("TODO: not implemented");
+                    var computer =
+                            unary(nodeToAstType.apply(n), n.op(), computers.get(n.arg()));
+                    computers.put(node, computer);
                 }
             }
 
