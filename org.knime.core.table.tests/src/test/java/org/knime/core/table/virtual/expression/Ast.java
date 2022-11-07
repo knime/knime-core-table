@@ -2,8 +2,11 @@ package org.knime.core.table.virtual.expression;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.knime.core.table.virtual.spec.MapTransformSpec;
 
 public interface Ast {
 
@@ -249,4 +252,46 @@ public interface Ast {
         Collections.reverse(visited);
         return visited;
     }
+
+    /**
+     * Determine the input columns occurring in the given {@code Ast.Node}s.
+     * Compute a map from column index (inputs to the table, that is
+     * AstColumnIndex.columnIndex()) to input index of the {@link
+     * MapTransformSpec.MapperFactory#createMapper mapper} function. For example, if an
+     * expression uses (only) "$[2]" and "$[5]" then these would map to input
+     * indices 0 and 1, respectively.
+     *
+     * @param nodes
+     * @return mapping from column index to mapper input index, and vice versa
+     */
+    static RequiredColumns getRequiredColumns(final List<Node> nodes) {
+        int[] columnIndices = nodes.stream()
+                .mapToInt(node -> {
+                    if (node instanceof ColumnIndex n) {
+                        return n.columnIndex();
+                    } else {
+                        return -1;
+                    }
+                })
+                .filter(i -> i != -1)
+                .distinct()
+                .toArray();
+        return new RequiredColumns(columnIndices);
+    }
+
+    record RequiredColumns(int[] columnIndices) {
+        int getInputIndex(int columnIndex) {
+            for (int i = 0; i < columnIndices.length; i++) {
+                if ( columnIndices[i] == columnIndex )
+                    return i;
+            }
+            throw new IndexOutOfBoundsException();
+        }
+
+        @Override
+        public String toString() {
+            return "RequiredColumns" + Arrays.toString(columnIndices);
+        }
+    }
+
 }

@@ -2,7 +2,6 @@ package org.knime.core.table.virtual.expression;
 
 import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.PLUS;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +27,6 @@ import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
 import org.knime.core.table.virtual.expression.Exec.Computer;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.rekex.parser.ParseResult;
 import org.rekex.parser.ParseResult.Full;
 import org.rekex.parser.PegParser;
@@ -53,7 +51,7 @@ public class VT {
         if (result instanceof Full<Expr> full) {
             final Ast.Node ast = full.value().ast();
             final List<Ast.Node> postorder = Ast.postorder(ast);
-            final Columns columns = getColumns(postorder);
+            final Ast.RequiredColumns columns = Ast.getRequiredColumns(postorder);
 
 //            System.out.println("ast = " + ast);
 //            System.out.println("columns = " + columns);
@@ -89,56 +87,6 @@ public class VT {
     public static VirtualTable map(final VirtualTable table, final String expression, final DataSpec outputSpec) {
         return map(table, expression, new DataSpecWithTraits(outputSpec, DefaultDataTraits.EMPTY));
     }
-
-
-
-    record Columns(int[] columnIndices) {
-        int getColumnIndex(int inputIndex) { // TODO: unused. remove?
-            return columnIndices[inputIndex];
-        }
-
-        int getInputIndex(int columnIndex) {
-            for (int i = 0; i < columnIndices.length; i++) {
-                if ( columnIndices[i] == columnIndex )
-                    return i;
-            }
-            throw new IndexOutOfBoundsException();
-        }
-
-        @Override
-        public String toString() {
-            return "Columns" + Arrays.toString(columnIndices);
-        }
-    }
-
-
-    /**
-     * Determine the input columns occurring in the given {@code Ast.Node}s.
-     * Compute a map from column index (inputs to the table, that is
-     * AstColumnIndex.columnIndex()) to input index of the {@link
-     * MapperFactory#createMapper mapper} function. For example, if an
-     * expression uses (only) "$[2]" and "$[5]" then these would map to input
-     * indices 0 and 1, respectively.
-     *
-     * @param nodes
-     * @return mapping from column index to mapper input index, and vice versa
-     */
-    private static Columns getColumns(final List<Ast.Node> nodes) {
-        int[] columnIndices = nodes.stream()
-                .mapToInt(node -> {
-                    if (node instanceof Ast.ColumnIndex n) {
-                        return n.columnIndex();
-                    } else {
-                        return -1;
-                    }
-                })
-                .filter(i -> i != -1)
-                .distinct()
-                .toArray();
-        return new Columns(columnIndices);
-    }
-
-
 
     /**
      * infer Ast.Node types
