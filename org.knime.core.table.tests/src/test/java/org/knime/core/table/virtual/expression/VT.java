@@ -88,10 +88,19 @@ public class VT {
         return map(table, expression, new DataSpecWithTraits(outputSpec, DefaultDataTraits.EMPTY));
     }
 
+
+
+
+
+    // --------------------------------------------------------------------
+    // Type Inference
+
+
+
     /**
      * infer Ast.Node types
      * TODO constant propagation
-     * TODO insert explicit cast Ast.Nodes ???
+     * TODO insert "explicit cast" Ast.Nodes ???
      *
      * @param postorder AST nodes sorted for post-order traversal
      * @param columnType map from column index (in input table, 0-based) to type
@@ -152,8 +161,9 @@ public class VT {
 
                 // numeric operation?
                 if (t1.isNumeric()) {
-                    node.setInferredType(t1);
-                    types.put(node, t1);
+                    var type = promotedNumericType(t1);
+                    node.setInferredType(type);
+                    types.put(node, type);
 
                     // TODO: if argument is constant:
                     //       - do the computation immediately.
@@ -211,6 +221,17 @@ public class VT {
             return AstType.LONG;
         } else {
             return AstType.INT;
+        }
+    }
+
+    private static AstType promotedNumericType(AstType t1) {
+        if (!t1.isNumeric()) {
+            throw new IllegalArgumentException();
+        }
+        if (t1 == AstType.BYTE  ) {
+            return AstType.INT;
+        } else {
+            return t1;
         }
     }
 
