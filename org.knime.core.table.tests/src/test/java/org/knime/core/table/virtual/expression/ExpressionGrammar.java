@@ -48,6 +48,7 @@ public interface ExpressionGrammar {
 	record Factor(Ast.Node ast) {}
 	record Atom(Ast.Node ast) {}
     record StrConst(String value) {}
+    record Digits(String value) {}
 
     class CtorCatalog
     {
@@ -112,9 +113,9 @@ public interface ExpressionGrammar {
         //	atom:
         //		| column
         //		| group
+        //      | float_literal
         //		| int_literal
         //		| string_literal
-        //  TODO: float numbers
         //
         //	column:
         //		| '$' + NAME
@@ -139,10 +140,24 @@ public interface ExpressionGrammar {
 			return new Atom(expr.ast);
 		}
 
+        //	float_literal:
+        //      | FLOAT
+        public Atom float_literal(OptWs ws, Digits digits, @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String str, OptWs trailingWs) {
+            return new Atom(new Ast.FloatConstant(Double.parseDouble(digits.value + str)));
+        }
+
+        public Atom float_literal(OptWs ws, @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String str, OptWs trailingWs) {
+            return new Atom(new Ast.FloatConstant(Double.parseDouble(str)));
+        }
+
         //	int_literal:
         //      | INTEGER
-        public Atom int_literal(OptWs ws, @Regex("[0-9]+")String str, OptWs trailingWs) {
-            return new Atom(new Ast.IntConstant(Long.parseLong(str)));
+        public Atom int_literal(OptWs ws, Digits digits, OptWs trailingWs) {
+            return new Atom(new Ast.IntConstant(Long.parseLong(digits.value)));
+        }
+
+        public Digits digits(@Regex("[0-9]+")String str) {
+            return new Digits(str);
         }
 
         //  string_literal:
@@ -150,6 +165,7 @@ public interface ExpressionGrammar {
         public Atom string_literal(StrConst str) {
             return new Atom(new Ast.StringConstant(str.value));
         }
+
 
 
         // (copied from ExampleParser_Json3)
@@ -239,7 +255,7 @@ public interface ExpressionGrammar {
         final String srcDir = "src/test/java";
 //        System.out.println(Paths.get(srcDir).toAbsolutePath());
         genJava(srcDir);
-        testInputs("Expr", parser(Expr.class));
+        testInputs( "Expr", parser(Expr.class));
     }
 
     static <T> PegParser<T> parser(Class<T> klass) {

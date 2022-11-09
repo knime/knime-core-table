@@ -241,8 +241,9 @@ public interface Exec {
             final Map<Ast.Node, Computer> computers = new HashMap<>();
             for (var node : postorder) {
                 if (node instanceof Ast.IntConstant c) {
-                    computers.put(node, (IntComputer)() -> (int)c.value());
-                    // TODO AstDoubleConst
+                    computers.put(node, (IntComputer)() -> (int)c.value()); // TODO respect nodeToAstType of c (might be BYTE or LONG, too)
+                } else if (node instanceof Ast.FloatConstant c) {
+                    computers.put(node, (DoubleComputer)() -> c.value());
                 } else if (node instanceof Ast.StringConstant) {
                     throw new UnsupportedOperationException("TODO: not implemented");
                 } else if (node instanceof Ast.ColumnRef) {

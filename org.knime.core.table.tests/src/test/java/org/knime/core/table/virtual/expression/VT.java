@@ -46,6 +46,7 @@ public class VT {
      * @return
      */
     public static VirtualTable map(final VirtualTable table, final String expression, final DataSpecWithTraits outputSpec) {
+        System.out.println("expression = " + expression);
         final PegParser<Expr> parser = ExpressionGrammar.parser();
         final ParseResult<Expr> result = parser.parse(expression);
         if (result instanceof Full<Expr> full) {
@@ -113,8 +114,9 @@ public class VT {
                 var type = narrowestType(c.value());
                 node.setInferredType(type);
                 types.put(node, type);
-            // AstFloatConst
-            // AstDoubleConst
+            } else if (node instanceof Ast.FloatConstant c) {
+                node.setInferredType(AstType.DOUBLE);
+                types.put(node, AstType.DOUBLE);
             } else if (node instanceof Ast.StringConstant) {
                 node.setInferredType(AstType.STRING);
                 types.put(node, AstType.STRING);
@@ -136,17 +138,15 @@ public class VT {
 
                 // numeric operation?
                 else if (t1.isNumeric() && t2.isNumeric()) {
-                    var type = promotedNumericType(t1, t2);
-                    node.setInferredType(type);
-                    types.put(node, type);
-
-                    // TODO: if both arguments are constant:
-                    //       - do the computation immediately.
-                    //       - replace this BinaryOp by a Float/Double/IntConstant
-                    //         Either by re-linking arg of the parent node,
-                    //         or by attaching a const value to this node and marking it as const.
-                    //         The latter may be better for maintaining the original parse info?
-                    //         But the former would be better in that we don't keep stuff that we don't want to iterate over again.
+                    if ( n.arg1().isConstant() && n.arg2().isConstant() ) {
+                        final Ast.Node result = evaluateConstExpr(n);
+                        n.replaceWith(result);
+                        types.put(result, result.inferredType());
+                    } else {
+                        var type = promotedNumericType(t1, t2);
+                        node.setInferredType(type);
+                        types.put(node, type);
+                    }
                 }
 
                 else {
@@ -161,13 +161,15 @@ public class VT {
 
                 // numeric operation?
                 if (t1.isNumeric()) {
-                    var type = promotedNumericType(t1);
-                    node.setInferredType(type);
-                    types.put(node, type);
-
-                    // TODO: if argument is constant:
-                    //       - do the computation immediately.
-                    //       - replace this UnaryOp by a Float/Double/IntConstant
+                    if (n.arg().isConstant()) {
+                        final Ast.Node result = evaluateConstExpr(n);
+                        n.replaceWith(result);
+                        types.put(result, result.inferredType());
+                    } else {
+                        var type = promotedNumericType(t1);
+                        node.setInferredType(type);
+                        types.put(node, type);
+                    }
                 }
 
                 else {
@@ -179,7 +181,96 @@ public class VT {
             }
             System.out.println("node = " + node + ", type = " + types.get(node));
         }
-        return types::get;
+//        return Ast.Node::inferredType; // TODO this should work too?
+        return types::get; // TODO remove types map
+    }
+
+    // returns a new constant Ast.Node to replace {@code node}.
+    private static Ast.Node evaluateConstExpr(Ast.BinaryOp node) {
+        Ast.Node arg1 = node.arg1();
+        Ast.Node arg2 = node.arg2();
+        AstType t1 = arg1.inferredType();
+        AstType t2 = arg2.inferredType();
+
+        if (t1 == AstType.DOUBLE || t2 == AstType.DOUBLE || t1 == AstType.FLOAT || t2 == AstType.FLOAT ) {
+
+            // At least one of the operands is a floating point value.
+            // If one of the operands is DOUBLE, then the result is DOUBLE.
+            // Otherwise, the result is FLOAT.
+
+            double v1 = floatConstValue(arg1);
+            double v2 = floatConstValue(arg2);
+            double value = switch (node.op()) {
+                case PLUS -> v1 + v2;
+                case MINUS -> v1 - v2;
+                case MULTIPLY -> v1 * v2;
+                case DIVIDE -> v1 / v2;
+                case REMAINDER -> v1 % v2;
+            };
+            Ast.Node result = new Ast.FloatConstant(value);
+            result.setInferredType(promotedNumericType(t1, t2));
+            return result;
+        } else {
+
+            // Both operands are integer values.
+            // The result is BYTE, INT, or LONG, depending on the value.
+            // (The narrowest type that can represent the value is chosen
+
+            long v1 = longConstValue(arg1);
+            long v2 = longConstValue(arg2);
+            long value = switch (node.op()) {
+                case PLUS -> v1 + v2;
+                case MINUS -> v1 - v2;
+                case MULTIPLY -> v1 * v2;
+                case DIVIDE -> v1 / v2;
+                case REMAINDER -> v1 % v2;
+            };
+            Ast.Node result = new Ast.IntConstant(value);
+            result.setInferredType(narrowestType(value));
+            return result;
+        }
+    }
+
+    // returns a new constant Ast.Node to replace {@code node}.
+    private static Ast.Node evaluateConstExpr(Ast.UnaryOp node) {
+        Ast.Node arg1 = node.arg();
+        AstType t1 = arg1.inferredType();
+        if (t1 == AstType.DOUBLE || t1 == AstType.FLOAT) {
+            // operand is a floating point value.
+            double v1 = floatConstValue(arg1);
+            double value = switch (node.op()) {
+                case MINUS -> -v1;
+            };
+            Ast.Node result = new Ast.FloatConstant(value);
+            result.setInferredType(promotedNumericType(t1));
+            return result;
+        } else {
+            long v1 = longConstValue(arg1);
+            long value = switch (node.op()) {
+                case MINUS -> -v1;
+            };
+            Ast.Node result = new Ast.FloatConstant(value);
+            result.setInferredType(narrowestType(value));
+            return result;
+        }
+    }
+
+    private static long longConstValue(Ast.Node node) {
+        if (node instanceof Ast.IntConstant c) {
+            return c.value();
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    private static double floatConstValue(Ast.Node node) {
+        if (node instanceof Ast.IntConstant c) {
+            return c.value();
+        } else if (node instanceof Ast.FloatConstant c) {
+            return c.value();
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
 
     /**

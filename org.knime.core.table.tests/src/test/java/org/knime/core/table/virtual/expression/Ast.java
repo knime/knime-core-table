@@ -21,6 +21,15 @@ public interface Ast {
             return parent;
         }
 
+        void replaceChild(Node child, Node replacement) {}
+
+        public void replaceWith(Node node) {
+            if (parent != null) {
+                parent.replaceChild(this, node);
+                parent = null;
+            }
+        }
+
         private AstType inferredType;
 
         public AstType inferredType() {
@@ -30,8 +39,11 @@ public interface Ast {
         public void setInferredType(final AstType type) {
             this.inferredType = type;
         }
-    }
 
+        public boolean isConstant() {
+            return false;
+        }
+    }
 
     final class IntConstant extends Node {
         private final long value;
@@ -45,8 +57,36 @@ public interface Ast {
         }
 
         @Override
+        public boolean isConstant() {
+            return true;
+        }
+
+        @Override
         public String toString() {
             return "IntConstant[" + "value=" + value + ']';
+        }
+    }
+
+
+    final class FloatConstant extends Node {
+        private final double value;
+
+        public FloatConstant(final double value) {
+            this.value = value;
+        }
+
+        public double value() {
+            return value;
+        }
+
+        @Override
+        public boolean isConstant() {
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "FloatConstant[" + "value=" + value + ']';
         }
     }
 
@@ -60,6 +100,11 @@ public interface Ast {
 
         public String value() {
             return value;
+        }
+
+        @Override
+        public boolean isConstant() {
+            return true;
         }
 
         @Override
@@ -130,8 +175,8 @@ public interface Ast {
             }
         }
 
-        private final Node arg1;
-        private final Node arg2;
+        private Node arg1;
+        private Node arg2;
         private final Operator op;
 
         public BinaryOp(final Node arg1, final Node arg2, final Operator op) {
@@ -160,6 +205,17 @@ public interface Ast {
         }
 
         @Override
+        void replaceChild(final Node child, final Node replacement) {
+            if (arg1.equals(child)) {
+                arg1 = replacement;
+                replacement.parent = this;
+            } else if (arg2.equals(child)) {
+                arg2 = replacement;
+                replacement.parent = this;
+            }
+        }
+
+        @Override
         public String toString() {
             return "BinaryOp[" + "arg1=" + arg1 + ", " + "arg2=" + arg2 + ", " + "op=" + op + ']';
         }
@@ -182,7 +238,7 @@ public interface Ast {
             }
         }
 
-        private final Node arg;
+        private Node arg;
         private final Operator op;
 
         public UnaryOp(final Node arg, final Operator op) {
@@ -202,6 +258,14 @@ public interface Ast {
         @Override
         public List<Node> children() {
             return List.of(arg);
+        }
+
+        @Override
+        void replaceChild(final Node child, final Node replacement) {
+            if (arg.equals(child)) {
+                arg = replacement;
+                replacement.parent = this;
+            }
         }
 
         @Override
