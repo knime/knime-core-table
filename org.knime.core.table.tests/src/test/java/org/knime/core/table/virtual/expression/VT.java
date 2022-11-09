@@ -44,7 +44,7 @@ public class VT {
 
             final ColumnarSchema schema = table.getSchema();
             final IntFunction<AstType> columnIndexToAstType = columnIndex -> schema.getSpec(columnIndex).accept(Typing.toAstType);
-            Typing.getTypes(postorder, columnIndexToAstType);
+            Typing.inferTypes(postorder, columnIndexToAstType);
 
 //            for (int columnIndex : columns.columnIndices()) {
 //                DataSpec spec = schema.getSpec(columnIndex);

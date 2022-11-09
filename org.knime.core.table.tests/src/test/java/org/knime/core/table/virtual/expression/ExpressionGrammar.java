@@ -143,11 +143,17 @@ public interface ExpressionGrammar {
         //	float_literal:
         //      | FLOAT
         public Atom float_literal(OptWs ws, Digits digits, @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String str, OptWs trailingWs) {
-            return new Atom(new Ast.FloatConstant(Double.parseDouble(digits.value + str)));
+            return float_literal(digits.value + str);
         }
 
         public Atom float_literal(OptWs ws, @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String str, OptWs trailingWs) {
-            return new Atom(new Ast.FloatConstant(Double.parseDouble(str)));
+            return float_literal(str);
+        }
+
+        private static Atom float_literal(String str) {
+            final Ast.FloatConstant ast = new Ast.FloatConstant(Double.parseDouble(str));
+            ast.setInferredType(str.substring(str.length() - 1).equalsIgnoreCase("f") ? AstType.FLOAT : AstType.DOUBLE);
+            return new Atom(ast);
         }
 
         //	int_literal:

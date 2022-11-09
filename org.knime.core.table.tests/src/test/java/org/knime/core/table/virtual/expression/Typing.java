@@ -31,15 +31,14 @@ public interface Typing {
      *
      * @param postorder  AST nodes sorted for post-order traversal
      * @param columnType map from column index (in input table, 0-based) to type
-     * @return map AST nodes to their type
      */
-    static Function<Ast.Node, AstType> getTypes(List<Ast.Node> postorder, IntFunction<AstType> columnType) {
+    static Function<Ast.Node, AstType> inferTypes(List<Ast.Node> postorder, IntFunction<AstType> columnType) {
         for (var node : postorder) {
             Ast.Node replacement = null;
             if (node instanceof Ast.IntConstant c) {
                 node.setInferredType(narrowestType(c.value()));
             } else if (node instanceof Ast.FloatConstant c) {
-                node.setInferredType(AstType.DOUBLE);
+                // Do nothing. Type DOUBLE or FLOAT was already assigned during parsing
             } else if (node instanceof Ast.StringConstant) {
                 node.setInferredType(AstType.STRING);
             } else if (node instanceof Ast.ColumnRef) {
@@ -204,11 +203,6 @@ public interface Typing {
     //        - Otherwise, if either operand is of type float, the other is converted to float.
     //        - Otherwise, if either operand is of type long, the other is converted to long.
     //        - Otherwise, both operands are converted to type int.
-    //
-    // TODO: narrowing conversion (short, byte) requires evaluation of constant
-    //       expressions and const promotion.
-    //
-    // TODO: move method to AstType enum?
     private static AstType promotedNumericType(AstType t1, AstType t2) {
         if (!t1.isNumeric() || !t2.isNumeric()) {
             throw new IllegalArgumentException();
