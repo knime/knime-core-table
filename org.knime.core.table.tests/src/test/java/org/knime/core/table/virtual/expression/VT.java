@@ -108,32 +108,27 @@ public class VT {
      * @return map AST nodes to their type
      */
     private static Function<Ast.Node, AstType> getTypes(List<Ast.Node> postorder, IntFunction<AstType> columnType) {
-        final Map<Ast.Node, AstType> types = new HashMap<>();
         for (var node : postorder) {
+            Ast.Node replacement = null;
             if (node instanceof Ast.IntConstant c) {
-                var type = narrowestType(c.value());
-                node.setInferredType(type);
-                types.put(node, type);
+                node.setInferredType(narrowestType(c.value()));
             } else if (node instanceof Ast.FloatConstant c) {
                 node.setInferredType(AstType.DOUBLE);
-                types.put(node, AstType.DOUBLE);
             } else if (node instanceof Ast.StringConstant) {
                 node.setInferredType(AstType.STRING);
-                types.put(node, AstType.STRING);
             } else if (node instanceof Ast.ColumnRef) {
                 throw new UnsupportedOperationException("TODO: cannot handle named columns yet.");
             } else if (node instanceof Ast.ColumnIndex n) {
                 var type  = columnType.apply(n.columnIndex());
                 node.setInferredType(type);
-                types.put(node, type);
             } else if (node instanceof Ast.BinaryOp n) {
                 final AstType t1 = n.arg1().inferredType();
                 final AstType t2 = n.arg2().inferredType();
+                System.out.println("op " + n.op() + " (" + t1 + ", " + t2 + ")");
 
                 // string concatenation?
                 if (n.op() == PLUS && (t1 == AstType.STRING || t2 == AstType.STRING)) {
                     node.setInferredType(AstType.STRING);
-                    types.put(node, AstType.STRING);
                 }
 
                 // numeric operation?
@@ -141,11 +136,9 @@ public class VT {
                     if ( n.arg1().isConstant() && n.arg2().isConstant() ) {
                         final Ast.Node result = evaluateConstExpr(n);
                         n.replaceWith(result);
-                        types.put(result, result.inferredType());
+                        replacement = result;
                     } else {
-                        var type = promotedNumericType(t1, t2);
-                        node.setInferredType(type);
-                        types.put(node, type);
+                        node.setInferredType(promotedNumericType(t1, t2));
                     }
                 }
 
@@ -153,36 +146,30 @@ public class VT {
                     throw new IllegalArgumentException("binary expression of unknown type.");
                 }
 
-                System.out.println("op " + n.op());
-                System.out.println("  t1 = " + t1);
-                System.out.println("  t2 = " + t2);
             } else if ( node instanceof Ast.UnaryOp n) {
                 final AstType t1 = n.arg().inferredType();
+                System.out.println("op " + n.op() + " (" + t1 + ")");
 
                 // numeric operation?
                 if (t1.isNumeric()) {
                     if (n.arg().isConstant()) {
                         final Ast.Node result = evaluateConstExpr(n);
                         n.replaceWith(result);
-                        types.put(result, result.inferredType());
+                        replacement = result;
                     } else {
-                        var type = promotedNumericType(t1);
-                        node.setInferredType(type);
-                        types.put(node, type);
+                        node.setInferredType(promotedNumericType(t1));
                     }
                 }
 
                 else {
                     throw new IllegalArgumentException("binary expression of unknown type.");
                 }
-
-                System.out.println("op " + n.op());
-                System.out.println("  t1 = " + t1);
             }
-            System.out.println("node = " + node + ", type = " + types.get(node));
+            System.out.println("node = " + node + ", type = " + node.inferredType());
+            if ( replacement != null )
+                System.out.println("   ==> " + replacement + ", type = " + replacement.inferredType());
         }
-//        return Ast.Node::inferredType; // TODO this should work too?
-        return types::get; // TODO remove types map
+        return Ast.Node::inferredType;
     }
 
     // returns a new constant Ast.Node to replace {@code node}.
