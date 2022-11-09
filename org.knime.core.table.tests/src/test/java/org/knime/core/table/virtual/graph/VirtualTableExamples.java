@@ -8,6 +8,7 @@ import static org.knime.core.table.RowAccessiblesTestUtils.assertTableEqualsValu
 import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.LONG;
 import static org.knime.core.table.schema.DataSpecs.STRING;
 import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
 
@@ -614,10 +615,10 @@ public class VirtualTableExamples {
 
     public static VirtualTable vtSimpleExpressionMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-//        final VirtualTable mappedCols = VT.map(table, "$[2] + $[3] * 10", DOUBLE);
-//        final VirtualTable mappedCols = VT.map(table, "$[0] + 10", INT);
-        final VirtualTable mappedCols = VT.map(table, "$[2] + $[3] * -10", DOUBLE);
-//      TODO: final VirtualTable mappedCols = VT.map(table, "$[0] + 10", INT);
+//        final VirtualTable mappedCols = VT.map(table, "$[2] + $[3] * (10 + 34 * 1.2f)", DOUBLE);
+        final VirtualTable mappedCols = VT.map(table, "$[0] + 10", LONG);
+//        final VirtualTable mappedCols = VT.map(table, "$[2] + $[3] * -1.1", DOUBLE);
+//        final VirtualTable mappedCols = VT.map(table, "$[0] + 10.2", INT);
         return table
                 .filterColumns(0,1)
                 .append(List.of(mappedCols));

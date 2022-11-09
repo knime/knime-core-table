@@ -1,5 +1,7 @@
 package org.knime.core.table.virtual.expression;
 
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,11 +229,32 @@ public interface Exec {
         }
     };
 
+    /**
+     * Create a {@code MapTransformSpec.MapperFactory}, that is, the final
+     * realization of the expression.
+     *
+     * @param ast                          root note of AST of the expression.
+     * @param columnIndexToComputerFactory function that maps column index to a
+     *                                     factory that produces {@code Computer} (of matching type) from the
+     *                                     {@code ReadAccess[]} array given to the {@code MapperFactory}.
+     * @param outputSpec                   spec of result column
+     * @return a {@code MapperFactory} that implements the given expression.
+     * @throws IllegalArgumentException TODO: Hrmm ... is there a better exception type?
+     *                                  if the {@code DataSpec} of the result column is incompatible with
+     *                                  the {@link Ast.Node#inferredType() inferred type} of the expression.
+     */
     static MapTransformSpec.MapperFactory createMapperFactory( //
             final Ast.Node ast, //
             final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory, //
             final DataSpecs.DataSpecWithTraits outputSpec) //
     {
+        final AstType astType = ast.inferredType();
+        final AstType colType = outputSpec.spec().accept(Typing.toAstType);
+        if (!isAssignableTo(astType, colType)) {
+            throw new IllegalArgumentException(
+                    "Expression of type \"" + astType + "\" cannot be assigned to column of type \"" + outputSpec.spec() + "\"");
+        }
+
         final ColumnarSchema schema = ColumnarSchema.of(outputSpec);
 
         final List<Ast.Node> postorder = Ast.postorder(ast);
@@ -266,5 +289,38 @@ public interface Exec {
         };
 
         return new MapTransformSpec.DefaultMapperFactory(schema, factory);
+    }
+
+    static boolean isAssignableTo(final AstType src, final AstType dest) {
+        return switch (src) {
+            case BYTE -> switch (dest) {
+                case BYTE, INT, LONG, FLOAT, DOUBLE, STRING -> true;
+                case BOOLEAN -> false;
+            };
+            case INT -> switch (dest) {
+                case INT, LONG, FLOAT, DOUBLE, STRING -> true;
+                case BYTE, BOOLEAN -> false;
+            };
+            case LONG -> switch (dest) {
+                case LONG, FLOAT, DOUBLE, STRING -> true;
+                case BYTE, INT, BOOLEAN -> false;
+            };
+            case FLOAT -> switch (dest) {
+                case FLOAT, DOUBLE, STRING -> true;
+                case BYTE, INT, LONG, BOOLEAN -> false;
+            };
+            case DOUBLE -> switch (dest) {
+                case DOUBLE, STRING -> true;
+                case BYTE, INT, LONG, FLOAT, BOOLEAN -> false;
+            };
+            case BOOLEAN -> switch (dest) {
+                case BOOLEAN, STRING -> true;
+                case BYTE, INT, LONG, FLOAT, DOUBLE -> false;
+            };
+            case STRING -> switch (dest) {
+                case STRING -> true;
+                case BYTE, INT, LONG, FLOAT, DOUBLE, BOOLEAN -> false;
+            };
+        };
     }
 }
