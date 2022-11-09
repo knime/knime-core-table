@@ -25,11 +25,27 @@ import org.knime.core.table.schema.VoidDataSpec;
 public interface Typing {
 
     /**
-     * infer Ast.Node types
-     * TODO constant propagation
-     * TODO insert "explicit cast" Ast.Nodes ???
+     * Infer types of the given {@code Ast.Node}s.
+     * Evaluate constant sub-expressions and replace them by single {@code Ast.Node} constants.
+     * <p>
+     * Types are determined as follows:
+     * <ul>
+     *   <li>Column references have the {@code AstType} corresponding to the {@code DataSpec} of the respective column.</li>
+     *   <li>Integer literals have the narrowest integral {@code AstType} type that can fit the respective value.</li>
+     *   <li>Floating point literals are {@code FLOAT} if the last char is "f" or "F", and {@code DOUBLE} otherwise.</li>
+     *   <li>Type of unary and binary expression are determined as described in the <a href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-5.html#jls-5.6">Java Language Specification</a>:
+     *       <ol>
+     *         <li>If either operand is of type double, the other is converted to double.</li>
+     *         <li>Otherwise, if either operand is of type float, the other is converted to float.</li>
+     *         <li>Otherwise, if either operand is of type long, the other is converted to long.</li>
+     *         <li>Otherwise, both operands are converted to type int.</li>
+     *       </ol>
+     *       Constant sub-expressions are evaluated and replaced by single {@code Ast.Node}.
+     *       The type of evaluated integer sub-expressions is the narrowest integral {@code AstType} type that can fit the respective value.
+     *       </li>
+     * </ul>
      *
-     * @param postorder  AST nodes sorted for post-order traversal
+     * @param postorder  AST nodes sorted for post-order traversal (so that types of children are known before parent type is determined)
      * @param columnType map from column index (in input table, 0-based) to type
      */
     static Function<Ast.Node, AstType> inferTypes(List<Ast.Node> postorder, IntFunction<AstType> columnType) {
@@ -163,6 +179,11 @@ public interface Typing {
         }
     }
 
+    /**
+     * Get the {@code long} value of {@code node}.
+     *
+     * @throws IllegalArgumentException if {@code node} does not represent an integer numeric constant.
+     */
     private static long longConstValue(Ast.Node node) {
         if (node instanceof Ast.IntConstant c) {
             return c.value();
@@ -171,6 +192,11 @@ public interface Typing {
         }
     }
 
+    /**
+     * Get the {@code double} value of {@code node}.
+     *
+     * @throws IllegalArgumentException if {@code node} does not represent a numeric constant.
+     */
     private static double floatConstValue(Ast.Node node) {
         if (node instanceof Ast.IntConstant c) {
             return c.value();
@@ -229,6 +255,9 @@ public interface Typing {
         }
     }
 
+    /**
+     * A visitor that maps {@code DataSpec} to the corresponding {@code AstType}.
+     */
     DataSpec.Mapper<AstType> toAstType = new DataSpec.Mapper<>() {
         @Override
         public AstType visit(BooleanDataSpec spec) {
