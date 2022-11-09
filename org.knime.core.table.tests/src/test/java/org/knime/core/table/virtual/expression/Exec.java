@@ -229,7 +229,6 @@ public interface Exec {
 
     static MapTransformSpec.MapperFactory createMapperFactory( //
             final Ast.Node ast, //
-            final Function<Ast.Node, AstType> nodeToAstType, //
             final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory, //
             final DataSpecs.DataSpecWithTraits outputSpec) //
     {
@@ -241,7 +240,7 @@ public interface Exec {
             final Map<Ast.Node, Computer> computers = new HashMap<>();
             for (var node : postorder) {
                 if (node instanceof Ast.IntConstant c) {
-                    computers.put(node, (IntComputer)() -> (int)c.value()); // TODO respect nodeToAstType of c (might be BYTE or LONG, too)
+                    computers.put(node, (IntComputer)() -> (int)c.value()); // TODO respect c.inferredType()! The type might be BYTE or LONG, too.
                 } else if (node instanceof Ast.FloatConstant c) {
                     computers.put(node, (DoubleComputer)() -> c.value());
                 } else if (node instanceof Ast.StringConstant) {
@@ -253,11 +252,11 @@ public interface Exec {
                     computers.put(node, computer);
                 } else if (node instanceof Ast.BinaryOp n) {
                     var computer =
-                            binary(nodeToAstType.apply(n), n.op(), computers.get(n.arg1()), computers.get(n.arg2()));
+                            binary(n.inferredType(), n.op(), computers.get(n.arg1()), computers.get(n.arg2()));
                     computers.put(node, computer);
                 } else if (node instanceof Ast.UnaryOp n) {
                     var computer =
-                            unary(nodeToAstType.apply(n), n.op(), computers.get(n.arg()));
+                            unary(n.inferredType(), n.op(), computers.get(n.arg()));
                     computers.put(node, computer);
                 }
             }
