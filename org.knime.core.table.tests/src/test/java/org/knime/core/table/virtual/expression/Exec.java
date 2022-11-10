@@ -1,7 +1,5 @@
 package org.knime.core.table.virtual.expression;
 
-import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,9 +8,13 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 
+import org.knime.core.table.access.ByteAccess;
 import org.knime.core.table.access.DoubleAccess;
+import org.knime.core.table.access.FloatAccess;
 import org.knime.core.table.access.IntAccess;
+import org.knime.core.table.access.LongAccess;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.BooleanDataSpec;
@@ -36,7 +38,10 @@ public interface Exec {
     interface Computer {
     }
 
+
+    @FunctionalInterface
     interface DoubleComputer extends Computer, DoubleSupplier {
+
         static DoubleComputer column(ReadAccess access) {
             var a = (DoubleAccess.DoubleReadAccess)access;
             return () -> a.getDoubleValue();
@@ -59,10 +64,97 @@ public interface Exec {
         }
     }
 
-    interface IntComputer extends DoubleComputer, IntSupplier {
+
+    @FunctionalInterface
+    interface FloatComputer extends DoubleComputer {
+
+        float getAsFloat();
+
+        @Override
+        default double getAsDouble() {
+            return getAsFloat();
+        }
+
+        static FloatComputer column(ReadAccess access) {
+            var a = (FloatAccess.FloatReadAccess)access;
+            return () -> a.getFloatValue();
+        }
+
+        static FloatComputer unary(Ast.UnaryOp.Operator op, FloatComputer arg1) {
+            return switch (op) {
+                case MINUS -> () -> -arg1.getAsFloat();
+            };
+        }
+
+        static FloatComputer binary(Ast.BinaryOp.Operator op, FloatComputer arg1, FloatComputer arg2) {
+            return switch (op) {
+                case PLUS -> () -> arg1.getAsFloat() + arg2.getAsFloat();
+                case MINUS -> () -> arg1.getAsFloat() - arg2.getAsFloat();
+                case MULTIPLY -> () -> arg1.getAsFloat() * arg2.getAsFloat();
+                case DIVIDE -> () -> arg1.getAsFloat() / arg2.getAsFloat();
+                case REMAINDER -> () -> arg1.getAsFloat() % arg2.getAsFloat();
+            };
+        }
+    }
+
+
+    @FunctionalInterface
+    interface LongComputer extends FloatComputer, LongSupplier {
+
+        @Override
+        default float getAsFloat() {
+            return getAsLong();
+        }
+
+        @Override
+        default double getAsDouble() {
+            return getAsLong();
+        }
+
+        static LongComputer column(ReadAccess access) {
+            var a = (LongAccess.LongReadAccess)access;
+            return () -> a.getLongValue();
+        }
+
+        static LongComputer unary(Ast.UnaryOp.Operator op, LongComputer arg1) {
+            return switch (op) {
+                case MINUS -> () -> -arg1.getAsLong();
+            };
+        }
+
+        static LongComputer binary(Ast.BinaryOp.Operator op, LongComputer arg1, LongComputer arg2) {
+            return switch (op) {
+                case PLUS -> () -> arg1.getAsLong() + arg2.getAsLong();
+                case MINUS -> () -> arg1.getAsLong() - arg2.getAsLong();
+                case MULTIPLY -> () -> arg1.getAsLong() * arg2.getAsLong();
+                case DIVIDE -> () -> arg1.getAsLong() / arg2.getAsLong();
+                case REMAINDER -> () -> arg1.getAsLong() % arg2.getAsLong();
+            };
+        }
+    }
+
+
+    @FunctionalInterface
+    interface IntComputer extends LongComputer, IntSupplier {
+
+        @Override
+        default long getAsLong() {
+            return getAsInt();
+        }
+
+        @Override
+        default float getAsFloat() {
+            return getAsInt();
+        }
+
         @Override
         default double getAsDouble() {
             return getAsInt();
+        }
+
+        static IntComputer column(ReadAccess access) {
+            var a = (IntAccess.IntReadAccess)access;
+            return () -> a.getIntValue();
         }
 
         static IntComputer unary(Ast.UnaryOp.Operator op, IntComputer arg1) {
@@ -82,12 +174,48 @@ public interface Exec {
         }
     }
 
+
+    @FunctionalInterface
+    interface ByteComputer extends IntComputer {
+
+        byte getAsByte();
+
+        @Override
+        default int getAsInt() {
+            return getAsByte();
+        }
+
+        @Override
+        default long getAsLong() {
+            return getAsByte();
+        }
+
+        @Override
+        default float getAsFloat() {
+            return getAsByte();
+        }
+
+        @Override
+        default double getAsDouble() {
+            return getAsByte();
+        }
+
+        static ByteComputer column(ReadAccess access) {
+            var a = (ByteAccess.ByteReadAccess)access;
+            return () -> a.getByteValue();
+        }
+    }
+
+
     // create Computer for BinaryOp
     static Computer binary(AstType type, Ast.BinaryOp.Operator op, Computer arg1, Computer arg2) {
         return switch (type) {
-            case BYTE, LONG, FLOAT, BOOLEAN, STRING ->
+            case BOOLEAN, STRING ->
                     throw new UnsupportedOperationException("TODO: not implemented");
+            case BYTE -> throw new IllegalArgumentException("no binary op should have BYTE as a result");
             case INT -> IntComputer.binary(op, (IntComputer)arg1, (IntComputer)arg2);
+            case LONG -> LongComputer.binary(op, (LongComputer)arg1, (LongComputer)arg2);
+            case FLOAT -> FloatComputer.binary(op, (FloatComputer)arg1, (FloatComputer)arg2);
             case DOUBLE -> DoubleComputer.binary(op, (DoubleComputer)arg1, (DoubleComputer)arg2);
         };
     }
@@ -95,9 +223,12 @@ public interface Exec {
     // create Computer for UnaryOp
     static Computer unary(AstType type, Ast.UnaryOp.Operator op, Computer arg1) {
         return switch (type) {
-            case BYTE, LONG, FLOAT, BOOLEAN, STRING ->
+            case BOOLEAN, STRING ->
                     throw new UnsupportedOperationException("TODO: not implemented");
+            case BYTE -> throw new IllegalArgumentException("no unary op should have BYTE as a result");
             case INT -> IntComputer.unary(op, (IntComputer)arg1);
+            case LONG -> LongComputer.unary(op, (LongComputer)arg1);
+            case FLOAT -> FloatComputer.unary(op, (FloatComputer)arg1);
             case DOUBLE -> DoubleComputer.unary(op, (DoubleComputer)arg1);
         };
     }
@@ -110,8 +241,8 @@ public interface Exec {
         }
 
         @Override
-        public Function<ReadAccess, Computer> visit(ByteDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+        public Function<ReadAccess, ByteComputer> visit(ByteDataSpec spec) {
+            return ByteComputer::column;
         }
 
         @Override
@@ -120,21 +251,18 @@ public interface Exec {
         }
 
         @Override
-        public Function<ReadAccess, Computer> visit(FloatDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+        public Function<ReadAccess, FloatComputer> visit(FloatDataSpec spec) {
+            return FloatComputer::column;
         }
 
         @Override
         public Function<ReadAccess, IntComputer> visit(IntDataSpec spec) {
-            return access -> {
-                var intAccess = (IntAccess.IntReadAccess)access;
-                return () -> intAccess.getIntValue();
-            };
+            return IntComputer::column;
         }
 
         @Override
         public Function<ReadAccess, Computer> visit(LongDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+            return LongComputer::column;
         }
 
         @Override
@@ -172,7 +300,11 @@ public interface Exec {
 
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(ByteDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+            return (access, computer) -> {
+                var a = (ByteAccess.ByteWriteAccess)access;
+                var c = (ByteComputer)computer;
+                return () -> a.setByteValue(c.getAsByte());
+            };
         }
 
         @Override
@@ -186,7 +318,11 @@ public interface Exec {
 
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(FloatDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+            return (access, computer) -> {
+                var a = (FloatAccess.FloatWriteAccess)access;
+                var c = (FloatComputer)computer;
+                return () -> a.setFloatValue(c.getAsFloat());
+            };
         }
 
         @Override
@@ -200,7 +336,11 @@ public interface Exec {
 
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(LongDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+            return (access, computer) -> {
+                var a = (LongAccess.LongWriteAccess)access;
+                var c = (LongComputer)computer;
+                return () -> a.setLongValue(c.getAsLong());
+            };
         }
 
         @Override
