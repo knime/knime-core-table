@@ -211,8 +211,8 @@ public interface Exec {
     static Computer binary(AstType type, Ast.BinaryOp.Operator op, Computer arg1, Computer arg2) {
         return switch (type) {
             case BOOLEAN, STRING ->
-                    throw new UnsupportedOperationException("TODO: not implemented");
-            case BYTE -> throw new IllegalArgumentException("no binary op should have BYTE as a result");
+                    throw new UnsupportedOperationException("TODO: not implemented"); // TODO
+            case BYTE -> throw new IllegalStateException("no binary op should have BYTE as a result");
             case INT -> IntComputer.binary(op, (IntComputer)arg1, (IntComputer)arg2);
             case LONG -> LongComputer.binary(op, (LongComputer)arg1, (LongComputer)arg2);
             case FLOAT -> FloatComputer.binary(op, (FloatComputer)arg1, (FloatComputer)arg2);
@@ -224,8 +224,8 @@ public interface Exec {
     static Computer unary(AstType type, Ast.UnaryOp.Operator op, Computer arg1) {
         return switch (type) {
             case BOOLEAN, STRING ->
-                    throw new UnsupportedOperationException("TODO: not implemented");
-            case BYTE -> throw new IllegalArgumentException("no unary op should have BYTE as a result");
+                    throw new UnsupportedOperationException("TODO: not implemented"); // TODO
+            case BYTE -> throw new IllegalStateException("no unary op should have BYTE as a result");
             case INT -> IntComputer.unary(op, (IntComputer)arg1);
             case LONG -> LongComputer.unary(op, (LongComputer)arg1);
             case FLOAT -> FloatComputer.unary(op, (FloatComputer)arg1);
@@ -237,7 +237,7 @@ public interface Exec {
     DataSpec.Mapper<Function<ReadAccess, ? extends Computer>> toReaderFactory = new DataSpec.Mapper<>() {
         @Override
         public Function<ReadAccess, Computer> visit(BooleanDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+            throw new IllegalArgumentException("TODO not implemented"); // TODO
         }
 
         @Override
@@ -267,27 +267,27 @@ public interface Exec {
 
         @Override
         public Function<ReadAccess, Computer> visit(VarBinaryDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?"); // TODO
         }
 
         @Override
         public Function<ReadAccess, Computer> visit(VoidDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?"); // TODO
         }
 
         @Override
         public Function<ReadAccess, Computer> visit(StructDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?"); // TODO
         }
 
         @Override
         public Function<ReadAccess, Computer> visit(ListDataSpec listDataSpec) {
-            throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?"); // TODO
         }
 
         @Override
         public Function<ReadAccess, Computer> visit(StringDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+            throw new IllegalArgumentException("TODO not implemented"); // TODO
         }
     };
 
@@ -295,7 +295,7 @@ public interface Exec {
     DataSpec.Mapper<BiFunction<WriteAccess, Computer, Runnable>> toWriterFactory = new DataSpec.Mapper<>() {
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(BooleanDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+            throw new IllegalArgumentException("TODO not implemented"); // TODO
         }
 
         @Override
@@ -345,27 +345,27 @@ public interface Exec {
 
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(VarBinaryDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?"); // TODO
         }
 
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(VoidDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?"); // TODO
         }
 
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(StructDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?"); // TODO
         }
 
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(ListDataSpec listDataSpec) {
-            throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?"); // TODO
         }
 
         @Override
         public BiFunction<WriteAccess, Computer, Runnable> visit(StringDataSpec spec) {
-            throw new IllegalArgumentException("TODO not implemented");
+            throw new IllegalArgumentException("TODO not implemented"); // TODO
         }
     };
 
@@ -413,9 +413,9 @@ public interface Exec {
 //                } else if (node instanceof Ast.FloatConstant c) {
                     computers.put(node, (DoubleComputer)() -> c.value());
                 } else if (node instanceof Ast.StringConstant) {
-                    throw new UnsupportedOperationException("TODO: not implemented");
+                    throw new UnsupportedOperationException("TODO: not implemented"); // TODO
                 } else if (node instanceof Ast.ColumnRef) {
-                    throw new UnsupportedOperationException("TODO: cannot handle named columns yet.");
+                    throw new UnsupportedOperationException("TODO: cannot handle named columns yet."); // TODO
                 } else if (node instanceof Ast.ColumnIndex n) {
                     var computer = columnIndexToComputerFactory.apply(n.columnIndex()).apply(readAccesses);
                     computers.put(node, computer);

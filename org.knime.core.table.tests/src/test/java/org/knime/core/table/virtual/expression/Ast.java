@@ -274,11 +274,7 @@ public interface Ast {
         }
     }
 
-    //    record FloatConstant(float value) extends Node {} // TODO
-    //    record DoubleConstant(double value) extends Node {} // TODO
-
     // TODO: Unify ColumnRef and ColumnIndex?
-    // TODO: Should type information be attached to AstNode directly, or should there be a Map<AstNode, Type> ???
 
 //    final class AstColumnRef implements AstNode {
 //        private final String name;

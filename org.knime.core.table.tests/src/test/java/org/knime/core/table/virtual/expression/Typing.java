@@ -58,7 +58,7 @@ public interface Typing {
             } else if (node instanceof Ast.StringConstant) {
                 node.setInferredType(AstType.STRING);
             } else if (node instanceof Ast.ColumnRef) {
-                throw new UnsupportedOperationException("TODO: cannot handle named columns yet.");
+                throw new UnsupportedOperationException("TODO: cannot handle named columns yet."); // TODO
             } else if (node instanceof Ast.ColumnIndex n) {
                 var type = columnType.apply(n.columnIndex());
                 node.setInferredType(type);
@@ -291,22 +291,22 @@ public interface Typing {
 
         @Override
         public AstType visit(VarBinaryDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?"); // TODO
         }
 
         @Override
         public AstType visit(VoidDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?"); // TODO
         }
 
         @Override
         public AstType visit(StructDataSpec spec) {
-            throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?"); // TODO
         }
 
         @Override
         public AstType visit(ListDataSpec listDataSpec) {
-            throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?");
+            throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?"); // TODO
         }
 
         @Override

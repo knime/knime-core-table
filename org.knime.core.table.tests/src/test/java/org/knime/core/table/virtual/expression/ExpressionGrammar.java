@@ -185,9 +185,6 @@ public interface ExpressionGrammar {
         //   `byte` represents a hex char.
         // this can be quite confusing to casual observers.
 
-
-        // TODO: This should return StrConst or something. Then take this instead of String columnName above.
-
         public StrConst string(@Ch(QT)Void QL, int[] chars, @Ch(QT)Void QR, OptWs trailingWs)
         {
             return new StrConst(new String(chars, 0, chars.length));
