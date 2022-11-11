@@ -403,8 +403,14 @@ public interface Exec {
             final Map<Ast.Node, Computer> computers = new HashMap<>();
             for (var node : postorder) {
                 if (node instanceof Ast.IntConstant c) {
-                    computers.put(node, (IntComputer)() -> (int)c.value()); // TODO respect c.inferredType()! The type might be BYTE or LONG, too.
-                } else if (node instanceof Ast.FloatConstant c) {
+                    var computer = switch (node.inferredType()) {
+                        case BYTE -> (ByteComputer)() -> (byte)c.value();
+                        case INT -> (IntComputer)() -> (int)c.value();
+                        case LONG -> (LongComputer)() -> c.value();
+                        default -> throw new IllegalStateException("Unexpected inferred type: " + node.inferredType());
+                    };
+                    computers.put(node, computer);
+//                } else if (node instanceof Ast.FloatConstant c) {
                     computers.put(node, (DoubleComputer)() -> c.value());
                 } else if (node instanceof Ast.StringConstant) {
                     throw new UnsupportedOperationException("TODO: not implemented");
