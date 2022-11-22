@@ -130,6 +130,15 @@ public interface Typing {
                 case MULTIPLY -> v1 * v2;
                 case DIVIDE -> v1 / v2;
                 case REMAINDER -> v1 % v2;
+                // TODO
+                case EQUAL_TO -> 0.0;
+                case NOT_EQUAL_TO -> 0.0;
+                case LESS_THAN -> 0.0;
+                case LESS_THAN_EQUAL -> 0.0;
+                case GREATER_THAN -> 0.0;
+                case GREATER_THAN_EQUAL -> 0.0;
+                case CONDITIONAL_AND -> 0.0;
+                case CONDITIONAL_OR -> 0.0;
             };
             Ast.Node result = new Ast.FloatConstant(value);
             result.setInferredType(promotedNumericType(t1, t2));
@@ -148,6 +157,15 @@ public interface Typing {
                 case MULTIPLY -> v1 * v2;
                 case DIVIDE -> v1 / v2;
                 case REMAINDER -> v1 % v2;
+                // TODO
+                case EQUAL_TO -> 0L;
+                case NOT_EQUAL_TO -> 0L;
+                case LESS_THAN -> 0L;
+                case LESS_THAN_EQUAL -> 0L;
+                case GREATER_THAN -> 0L;
+                case GREATER_THAN_EQUAL -> 0L;
+                case CONDITIONAL_AND -> 0L;
+                case CONDITIONAL_OR -> 0L;
             };
             Ast.Node result = new Ast.IntConstant(value);
             result.setInferredType(narrowestType(value));
@@ -164,6 +182,8 @@ public interface Typing {
             double v1 = floatConstValue(arg1);
             double value = switch (node.op()) {
                 case MINUS -> -v1;
+                // TODO
+                case NOT -> 0.0;
             };
             Ast.Node result = new Ast.FloatConstant(value);
             result.setInferredType(promotedNumericType(t1));
@@ -172,6 +192,8 @@ public interface Typing {
             long v1 = longConstValue(arg1);
             long value = switch (node.op()) {
                 case MINUS -> -v1;
+                // TODO
+                case NOT -> 0L;
             };
             Ast.Node result = new Ast.FloatConstant(value);
             result.setInferredType(narrowestType(value));

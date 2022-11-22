@@ -1,8 +1,16 @@
 package org.knime.core.table.virtual.expression;
 
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.CONDITIONAL_AND;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.CONDITIONAL_OR;
 import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.DIVIDE;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.EQUAL_TO;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.GREATER_THAN;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.GREATER_THAN_EQUAL;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.LESS_THAN;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.LESS_THAN_EQUAL;
 import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.MINUS;
 import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.MULTIPLY;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.NOT_EQUAL_TO;
 import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.PLUS;
 import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.REMAINDER;
 
@@ -12,12 +20,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Scanner;
 
 import org.rekex.annomacro.AnnoMacro;
 import org.rekex.helper.anno.Ch;
+import org.rekex.helper.anno.Str;
 import org.rekex.helper.anno.StrWs;
 import org.rekex.helper.datatype.SepBy1;
 import org.rekex.parser.ParseResult;
@@ -43,6 +50,10 @@ public interface ExpressionGrammar {
     }
 
     record Expr(Ast.Node ast) {}
+    record Disjunction(Ast.Node ast) {}
+    record Conjunction(Ast.Node ast) {}
+    record Inversion(Ast.Node ast) {}
+    record Comparison(Ast.Node ast) {}
 	record Sum(Ast.Node ast) {}
 	record Term(Ast.Node ast) {}
 	record Factor(Ast.Node ast) {}
@@ -52,23 +63,81 @@ public interface ExpressionGrammar {
 
     class CtorCatalog
     {
-        private static final Map<String, Ast.BinaryOp.Operator> binaryOps = Map.of( //
-                "+", PLUS, //
-                "-", MINUS, //
-                "*", MULTIPLY, //
-                "/", DIVIDE, //
-                "%", REMAINDER);
-
         private static Ast.BinaryOp.Operator binaryOperator(final String symbol) {
-            return Objects.requireNonNull(binaryOps.get(symbol), () -> "unknown binary operator: \"" + symbol + "\"");
+            return switch (symbol) {
+                case "+" -> PLUS;
+                case "-" -> MINUS;
+                case "*" -> MULTIPLY;
+                case "/" -> DIVIDE;
+                case "%" -> REMAINDER;
+                case "==", "=" -> EQUAL_TO;
+                case "!=" -> NOT_EQUAL_TO;
+                case "<" -> LESS_THAN;
+                case "<=" -> LESS_THAN_EQUAL;
+                case ">" -> GREATER_THAN;
+                case ">=" -> GREATER_THAN_EQUAL;
+                case "and" -> CONDITIONAL_AND;
+                case "or" -> CONDITIONAL_OR;
+                default -> throw new IllegalArgumentException("unknown binary operator: \"" + symbol + "\"");
+            };
+        }
+
+        //  expression:
+        //      | disjunction
+        public Expr expr(Disjunction d) {
+			return new Expr(d.ast);
+		}
+
+        //  disjunction:
+        //      | a=conjunction 'or' b=disjunction { "or", a, b }
+        //      | conjunction
+        public Disjunction disjunction(SepBy1<Conjunction, @Str("or")String> conjunctions) {
+            return new Disjunction(
+                    conjunctions.reduce(
+                            c1 -> op -> c2 -> new Conjunction(
+                                    new Ast.BinaryOp(c1.ast, c2.ast, CONDITIONAL_OR))
+                    ).ast);
         }
 
 
-        //	expression:
-        //		| sum
-		public Expr expr(Sum s) {
-			return new Expr(s.ast);
-		}
+        //  conjunction:
+        //      | a=inversion 'and' b=conjunction { "and", a, b }
+        //      | inversion
+        public Conjunction conjunction(SepBy1<Inversion, @Str("and")String> inversions) {
+            return new Conjunction(
+                    inversions.reduce(
+                            i1 -> op -> i2 -> new Inversion(
+                                    new Ast.BinaryOp(i1.ast, i2.ast, CONDITIONAL_AND))
+                            ).ast);
+        }
+
+        //  inversion:
+        //      | 'not' a=inversion { "not", a }
+        //      | comparison
+        public Inversion inversion(OptWs ws, @Str("not")String op, Comparison c) {
+            return new Inversion(new Ast.UnaryOp(c.ast, Ast.UnaryOp.Operator.NOT));
+        }
+
+        public Inversion inversion(Comparison c) {
+            return new Inversion(c.ast);
+        }
+
+        //  comparison:
+        //      | a=sum '==' b=sum { "==", a, b }
+        //      | a=sum '=' b=sum { "=", a, b }
+        //      | a=sum '!=' b=sum { "!=", a, b }
+        //      | a=sum '<=' b=sum { "<=", a, b }
+        //      | a=sum '<' b=sum { "<", a, b }
+        //      | a=sum '>=' b=sum { ">=", a, b }
+        //      | a=sum '>' b=sum { ">", a, b }
+        //      | sum
+        public Comparison comparison(Sum s1, @Str({"==", "=", "!=", "<=", "<", ">=", ">"})String op, Sum s2 ) {
+            return new Comparison(new Ast.BinaryOp(s1.ast, s2.ast, binaryOperator(op)));
+        }
+
+        public Comparison comparison(Sum s ) {
+            return new Comparison(s.ast);
+        }
 
         //	sum:
         //		| sum '+' term
@@ -265,7 +334,7 @@ public interface ExpressionGrammar {
         return new PegParserBuilder()
                 .rootType(klass)
                 .catalogClass(CtorCatalog.class)
-//                .logGrammar(System.out::println)
+                .logGrammar(System.out::println)
                 .build(new CtorCatalog());
     }
 

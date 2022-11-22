@@ -60,6 +60,13 @@ public interface Exec {
                 case MULTIPLY -> () -> arg1.getAsDouble() * arg2.getAsDouble();
                 case DIVIDE -> () -> arg1.getAsDouble() / arg2.getAsDouble();
                 case REMAINDER -> () -> arg1.getAsDouble() % arg2.getAsDouble();
+                // TODO
+                case EQUAL_TO -> null;
+                case NOT_EQUAL_TO -> null;
+                case LESS_THAN -> null;
+                case LESS_THAN_EQUAL -> null;
+                case GREATER_THAN -> null;
+                case GREATER_THAN_EQUAL -> null;
             };
         }
     }
@@ -93,6 +100,13 @@ public interface Exec {
                 case MULTIPLY -> () -> arg1.getAsFloat() * arg2.getAsFloat();
                 case DIVIDE -> () -> arg1.getAsFloat() / arg2.getAsFloat();
                 case REMAINDER -> () -> arg1.getAsFloat() % arg2.getAsFloat();
+                // TODO
+                case EQUAL_TO -> null;
+                case NOT_EQUAL_TO -> null;
+                case LESS_THAN -> null;
+                case LESS_THAN_EQUAL -> null;
+                case GREATER_THAN -> null;
+                case GREATER_THAN_EQUAL -> null;
             };
         }
     }
@@ -129,6 +143,13 @@ public interface Exec {
                 case MULTIPLY -> () -> arg1.getAsLong() * arg2.getAsLong();
                 case DIVIDE -> () -> arg1.getAsLong() / arg2.getAsLong();
                 case REMAINDER -> () -> arg1.getAsLong() % arg2.getAsLong();
+                // TODO
+                case EQUAL_TO -> null;
+                case NOT_EQUAL_TO -> null;
+                case LESS_THAN -> null;
+                case LESS_THAN_EQUAL -> null;
+                case GREATER_THAN -> null;
+                case GREATER_THAN_EQUAL -> null;
             };
         }
     }
@@ -170,6 +191,13 @@ public interface Exec {
                 case MULTIPLY -> () -> arg1.getAsInt() * arg2.getAsInt();
                 case DIVIDE -> () -> arg1.getAsInt() / arg2.getAsInt();
                 case REMAINDER -> () -> arg1.getAsInt() % arg2.getAsInt();
+                // TODO
+                case EQUAL_TO -> null;
+                case NOT_EQUAL_TO -> null;
+                case LESS_THAN -> null;
+                case LESS_THAN_EQUAL -> null;
+                case GREATER_THAN -> null;
+                case GREATER_THAN_EQUAL -> null;
             };
         }
     }

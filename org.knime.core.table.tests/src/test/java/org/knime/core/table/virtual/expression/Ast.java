@@ -162,7 +162,15 @@ public interface Ast {
             MINUS("-"), //
             MULTIPLY("*"), //
             DIVIDE("/"), //
-            REMAINDER("%"); //
+            REMAINDER("%"), //
+            EQUAL_TO("=="), //
+            NOT_EQUAL_TO("!="), //
+            LESS_THAN("<"), //
+            LESS_THAN_EQUAL("<="), //
+            GREATER_THAN(">"), //
+            GREATER_THAN_EQUAL(">="), //
+            CONDITIONAL_AND("and"), //
+            CONDITIONAL_OR("or"); //
 
             private final String symbol;
 
@@ -225,7 +233,8 @@ public interface Ast {
     final class UnaryOp extends Node {
 
         public enum Operator {
-            MINUS("-"); //
+            MINUS("-"), //
+            NOT("not"); //
 
             private final String symbol;
 
