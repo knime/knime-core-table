@@ -72,8 +72,8 @@ public interface Typing {
                     node.setInferredType(AstType.STRING);
                 }
 
-                // numeric operation?
-                else if (t1.isNumeric() && t2.isNumeric()) {
+                // arithmetic operation?
+                else if (t1.isNumeric() && t2.isNumeric() && n.op().isArithmetic() ) {
                     if (n.arg1().isConstant() && n.arg2().isConstant()) {
                         final Ast.Node result = evaluateConstExpr(n);
                         n.replaceWith(result);
@@ -81,6 +81,30 @@ public interface Typing {
                     } else {
                         node.setInferredType(promotedNumericType(t1, t2));
                     }
+                }
+
+                // lgical operation?
+                else if (t1 ==AstType.BOOLEAN && t2 == AstType.BOOLEAN && n.op().isLogical() ) {
+                    // TODO: Evaluate const expression
+                    node.setInferredType(AstType.BOOLEAN);
+                }
+
+                // ordering comparison
+                else if (n.op().isOrderingComparison()) {
+                    if ( orderingType( t1, t2 ) == null ) {
+                        throw new IllegalArgumentException("types " + t1 + " and " + t2 + " cannot be order-compared");
+                    }
+                    // TODO: Evaluate const expression
+                    node.setInferredType(AstType.BOOLEAN);
+                }
+
+                // equality comparison
+                else if (n.op().isEqualityComparison()) {
+                    if ( equalityType( t1, t2 ) == null ) {
+                        throw new IllegalArgumentException("types " + t1 + " and " + t2 + " cannot be equality-compared");
+                    }
+                    // TODO: Evaluate const expression
+                    node.setInferredType(AstType.BOOLEAN);
                 } else {
                     throw new IllegalArgumentException("binary expression of unknown type.");
                 }
@@ -99,7 +123,7 @@ public interface Typing {
                         node.setInferredType(promotedNumericType(t1));
                     }
                 } else {
-                    throw new IllegalArgumentException("binary expression of unknown type.");
+                    throw new IllegalArgumentException("unary expression of unknown type.");
                 }
             }
             System.out.println("node = " + node + ", type = " + node.inferredType());
@@ -244,6 +268,31 @@ public interface Typing {
         }
     }
 
+    /**
+     * Equality Comparison can be applied if both arguments are numeric, or if both arguments have the same type.
+     *
+     * @return the type that should be used for comparison, or {@code null} if the argument types are not comparable.
+     */
+    static AstType equalityType(AstType t1, AstType t2) {
+        if (t1 == t2) {
+            return t1;
+        } else {
+            return orderingType(t1, t2);
+        }
+    }
+
+    /**
+     * Ordering Comparison can be applied if both arguments are numeric.
+     *
+     * @return the type that should be used for comparison, or {@code null} if the argument types are not comparable.
+     */
+    static AstType orderingType(AstType t1, AstType t2) {
+        if (!t1.isNumeric() || !t2.isNumeric()) {
+            return null;
+        }
+        return promotedNumericType(t1, t2);
+    }
+
     // see JLS 5.6
     // https://docs.oracle.com/javase/specs/jls/se17/html/jls-5.html#jls-5.6
     //
@@ -251,7 +300,7 @@ public interface Typing {
     //        - Otherwise, if either operand is of type float, the other is converted to float.
     //        - Otherwise, if either operand is of type long, the other is converted to long.
     //        - Otherwise, both operands are converted to type int.
-    private static AstType promotedNumericType(AstType t1, AstType t2) {
+    static AstType promotedNumericType(AstType t1, AstType t2) {
         if (!t1.isNumeric() || !t2.isNumeric()) {
             throw new IllegalArgumentException();
         }
