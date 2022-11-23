@@ -1,5 +1,10 @@
 package org.knime.core.table.virtual.expression;
 
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.OperatorType.ARITHMETIC;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.OperatorType.EQUALITY;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.OperatorType.LOGICAL;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOp.OperatorType.ORDERING;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -157,29 +162,59 @@ public interface Ast {
 
     final class BinaryOp extends Node {
 
+        public enum OperatorType {
+            ARITHMETIC,
+            EQUALITY,
+            ORDERING,
+            LOGICAL
+        }
+
         public enum Operator {
-            PLUS("+"), //
-            MINUS("-"), //
-            MULTIPLY("*"), //
-            DIVIDE("/"), //
-            REMAINDER("%"), //
-            EQUAL_TO("=="), //
-            NOT_EQUAL_TO("!="), //
-            LESS_THAN("<"), //
-            LESS_THAN_EQUAL("<="), //
-            GREATER_THAN(">"), //
-            GREATER_THAN_EQUAL(">="), //
-            CONDITIONAL_AND("and"), //
-            CONDITIONAL_OR("or"); //
+            PLUS("+", ARITHMETIC), //
+            MINUS("-", ARITHMETIC), //
+            MULTIPLY("*", ARITHMETIC), //
+            DIVIDE("/", ARITHMETIC), //
+            REMAINDER("%", ARITHMETIC), //
+            EQUAL_TO("==", EQUALITY), //
+            NOT_EQUAL_TO("!=", EQUALITY), //
+            LESS_THAN("<", ORDERING), //
+            LESS_THAN_EQUAL("<=", ORDERING), //
+            GREATER_THAN(">", ORDERING), //
+            GREATER_THAN_EQUAL(">=", ORDERING), //
+            CONDITIONAL_AND("and", LOGICAL), //
+            CONDITIONAL_OR("or", LOGICAL); //
 
             private final String symbol;
 
-            Operator(final String symbol) {
+            private final OperatorType type;
+
+            Operator(final String symbol, final OperatorType type) {
                 this.symbol = symbol;
+                this.type = type;
             }
 
             public String symbol() {
                 return symbol;
+            }
+
+            public OperatorType type() {
+                return type;
+            }
+
+            public boolean isArithmetic() {
+                return type == ARITHMETIC;
+            }
+
+            public boolean isEqualityComparison() {
+                return type == EQUALITY;
+            }
+
+            public boolean isOrderingComparison() {
+                return type == ORDERING;
+            }
+
+            public boolean isLogical() {
+                return type == LOGICAL;
             }
         }
 
