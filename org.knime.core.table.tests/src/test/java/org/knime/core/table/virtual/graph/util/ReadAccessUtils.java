@@ -1,5 +1,6 @@
 package org.knime.core.table.virtual.graph.util;
 
+import org.knime.core.table.access.BooleanAccess;
 import org.knime.core.table.access.DoubleAccess;
 import org.knime.core.table.access.IntAccess;
 import org.knime.core.table.access.LongAccess;
@@ -20,6 +21,9 @@ public class ReadAccessUtils {
         } else if (access instanceof DoubleAccess.DoubleReadAccess) {
             final DoubleAccess.DoubleReadAccess a = (DoubleAccess.DoubleReadAccess)access;
             return "(double) " + (a.isMissing() ? "-missing-" : a.getDoubleValue());
+        } else if (access instanceof BooleanAccess.BooleanReadAccess) {
+            final BooleanAccess.BooleanReadAccess a = (BooleanAccess.BooleanReadAccess)access;
+            return "(bool) " + (a.isMissing() ? "-missing-" : a.getBooleanValue());
         }
         throw new UnsupportedOperationException("not implemented yet");
     }
