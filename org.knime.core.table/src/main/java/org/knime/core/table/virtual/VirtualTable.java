@@ -53,11 +53,24 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
+import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DataSpecs;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.schema.traits.DefaultDataTraits;
+import org.knime.core.table.virtual.expression.Ast;
+import org.knime.core.table.virtual.expression.AstType;
+import org.knime.core.table.virtual.expression.Exec;
+import org.knime.core.table.virtual.expression.Exec.Computer;
+import org.knime.core.table.virtual.expression.ExpressionGrammar;
+import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
+import org.knime.core.table.virtual.expression.Typing;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
@@ -71,6 +84,8 @@ import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
+import org.rekex.parser.ParseResult;
+import org.rekex.parser.PegParser;
 
 import com.google.common.collect.Collections2;
 
@@ -219,6 +234,41 @@ public final class VirtualTable {
     }
 
     /**
+     * @param expression expression that computes a new column
+     * @param outputSpec DataSpec of the computed column. Must be assignable from the result type of the expression
+     */
+    public VirtualTable map(final String expression, final DataSpecWithTraits outputSpec) {
+        final PegParser<Expr> parser = ExpressionGrammar.parser();
+        final ParseResult<Expr> result = parser.parse(expression);
+        if (result instanceof ParseResult.Full<Expr> full) {
+            final Ast.Node ast = full.value().ast();
+            final List<Ast.Node> postorder = Ast.postorder(ast);
+            final Ast.RequiredColumns columns = Ast.getRequiredColumns(postorder);
+
+            final IntFunction<AstType> columnIndexToAstType = i -> m_schema.getSpec(i).accept(Typing.toAstType);
+            Typing.inferTypes(postorder, columnIndexToAstType);
+
+            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
+                    columnIndex -> {
+                        int inputIndex = columns.getInputIndex(columnIndex);
+                        Function<ReadAccess, ? extends Computer> createComputer =
+                                m_schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
+                        return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
+                    };
+
+            var mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory, outputSpec);
+            return map(columns.columnIndices(), mapperFactory);
+        } else {
+            System.err.println("parse error:\n" + result);
+            throw new IllegalArgumentException();
+        }
+    }
+
+    public VirtualTable map(final String expression, final DataSpec outputSpec) {
+        return map(expression, new DataSpecWithTraits(outputSpec, DefaultDataTraits.EMPTY));
+    }
+
+    /**
      * Create a {@code new VirtualTable} by including only rows from this {@code
      * VirtualTable} that match a given predicate. This is defined by an array
      * of {@code n} column indices that form the inputs of the ({@code n}-ary}
@@ -241,6 +291,36 @@ public final class VirtualTable {
     public VirtualTable filterRows(final int[] columnIndices, final RowFilterFactory filterFactory) {
         final TableTransformSpec transformSpec = new RowFilterTransformSpec(columnIndices, filterFactory);
         return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), m_schema);
+    }
+
+    /**
+     * @param expression expression for filter predicate
+     */
+    public VirtualTable filterRows(final String expression) {
+        final PegParser<Expr> parser = ExpressionGrammar.parser();
+        final ParseResult<Expr> result = parser.parse(expression);
+        if (result instanceof ParseResult.Full<Expr> full) {
+            final Ast.Node ast = full.value().ast();
+            final List<Ast.Node> postorder = Ast.postorder(ast);
+            final Ast.RequiredColumns columns = Ast.getRequiredColumns(postorder);
+
+            final IntFunction<AstType> columnIndexToAstType = i -> m_schema.getSpec(i).accept(Typing.toAstType);
+            Typing.inferTypes(postorder, columnIndexToAstType);
+
+            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
+                    columnIndex -> {
+                        int inputIndex = columns.getInputIndex(columnIndex);
+                        Function<ReadAccess, ? extends Computer> createComputer =
+                                m_schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
+                        return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
+                    };
+
+            var filterFactory = Exec.createRowFilterFactory(ast, columnIndexToComputerFactory);
+            return filterRows(columns.columnIndices(), filterFactory);
+        } else {
+            System.err.println("parse error:\n" + result);
+            throw new IllegalArgumentException();
+        }
     }
 
     public VirtualTable resolveSources(final Map<UUID, VirtualTable> sourceMap) {

@@ -324,7 +324,7 @@ public interface ExpressionGrammar {
 
     static void main(String[] args) throws Exception {
         // this works if the main method is invoked from IntelliJ IDE
-        final String srcDir = "src/test/java";
+        final String srcDir = "src/main/java";
 //        System.out.println(Paths.get(srcDir).toAbsolutePath());
         genJava(srcDir);
         testInputs( "Expr", parser(Expr.class));

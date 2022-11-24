@@ -384,7 +384,7 @@ public interface Ast {
     }
 
     record RequiredColumns(int[] columnIndices) {
-        int getInputIndex(int columnIndex) {
+        public int getInputIndex(int columnIndex) {
             for (int i = 0; i < columnIndices.length; i++) {
                 if ( columnIndices[i] == columnIndex )
                     return i;
