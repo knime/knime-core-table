@@ -1,6 +1,5 @@
 package org.knime.core.table.virtual.expression;
 
-import org.knime.core.table.virtual.expression.Ast;
 import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
 import org.rekex.parser.PegParser;
 
