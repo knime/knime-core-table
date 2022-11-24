@@ -37,6 +37,7 @@ import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VoidDataSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 
 public interface Exec {
 
@@ -566,11 +567,44 @@ public interface Exec {
                     "Expression of type \"" + astType + "\" cannot be assigned to column of type \"" + outputSpec.spec() + "\"");
         }
 
-        final ColumnarSchema schema = ColumnarSchema.of(outputSpec);
-
-        final List<Ast.Node> postorder = Ast.postorder(ast);
         final BiFunction<WriteAccess, Computer, Runnable> writerFactory = outputSpec.spec().accept(toWriterFactory);
-        final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory = (readAccesses, writeAccesses) -> {
+        final Function<ReadAccess[], Computer> computerFactory = createComputerFactory(ast, columnIndexToComputerFactory);
+        final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory = (readAccesses, writeAccesses) -> writerFactory.apply(writeAccesses[0], computerFactory.apply(readAccesses));
+
+        return new MapTransformSpec.DefaultMapperFactory(ColumnarSchema.of(outputSpec), factory);
+    }
+
+    /**
+     * TODO javadoc
+     *
+     * @param ast
+     * @param columnIndexToComputerFactory
+     * @return
+     */
+    static RowFilterTransformSpec.RowFilterFactory createRowFilterFactory( //
+            final Ast.Node ast, //
+            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) //
+    {
+        final Function<ReadAccess[], Computer> computerFactory = createComputerFactory(ast, columnIndexToComputerFactory);
+        return inputs -> {
+            var result = (BooleanComputer)computerFactory.apply(inputs);
+            return result::getAsBoolean;
+        };
+    }
+
+    /**
+     * TODO javadoc
+     *
+     * @param ast
+     * @param columnIndexToComputerFactory
+     * @return
+     */
+    static Function<ReadAccess[], Computer> createComputerFactory( //
+            final Ast.Node ast, //
+            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) //
+    {
+        final List<Ast.Node> postorder = Ast.postorder(ast);
+        return readAccesses -> {
             // TODO: Possible optimization here would be to use node indices and Computer[] instead of a Map.
             //       (For this, add an index field to Ast.Node and set according to postorder.)
             final Map<Ast.Node, Computer> computers = new HashMap<>();
@@ -596,17 +630,12 @@ public interface Exec {
                     var computer = binary(n, computers::get);
                     computers.put(node, computer);
                 } else if (node instanceof Ast.UnaryOp n) {
-                    var computer =
-                            unary(n.inferredType(), n.op(), computers.get(n.arg()));
+                    var computer = unary(n.inferredType(), n.op(), computers.get(n.arg()));
                     computers.put(node, computer);
                 }
             }
-
-            // expression always has single output (currently)
-            return writerFactory.apply(writeAccesses[0], computers.get(ast));
+            return computers.get(ast);
         };
-
-        return new MapTransformSpec.DefaultMapperFactory(schema, factory);
     }
 
     static boolean isAssignableTo(final AstType src, final AstType dest) {

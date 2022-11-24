@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.RowAccessiblesTestUtils.assertCanForwardPredictsForward;
 import static org.knime.core.table.RowAccessiblesTestUtils.assertTableEqualsValues;
 import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.LONG;
@@ -616,9 +617,10 @@ public class VirtualTableExamples {
     public static VirtualTable vtSimpleExpressionMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
 //        final VirtualTable mappedCols = VT.map(table, "$[2] + $[3] * (10 + 34 * 1.2f)", DOUBLE);
-        final VirtualTable mappedCols = VT.map(table, "$[0] + 10", LONG);
+//        final VirtualTable mappedCols = VT.map(table, "$[0] + 10", LONG);
 //        final VirtualTable mappedCols = VT.map(table, "$[2] + $[3] * -1.1", DOUBLE);
 //        final VirtualTable mappedCols = VT.map(table, "$[0] + 10.2", INT);
+        final VirtualTable mappedCols = VT.map(table, "$[0] > 3.2 and $[2] < 0.6", BOOLEAN);
         return table
                 .filterColumns(0,1)
                 .append(List.of(mappedCols));
@@ -672,6 +674,16 @@ public class VirtualTableExamples {
     }
 
 
+
+    public static VirtualTable vtSimpleRowFilterExpression(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable filtered = VT.filterRows(table, "$[2] >= 0");
+        return filtered;
+    }
+
+    public static VirtualTable vtSimpleRowFilterExpression() {
+        return vtSimpleRowFilterExpression(new UUID[]{randomUUID()}, dataSimpleRowFilter());
+    }
 
     public static VirtualTable vtSimpleRowFilter(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final RowFilterFactory isNonNegative = RowFilterFactory.doublePredicate(d -> d >= 0);

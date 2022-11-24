@@ -39,18 +39,9 @@ public class VT {
             final List<Ast.Node> postorder = Ast.postorder(ast);
             final Ast.RequiredColumns columns = Ast.getRequiredColumns(postorder);
 
-//            System.out.println("ast = " + ast);
-//            System.out.println("columns = " + columns);
-
             final ColumnarSchema schema = table.getSchema();
             final IntFunction<AstType> columnIndexToAstType = columnIndex -> schema.getSpec(columnIndex).accept(Typing.toAstType);
             Typing.inferTypes(postorder, columnIndexToAstType);
-
-//            for (int columnIndex : columns.columnIndices()) {
-//                DataSpec spec = schema.getSpec(columnIndex);
-//                AstType astType = spec.accept(toAstType);
-//                System.out.println("columnIndex = " + columnIndex + ", spec = " + spec + ", astType = " + astType);
-//            }
 
             final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
                     columnIndex -> {
@@ -62,16 +53,48 @@ public class VT {
 
             var mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory, outputSpec);
             return table.map(columns.columnIndices(), mapperFactory);
-
         } else {
             System.err.println(result);
+            throw new IllegalArgumentException();
         }
-
-        return null;
     }
 
     public static VirtualTable map(final VirtualTable table, final String expression, final DataSpec outputSpec) {
         return map(table, expression, new DataSpecWithTraits(outputSpec, DefaultDataTraits.EMPTY));
     }
 
+    /**
+     * TODO javadoc
+     *
+     * @param table
+     * @param expression
+     * @return
+     */
+    public static VirtualTable filterRows(final VirtualTable table, final String expression) {
+        final PegParser<Expr> parser = ExpressionGrammar.parser();
+        final ParseResult<Expr> result = parser.parse(expression);
+        if (result instanceof Full<Expr> full) {
+            final Ast.Node ast = full.value().ast();
+            final List<Ast.Node> postorder = Ast.postorder(ast);
+            final Ast.RequiredColumns columns = Ast.getRequiredColumns(postorder);
+
+            final ColumnarSchema schema = table.getSchema();
+            final IntFunction<AstType> columnIndexToAstType = columnIndex -> schema.getSpec(columnIndex).accept(Typing.toAstType);
+            Typing.inferTypes(postorder, columnIndexToAstType);
+
+            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
+                    columnIndex -> {
+                        int inputIndex = columns.getInputIndex(columnIndex);
+                        Function<ReadAccess, ? extends Computer> createComputer =
+                                schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
+                        return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
+                    };
+
+            var filterFactory = Exec.createRowFilterFactory(ast, columnIndexToComputerFactory);
+            return table.filterRows(columns.columnIndices(), filterFactory);
+        } else {
+            System.err.println(result);
+            throw new IllegalArgumentException();
+        }
+    }
 }
