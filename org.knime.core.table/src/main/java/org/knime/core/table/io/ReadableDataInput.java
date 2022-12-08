@@ -21,7 +21,6 @@
 package org.knime.core.table.io;
 
 import java.io.DataInput;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -47,7 +46,6 @@ public interface ReadableDataInput extends DataInput {
      * @param len the maximum number of bytes to read.
      * @return the total number of bytes read into the buffer, or <code>-1</code> if there is no more data because the
      *         end of the stream has been reached.
-     * @throws EOFException if we already are at the EOF before reading anything
      * @throws IOException if any other IO problems are encountered
      * @see InputStream#read(byte[], int, int)
      */
@@ -60,10 +58,9 @@ public interface ReadableDataInput extends DataInput {
      *
      * @return The bytes read from the input stream until
      *
-     * @throws EOFException if we are already at the EOF before reading anything
      * @throws IOException if any other IO problems are encountered
      * @throws IndexOutOfBoundsException if the input data contains more than MAX_INT bytes to read, because no byte[]
      *             can be created to contain all the data.
      */
-    byte[] readBytes() throws EOFException, IOException;
+    byte[] readBytes() throws IOException;
 }
