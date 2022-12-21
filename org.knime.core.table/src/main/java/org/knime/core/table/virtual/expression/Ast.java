@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 
@@ -49,6 +50,48 @@ public interface Ast {
             return false;
         }
     }
+
+
+    final class Call extends Node {
+        private final String func;
+
+        private final List<Node> args;
+
+        public Call(final String func, final List<Node> args) {
+            this.func = func;
+            this.args = new ArrayList<>(args);
+        }
+
+        public int numArgs() {
+            return args.size();
+        }
+
+        public Node arg(final int index) {
+            return args.get(index);
+        }
+
+        @Override
+        public List<Node> children() {
+            return args;
+        }
+
+        @Override
+        void replaceChild(final Node child, final Node replacement) {
+            for (int i = 0; i < args.size(); i++) {
+                if (args.get(i).equals(child)) {
+                    args.set(i, replacement);
+                    replacement.parent = this;
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            final String arguments = args.stream().map(Node::toString).collect(Collectors.joining(", "));
+            return "Call " + func + '(' + arguments + ')';
+        }
+    }
+
 
     final class IntConstant extends Node {
         private final long value;
