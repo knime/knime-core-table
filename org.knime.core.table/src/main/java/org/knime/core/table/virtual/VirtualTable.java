@@ -181,6 +181,10 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
     }
 
+    public VirtualTable append(final VirtualTable table) {
+        return append(List.of(table));
+    }
+
     private List<ColumnarSchema> collectSchemas(final List<VirtualTable> tables) {
         final List<ColumnarSchema> schemas = new ArrayList<>(1 + tables.size());
         schemas.add(m_schema);
