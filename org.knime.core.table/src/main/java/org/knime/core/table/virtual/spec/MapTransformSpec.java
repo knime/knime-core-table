@@ -42,7 +42,7 @@ public final class MapTransformSpec implements TableTransformSpec {
          * @param outputs accesses to write results to
          * @return a mapper reading from {@code inputs} and writing to {@code outputs}.
          */
-        Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
+        Runnable createMapper(ReadAccess[] inputs, WriteAccess[] outputs);
 
         static MapperFactory doublesToDouble(final DoubleUnaryOperator fn) {
             return new DefaultMapperFactory(ColumnarSchema.of(DOUBLE), //
