@@ -57,10 +57,10 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 
 /**
- * Implementation of the operation specified by {@link ColumnFilterTransformSpec}.
+ * Implementation of the operation specified by {@link SelectColumnsTransformSpec}.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
@@ -74,7 +74,7 @@ final class ColumnFilteredRowAccessible implements LookaheadRowAccessible {
 
     public ColumnFilteredRowAccessible(final RowAccessible delegate, final int[] selection) {
         m_columnIndices = selection;
-        m_schema = ColumnarSchemas.filter(delegate.getSchema(), selection);
+        m_schema = ColumnarSchemas.select(delegate.getSchema(), selection);
         m_delegateTable = RowAccessibles.toLookahead(delegate);
     }
 

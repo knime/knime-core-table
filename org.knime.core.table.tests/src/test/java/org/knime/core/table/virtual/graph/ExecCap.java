@@ -1,6 +1,7 @@
 package org.knime.core.table.virtual.graph;
 
-import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
+import static org.knime.core.table.RowAccessiblesTestUtils.toRowAccessible;
+import static org.knime.core.table.schema.DataSpecs.STRING;
 import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
 
 import java.io.IOException;
@@ -9,14 +10,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 
+import org.knime.core.table.RowAccessiblesTestUtils;
+import org.knime.core.table.RowAccessiblesTestUtils.TestRowAccessible;
+import org.knime.core.table.RowAccessiblesTestUtils.TestRowWriteAccessible;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
+import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
@@ -75,32 +83,80 @@ public class ExecCap {
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataMapsAndFilters();
 //        final VirtualTable table = VirtualTableExamples.vtMapsAndFilters(sourceIdentifiers, accessibles);
 
-        final UUID[] sourceIdentifiers = createSourceIds(2);
-        final RowAccessible[] accessibles = VirtualTableExamples.dataFiltersMapAndConcatenate();
-        final VirtualTable table = VirtualTableExamples.vtFiltersMapAndConcatenate(sourceIdentifiers, accessibles);
+//        final UUID[] sourceIdentifiers = createSourceIds(2);
+//        final RowAccessible[] accessibles = VirtualTableExamples.dataFiltersMapAndConcatenate();
+//        final VirtualTable table = VirtualTableExamples.vtFiltersMapAndConcatenate(sourceIdentifiers, accessibles);
 
-        // ----------------------------------------------
-        // create accessible
+        final UUID[] sourceIdentifiers = createSourceIds(1);
+        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataMinimal();
+        final UUID[] sinkIdentifiers = createSourceIds(1);
+        final RowWriteAccessible[] sinkAccessibles = new RowWriteAccessible[]{RowAccessiblesTestUtils.createRowWriteAccessible(ColumnarSchema.of(STRING))};
+        final VirtualTable table = VirtualTableExamples.vtMaterializeMinimal(sourceIdentifiers, sourceAccessibles, sinkIdentifiers, sinkAccessibles);
 
-        final Map<UUID, RowAccessible> uuidRowAccessibleMap = new HashMap<>();
-        for (int i = 0; i < sourceIdentifiers.length; ++i) {
-            uuidRowAccessibleMap.put(sourceIdentifiers[i], accessibles[i]);
-        }
+        final boolean doExecute = true;
 
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(table);
-        final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-        final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
-        final RowAccessible rows = createRowAccessible(schema, cursorAssemblyPlan, uuidRowAccessibleMap);
+        if ( doExecute ) {
 
-        try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
-            while (cursor.forward()) {
-                System.out.print("a = ");
-                for (int i = 0; i < cursor.access().size(); i++)
-                    System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
-                System.out.println();
+            // ----------------------------------------------
+            // execute
+
+            final Map<UUID, RowAccessible> uuidRowAccessibleMap = new HashMap<>();
+            for (int i = 0; i < sourceIdentifiers.length; ++i) {
+                uuidRowAccessibleMap.put(sourceIdentifiers[i], sourceAccessibles[i]);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            final Map<UUID, RowWriteAccessible> uuidRowWriteAccessibleMap = new HashMap<>();
+            for (int i = 0; i < sinkIdentifiers.length; ++i) {
+                uuidRowWriteAccessibleMap.put(sinkIdentifiers[i], sinkAccessibles[i]);
+            }
+
+            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(table);
+            final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
+            final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
+
+            try {
+                CapExecutor.execute(cursorAssemblyPlan, uuidRowAccessibleMap, uuidRowWriteAccessibleMap);
+            } catch (CancellationException | CompletionException e) {
+                e.printStackTrace();
+            }
+
+            TestRowAccessible rows =
+                    toRowAccessible((TestRowWriteAccessible)sinkAccessibles[0]);
+            try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
+                while (cursor.forward()) {
+                    System.out.print("a = ");
+                    for (int i = 0; i < cursor.access().size(); i++)
+                        System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                    System.out.println();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+
+            // ----------------------------------------------
+            // create accessible
+
+            final Map<UUID, RowAccessible> uuidRowAccessibleMap = new HashMap<>();
+            for (int i = 0; i < sourceIdentifiers.length; ++i) {
+                uuidRowAccessibleMap.put(sourceIdentifiers[i], sourceAccessibles[i]);
+            }
+
+            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(table);
+            final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
+            final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
+            final RowAccessible rows = createRowAccessible(schema, cursorAssemblyPlan, uuidRowAccessibleMap);
+
+            try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
+                while (cursor.forward()) {
+                    System.out.print("a = ");
+                    for (int i = 0; i < cursor.access().size(); i++)
+                        System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                    System.out.println();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

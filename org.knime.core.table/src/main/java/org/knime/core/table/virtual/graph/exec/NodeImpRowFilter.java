@@ -35,8 +35,7 @@ class NodeImpRowFilter implements NodeImp {
 
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
-            AccessImp input = inputs[i];
-            filterInputs[i] = input.node.getOutput(input.i);
+            filterInputs[i] = inputs[i].getReadAccess();
         }
         filter = filterFactory.createRowFilter(filterInputs);
     }

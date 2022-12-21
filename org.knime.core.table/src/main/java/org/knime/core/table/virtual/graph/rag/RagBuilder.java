@@ -7,7 +7,9 @@ import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
 import static org.knime.core.table.virtual.graph.rag.RagGraphUtils.topologicalSort;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.APPEND;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONCATENATE;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONSUMER;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MAP;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.MATERIALIZE;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.ROWFILTER;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.SLICE;
@@ -23,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.knime.core.table.cursor.Cursors;
@@ -36,9 +39,9 @@ import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
-import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
-import org.knime.core.table.virtual.spec.PermuteTransformSpec;
+import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -129,7 +132,25 @@ public class RagBuilder {
 
     public static ColumnarSchema createSchema(final List<RagNode> orderedRag) {
         final RagNode node = orderedRag.get(orderedRag.size() - 1);
-        if (node.type() != RagNodeType.CONSUMER) {
+        return createSinkSchema(node);
+    }
+
+    public static Map<UUID, ColumnarSchema> getSourceAndSinkSchemas(final List<RagNode> orderedRag) {
+        Map<UUID, ColumnarSchema> schemas = new HashMap<>();
+        for (RagNode node : orderedRag) {
+            if (node.type() == SOURCE) {
+                SourceTransformSpec spec = node.getTransformSpec();
+                schemas.put(spec.getSourceIdentifier(), spec.getSchema());
+            } else if (node.type() == MATERIALIZE) {
+                MaterializeTransformSpec spec = node.getTransformSpec();
+                schemas.put(spec.getSinkIdentifier(), createSinkSchema(node));
+            }
+        }
+        return schemas;
+    }
+
+    private static ColumnarSchema createSinkSchema(final RagNode node) {
+        if (!sinkNodeTypes.contains(node.type())) {
             throw new IllegalArgumentException();
         }
         final List<DataSpec> columnSpecs = new ArrayList<>();
@@ -204,7 +225,7 @@ public class RagBuilder {
      */
     public static boolean supportsLookahead(final List<RagNode> orderedRag) {
         final RagNode node = orderedRag.get(orderedRag.size() - 1);
-        if (node.type() != RagNodeType.CONSUMER) {
+        if (!sinkNodeTypes.contains(node.type())) {
             throw new IllegalArgumentException();
         }
         return supportsLookahead(node);
@@ -222,7 +243,8 @@ public class RagBuilder {
             case SLICE:
             case APPEND:
             case CONCATENATE:
-            case CONSUMER: {
+            case CONSUMER:
+            case MATERIALIZE: {
                 for (RagNode predecessor : node.predecessors(EXEC)) {
                     if (!supportsLookahead(predecessor)) {
                         return false;
@@ -233,7 +255,6 @@ public class RagBuilder {
             case MISSING:
             case MAP:
             case COLFILTER:
-            case COLPERMUTE:
             case APPENDMISSING:
                 throw new IllegalArgumentException(
                         "Unexpected RagNode type " + node.type() + ".");
@@ -251,7 +272,7 @@ public class RagBuilder {
      */
     public static long numRows(final List<RagNode> orderedRag) {
         final RagNode node = orderedRag.get(orderedRag.size() - 1);
-        if (node.type() != RagNodeType.CONSUMER) {
+        if (!sinkNodeTypes.contains(node.type())) {
             throw new IllegalArgumentException();
         }
         return numRows(node);
@@ -285,6 +306,7 @@ public class RagBuilder {
                 return s < 0 ? s : Math.max(0, Math.min(s, to) - from);
             }
             case CONSUMER:
+            case MATERIALIZE:
             case WRAPPER:
             case APPEND: {
                 // If any predecessor doesn't know its size, the size of this node is also unknown.
@@ -309,7 +331,6 @@ public class RagBuilder {
             case MISSING:
             case APPENDMISSING:
             case COLFILTER:
-            case COLPERMUTE:
             case MAP:
             case IDENTITY:
             default:
@@ -359,6 +380,11 @@ public class RagBuilder {
      */
     private static final EnumSet<RagNodeType> spawningNodeTypes = EnumSet.of(SLICE);
 
+    /**
+     * Sink nodes are consumer-like endpoints.
+     */
+    private static final EnumSet<RagNodeType> sinkNodeTypes = EnumSet.of(CONSUMER, MATERIALIZE);
+
     RagBuilder() {
     }
 
@@ -377,11 +403,21 @@ public class RagBuilder {
                 new MissingValuesSourceTransformSpec(missingValueColumns.unmodifiable));
         graph.setMissingValuesSource(graph.addNode(missingValuesTransform));
 
-        final var consumerTransform = new TableTransform(//
-                List.of(tableTransform),//
-                new ConsumerTransformSpec());
-        final RagNode root = createNodes(consumerTransform, new HashMap<>());
-        graph.setRoot(root);
+        // For now, we expect only a single output table.
+        // Either the final transform is already a MaterializeTransformSpec, in
+        // which case this becomes the root node (a MATERIALIZE node).
+        // Or, the final transform just describes some other VirtualTable, in which
+        // case, an artificial CONSUMER node is appended and becomes the root.
+        if ( tableTransform.getSpec() instanceof MaterializeTransformSpec) {
+            final RagNode root = createNodes(tableTransform, new HashMap<>());
+            graph.setRoot(root);
+        } else {
+            final var consumerTransform = new TableTransform(//
+                    List.of(tableTransform),//
+                    new ConsumerTransformSpec());
+            final RagNode root = createNodes(consumerTransform, new HashMap<>());
+            graph.setRoot(root);
+        }
 
         buildNumColumns();
     }
@@ -433,6 +469,7 @@ public class RagBuilder {
                     numColumns = ((SourceTransformSpec)spec).getSchema().numColumns();
                     break;
                 case CONSUMER:
+                case MATERIALIZE:
                 case SLICE:
                 case ROWFILTER:
                 case IDENTITY:
@@ -450,10 +487,7 @@ public class RagBuilder {
                             + ((AppendMissingValuesTransformSpec)spec).getAppendedSchema().numColumns();
                     break;
                 case COLFILTER:
-                    numColumns = ((ColumnFilterTransformSpec)spec).getColumnSelection().length;
-                    break;
-                case COLPERMUTE:
-                    numColumns = ((PermuteTransformSpec)spec).getPermutation().length;
+                    numColumns = ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
                     break;
                 case MAP:
                     numColumns = ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
@@ -543,7 +577,8 @@ public class RagBuilder {
                 break;
             }
             case WRAPPER:
-            case CONSUMER: {
+            case CONSUMER:
+            case MATERIALIZE: {
                 accessIds[0] = traceAccess(i, node.predecessor(SPEC));
                 break;
             }
@@ -551,7 +586,6 @@ public class RagBuilder {
             case SLICE:
             case APPENDMISSING:
             case COLFILTER:
-            case COLPERMUTE:
                 throw new IllegalArgumentException();
         }
         for (int j = 0; j < accessIds.length; j++) {
@@ -609,12 +643,10 @@ public class RagBuilder {
                     return missingValuesSource.getOrCreateOutput(missingValueColumns.getOrAdd(dataSpec));
                 }
             case COLFILTER:
-                final int[] selection = ((ColumnFilterTransformSpec)spec).getColumnSelection();
+                final int[] selection = ((SelectColumnsTransformSpec)spec).getColumnSelection();
                 return traceAccess(selection[i], node.predecessor(SPEC));
-            case COLPERMUTE:
-                final int[] permutation = ((PermuteTransformSpec)spec).getPermutation();
-                return traceAccess(permutation[i], node.predecessor(SPEC));
             case CONSUMER:
+            case MATERIALIZE:
             case MISSING:
             default:
                 throw new IllegalArgumentException();
@@ -644,7 +676,6 @@ public class RagBuilder {
         switch (node.type()) {
             case SOURCE:
             case COLFILTER:
-            case COLPERMUTE:
             case MISSING:
             case APPENDMISSING:
             case MAP:
@@ -654,6 +685,7 @@ public class RagBuilder {
             case SLICE:
             case CONCATENATE:
             case CONSUMER:
+            case MATERIALIZE:
             case APPEND:
             case ROWFILTER:
             case WRAPPER:
@@ -1265,7 +1297,7 @@ public class RagBuilder {
 
 
     // --------------------------------------------------------------------
-    // TODO: does this belong here?
+    // getFlattenedExecutionOrder()
 
     /**
      * Returns a topological ordering of the {@code RagGraph}

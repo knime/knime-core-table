@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.LookaheadRowAccessible;
 import org.knime.core.table.virtual.VirtualTable;
@@ -136,7 +137,7 @@ public class VirtualTableExamples {
 
     public static VirtualTable vtLinear(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
-        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).slice(1, 6).filterColumns(1);
+            return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).slice(1, 6).filterColumns(1);
     }
 
     public static VirtualTable vtLinear() {
@@ -834,4 +835,20 @@ public class VirtualTableExamples {
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
         testTransformedTableLookahead(false, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
     }
+
+
+    public static VirtualTable vtMaterializeMinimal() {
+        return vtMaterializeMinimal(new UUID[]{randomUUID()}, dataMinimal(), new UUID[]{randomUUID()}, null);
+    }
+
+    public static VirtualTable vtMaterializeMinimal(
+            final UUID[] sourceIdentifiers, final RowAccessible[] sources,
+            final UUID[] sinkIdentifiers, final RowWriteAccessible[] sinks) { // sinks argument is unused because we don't have SinkProperties yet
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
+                .permute(0, 2, 1)
+                .filterColumns(1)
+                .materialize(sinkIdentifiers[0]);
+    }
+
 }

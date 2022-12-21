@@ -69,6 +69,11 @@ public final class TableTransform {
         m_spec = spec;
     }
 
+    public TableTransform(final TableTransform precedingTransform, final TableTransformSpec spec) {
+        m_precedingTransforms = List.of(precedingTransform);
+        m_spec = spec;
+    }
+
     public TableTransform(final List<TableTransform> precedingTransforms, final TableTransformSpec spec) {
         m_precedingTransforms = Collections.unmodifiableList(precedingTransforms);
         m_spec = spec;

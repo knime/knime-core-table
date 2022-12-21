@@ -66,7 +66,7 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.ColumnarSchemas;
 import org.knime.core.table.virtual.RowAccessibles;
-import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -193,19 +193,7 @@ public final class ColumnFilterTransformTest {
     @SuppressWarnings("unused")
     @Test(expected = IndexOutOfBoundsException.class)
     public void testRejectNegativeColumnIndices() {
-        new ColumnFilterTransformSpec(new int[]{-1, 0, 2, 3});
-    }
-
-    @SuppressWarnings("unused")
-    @Test(expected = IllegalArgumentException.class)
-    public void testRejectDuplicateColumnIndices() {
-        new ColumnFilterTransformSpec(new int[]{0, 1, 3, 3});
-    }
-
-    @SuppressWarnings("unused")
-    @Test(expected = IllegalArgumentException.class)
-    public void testRejectUnorderedColumnIndices() {
-        new ColumnFilterTransformSpec(new int[]{0, 2, 1, 3});
+        new SelectColumnsTransformSpec(new int[]{-1, 0, 2, 3});
     }
 
     @Test(expected = IndexOutOfBoundsException.class)

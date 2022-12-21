@@ -68,13 +68,9 @@ public final class RowAccessibles {
         return new ConcatenatedRowAccessible(list);
     }
 
-    // TODO rename to filterColumns()
+    // TODO rename to selectColumns()
     public static RowAccessible filter(final RowAccessible in, final int[] selection) {
         return new ColumnFilteredRowAccessible(in, selection);
-    }
-
-    public static RowAccessible permute(final RowAccessible in, final int[] mapping) {
-        return new PermutedRowAccessible(in, mapping);
     }
 
     public static RowAccessible slice(final RowAccessible in, final RowRangeSelection selection) {

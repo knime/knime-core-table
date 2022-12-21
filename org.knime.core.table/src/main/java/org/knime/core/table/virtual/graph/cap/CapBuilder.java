@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.knime.core.table.row.Selection.RowRangeSelection;
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.virtual.graph.cap.Branches.Branch;
 import org.knime.core.table.virtual.graph.rag.AccessId;
@@ -18,6 +19,7 @@ import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -53,6 +55,7 @@ public class CapBuilder {
                     final UUID uuid = spec.getSourceIdentifier();
                     final Collection<AccessId> outputs = node.getOutputs();
                     final RowRangeSelection range = spec.getRowRange();
+                    final ColumnarSchema schema = spec.getSchema();
                     final CapNodeSource capNode = new CapNodeSource(index, uuid, columnIndicesFor(outputs), range);
                     append(node, capNode);
                     createCapAccessIdsFor(outputs, capNode);
@@ -210,8 +213,17 @@ public class CapBuilder {
                     branch.append(node);
                     break;
                 }
+                case MATERIALIZE: {
+                    final MaterializeTransformSpec spec = node.getTransformSpec();
+                    final UUID uuid = spec.getSinkIdentifier();
+                    final Branch branch = branches.getPredecessorBranch(node);
+                    final CapAccessId[] inputs = capAccessIdsFor(node.getInputs());
+                    final CapNodeMaterialize capNode = new CapNodeMaterialize(index, uuid, inputs, headIndex(branch));
+                    append(node, capNode);
+                    branch.append(node);
+                    break;
+                }
                 case COLFILTER:
-                case COLPERMUTE:
                 case APPENDMISSING:
                 case WRAPPER:
                     throw new IllegalArgumentException(
@@ -222,8 +234,9 @@ public class CapBuilder {
         }
 
         return new CursorAssemblyPlan(cursorAssemblyPlan, //
-                RagBuilder.supportsLookahead(orderedRag), // TODO: avoid calling RagBuilder here?
-                RagBuilder.numRows(orderedRag)); // TODO: avoid calling RagBuilder here?
+                RagBuilder.supportsLookahead(orderedRag), //
+                RagBuilder.numRows(orderedRag), //
+                RagBuilder.getSourceAndSinkSchemas(orderedRag));
     }
 
     /**

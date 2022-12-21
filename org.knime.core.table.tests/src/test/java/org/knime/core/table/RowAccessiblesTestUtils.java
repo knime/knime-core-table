@@ -62,6 +62,7 @@ import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.cursor.LookaheadCursor;
+import org.knime.core.table.cursor.WriteCursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
@@ -205,7 +206,7 @@ public final class RowAccessiblesTestUtils {
         }
 
         @Override
-        public Cursor<WriteAccessRow> getWriteCursor() {
+        public WriteCursor<WriteAccessRow> getWriteCursor() {
             return new TestWriteAccessCursor(m_accesses);
         }
 
@@ -222,7 +223,7 @@ public final class RowAccessiblesTestUtils {
             return m_index + 1;
         }
 
-        private final class TestWriteAccessCursor implements Cursor<WriteAccessRow>, WriteAccessRow {
+        private final class TestWriteAccessCursor implements WriteCursor<WriteAccessRow>, WriteAccessRow {
 
             private final WriteAccess[] m_access;
 
@@ -266,6 +267,11 @@ public final class RowAccessiblesTestUtils {
                     access.setIndex(m_index);
                 }
                 return true;
+            }
+
+            @Override
+            public void flush() throws IOException {
+                // noop
             }
         }
     }

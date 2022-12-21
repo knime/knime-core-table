@@ -37,9 +37,7 @@ class NodeImpAppend implements NodeImp {
 
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
-            AccessImp input = inputs[i];
-
-            final ReadAccess access = input.node.getOutput(input.i);
+            final ReadAccess access = inputs[i].getReadAccess();
             final DelegatingReadAccesses.DelegatingReadAccess delegated =
                     DelegatingReadAccesses.createDelegatingAccess(access.getDataSpec());
             delegated.setDelegateAccess(access);

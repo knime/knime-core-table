@@ -65,7 +65,6 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.ColumnarSchemas;
 import org.knime.core.table.virtual.RowAccessibles;
-import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -164,24 +163,6 @@ public final class PermuteTransformTest {
         testPermuteTable(permutedSchema, permutedValues, originalSchema, originalValues, permutation);
     }
 
-    @SuppressWarnings("unused")
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void testRejectNegativePermutationIndices() {
-        new PermuteTransformSpec(new int[]{4, 3, 2, -1, 0});
-    }
-
-    @SuppressWarnings("unused")
-    @Test(expected = IllegalArgumentException.class)
-    public void testRejectDuplicatePermutationIndices() {
-        new PermuteTransformSpec(new int[]{4, 3, 3, 2, 1, 0});
-    }
-
-    @SuppressWarnings("unused")
-    @Test(expected = IllegalArgumentException.class)
-    public void testRejectPermutationIndicesWithHoles() {
-        new PermuteTransformSpec(new int[]{4, 3, 2, 0});
-    }
-
     @Test(expected = IllegalArgumentException.class)
     public void testRejectNumPermutationIndicesGreaterThanNumColumns() {
         ColumnarSchemas.permute(ColumnarSchema.of(DOUBLE, INT), new int[]{2, 1, 0});
@@ -199,7 +180,7 @@ public final class PermuteTransformTest {
         final RowAccessible originalTable =
             RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(originalSchema, originalValues);
         @SuppressWarnings("resource")
-        final RowAccessible permuted = RowAccessibles.permute(originalTable, permutation);
+        final RowAccessible permuted = RowAccessibles.filter(originalTable, permutation);
         RowAccessiblesTestUtils.assertRowAccessibleEquals(permuted, expectedSchema, expectedValues);
     }
 }

@@ -52,8 +52,8 @@ import org.knime.core.table.schema.traits.StructDataTraits;
 /**
  * Specification / configuration of implementations of data.
  * <P>
- * Implementations of this interface must provide meaningful implementations of {@link #equals(Object)} and
- * {@link #hashCode()}. They should also provide a meaningful implementation of {@link #toString()}.
+ * Implementations of this interface must provide meaningful implementations of {@link Object#equals(Object) equals} and
+ * {@link Object#hashCode() hashcode}. They should also provide a meaningful implementation of {@link Object#toString() toString}.
  *
  * @author Marc Bux, KNIME GmbH, Berlin, Germany
  */

@@ -65,6 +65,7 @@ public final class ColumnarSchemas {
         return schema;
     }
 
+    @Deprecated
     public static ColumnarSchema filter(final ColumnarSchema schema, final int[] selection) {
         final DataSpec[] filteredSpecs = new DataSpec[selection.length];
         final DataTraits[] filteredTraits = new DataTraits[selection.length];
@@ -76,6 +77,7 @@ public final class ColumnarSchemas {
     }
 
     // TODO interface for mapping - beneficial for e.g. wide tables
+    @Deprecated
     public static ColumnarSchema permute(final ColumnarSchema in, final int[] mapping) {
         int[] permutation = mapping;
         if (permutation.length != in.numColumns()) {
@@ -90,4 +92,15 @@ public final class ColumnarSchemas {
         }
         return new DefaultColumnarSchema(permutedSpecs, permutedTraits);
     }
+
+    public static ColumnarSchema select(final ColumnarSchema schema, final int[] selection) {
+        final DataSpec[] filteredSpecs = new DataSpec[selection.length];
+        final DataTraits[] filteredTraits = new DataTraits[selection.length];
+        for (int i = 0; i < selection.length; i++) {
+            filteredSpecs[i] = schema.getSpec(selection[i]);
+            filteredTraits[i] = schema.getTraits(selection[i]);
+        }
+        return new DefaultColumnarSchema(filteredSpecs, filteredTraits);
+    }
+
 }

@@ -51,8 +51,7 @@ class NodeImpMap implements NodeImp {
 
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
-            AccessImp input = inputs[i];
-            mapInputs[i] = input.node.getOutput(input.i);
+            mapInputs[i] = inputs[i].getReadAccess();
         }
         mapper = mapperFactory.createMapper(mapInputs, mapOutputs);
     }

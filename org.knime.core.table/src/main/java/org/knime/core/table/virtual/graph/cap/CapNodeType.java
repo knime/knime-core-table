@@ -8,5 +8,6 @@ public enum CapNodeType {
     MAP, //
     APPEND, //
     CONCATENATE, //
-    CONSUMER
+    CONSUMER, //
+    MATERIALIZE
 }

@@ -29,8 +29,7 @@ class NodeImpConsumer implements NodeImp {
 
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
-            AccessImp input = inputs[i];
-            outputs[i] = input.node.getOutput(input.i);
+            outputs[i] = inputs[i].getReadAccess();
         }
     }
 

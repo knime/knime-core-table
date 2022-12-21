@@ -57,25 +57,17 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public final class ColumnFilterTransformSpec implements TableTransformSpec {
+public final class SelectColumnsTransformSpec implements TableTransformSpec {
 
     private final int[] m_columnIndices;
 
     // TODO interface for ColumnSelection. Reasoning: Wide tables with many selected columns may result in too large
     // arrays. Also "all selected".
-    public ColumnFilterTransformSpec(final int[] selection) {
+    public SelectColumnsTransformSpec(final int[] selection) {
         m_columnIndices = selection.clone();
-        int previousIndex = -1;
-        for (final int columnIndex : m_columnIndices) {
-            if (columnIndex < 0) {
-                throw new IndexOutOfBoundsException(
+        if (Arrays.stream(m_columnIndices).anyMatch(i -> i < 0)) {
+            throw new IndexOutOfBoundsException(
                     "Column filter contains negative indices: " + Arrays.toString(m_columnIndices));
-            }
-            if (columnIndex <= previousIndex) {
-                throw new IllegalArgumentException(
-                    "Column filter contains duplicate or unordered indices: " + Arrays.toString(m_columnIndices));
-            }
-            previousIndex = columnIndex;
         }
     }
 
@@ -93,24 +85,24 @@ public final class ColumnFilterTransformSpec implements TableTransformSpec {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof ColumnFilterTransformSpec &&
-            Arrays.equals(m_columnIndices, ((ColumnFilterTransformSpec)obj).m_columnIndices);
+        return obj instanceof SelectColumnsTransformSpec &&
+            Arrays.equals(m_columnIndices, ((SelectColumnsTransformSpec)obj).m_columnIndices);
     }
 
     @Override
     public String toString() {
-        return "Column filter " + Arrays.toString(m_columnIndices);
+        return "SelectColumns " + Arrays.toString(m_columnIndices);
     }
 
-    public static final class ColumnFilterTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<ColumnFilterTransformSpec> {
+    public static final class SelectColumnsTransformSpecSerializer
+        extends AbstractTableTransformSpecSerializer<SelectColumnsTransformSpec> {
 
-        public ColumnFilterTransformSpecSerializer() {
-            super("column_filter", 0);
+        public SelectColumnsTransformSpecSerializer() {
+            super("select_columns", 0);
         }
 
         @Override
-        protected JsonNode saveInternal(final ColumnFilterTransformSpec spec, final JsonNodeFactory output) {
+        protected JsonNode saveInternal(final SelectColumnsTransformSpec spec, final JsonNodeFactory output) {
             final ObjectNode config = output.objectNode();
             final ArrayNode columnIndicesConfig = config.putArray("included_columns");
             for (final int columnIndex : spec.m_columnIndices) {
@@ -120,14 +112,67 @@ public final class ColumnFilterTransformSpec implements TableTransformSpec {
         }
 
         @Override
-        protected ColumnFilterTransformSpec loadInternal(final JsonNode input) {
+        protected SelectColumnsTransformSpec loadInternal(final JsonNode input) {
             final ObjectNode root = (ObjectNode)input;
             final ArrayNode columnIndicesConfig = (ArrayNode)root.get("included_columns");
             final int[] columnIndices = new int[columnIndicesConfig.size()];
             for (int i = 0; i < columnIndices.length; i++) {
                 columnIndices[i] = columnIndicesConfig.get(i).intValue();
             }
-            return new ColumnFilterTransformSpec(columnIndices);
+            return new SelectColumnsTransformSpec(columnIndices);
+        }
+    }
+
+    /**
+     * Helper to compute the column selection resulting from dropping a set of indices.
+     * <p>
+     * Builds index list {@code 0,1,...,numIndices-1} and removes all indices that occur in {@code indicesToDrop}.
+     * {@code indicesToDrop} may be unordered and may contain duplicates.
+     */
+    public static int[] indicesAfterDrop(final int numIndices, final int[] indicesToDrop)
+    {
+        final int[] dropped = indicesToDrop.clone();
+        Arrays.sort(dropped);
+        final int[] remaining = new int[numIndices];
+        int i = 0, d = 0, r = 0;
+        while (i < numIndices && d < dropped.length) {
+            if (dropped[d] == i)
+            {
+                // skip i
+                i++;
+                // skip duplicates in dropped[]
+                while (++d < dropped.length && dropped[d] == dropped[d - 1]) {
+                }
+            }
+            else
+                remaining[r++] = i++;
+        }
+        while (i < numIndices) {
+            remaining[r++] = i++;
+        }
+        return Arrays.copyOf(remaining, r);
+    }
+
+    /**
+     * Helper to compute the column selection resulting from keeping only a set of indices.
+     * <p>
+     * Returns the indices occurring in {@code indicesToKeep} in ascending order, without duplicates.
+     */
+    public static int[] indicesAfterKeepOnly(final int[] indicesToKeep)
+    {
+        if (indicesToKeep.length <= 1)
+            return indicesToKeep;
+        final int[] remaining = indicesToKeep.clone();
+        Arrays.sort(remaining);
+        int i = 0, r = 0;
+        while (true) {
+            if (i != r)
+                remaining[r] = remaining[i];
+            ++r;
+            do {
+                if (++i == remaining.length)
+                    return r == remaining.length ? remaining : Arrays.copyOf(remaining, r);
+            } while (remaining[i] == remaining[i - 1]);
         }
     }
 }

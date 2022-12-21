@@ -77,12 +77,9 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec.AppendMissingValuesTransformSpecSerializer;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec.AppendTransformSpecSerializer;
-import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
-import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec.ColumnFilterTransformSpecSerializer;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec.ConcatenateTransformSpecSerializer;
-import org.knime.core.table.virtual.spec.PermuteTransformSpec;
-import org.knime.core.table.virtual.spec.PermuteTransformSpec.PermuteTransformSpecSerializer;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec.SliceTransformSpecSerializer;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -134,17 +131,11 @@ public final class TableTransformSpecSerializerTest<T extends TableTransformSpec
 
         // Column filter
         add(params, //
-            new ColumnFilterTransformSpec(RANDOM.ints(100, 0, Integer.MAX_VALUE).sorted().toArray()),
-            new ColumnFilterTransformSpecSerializer());
+            new SelectColumnsTransformSpec(RANDOM.ints(100, 0, Integer.MAX_VALUE).sorted().toArray()),
+            new SelectColumnsTransformSpec.SelectColumnsTransformSpecSerializer());
 
         // Concatenate
         add(params, new ConcatenateTransformSpec(), new ConcatenateTransformSpecSerializer());
-
-        // Permute
-        final List<Integer> permutation = IntStream.range(0, 100).boxed().collect(Collectors.toList());
-        Collections.shuffle(permutation, RANDOM);
-        add(params, //
-            new PermuteTransformSpec(Ints.toArray(permutation)), new PermuteTransformSpecSerializer());
 
         // Slice
         final long from = RANDOM.longs(1, 0, Long.MAX_VALUE).findFirst().getAsLong();

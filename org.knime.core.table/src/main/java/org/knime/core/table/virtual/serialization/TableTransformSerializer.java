@@ -38,10 +38,9 @@ import java.util.stream.IntStream;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
-import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.IdentityTransformSpec.IdentityTransformSpecSerializer;
-import org.knime.core.table.virtual.spec.PermuteTransformSpec;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -191,12 +190,13 @@ public final class TableTransformSerializer {
                 return new AppendTransformSpec.AppendTransformSpecSerializer();
             case "append_missing_values":
                 return new AppendMissingValuesTransformSpec.AppendMissingValuesTransformSpecSerializer();
-            case "column_filter":
-                return new ColumnFilterTransformSpec.ColumnFilterTransformSpecSerializer();
+            case "permute":
+                return new BackwardsCompatiblePermuteTransformSpecSerializer();
+            case "column_filter": // select_columns is the successor of column_filter
+            case "select_columns":
+                return new SelectColumnsTransformSpec.SelectColumnsTransformSpecSerializer();
             case "concatenate":
                 return new ConcatenateTransformSpec.ConcatenateTransformSpecSerializer();
-            case "permute":
-                return new PermuteTransformSpec.PermuteTransformSpecSerializer();
             case "slice":
                 return new SliceTransformSpec.SliceTransformSpecSerializer();
             case "source":
@@ -266,6 +266,44 @@ public final class TableTransformSerializer {
                 resolvedParents = Collections.emptyList();
             }
             transforms.put(specIndex, new TableTransform(resolvedParents, transformSpecs.get(specIndex)));
+        }
+
+    }
+
+    private static final class BackwardsCompatiblePermuteTransformSpecSerializer implements TableTransformSpecSerializer<SelectColumnsTransformSpec> {
+
+        @Override
+        public String getTransformIdentifier() {
+            throw notForSaving();
+        }
+
+
+
+        private static UnsupportedOperationException notForSaving() {
+            return new UnsupportedOperationException(String.format("The %s should not be used for saving.",
+                BackwardsCompatiblePermuteTransformSpecSerializer.class.getName()));
+        }
+
+
+        @Override
+        public int getVersion() {
+            throw notForSaving();
+        }
+
+        @Override
+        public JsonNode save(final SelectColumnsTransformSpec spec, final JsonNodeFactory factory) {
+            throw notForSaving();
+        }
+
+        @Override
+        public SelectColumnsTransformSpec load(final JsonNode input) {
+            final ObjectNode config = (ObjectNode)input;
+            final ArrayNode permutationConfig = (ArrayNode)config.get("permutation");
+            final int[] permutation = new int[permutationConfig.size()];
+            for (int i = 0; i < permutation.length; i++) {
+                permutation[i] = permutationConfig.get(i).intValue();
+            }
+            return new SelectColumnsTransformSpec(permutation);
         }
 
     }

@@ -68,8 +68,7 @@ class NodeImpConcatenate implements NodeImp {
         if (predecessorIndex < predecessors.length) {
             AccessImp[] inputs = inputss[predecessorIndex];
             for (int i = 0; i < inputs.length; i++) {
-                AccessImp input = inputs[i];
-                final ReadAccess access = input.node.getOutput(input.i);
+                final ReadAccess access = inputs[i].getReadAccess();
                 if (outputs[i] == null) {
                     outputs[i] = DelegatingReadAccesses.createDelegatingAccess(access.getDataSpec());
                 }

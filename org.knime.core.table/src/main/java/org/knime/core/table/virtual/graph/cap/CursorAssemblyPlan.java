@@ -1,6 +1,10 @@
 package org.knime.core.table.virtual.graph.cap;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.knime.core.table.schema.ColumnarSchema;
 
 /**
  * Instructions for building a {@code Cursor<ReadAccessRow>}.
@@ -32,6 +36,8 @@ public class CursorAssemblyPlan {
 
     private final long numRows;
 
+    private final Map<UUID, ColumnarSchema> schemas;
+
     /**
      * Create a {@code CursorAssemblyPlan} with the sequence of {@code nodes}.
      *
@@ -40,11 +46,13 @@ public class CursorAssemblyPlan {
      *            nodes in the sequence.
      * @param supportsLookahead whether the constructed cursor should be a {@code LookaheadCursor}.
      * @param numRows number of rows. {@code numRows<0} if the number of rows is unknown.
+     * @param schemas the {@code ColumnarSchema}s of source and sink {@code RowAccessible}s, for schema verification during execution.
      */
-    public CursorAssemblyPlan(final List<CapNode> nodes, final boolean supportsLookahead, final long numRows) {
+    public CursorAssemblyPlan(final List<CapNode> nodes, final boolean supportsLookahead, final long numRows, final Map<UUID, ColumnarSchema> schemas) {
         this.nodes = nodes;
         this.supportsLookahead = supportsLookahead;
         this.numRows = numRows;
+        this.schemas = schemas;
     }
 
     /**
@@ -73,5 +81,15 @@ public class CursorAssemblyPlan {
      */
     public long numRows() {
         return numRows;
+    }
+
+    /**
+     * Get the {@code ColumnarSchema}s of source and sink {@code
+     * RowAccessible}s, for schema verification during execution.
+     *
+     * @return a map from table {@code UUID} to schema
+     */
+    public Map<UUID, ColumnarSchema> schemas() {
+        return schemas;
     }
 }

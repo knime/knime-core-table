@@ -40,10 +40,9 @@ import org.knime.core.table.virtual.RowAccessibles;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
-import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.IdentityTransformSpec;
-import org.knime.core.table.virtual.spec.PermuteTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -143,12 +142,9 @@ public class LazyVirtualTableExecutor implements VirtualTableExecutor {
         final List<RowAccessible> predecessors) {
         // TODO visitor pattern?
         final RowAccessible predecessor = predecessors.get(0);
-        if (spec instanceof ColumnFilterTransformSpec) {
-            final int[] selection = ((ColumnFilterTransformSpec)spec).getColumnSelection();
+        if (spec instanceof SelectColumnsTransformSpec) {
+            final int[] selection = ((SelectColumnsTransformSpec)spec).getColumnSelection();
             return List.of(RowAccessibles.filter(predecessor, selection));
-        } else if (spec instanceof PermuteTransformSpec) {
-            final int[] permutation = ((PermuteTransformSpec)spec).getPermutation();
-            return List.of(RowAccessibles.permute(predecessor, permutation));
         } else if (spec instanceof AppendMissingValuesTransformSpec) {
             final ColumnarSchema appendedSchema = ((AppendMissingValuesTransformSpec)spec).getAppendedSchema();
             return List.of(RowAccessibles.appendMissing(predecessor, appendedSchema));

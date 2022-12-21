@@ -1,5 +1,7 @@
 package org.knime.core.table.virtual.graph.exec;
 
+import org.knime.core.table.access.ReadAccess;
+
 final class AccessImp {
     public final NodeImp node;
 
@@ -8,6 +10,11 @@ final class AccessImp {
     public AccessImp(NodeImp node, int i) {
         this.node = node;
         this.i = i;
+    }
+
+    public ReadAccess getReadAccess()
+    {
+        return node.getOutput(i);
     }
 
     @Override

@@ -19,6 +19,38 @@ import org.knime.core.table.schema.ColumnarSchema;
 public final class MapTransformSpec implements TableTransformSpec {
 
     /**
+     * A {@code MapperWithRowIndexFactory} creates {@code Mapper}s.
+     * <p>
+     * A mapper is created with pre-defined input and output accesses. Whenever
+     * {@code Mapper.map(rowIndex)} is called, it reads the current values from
+     * the inputs, computes the map function, and sets the result values to the
+     * output accesses.
+     */
+    public interface MapperWithRowIndexFactory {
+
+        interface Mapper {
+            void map(long rowIndex);
+        }
+
+        /**
+         * @return the ColumnarSchema of the columns produced by the map function
+         */
+        ColumnarSchema getOutputSchema();
+
+        /**
+         * Create a mapper with the specified {@code inputs} and {@code outputs}. Whenever
+         * the returned mapper is {@code run()}, it reads the current values from the input
+         * accesses, computes the map function, and sets the result values to the output
+         * accesses.
+         *
+         * @param inputs  accesses to read input values from
+         * @param outputs accesses to write results to
+         * @return a mapper reading from {@code inputs} and writing to {@code outputs}.
+         */
+        Mapper createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
+    }
+
+    /**
      * A {@code MapperFactory} creates {@code Runnable} mappers.
      * <p>
      * A mapper is created with pre-defined input and output accesses. Whenever the

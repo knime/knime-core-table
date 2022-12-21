@@ -50,7 +50,7 @@ package org.knime.core.table.row;
 
 import java.io.Closeable;
 
-import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.cursor.WriteCursor;
 import org.knime.core.table.schema.ColumnarSchema;
 
 public interface RowWriteAccessible extends Closeable {
@@ -60,6 +60,6 @@ public interface RowWriteAccessible extends Closeable {
      */
     ColumnarSchema getSchema();
 
-    Cursor<WriteAccessRow> getWriteCursor();
+    WriteCursor<WriteAccessRow> getWriteCursor();
 
 }
