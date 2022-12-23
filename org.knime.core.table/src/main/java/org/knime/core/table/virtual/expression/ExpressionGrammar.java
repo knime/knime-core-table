@@ -55,10 +55,10 @@ public interface ExpressionGrammar {
     record Conjunction(Ast.Node ast) {}
     record Inversion(Ast.Node ast) {}
     record Comparison(Ast.Node ast) {}
-	record Sum(Ast.Node ast) {}
-	record Term(Ast.Node ast) {}
-	record Factor(Ast.Node ast) {}
-	record Atom(Ast.Node ast) {}
+    record Sum(Ast.Node ast) {}
+    record Term(Ast.Node ast) {}
+    record Factor(Ast.Node ast) {}
+    record Atom(Ast.Node ast) {}
     record StrConst(String value) {}
     record Digits(String value) {}
 
@@ -140,10 +140,10 @@ public interface ExpressionGrammar {
             return new Comparison(s.ast);
         }
 
-        //	sum:
-        //		| sum '+' term
-        //		| sum '-' term
-        //		| term
+        //  sum:
+        //      | sum '+' term
+        //      | sum '-' term
+        //      | term
         public Sum sum(SepBy1<Term, @Ch("+-")String> terms) {
             return new Sum(
                     terms.reduce(
@@ -152,46 +152,46 @@ public interface ExpressionGrammar {
                     ).ast);
         }
 
-        //	term:
-        //		| term '*' factor
-        //		| term '/' factor
-        //		| term '%' factor
-        //		| factor
-		public Term term(SepBy1<Factor, @Ch("*/%")String> factors) {
-			return new Term(
-					factors.reduce(
-							f1 -> op -> f2 -> new Factor(
-									new Ast.BinaryOp(f1.ast, f2.ast, binaryOperator(op)))
-					).ast);
-		}
+        //  term:
+        //      | term '*' factor
+        //      | term '/' factor
+        //      | term '%' factor
+        //      | factor
+        public Term term(SepBy1<Factor, @Ch("*/%")String> factors) {
+            return new Term(
+                    factors.reduce(
+                            f1 -> op -> f2 -> new Factor(
+                                    new Ast.BinaryOp(f1.ast, f2.ast, binaryOperator(op)))
+                    ).ast);
+        }
 
-        //	factor (memo):
-        //		| '+' factor
-        //		| '-' factor
-        //		| atom
-		public Factor factor(OptWs ws, @Ch("+-")String op, Factor f) {
-			if ( op.equals("-"))
-				return new Factor(new Ast.UnaryOp(f.ast, Ast.UnaryOp.Operator.MINUS));
-			else
-				return new Factor(f.ast);
-		}
+        //  factor (memo):
+        //      | '+' factor
+        //      | '-' factor
+        //      | atom
+        public Factor factor(OptWs ws, @Ch("+-")String op, Factor f) {
+            if (op.equals("-"))
+                return new Factor(new Ast.UnaryOp(f.ast, Ast.UnaryOp.Operator.MINUS));
+            else
+                return new Factor(f.ast);
+        }
 
-		public Factor factor(OptWs ws, Atom a) {
-			return new Factor(a.ast);
-		}
+        public Factor factor(OptWs ws, Atom a) {
+            return new Factor(a.ast);
+        }
 
-        //	atom:
-        //		| column
+        //  atom:
+        //      | column
         //      | call
-        //		| group
+        //      | group
         //      | float_literal
-        //		| int_literal
-        //		| string_literal
+        //      | int_literal
+        //      | string_literal
         //
-        //	column:
-        //		| '$' + NAME
-        //		| '$' + '[' + STRING + ']'
-        //		| '$' + '[' + INTEGER + ']'
+        //  column:
+        //      | '$' + NAME
+        //      | '$' + '[' + STRING + ']'
+        //      | '$' + '[' + INTEGER + ']'
         public Atom column(OptWs ws, @Ch("$")Void h, @Ch("[")Void ob, StrConst columnName, @Ch("]")Void cb, OptWs trailingWs) {
             return new Atom(new Ast.ColumnRef(columnName.value));
         }
@@ -211,22 +211,22 @@ public interface ExpressionGrammar {
         //  arguments:
         //      | a=expression ',' b=arguments { a, b }
         //      | a=expression
-        public Atom call(OptWs ws, @Regex("[a-zA-Z_]\\w*") String func,
-                OptWs wsob, @Ch("(") Void ob, //
-                SepBy<Expr, @Ch(",") String> arguments, //
-                @Ch(")") Void cb, OptWs trailingWs) {
+        public Atom call(OptWs ws, @Regex("[a-zA-Z_]\\w*")String func,
+                OptWs wsob, @Ch("(")Void ob,
+                SepBy<Expr, @Ch(",")String> arguments,
+                @Ch(")")Void cb, OptWs trailingWs) {
             // TODO: What is the definition for legal identifiers in KNIME Expression Language?
             //       The above RegEx is too simplistic, probably.
             return new Atom(new Ast.Call(func, arguments.values().stream().map(Expr::ast).toList()));
         }
 
-        //	group:
-        //		| '(' a=expression ')'
+        //  group:
+        //      | '(' a=expression ')'
         public Atom group(OptWs ws, @Ch("(")Void ob, Expr expr, @Ch(")")Void cb, OptWs trailingWs) {
-			return new Atom(expr.ast);
-		}
+            return new Atom(expr.ast);
+        }
 
-        //	float_literal:
+        //  float_literal:
         //      | FLOAT
         public Atom float_literal(OptWs ws, Digits digits, @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String str, OptWs trailingWs) {
             return float_literal(digits.value + str);
@@ -242,7 +242,7 @@ public interface ExpressionGrammar {
             return new Atom(ast);
         }
 
-        //	int_literal:
+        //  int_literal:
         //      | INTEGER
         public Atom int_literal(OptWs ws, Digits digits, OptWs trailingWs) {
             return new Atom(new Ast.IntConstant(Long.parseLong(digits.value)));
