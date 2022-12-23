@@ -26,6 +26,7 @@ import org.rekex.annomacro.AnnoMacro;
 import org.rekex.helper.anno.Ch;
 import org.rekex.helper.anno.Str;
 import org.rekex.helper.anno.StrWs;
+import org.rekex.helper.datatype.SepBy;
 import org.rekex.helper.datatype.SepBy1;
 import org.rekex.parser.ParseResult;
 import org.rekex.parser.PegParser;
@@ -181,6 +182,7 @@ public interface ExpressionGrammar {
 
         //	atom:
         //		| column
+        //      | call
         //		| group
         //      | float_literal
         //		| int_literal
@@ -198,9 +200,24 @@ public interface ExpressionGrammar {
             return new Atom(new Ast.ColumnIndex(Integer.parseInt(columnIndex)));
         }
 
-        public Atom column(OptWs ws, @Ch("$")Void h, @Ch(range={0x20, 0x10FFFF}, except=BS+QT+wsChars+"+-*/%") int[] chars, OptWs trailingWs)
+        public Atom column(OptWs ws, @Ch("$")Void h, @Ch(range={0x20, 0x10FFFF}, except=BS+QT+wsChars+"$()+-*/%") int[] chars, OptWs trailingWs)
         {
             return new Atom(new Ast.ColumnRef(new String(chars, 0, chars.length)));
+        }
+
+        //  call:
+        //      | a=NAME + '(' + b=arguments + ')' { "call", a[0][1], *b }
+        //
+        //  arguments:
+        //      | a=expression ',' b=arguments { a, b }
+        //      | a=expression
+        public Atom call(OptWs ws, @Regex("[a-zA-Z_]\\w*") String func,
+                OptWs wsob, @Ch("(") Void ob, //
+                SepBy<Expr, @Ch(",") String> arguments, //
+                @Ch(")") Void cb, OptWs trailingWs) {
+            // TODO: What is the definition for legal identifiers in KNIME Expression Language?
+            //       The above RegEx is too simplistic, probably.
+            return new Atom(new Ast.Call(func, arguments.values().stream().map(Expr::ast).toList()));
         }
 
         //	group:

@@ -20,6 +20,8 @@ import org.knime.core.table.virtual.expression.ExpressionGrammar.OptWs;
 import org.knime.core.table.virtual.expression.ExpressionGrammar.StrConst;
 import org.knime.core.table.virtual.expression.ExpressionGrammar.Sum;
 import org.knime.core.table.virtual.expression.ExpressionGrammar.Term;
+import org.rekex.helper.datatype.SepBy;
+import org.rekex.helper.datatype.SepBy.Empty;
 import org.rekex.helper.datatype.SepBy1;
 import org.rekex.helper.datatype.seq.Seq2;
 
@@ -253,30 +255,38 @@ public class ExpressionParser implements PegParser<Expr>
             case 39 -> rule_39(state); // Atom
             case 40 -> rule_40(state); // Atom
             case 41 -> rule_41(state); // Atom
-            case 42 -> rule_42(state); // @Ch("$")Void
-            case 43 -> rule_43(state); // @Ch("[")Void
-            case 44 -> rule_44(state); // StrConst
-            case 45 -> rule_45(state); // @Ch("]")Void
-            case 46 -> rule_46(state); // @Regex("[0-9]+")String
-            case 47 -> rule_47(state); // @Ch(except="\\\" \t\n\r+-*/%",range={32,1114111})int[]
-            case 48 -> rule_48(state); // @Ch("(")Void
-            case 49 -> rule_49(state); // @Ch(")")Void
-            case 50 -> rule_50(state); // Digits
-            case 51 -> rule_51(state); // @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String
-            case 52 -> rule_52(state); // @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String
-            case 53 -> rule_53(state); // @Ch("\"")Void
-            case 54 -> rule_54(state); // int[]
-            case 55 -> rule_55(state); // @Ch(except="\\\" \t\n\r+-*/%",range={32,1114111})int
-            case 56 -> rule_56(state); // int
-            case 57 -> rule_57(state); // int
-            case 58 -> rule_58(state); // int
-            case 59 -> rule_59(state); // int
-            case 60 -> rule_60(state); // @Ch(except="\\\"",range={32,1114111})int
-            case 61 -> rule_61(state); // @Ch("\\")Void
-            case 62 -> rule_62(state); // @Ch("\\\"/bfnrt")char
-            case 63 -> rule_63(state); // @Ch("u")Void
-            case 64 -> rule_64(state); // byte
-            case 65 -> rule_65(state); // @Regex("[0-9A-Fa-f]")char
+            case 42 -> rule_42(state); // Atom
+            case 43 -> rule_43(state); // @Ch("$")Void
+            case 44 -> rule_44(state); // @Ch("[")Void
+            case 45 -> rule_45(state); // StrConst
+            case 46 -> rule_46(state); // @Ch("]")Void
+            case 47 -> rule_47(state); // @Regex("[0-9]+")String
+            case 48 -> rule_48(state); // @Ch(except="\\\" \t\n\r$()+-*/%",range={32,1114111})int[]
+            case 49 -> rule_49(state); // @Regex("[a-zA-Z_]\\w*")String
+            case 50 -> rule_50(state); // @Ch("(")Void
+            case 51 -> rule_51(state); // SepBy<Expr,@Ch(",")String>
+            case 52 -> rule_52(state); // @Ch(")")Void
+            case 53 -> rule_53(state); // Digits
+            case 54 -> rule_54(state); // @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String
+            case 55 -> rule_55(state); // @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String
+            case 56 -> rule_56(state); // @Ch("\"")Void
+            case 57 -> rule_57(state); // int[]
+            case 58 -> rule_58(state); // @Ch(except="\\\" \t\n\r$()+-*/%",range={32,1114111})int
+            case 59 -> rule_59(state); // SepBy1<Expr,@Ch(",")String>
+            case 60 -> rule_60(state); // Empty<Expr,@Ch(",")String>
+            case 61 -> rule_61(state); // int
+            case 62 -> rule_62(state); // List<Seq2<@Ch(",")String,Expr>>
+            case 63 -> rule_63(state); // int
+            case 64 -> rule_64(state); // int
+            case 65 -> rule_65(state); // int
+            case 66 -> rule_66(state); // Seq2<@Ch(",")String,Expr>
+            case 67 -> rule_67(state); // @Ch(except="\\\"",range={32,1114111})int
+            case 68 -> rule_68(state); // @Ch("\\")Void
+            case 69 -> rule_69(state); // @Ch("\\\"/bfnrt")char
+            case 70 -> rule_70(state); // @Ch("u")Void
+            case 71 -> rule_71(state); // byte
+            case 72 -> rule_72(state); // @Ch(",")String
+            case 73 -> rule_73(state); // @Regex("[0-9A-Fa-f]")char
             default -> throw new AssertionError("unknown ruleId: "+ruleId);
         };
         state.pathPop();
@@ -885,6 +895,10 @@ public class ExpressionParser implements PegParser<Expr>
         if(!state.fail)
             return state;
 
+        state = match(42, state, 8); // Atom
+        if(!state.fail)
+            return state;
+
         return state;
     }
 
@@ -906,22 +920,22 @@ public class ExpressionParser implements PegParser<Expr>
             return state.fail(start0);
         OptWs arg_0 = state.pickObj();
 
-        state = match(42, state, 1); // arg_1: @Ch("$")Void
+        state = match(43, state, 1); // arg_1: @Ch("$")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_1 = state.pickObj();
 
-        state = match(43, state, 2); // arg_2: @Ch("[")Void
+        state = match(44, state, 2); // arg_2: @Ch("[")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_2 = state.pickObj();
 
-        state = match(44, state, 3); // arg_3: StrConst
+        state = match(45, state, 3); // arg_3: StrConst
         if(state.fail)
             return state.fail(start0);
         StrConst arg_3 = state.pickObj();
 
-        state = match(45, state, 4); // arg_4: @Ch("]")Void
+        state = match(46, state, 4); // arg_4: @Ch("]")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_4 = state.pickObj();
@@ -950,22 +964,22 @@ public class ExpressionParser implements PegParser<Expr>
             return state.fail(start0);
         OptWs arg_0 = state.pickObj();
 
-        state = match(42, state, 1); // arg_1: @Ch("$")Void
+        state = match(43, state, 1); // arg_1: @Ch("$")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_1 = state.pickObj();
 
-        state = match(43, state, 2); // arg_2: @Ch("[")Void
+        state = match(44, state, 2); // arg_2: @Ch("[")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_2 = state.pickObj();
 
-        state = match(46, state, 3); // arg_3: @Regex("[0-9]+")String
+        state = match(47, state, 3); // arg_3: @Regex("[0-9]+")String
         if(state.fail)
             return state.fail(start0);
         String arg_3 = state.pickObj();
 
-        state = match(45, state, 4); // arg_4: @Ch("]")Void
+        state = match(46, state, 4); // arg_4: @Ch("]")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_4 = state.pickObj();
@@ -994,12 +1008,12 @@ public class ExpressionParser implements PegParser<Expr>
             return state.fail(start0);
         OptWs arg_0 = state.pickObj();
 
-        state = match(42, state, 1); // arg_1: @Ch("$")Void
+        state = match(43, state, 1); // arg_1: @Ch("$")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_1 = state.pickObj();
 
-        state = match(47, state, 2); // arg_2: @Ch(except="\\\" \t\n\r+-*/%",range={32,1114111})int[]
+        state = match(48, state, 2); // arg_2: @Ch(except="\\\" \t\n\r$()+-*/%",range={32,1114111})int[]
         if(state.fail)
             return state.fail(start0);
         int[] arg_2 = state.pickObj();
@@ -1028,7 +1042,56 @@ public class ExpressionParser implements PegParser<Expr>
             return state.fail(start0);
         OptWs arg_0 = state.pickObj();
 
-        state = match(48, state, 1); // arg_1: @Ch("(")Void
+        state = match(49, state, 1); // arg_1: @Regex("[a-zA-Z_]\\w*")String
+        if(state.fail)
+            return state.fail(start0);
+        String arg_1 = state.pickObj();
+
+        state = match(13, state, 2); // arg_2: OptWs
+        if(state.fail)
+            return state.fail(start0);
+        OptWs arg_2 = state.pickObj();
+
+        state = match(50, state, 3); // arg_3: @Ch("(")Void
+        if(state.fail)
+            return state.fail(start0);
+        Void arg_3 = state.pickObj();
+
+        state = match(51, state, 4); // arg_4: SepBy<Expr,@Ch(",")String>
+        if(state.fail)
+            return state.fail(start0);
+        SepBy<Expr, String> arg_4 = state.pickObj();
+
+        state = match(52, state, 5); // arg_5: @Ch(")")Void
+        if(state.fail)
+            return state.fail(start0);
+        Void arg_5 = state.pickObj();
+
+        state = match(13, state, 6); // arg_6: OptWs
+        if(state.fail)
+            return state.fail(start0);
+        OptWs arg_6 = state.pickObj();
+
+        Atom value;
+        try{
+            value = state.catalog.call(arg_0, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6);
+        }catch(Exception ex){
+            throw new _FatalEx(start0, ex);
+        }
+        return state.ok(value);
+    }
+
+    // concat rule for: Atom
+    static _State rule_38(_State state) throws _FatalEx
+    {
+        final int start0 = state.start;
+
+        state = match(13, state, 0); // arg_0: OptWs
+        if(state.fail)
+            return state.fail(start0);
+        OptWs arg_0 = state.pickObj();
+
+        state = match(50, state, 1); // arg_1: @Ch("(")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_1 = state.pickObj();
@@ -1038,7 +1101,7 @@ public class ExpressionParser implements PegParser<Expr>
             return state.fail(start0);
         Expr arg_2 = state.pickObj();
 
-        state = match(49, state, 3); // arg_3: @Ch(")")Void
+        state = match(52, state, 3); // arg_3: @Ch(")")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_3 = state.pickObj();
@@ -1058,7 +1121,7 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // concat rule for: Atom
-    static _State rule_38(_State state) throws _FatalEx
+    static _State rule_39(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
@@ -1067,12 +1130,12 @@ public class ExpressionParser implements PegParser<Expr>
             return state.fail(start0);
         OptWs arg_0 = state.pickObj();
 
-        state = match(50, state, 1); // arg_1: Digits
+        state = match(53, state, 1); // arg_1: Digits
         if(state.fail)
             return state.fail(start0);
         Digits arg_1 = state.pickObj();
 
-        state = match(51, state, 2); // arg_2: @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String
+        state = match(54, state, 2); // arg_2: @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String
         if(state.fail)
             return state.fail(start0);
         String arg_2 = state.pickObj();
@@ -1092,7 +1155,7 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // concat rule for: Atom
-    static _State rule_39(_State state) throws _FatalEx
+    static _State rule_40(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
@@ -1101,7 +1164,7 @@ public class ExpressionParser implements PegParser<Expr>
             return state.fail(start0);
         OptWs arg_0 = state.pickObj();
 
-        state = match(52, state, 1); // arg_1: @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String
+        state = match(55, state, 1); // arg_1: @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String
         if(state.fail)
             return state.fail(start0);
         String arg_1 = state.pickObj();
@@ -1121,7 +1184,7 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // concat rule for: Atom
-    static _State rule_40(_State state) throws _FatalEx
+    static _State rule_41(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
@@ -1130,7 +1193,7 @@ public class ExpressionParser implements PegParser<Expr>
             return state.fail(start0);
         OptWs arg_0 = state.pickObj();
 
-        state = match(50, state, 1); // arg_1: Digits
+        state = match(53, state, 1); // arg_1: Digits
         if(state.fail)
             return state.fail(start0);
         Digits arg_1 = state.pickObj();
@@ -1150,11 +1213,11 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // concat rule for: Atom
-    static _State rule_41(_State state) throws _FatalEx
+    static _State rule_42(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
-        state = match(44, state, 0); // arg_0: StrConst
+        state = match(45, state, 0); // arg_0: StrConst
         if(state.fail)
             return state.fail(start0);
         StrConst arg_0 = state.pickObj();
@@ -1169,35 +1232,35 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // regex rule for: @Ch("$")Void
-    static _State rule_42(_State state)
-    {
-        return match_regex(state, 42, pattern_42, 0);
-    }
-    static final java.util.regex.Pattern pattern_42 = java.util.regex.Pattern.compile("\\$", 0);
-
-    // regex rule for: @Ch("[")Void
     static _State rule_43(_State state)
     {
         return match_regex(state, 43, pattern_43, 0);
     }
-    static final java.util.regex.Pattern pattern_43 = java.util.regex.Pattern.compile("\\[", 0);
+    static final java.util.regex.Pattern pattern_43 = java.util.regex.Pattern.compile("\\$", 0);
+
+    // regex rule for: @Ch("[")Void
+    static _State rule_44(_State state)
+    {
+        return match_regex(state, 44, pattern_44, 0);
+    }
+    static final java.util.regex.Pattern pattern_44 = java.util.regex.Pattern.compile("\\[", 0);
 
     // concat rule for: StrConst
-    static _State rule_44(_State state) throws _FatalEx
+    static _State rule_45(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
-        state = match(53, state, 0); // arg_0: @Ch("\"")Void
+        state = match(56, state, 0); // arg_0: @Ch("\"")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_0 = state.pickObj();
 
-        state = match(54, state, 1); // arg_1: int[]
+        state = match(57, state, 1); // arg_1: int[]
         if(state.fail)
             return state.fail(start0);
         int[] arg_1 = state.pickObj();
 
-        state = match(53, state, 2); // arg_2: @Ch("\"")Void
+        state = match(56, state, 2); // arg_2: @Ch("\"")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_2 = state.pickObj();
@@ -1217,23 +1280,23 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // regex rule for: @Ch("]")Void
-    static _State rule_45(_State state)
-    {
-        return match_regex(state, 45, pattern_45, 0);
-    }
-    static final java.util.regex.Pattern pattern_45 = java.util.regex.Pattern.compile("\\]", 0);
-
-    // regex rule for: @Regex("[0-9]+")String
     static _State rule_46(_State state)
     {
-        return match_regex_str(state, 46, pattern_46, 0);
+        return match_regex(state, 46, pattern_46, 0);
     }
-    static final java.util.regex.Pattern pattern_46 = java.util.regex.Pattern.compile("[0-9]+", 0);
+    static final java.util.regex.Pattern pattern_46 = java.util.regex.Pattern.compile("\\]", 0);
 
-    // repeat rule for: @Ch(except="\\\" \t\n\r+-*/%",range={32,1114111})int[]
-    static _State rule_47(_State state) throws _FatalEx
+    // regex rule for: @Regex("[0-9]+")String
+    static _State rule_47(_State state)
     {
-        state = match_repeat(state, 47, 55, 0, Integer.MAX_VALUE);
+        return match_regex_str(state, 47, pattern_47, 0);
+    }
+    static final java.util.regex.Pattern pattern_47 = java.util.regex.Pattern.compile("[0-9]+", 0);
+
+    // repeat rule for: @Ch(except="\\\" \t\n\r$()+-*/%",range={32,1114111})int[]
+    static _State rule_48(_State state) throws _FatalEx
+    {
+        state = match_repeat(state, 48, 58, 0, Integer.MAX_VALUE);
         if(state.fail)
             return state;
         java.util.ArrayList<Integer> list = state.pickObj();
@@ -1243,26 +1306,48 @@ public class ExpressionParser implements PegParser<Expr>
         return state.ok(array);
     }
 
-    // regex rule for: @Ch("(")Void
-    static _State rule_48(_State state)
-    {
-        return match_regex(state, 48, pattern_48, 0);
-    }
-    static final java.util.regex.Pattern pattern_48 = java.util.regex.Pattern.compile("\\(", 0);
-
-    // regex rule for: @Ch(")")Void
+    // regex rule for: @Regex("[a-zA-Z_]\\w*")String
     static _State rule_49(_State state)
     {
-        return match_regex(state, 49, pattern_49, 0);
+        return match_regex_str(state, 49, pattern_49, 0);
     }
-    static final java.util.regex.Pattern pattern_49 = java.util.regex.Pattern.compile("\\)", 0);
+    static final java.util.regex.Pattern pattern_49 = java.util.regex.Pattern.compile("[a-zA-Z_]\\w*", 0);
+
+    // regex rule for: @Ch("(")Void
+    static _State rule_50(_State state)
+    {
+        return match_regex(state, 50, pattern_50, 0);
+    }
+    static final java.util.regex.Pattern pattern_50 = java.util.regex.Pattern.compile("\\(", 0);
+
+    // alt rule for: SepBy<Expr,@Ch(",")String>
+    static _State rule_51(_State state) throws _FatalEx
+    {
+        state = match(59, state, 0); // SepBy1<Expr,@Ch(",")String>
+        if(!state.fail)
+            return state;
+
+        state = match(60, state, 1); // Empty<Expr,@Ch(",")String>
+        if(!state.fail)
+            return state;
+
+        return state;
+    }
+
+
+    // regex rule for: @Ch(")")Void
+    static _State rule_52(_State state)
+    {
+        return match_regex(state, 52, pattern_52, 0);
+    }
+    static final java.util.regex.Pattern pattern_52 = java.util.regex.Pattern.compile("\\)", 0);
 
     // concat rule for: Digits
-    static _State rule_50(_State state) throws _FatalEx
+    static _State rule_53(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
-        state = match(46, state, 0); // arg_0: @Regex("[0-9]+")String
+        state = match(47, state, 0); // arg_0: @Regex("[0-9]+")String
         if(state.fail)
             return state.fail(start0);
         String arg_0 = state.pickObj();
@@ -1277,30 +1362,30 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // regex rule for: @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String
-    static _State rule_51(_State state)
+    static _State rule_54(_State state)
     {
-        return match_regex_str(state, 51, pattern_51, 0);
+        return match_regex_str(state, 54, pattern_54, 0);
     }
-    static final java.util.regex.Pattern pattern_51 = java.util.regex.Pattern.compile("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?", 0);
+    static final java.util.regex.Pattern pattern_54 = java.util.regex.Pattern.compile("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?", 0);
 
     // regex rule for: @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String
-    static _State rule_52(_State state)
+    static _State rule_55(_State state)
     {
-        return match_regex_str(state, 52, pattern_52, 0);
+        return match_regex_str(state, 55, pattern_55, 0);
     }
-    static final java.util.regex.Pattern pattern_52 = java.util.regex.Pattern.compile("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?", 0);
+    static final java.util.regex.Pattern pattern_55 = java.util.regex.Pattern.compile("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?", 0);
 
     // regex rule for: @Ch("\"")Void
-    static _State rule_53(_State state)
+    static _State rule_56(_State state)
     {
-        return match_regex(state, 53, pattern_53, 0);
+        return match_regex(state, 56, pattern_56, 0);
     }
-    static final java.util.regex.Pattern pattern_53 = java.util.regex.Pattern.compile("\"", 0);
+    static final java.util.regex.Pattern pattern_56 = java.util.regex.Pattern.compile("\"", 0);
 
     // repeat rule for: int[]
-    static _State rule_54(_State state) throws _FatalEx
+    static _State rule_57(_State state) throws _FatalEx
     {
-        state = match_repeat(state, 54, 56, 0, Integer.MAX_VALUE);
+        state = match_repeat(state, 57, 61, 0, Integer.MAX_VALUE);
         if(state.fail)
             return state;
         java.util.ArrayList<Integer> list = state.pickObj();
@@ -1310,25 +1395,63 @@ public class ExpressionParser implements PegParser<Expr>
         return state.ok(array);
     }
 
-    // regex rule for: @Ch(except="\\\" \t\n\r+-*/%",range={32,1114111})int
-    static _State rule_55(_State state) throws _FatalEx
+    // regex rule for: @Ch(except="\\\" \t\n\r$()+-*/%",range={32,1114111})int
+    static _State rule_58(_State state) throws _FatalEx
     {
-        return match_regex_int(state, 55, pattern_55, 0);
+        return match_regex_int(state, 58, pattern_58, 0);
     }
-    static final java.util.regex.Pattern pattern_55 = java.util.regex.Pattern.compile("[\\ -\\x{10FFFF}&&[^\\\\\"\\ \\t\\n\\r\\+\\-\\*/%]]", 0);
+    static final java.util.regex.Pattern pattern_58 = java.util.regex.Pattern.compile("[\\ -\\x{10FFFF}&&[^\\\\\"\\ \\t\\n\\r\\$\\(\\)\\+\\-\\*/%]]", 0);
+
+    // concat rule for: SepBy1<Expr,@Ch(",")String>
+    static _State rule_59(_State state) throws _FatalEx
+    {
+        final int start0 = state.start;
+
+        state = match(0, state, 0); // arg_0: Expr
+        if(state.fail)
+            return state.fail(start0);
+        Expr arg_0 = state.pickObj();
+
+        state = match(62, state, 1); // arg_1: List<Seq2<@Ch(",")String,Expr>>
+        if(state.fail)
+            return state.fail(start0);
+        List<Seq2<String, Expr>> arg_1 = state.pickObj();
+
+        SepBy1<Expr, String> value;
+        try{
+            value = SepBy1.ctor(arg_0, arg_1);
+        }catch(Exception ex){
+            throw new _FatalEx(start0, ex);
+        }
+        return state.ok(value);
+    }
+
+    // concat rule for: Empty<Expr,@Ch(",")String>
+    static _State rule_60(_State state) throws _FatalEx
+    {
+        final int start0 = state.start;
+
+        Empty<Expr, String> value;
+        try{
+            value = Empty.ctor();
+        }catch(Exception ex){
+            throw new _FatalEx(start0, ex);
+        }
+        return state.ok(value);
+    }
 
     // alt rule for: int
-    static _State rule_56(_State state) throws _FatalEx
+    static _State rule_61(_State state) throws _FatalEx
     {
-        state = match(57, state, 0); // int
+        state = match(63, state, 0); // int
         if(!state.fail)
             return state;
 
-        state = match(58, state, 1); // int
+        state = match(64, state, 1); // int
         if(!state.fail)
             return state;
 
-        state = match(59, state, 2); // int
+        state = match(65, state, 2); // int
         if(!state.fail)
             return state;
 
@@ -1336,12 +1459,23 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
 
+    // repeat rule for: List<Seq2<@Ch(",")String,Expr>>
+    static _State rule_62(_State state) throws _FatalEx
+    {
+        state = match_repeat(state, 62, 66, 0, Integer.MAX_VALUE);
+        if(state.fail)
+            return state;
+        java.util.ArrayList<Seq2<String, Expr>> list = state.pickObj();
+        list.trimToSize();
+        return state.ok(list);
+    }
+
     // concat rule for: int
-    static _State rule_57(_State state) throws _FatalEx
+    static _State rule_63(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
-        state = match(60, state, 0); // arg_0: @Ch(except="\\\"",range={32,1114111})int
+        state = match(67, state, 0); // arg_0: @Ch(except="\\\"",range={32,1114111})int
         if(state.fail)
             return state.fail(start0);
         int arg_0 = state.pickObj();
@@ -1356,16 +1490,16 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // concat rule for: int
-    static _State rule_58(_State state) throws _FatalEx
+    static _State rule_64(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
-        state = match(61, state, 0); // arg_0: @Ch("\\")Void
+        state = match(68, state, 0); // arg_0: @Ch("\\")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_0 = state.pickObj();
 
-        state = match(62, state, 1); // arg_1: @Ch("\\\"/bfnrt")char
+        state = match(69, state, 1); // arg_1: @Ch("\\\"/bfnrt")char
         if(state.fail)
             return state.fail(start0);
         char arg_1 = state.pickObj();
@@ -1380,36 +1514,36 @@ public class ExpressionParser implements PegParser<Expr>
     }
 
     // concat rule for: int
-    static _State rule_59(_State state) throws _FatalEx
+    static _State rule_65(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
-        state = match(61, state, 0); // arg_0: @Ch("\\")Void
+        state = match(68, state, 0); // arg_0: @Ch("\\")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_0 = state.pickObj();
 
-        state = match(63, state, 1); // arg_1: @Ch("u")Void
+        state = match(70, state, 1); // arg_1: @Ch("u")Void
         if(state.fail)
             return state.fail(start0);
         Void arg_1 = state.pickObj();
 
-        state = match(64, state, 2); // arg_2: byte
+        state = match(71, state, 2); // arg_2: byte
         if(state.fail)
             return state.fail(start0);
         byte arg_2 = state.pickObj();
 
-        state = match(64, state, 3); // arg_3: byte
+        state = match(71, state, 3); // arg_3: byte
         if(state.fail)
             return state.fail(start0);
         byte arg_3 = state.pickObj();
 
-        state = match(64, state, 4); // arg_4: byte
+        state = match(71, state, 4); // arg_4: byte
         if(state.fail)
             return state.fail(start0);
         byte arg_4 = state.pickObj();
 
-        state = match(64, state, 5); // arg_5: byte
+        state = match(71, state, 5); // arg_5: byte
         if(state.fail)
             return state.fail(start0);
         byte arg_5 = state.pickObj();
@@ -1423,40 +1557,64 @@ public class ExpressionParser implements PegParser<Expr>
         return state.ok(value);
     }
 
-    // regex rule for: @Ch(except="\\\"",range={32,1114111})int
-    static _State rule_60(_State state) throws _FatalEx
-    {
-        return match_regex_int(state, 60, pattern_60, 0);
-    }
-    static final java.util.regex.Pattern pattern_60 = java.util.regex.Pattern.compile("[\\ -\\x{10FFFF}&&[^\\\\\"]]", 0);
-
-    // regex rule for: @Ch("\\")Void
-    static _State rule_61(_State state)
-    {
-        return match_regex(state, 61, pattern_61, 0);
-    }
-    static final java.util.regex.Pattern pattern_61 = java.util.regex.Pattern.compile("\\\\", 0);
-
-    // regex rule for: @Ch("\\\"/bfnrt")char
-    static _State rule_62(_State state) throws _FatalEx
-    {
-        return match_regex_char(state, 62, pattern_62, 0);
-    }
-    static final java.util.regex.Pattern pattern_62 = java.util.regex.Pattern.compile("[\\\\\"/bfnrt]", 0);
-
-    // regex rule for: @Ch("u")Void
-    static _State rule_63(_State state)
-    {
-        return match_regex(state, 63, pattern_63, 0);
-    }
-    static final java.util.regex.Pattern pattern_63 = java.util.regex.Pattern.compile("u", 0);
-
-    // concat rule for: byte
-    static _State rule_64(_State state) throws _FatalEx
+    // concat rule for: Seq2<@Ch(",")String,Expr>
+    static _State rule_66(_State state) throws _FatalEx
     {
         final int start0 = state.start;
 
-        state = match(65, state, 0); // arg_0: @Regex("[0-9A-Fa-f]")char
+        state = match(72, state, 0); // arg_0: @Ch(",")String
+        if(state.fail)
+            return state.fail(start0);
+        String arg_0 = state.pickObj();
+
+        state = match(0, state, 1); // arg_1: Expr
+        if(state.fail)
+            return state.fail(start0);
+        Expr arg_1 = state.pickObj();
+
+        Seq2<String, Expr> value;
+        try{
+            value = new Seq2<String, Expr>(arg_0, arg_1);
+        }catch(Exception ex){
+            throw new _FatalEx(start0, ex);
+        }
+        return state.ok(value);
+    }
+
+    // regex rule for: @Ch(except="\\\"",range={32,1114111})int
+    static _State rule_67(_State state) throws _FatalEx
+    {
+        return match_regex_int(state, 67, pattern_67, 0);
+    }
+    static final java.util.regex.Pattern pattern_67 = java.util.regex.Pattern.compile("[\\ -\\x{10FFFF}&&[^\\\\\"]]", 0);
+
+    // regex rule for: @Ch("\\")Void
+    static _State rule_68(_State state)
+    {
+        return match_regex(state, 68, pattern_68, 0);
+    }
+    static final java.util.regex.Pattern pattern_68 = java.util.regex.Pattern.compile("\\\\", 0);
+
+    // regex rule for: @Ch("\\\"/bfnrt")char
+    static _State rule_69(_State state) throws _FatalEx
+    {
+        return match_regex_char(state, 69, pattern_69, 0);
+    }
+    static final java.util.regex.Pattern pattern_69 = java.util.regex.Pattern.compile("[\\\\\"/bfnrt]", 0);
+
+    // regex rule for: @Ch("u")Void
+    static _State rule_70(_State state)
+    {
+        return match_regex(state, 70, pattern_70, 0);
+    }
+    static final java.util.regex.Pattern pattern_70 = java.util.regex.Pattern.compile("u", 0);
+
+    // concat rule for: byte
+    static _State rule_71(_State state) throws _FatalEx
+    {
+        final int start0 = state.start;
+
+        state = match(73, state, 0); // arg_0: @Regex("[0-9A-Fa-f]")char
         if(state.fail)
             return state.fail(start0);
         char arg_0 = state.pickObj();
@@ -1470,12 +1628,19 @@ public class ExpressionParser implements PegParser<Expr>
         return state.ok(value);
     }
 
-    // regex rule for: @Regex("[0-9A-Fa-f]")char
-    static _State rule_65(_State state) throws _FatalEx
+    // regex rule for: @Ch(",")String
+    static _State rule_72(_State state)
     {
-        return match_regex_char(state, 65, pattern_65, 0);
+        return match_regex_str(state, 72, pattern_72, 0);
     }
-    static final java.util.regex.Pattern pattern_65 = java.util.regex.Pattern.compile("[0-9A-Fa-f]", 0);
+    static final java.util.regex.Pattern pattern_72 = java.util.regex.Pattern.compile(",", 0);
+
+    // regex rule for: @Regex("[0-9A-Fa-f]")char
+    static _State rule_73(_State state) throws _FatalEx
+    {
+        return match_regex_char(state, 73, pattern_73, 0);
+    }
+    static final java.util.regex.Pattern pattern_73 = java.util.regex.Pattern.compile("[0-9A-Fa-f]", 0);
 
 
 
@@ -1651,59 +1816,75 @@ public class ExpressionParser implements PegParser<Expr>
         static org.knime.core.table.virtual.expression.ExpressionGrammar.Atom t_40;
         // [41] Atom
         static org.knime.core.table.virtual.expression.ExpressionGrammar.Atom t_41;
-        // [42] @Ch("$")Void
-        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="$")Void t_42;
-        // [43] @Ch("[")Void
-        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="[")Void t_43;
-        // [44] StrConst
-        static org.knime.core.table.virtual.expression.ExpressionGrammar.StrConst t_44;
-        // [45] @Ch("]")Void
-        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="]")Void t_45;
-        // [46] @Regex("[0-9]+")String
-        static java.lang.@org.rekex.spec.Regex(flags=0, group=0, value="[0-9]+")String t_46;
-        // [47] @Ch(except="\\\" \t\n\r+-*/%",range={32,1114111})int[]
-        static @org.rekex.helper.anno.Ch(except="\\\" \t\n\r+-*/%", ignoreCase=false, range={32, 1114111}, value="")int[] t_47;
-        // [48] @Ch("(")Void
-        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="(")Void t_48;
-        // [49] @Ch(")")Void
-        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value=")")Void t_49;
-        // [50] Digits
-        static org.knime.core.table.virtual.expression.ExpressionGrammar.Digits t_50;
-        // [51] @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String
-        static java.lang.@org.rekex.spec.Regex(flags=0, group=0, value="[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String t_51;
-        // [52] @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String
-        static java.lang.@org.rekex.spec.Regex(flags=0, group=0, value="[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String t_52;
-        // [53] @Ch("\"")Void
-        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="\"")Void t_53;
-        // [54] int[]
-        static int[] t_54;
-        // [55] @Ch(except="\\\" \t\n\r+-*/%",range={32,1114111})int
-        static @org.rekex.helper.anno.Ch(except="\\\" \t\n\r+-*/%", ignoreCase=false, range={32, 1114111}, value="")int t_55;
-        // [56] int
-        static int t_56;
-        // [57] int
-        static int t_57;
-        // [58] int
-        static int t_58;
-        // [59] int
-        static int t_59;
-        // [60] @Ch(except="\\\"",range={32,1114111})int
-        static @org.rekex.helper.anno.Ch(except="\\\"", ignoreCase=false, range={32, 1114111}, value="")int t_60;
-        // [61] @Ch("\\")Void
-        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="\\")Void t_61;
-        // [62] @Ch("\\\"/bfnrt")char
-        static @org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="\\\"/bfnrt")char t_62;
-        // [63] @Ch("u")Void
-        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="u")Void t_63;
-        // [64] byte
-        static byte t_64;
-        // [65] @Regex("[0-9A-Fa-f]")char
-        static @org.rekex.spec.Regex(flags=0, group=0, value="[0-9A-Fa-f]")char t_65;
+        // [42] Atom
+        static org.knime.core.table.virtual.expression.ExpressionGrammar.Atom t_42;
+        // [43] @Ch("$")Void
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="$")Void t_43;
+        // [44] @Ch("[")Void
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="[")Void t_44;
+        // [45] StrConst
+        static org.knime.core.table.virtual.expression.ExpressionGrammar.StrConst t_45;
+        // [46] @Ch("]")Void
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="]")Void t_46;
+        // [47] @Regex("[0-9]+")String
+        static java.lang.@org.rekex.spec.Regex(flags=0, group=0, value="[0-9]+")String t_47;
+        // [48] @Ch(except="\\\" \t\n\r$()+-*/%",range={32,1114111})int[]
+        static @org.rekex.helper.anno.Ch(except="\\\" \t\n\r$()+-*/%", ignoreCase=false, range={32, 1114111}, value="")int[] t_48;
+        // [49] @Regex("[a-zA-Z_]\\w*")String
+        static java.lang.@org.rekex.spec.Regex(flags=0, group=0, value="[a-zA-Z_]\\w*")String t_49;
+        // [50] @Ch("(")Void
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="(")Void t_50;
+        // [51] SepBy<Expr,@Ch(",")String>
+        static org.rekex.helper.datatype.SepBy<org.knime.core.table.virtual.expression.ExpressionGrammar.Expr,java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value=",")String> t_51;
+        // [52] @Ch(")")Void
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value=")")Void t_52;
+        // [53] Digits
+        static org.knime.core.table.virtual.expression.ExpressionGrammar.Digits t_53;
+        // [54] @Regex("[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String
+        static java.lang.@org.rekex.spec.Regex(flags=0, group=0, value="[.][0-9]*([e][+-]?[0-9]+)?[fFdD]?")String t_54;
+        // [55] @Regex("[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String
+        static java.lang.@org.rekex.spec.Regex(flags=0, group=0, value="[.][0-9]+([e][+-]?[0-9]+)?[fFdD]?")String t_55;
+        // [56] @Ch("\"")Void
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="\"")Void t_56;
+        // [57] int[]
+        static int[] t_57;
+        // [58] @Ch(except="\\\" \t\n\r$()+-*/%",range={32,1114111})int
+        static @org.rekex.helper.anno.Ch(except="\\\" \t\n\r$()+-*/%", ignoreCase=false, range={32, 1114111}, value="")int t_58;
+        // [59] SepBy1<Expr,@Ch(",")String>
+        static org.rekex.helper.datatype.SepBy1<org.knime.core.table.virtual.expression.ExpressionGrammar.Expr,java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value=",")String> t_59;
+        // [60] Empty<Expr,@Ch(",")String>
+        static org.rekex.helper.datatype.SepBy.Empty<org.knime.core.table.virtual.expression.ExpressionGrammar.Expr,java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value=",")String> t_60;
+        // [61] int
+        static int t_61;
+        // [62] List<Seq2<@Ch(",")String,Expr>>
+        static java.util.List<org.rekex.helper.datatype.seq.Seq2<java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value=",")String,org.knime.core.table.virtual.expression.ExpressionGrammar.Expr>> t_62;
+        // [63] int
+        static int t_63;
+        // [64] int
+        static int t_64;
+        // [65] int
+        static int t_65;
+        // [66] Seq2<@Ch(",")String,Expr>
+        static org.rekex.helper.datatype.seq.Seq2<java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value=",")String,org.knime.core.table.virtual.expression.ExpressionGrammar.Expr> t_66;
+        // [67] @Ch(except="\\\"",range={32,1114111})int
+        static @org.rekex.helper.anno.Ch(except="\\\"", ignoreCase=false, range={32, 1114111}, value="")int t_67;
+        // [68] @Ch("\\")Void
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="\\")Void t_68;
+        // [69] @Ch("\\\"/bfnrt")char
+        static @org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="\\\"/bfnrt")char t_69;
+        // [70] @Ch("u")Void
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value="u")Void t_70;
+        // [71] byte
+        static byte t_71;
+        // [72] @Ch(",")String
+        static java.lang.@org.rekex.helper.anno.Ch(except="", ignoreCase=false, range={}, value=",")String t_72;
+        // [73] @Regex("[0-9A-Fa-f]")char
+        static @org.rekex.spec.Regex(flags=0, group=0, value="[0-9A-Fa-f]")char t_73;
 
         static final java.util.ArrayList<org.rekex.annotype.AnnoType> list = new java.util.ArrayList<>();
         static
         {
-            for(int id=0; id<66; id++)
+            for(int id=0; id<74; id++)
             {
                 java.lang.reflect.Field field;
                 try{ field = _DatatypeList.class.getDeclaredField("t_"+id); }
