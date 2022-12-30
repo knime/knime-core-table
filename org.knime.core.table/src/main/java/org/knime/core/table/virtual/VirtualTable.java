@@ -75,6 +75,7 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
+import org.knime.core.table.virtual.spec.CrossJoinTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
@@ -329,6 +330,20 @@ public final class VirtualTable {
             System.err.println("parse error:\n" + result);
             throw new IllegalArgumentException();
         }
+    }
+
+    /**
+     * TODO
+     * @param table
+     * @return
+     */
+    public VirtualTable crossJoin(final VirtualTable table) {
+        final TableTransformSpec transformSpec = new CrossJoinTransformSpec();
+        final var tables = List.of(table);
+        final List<ColumnarSchema> schemas = collectSchemas(tables);
+        final ColumnarSchema schema = ColumnarSchemas.append(schemas);
+        final List<TableTransform> transforms = collectTransforms(tables);
+        return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
     }
 
     public VirtualTable resolveSources(final Map<UUID, VirtualTable> sourceMap) {
