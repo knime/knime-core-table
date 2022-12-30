@@ -615,14 +615,15 @@ public class VirtualTableExamples {
 
     public static VirtualTable vtSimpleExpressionMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-//        final VirtualTable mappedCols = table.map("$[2] + $[3] * (10 + 34 * 1.2f)", DOUBLE);
+        table.append(table.map("$[0] > 3.2 and $[2] < 0.6", BOOLEAN));
+        final VirtualTable mappedCols = table.map("$[2] + $[3] * (10 + 34 * 1.2f)", DOUBLE);
 //        final VirtualTable mappedCols = table.map("$[0] + 10", LONG);
 //        final VirtualTable mappedCols = table.map("$[2] + $[3] * -1.1", DOUBLE);
 //        final VirtualTable mappedCols = table.map("$[0] + 10.2", INT);
-        final VirtualTable mappedCols = table.map("$[0] > 3.2 and $[2] < 0.6", BOOLEAN);
+//        final VirtualTable mappedCols = table.map("$[0] > 3.2 and $[2] < 0.6", BOOLEAN);
         return table
                 .filterColumns(0,1)
-                .append(List.of(mappedCols));
+                .append(mappedCols);
     }
 
     public static VirtualTable vtSimpleExpressionMap() {
@@ -861,5 +862,56 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
         testTransformedTableLookahead(false, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
+    }
+
+
+
+    public static VirtualTable vtCrossJoin(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable table1 = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable table2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]));
+        return table1.crossJoin(table2);
+    }
+
+    public static VirtualTable vtCrossJoin() {
+        return vtCrossJoin(new UUID[]{randomUUID(), randomUUID()}, dataCrossJoin());
+    }
+
+    public static RowAccessible[] dataCrossJoin() {
+        final ColumnarSchema schema1 = ColumnarSchema.of(INT, STRING);
+        final Object[][] values1 = new Object[][]{ //
+                new Object[]{1, "First"}, //
+                new Object[]{2, "Second"}, //
+                new Object[]{3, "Third"}, //
+                new Object[]{4, "Fourth"}, //
+                new Object[]{5, "Fifth"} //
+        };
+        final ColumnarSchema schema2 = ColumnarSchema.of(DOUBLE);
+        final Object[][] values2 = new Object[][]{ //
+                new Object[]{0.1}, //
+                new Object[]{0.2} //
+        };
+        return new RowAccessible[] {
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema1, values1),
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema2, values2),
+        };
+    }
+
+    @Test
+    public void testCrossJoin() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, STRING, DOUBLE);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{1, "First", 0.1}, //
+                new Object[]{2, "Second", 0.1}, //
+                new Object[]{3, "Third", 0.1}, //
+                new Object[]{4, "Fourth", 0.1}, //
+                new Object[]{5, "Fifth", 0.1}, //
+                new Object[]{1, "First", 0.2}, //
+                new Object[]{2, "Second", 0.2}, //
+                new Object[]{3, "Third", 0.2}, //
+                new Object[]{4, "Fourth", 0.2}, //
+                new Object[]{5, "Fifth", 0.2} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataCrossJoin, VirtualTableExamples::vtCrossJoin);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataCrossJoin, VirtualTableExamples::vtCrossJoin);
     }
 }

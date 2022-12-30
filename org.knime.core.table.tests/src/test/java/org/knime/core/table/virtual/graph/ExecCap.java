@@ -71,9 +71,9 @@ public class ExecCap {
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataSimpleRowFilter();
 //        final VirtualTable table = VirtualTableExamples.vtSimpleRowFilter(sourceIdentifiers, accessibles);
 
-        final UUID[] sourceIdentifiers = createSourceIds(1);
-        final RowAccessible[] accessibles = VirtualTableExamples.dataSimpleRowFilter();
-        final VirtualTable table = VirtualTableExamples.vtSimpleRowFilterExpression(sourceIdentifiers, accessibles);
+//        final UUID[] sourceIdentifiers = createSourceIds(1);
+//        final RowAccessible[] accessibles = VirtualTableExamples.dataSimpleRowFilter();
+//        final VirtualTable table = VirtualTableExamples.vtSimpleRowFilterExpression(sourceIdentifiers, accessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataConsecutiveRowFilters();
@@ -86,6 +86,10 @@ public class ExecCap {
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
 //        final RowAccessible[] accessibles = VirtualTableExamples.dataFiltersMapAndConcatenate();
 //        final VirtualTable table = VirtualTableExamples.vtFiltersMapAndConcatenate(sourceIdentifiers, accessibles);
+
+        final UUID[] sourceIdentifiers = createSourceIds(2);
+        final RowAccessible[] accessibles = VirtualTableExamples.dataCrossJoin();
+        final VirtualTable table = VirtualTableExamples.vtCrossJoin(sourceIdentifiers, accessibles);
 
         // ----------------------------------------------
         // create accessible
