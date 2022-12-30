@@ -214,6 +214,10 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(transforms, transformSpec), schema);
     }
 
+    public VirtualTable concatenate(final VirtualTable table) {
+        return concatenate(List.of(table));
+    }
+
     public VirtualTable filterColumns(final int... columnIndices) {
         final TableTransformSpec transformSpec = new ColumnFilterTransformSpec(columnIndices);
         final ColumnarSchema schema = ColumnarSchemas.filter(m_schema, columnIndices);
