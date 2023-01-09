@@ -7,6 +7,7 @@ import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
 import static org.knime.core.table.virtual.graph.rag.RagGraphUtils.topologicalSort;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.APPEND;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONCATENATE;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.CROSSJOIN;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MAP;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.ROWFILTER;
@@ -222,6 +223,7 @@ public class RagBuilder {
             case SLICE:
             case APPEND:
             case CONCATENATE:
+            case CROSSJOIN:
             case CONSUMER: {
                 for (RagNode predecessor : node.predecessors(EXEC)) {
                     if (!supportsLookahead(predecessor)) {
@@ -304,6 +306,19 @@ public class RagBuilder {
                 }
                 return size;
             }
+            case CROSSJOIN: {
+                // If any predecessor doesn't know its size, the size of this node is also unknown.
+                // Otherwise, the size of this is the product of its predecessors.
+                long size = 1;
+                for (final RagNode predecessor : node.predecessors(EXEC)) {
+                    final long s = numRows(predecessor);
+                    if ( s < 0 ) {
+                        return -1;
+                    }
+                    size *= s;
+                }
+                return size;
+            }
             case ROWFILTER:
                 return -1;
             case MISSING:
@@ -350,14 +365,14 @@ public class RagBuilder {
      * depend on each other for executing forward steps in order to determine that
      * everybody is on the same row (without looking at produced/consumed data).
      */
-    private static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER);
+    private static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER, CROSSJOIN);
 
     /**
      * Spawning nodes create new sub-trees of their SPEC predecessor nodes. This
      * prevents (incorrect) fork-join type fusion of branches when forwarding structure
      * diverges.
      */
-    private static final EnumSet<RagNodeType> spawningNodeTypes = EnumSet.of(SLICE);
+    private static final EnumSet<RagNodeType> spawningNodeTypes = EnumSet.of(SLICE, CROSSJOIN);
 
     RagBuilder() {
     }
@@ -443,6 +458,7 @@ public class RagBuilder {
                     numColumns = node.predecessors(SPEC).get(0).numColumns();
                     break;
                 case APPEND:
+                case CROSSJOIN:
                     numColumns = node.predecessors(SPEC).stream().mapToInt(RagNode::numColumns).sum();
                     break;
                 case APPENDMISSING:
@@ -586,6 +602,17 @@ public class RagBuilder {
                     }
                 }
                 return node.getOrCreateOutput(i);
+            case CROSSJOIN:
+                final List<RagNode> predecessors = node.predecessors(SPEC);
+                int startCol = 0;
+                for (final RagNode predecessor : predecessors) {
+                    final int nextStartCol = startCol + predecessor.numColumns();
+                    if (i < nextStartCol) {
+                        return traceAccess(i - startCol, predecessor);
+                    }
+                    startCol = nextStartCol;
+                }
+                throw new IllegalArgumentException();
             case ROWFILTER:
             case SLICE:
             case IDENTITY:
@@ -654,6 +681,7 @@ public class RagBuilder {
             case SLICE:
             case CONCATENATE:
             case CONSUMER:
+            case CROSSJOIN:
             case APPEND:
             case ROWFILTER:
             case WRAPPER:

@@ -202,6 +202,16 @@ public class CapBuilder {
                     merge(predecessorBranches).append(node);
                     break;
                 }
+                case CROSSJOIN: {
+                    // Each predecessor is the head of an incoming branch.
+                    final List<Branch> predecessorBranches = branches.getPredecessorBranches(node);
+                    final int[] predecessors = headIndices(predecessorBranches);
+
+                    final CapNodeCrossJoin capNode = new CapNodeCrossJoin(index, predecessors);
+                    append(node, capNode);
+                    merge(predecessorBranches).append(node);
+                    break;
+                }
                 case CONSUMER: {
                     final Branch branch = branches.getPredecessorBranch(node);
                     final CapAccessId[] inputs = capAccessIdsFor(node.getInputs());

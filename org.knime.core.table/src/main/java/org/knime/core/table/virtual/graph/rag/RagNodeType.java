@@ -4,6 +4,7 @@ import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
+import org.knime.core.table.virtual.spec.CrossJoinTransformSpec;
 import org.knime.core.table.virtual.spec.IdentityTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.PermuteTransformSpec;
@@ -21,6 +22,7 @@ public enum RagNodeType {
     CONCATENATE, //
     COLFILTER, //
     COLPERMUTE, //
+    CROSSJOIN, //
     MAP, //
     ROWFILTER, //
     CONSUMER, //
@@ -44,6 +46,8 @@ public enum RagNodeType {
             return RagNodeType.CONCATENATE;
         else if (spec instanceof PermuteTransformSpec)
             return RagNodeType.COLPERMUTE;
+        else if (spec instanceof CrossJoinTransformSpec)
+            return RagNodeType.CROSSJOIN;
         else if (spec instanceof MapTransformSpec)
             return RagNodeType.MAP;
         else if (spec instanceof RowFilterTransformSpec)
