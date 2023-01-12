@@ -60,7 +60,6 @@ import java.util.stream.Collectors;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
@@ -71,6 +70,7 @@ import org.knime.core.table.virtual.expression.Exec.Computer;
 import org.knime.core.table.virtual.expression.ExpressionGrammar;
 import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
 import org.knime.core.table.virtual.expression.Typing;
+import org.knime.core.table.virtual.spec.AggregateTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ColumnFilterTransformSpec;
@@ -275,6 +275,14 @@ public final class VirtualTable {
 
     public VirtualTable map(final String expression, final DataSpec outputSpec) {
         return map(expression, new DataSpecWithTraits(outputSpec, DefaultDataTraits.EMPTY));
+    }
+
+    /**
+     * TODO javadoc
+     */
+    public VirtualTable aggregate(final int[] columnIndices, final AggregateTransformSpec.AggregatorFactory<?> aggregatorFactory) {
+        final TableTransformSpec transformSpec = new AggregateTransformSpec(columnIndices, aggregatorFactory);
+        return new VirtualTable(new TableTransform(List.of(m_transform), transformSpec), aggregatorFactory.getOutputSchema());
     }
 
     /**
