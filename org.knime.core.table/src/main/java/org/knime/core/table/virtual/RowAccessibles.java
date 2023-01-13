@@ -31,6 +31,8 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.spec.AggregateTransformSpec;
+import org.knime.core.table.virtual.spec.AggregateTransformSpec.AggregatorFactory;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
@@ -88,6 +90,10 @@ public final class RowAccessibles {
     public static RowAccessible filterRows(final RowAccessible in, final int[] columnIndices, final RowFilterFactory filterFactory)
     {
         return new FilteredRowAccessible(in, columnIndices, filterFactory);
+    }
+
+    public static RowAccessible aggregate(final RowAccessible in, final int[] columnIndices, final AggregatorFactory<?> aggregatorFactory) {
+        return new AggregatedRowAccessible(in, columnIndices, aggregatorFactory);
     }
 
     public static LookaheadRowAccessible toLookahead(final RowAccessible rowAccessible) {
