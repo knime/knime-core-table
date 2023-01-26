@@ -1,6 +1,7 @@
 package org.knime.core.table.virtual.spec;
 
 import java.util.Arrays;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -33,6 +34,11 @@ public final class AggregateTransformSpec implements TableTransformSpec {
 
         // accumulator.accept(A) will read inputs and accumulate into A
         Consumer<A> accumulator(ReadAccess[] inputs);
+
+        // TODO: Add combiner()
+        //   A function that accepts two partial results and merges them.
+        //   BinaryOperator<A> combiner();
+        //   (See java.util.stream.Collector)
 
         // finisher.accept(A) makes a result container available as a RowAccessible
         // with schema #getOutputSchema()
