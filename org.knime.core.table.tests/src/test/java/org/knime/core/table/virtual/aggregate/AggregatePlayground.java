@@ -25,22 +25,22 @@ public class AggregatePlayground {
 
     public static VirtualTable vtAggregateSum(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-        return table.aggregate(new int[]{2}, new SumDouble());
+        return table.aggregate(new int[]{2}, AggregateDouble.sum());
     }
 
     public static VirtualTable vtAggregateAvg(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-        return table.aggregate(new int[]{2}, new AvgDouble());
+        return table.aggregate(new int[]{2}, AggregateDouble.average());
     }
 
     public static VirtualTable vtAggregateMin(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-        return table.aggregate(new int[]{2}, new MinDouble());
+        return table.aggregate(new int[]{2}, AggregateDouble.min());
     }
 
     public static VirtualTable vtAggregateMax(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-        return table.aggregate(new int[]{2}, new MaxDouble());
+        return table.aggregate(new int[]{2}, AggregateDouble.max());
     }
 
     public static VirtualTable vtAggregateMax() {
