@@ -23,6 +23,11 @@ import org.knime.core.table.virtual.spec.SourceTableProperties;
 
 public class AggregatePlayground {
 
+    public static VirtualTable vtAggregateCount(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        return table.aggregate(new int[]{2}, AggregateDoubleToInt.count());
+    }
+
     public static VirtualTable vtAggregateSum(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         return table.aggregate(new int[]{2}, AggregateDouble.sum());
@@ -77,6 +82,8 @@ public class AggregatePlayground {
             uuidRowAccessibleMap.put(sourceIdentifiers[i], accessibles[i]);
         }
 
+        System.out.println("COUNT:");
+        printTable(uuidRowAccessibleMap, vtAggregateCount(sourceIdentifiers, accessibles));
         System.out.println("SUM:");
         printTable(uuidRowAccessibleMap, vtAggregateSum(sourceIdentifiers, accessibles));
         System.out.println("AVG:");
