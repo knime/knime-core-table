@@ -32,10 +32,12 @@ public class CapExecutor {
             if (node.type() == SOURCE) {
                 final UUID uuid = ((CapNodeSource)node).uuid();
                 final RowAccessible a = uuidRowAccessibleMap.get(uuid);
-                if (a == null)
+                if (a == null) {
                     throw new IllegalArgumentException("No RowAccessible found for UUID " + uuid );
-                if (!Objects.equals(a.getSchema(), schemas.get(uuid)))
+                }
+                if (!Objects.equals(a.getSchema(), schemas.get(uuid))) {
                     throw new IllegalArgumentException("RowAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
+                }
                 sources.add(a);
             }
         }
@@ -48,7 +50,6 @@ public class CapExecutor {
             final Map<UUID, RowAccessible> uuidRowAccessibleMap, //
             final Map<UUID, RowWriteAccessible> uuidRowWriteAccessibleMap //
     ) throws CompletionException, CancellationException {
-        System.out.println("CapExecutor.execute");
 
         try {
             final List<RowAccessible> sources = new ArrayList<>();
@@ -57,10 +58,13 @@ public class CapExecutor {
                 if (node.type() == SOURCE) {
                     final UUID uuid = ((CapNodeSource)node).uuid();
                     final RowAccessible a = uuidRowAccessibleMap.get(uuid);
-                    if (a == null)
+                    if (a == null) {
                         throw new IllegalArgumentException("No RowAccessible found for UUID " + uuid);
-                    if (!Objects.equals(a.getSchema(), schemas.get(uuid)))
-                        throw new IllegalArgumentException("RowAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
+                    }
+                    if (!Objects.equals(a.getSchema(), schemas.get(uuid))) {
+                        throw new IllegalArgumentException(
+                            "RowAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
+                    }
                     sources.add(a);
                 }
             }
@@ -69,10 +73,15 @@ public class CapExecutor {
                 if (node.type() == MATERIALIZE) {
                     final UUID uuid = ((CapNodeMaterialize)node).uuid();
                     final RowWriteAccessible a = uuidRowWriteAccessibleMap.get(uuid);
-                    if (a == null)
+                    if (a == null) {
                         throw new IllegalArgumentException("No RowWriteAccessible found for UUID " + uuid);
-                    if (!Objects.equals(a.getSchema(), schemas.get(uuid)))
-                        throw new IllegalArgumentException("RowWriteAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
+                    }
+                    // TODO AP-20400: check for compatibility (currently disabled because of the void RowID column
+                    // in the ColumnarRearranger
+//                    if (!Objects.equals(a.getSchema(), schemas.get(uuid))) {
+//                        throw new IllegalArgumentException(
+//                            "RowWriteAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
+//                    }
                     sinks.add(a);
                 }
             }
