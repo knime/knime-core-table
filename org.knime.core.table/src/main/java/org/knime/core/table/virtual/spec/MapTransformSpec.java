@@ -26,7 +26,7 @@ public final class MapTransformSpec implements TableTransformSpec {
      * the inputs, computes the map function, and sets the result values to the
      * output accesses.
      */
-    public interface MapperWithRowIndexFactory {
+    public interface MapperWithRowIndexFactory extends MapperFactory {
 
         interface Mapper {
             void map(long rowIndex);
@@ -35,6 +35,7 @@ public final class MapTransformSpec implements TableTransformSpec {
         /**
          * @return the ColumnarSchema of the columns produced by the map function
          */
+        @Override
         ColumnarSchema getOutputSchema();
 
         /**
@@ -47,7 +48,23 @@ public final class MapTransformSpec implements TableTransformSpec {
          * @param outputs accesses to write results to
          * @return a mapper reading from {@code inputs} and writing to {@code outputs}.
          */
-        Mapper createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
+        Mapper createMapperWithRowIndex(final ReadAccess[] inputs, final WriteAccess[] outputs);
+
+        // FIXME This is a hack that only works because the comp graph is processed sequentially.
+        //       Implement proper RowIndex propagation instead.
+        @Override
+        default Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs) {
+            var mapper = createMapperWithRowIndex(inputs, outputs);
+            return new Runnable() {
+                private long m_rowIndex = 0;
+
+                @Override
+                public void run() {
+                    mapper.map(m_rowIndex);
+                    m_rowIndex++;
+                }
+            };
+        }
     }
 
     /**

@@ -64,18 +64,18 @@ import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory.Mapper;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory.ProgressListener;
-import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory.Mapper;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory;
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory.ProgressListener;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -323,7 +323,7 @@ public final class VirtualTable {
     //              return map(c,f,this);
     //          }
     public VirtualTable map(final int[] columnIndices, final MapperWithRowIndexFactory mapperFactory) {
-        return map(columnIndices, wrapAsMapperFactory(mapperFactory));
+        return map(columnIndices, (MapperFactory)mapperFactory);
     }
 
     // FIXME This is a hack that only works because the comp graph is processed sequentially.
@@ -336,8 +336,8 @@ public final class VirtualTable {
             }
 
             @Override
-            public Runnable createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                Mapper mapper = factory.createMapper(inputs, outputs);
+            public Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs) {
+                Mapper mapper = factory.createMapperWithRowIndex(inputs, outputs);
                 return new Runnable() {
                     private long m_rowIndex = 0;
 
@@ -362,7 +362,7 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 
-    private static RowFilterFactory wrapAsRowFilterFactory(ProgressListenerFactory factory) {
+    private static RowFilterFactory wrapAsRowFilterFactory(final ProgressListenerFactory factory) {
         return inputs -> {
             Runnable progress = factory.createProgressListener(inputs);
             return () -> {
@@ -379,7 +379,7 @@ public final class VirtualTable {
     private static ProgressListenerFactory wrapAsProgressListenerFactory(final ProgressListenerWithRowIndexFactory factory) {
         return new ProgressListenerFactory() {
             @Override
-            public Runnable createProgressListener(ReadAccess[] inputs) {
+            public Runnable createProgressListener(final ReadAccess[] inputs) {
                 ProgressListener progress = factory.createProgressListener(inputs);
                 return new Runnable() {
                     private long m_rowIndex = 0;
