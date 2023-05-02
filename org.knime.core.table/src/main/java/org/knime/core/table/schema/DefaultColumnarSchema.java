@@ -74,7 +74,7 @@ public final class DefaultColumnarSchema implements ColumnarSchema {
         this(Arrays.asList(columnSpecs), Arrays.asList(columnTraits));
     }
 
-    public DefaultColumnarSchema(final List<DataSpec> columnSpecs, final List<DataTraits> columnTraits) {
+    public DefaultColumnarSchema(final List<? extends DataSpec> columnSpecs, final List<? extends DataTraits> columnTraits) {
         m_columnSpecs = Collections.unmodifiableList(new ArrayList<>(columnSpecs));
         m_columnTraits = Collections.unmodifiableList(new ArrayList<>(columnTraits));
     }

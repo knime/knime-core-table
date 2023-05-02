@@ -37,6 +37,13 @@ public class DefaultDataTraits implements DataTraits {
      */
     public static final DefaultDataTraits EMPTY = new DefaultDataTraits();
 
+    /**
+     * @return empty traits
+     */
+    public static DefaultDataTraits empty() {
+        return EMPTY;
+    }
+
     private DefaultDataTraits() {
         m_traits = new DataTrait[0];
     }
