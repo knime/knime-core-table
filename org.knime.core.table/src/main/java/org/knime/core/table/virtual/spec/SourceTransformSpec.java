@@ -25,10 +25,6 @@ import java.util.UUID;
 
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -74,10 +70,12 @@ public final class SourceTransformSpec implements TableTransformSpec {
 
     @Override
     public boolean equals(final Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (! (obj instanceof SourceTransformSpec))
+        }
+        if (! (obj instanceof SourceTransformSpec)) {
             return false;
+        }
         final SourceTransformSpec that = (SourceTransformSpec)obj;
         return m_sourceIdentifier.equals(that.m_sourceIdentifier) && m_rowRange.equals(that.m_rowRange);
     }
@@ -93,24 +91,4 @@ public final class SourceTransformSpec implements TableTransformSpec {
         return sb.toString();
     }
 
-    public static final class SourceTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<SourceTransformSpec> {
-
-        public SourceTransformSpecSerializer() {
-            super("source", 0);
-        }
-
-        // TODO: de/serialize m_properties
-        // TODO: de/serialize m_rowRange
-
-        @Override
-        protected JsonNode saveInternal(final SourceTransformSpec spec, final JsonNodeFactory factory) {
-            return factory.objectNode().put("identifier", spec.m_sourceIdentifier.toString());
-        }
-
-        @Override
-        protected SourceTransformSpec loadInternal(final JsonNode config) {
-            return new SourceTransformSpec(UUID.fromString(config.get("identifier").textValue()), null);
-        }
-    }
 }

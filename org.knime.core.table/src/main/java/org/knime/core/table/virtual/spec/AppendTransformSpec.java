@@ -48,11 +48,6 @@
  */
 package org.knime.core.table.virtual.spec;
 
-import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-
 // TODO: in its current state, this spec can be converted into a singleton. Let's wait and see if there will be any
 // parametrization.
 public final class AppendTransformSpec implements TableTransformSpec {
@@ -72,22 +67,4 @@ public final class AppendTransformSpec implements TableTransformSpec {
         return "Append";
     }
 
-    public static final class AppendTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<AppendTransformSpec> {
-
-        public AppendTransformSpecSerializer() {
-            super("append", 0);
-        }
-
-        @Override
-        protected JsonNode saveInternal(final AppendTransformSpec spec, final JsonNodeFactory output) {
-            // Nothing to serialize.
-            return null;
-        }
-
-        @Override
-        protected AppendTransformSpec loadInternal(final JsonNode input) {
-            return new AppendTransformSpec();
-        }
-    }
 }

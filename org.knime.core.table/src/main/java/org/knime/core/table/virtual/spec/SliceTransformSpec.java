@@ -49,11 +49,6 @@
 package org.knime.core.table.virtual.spec;
 
 import org.knime.core.table.row.Selection.RowRangeSelection;
-import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public final class SliceTransformSpec implements TableTransformSpec {
 
@@ -96,27 +91,4 @@ public final class SliceTransformSpec implements TableTransformSpec {
         return "Slice from " + m_range.fromIndex() + " to " + m_range.toIndex();
     }
 
-    public static final class SliceTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<SliceTransformSpec> {
-
-        public SliceTransformSpecSerializer() {
-            super("slice", 0);
-        }
-
-        @Override
-        protected JsonNode saveInternal(final SliceTransformSpec spec, final JsonNodeFactory output) {
-            final ObjectNode config = output.objectNode();
-            config.put("from", spec.m_range.fromIndex());
-            config.put("to", spec.m_range.toIndex());
-            return config;
-        }
-
-        @Override
-        protected SliceTransformSpec loadInternal(final JsonNode input) {
-            final ObjectNode config = (ObjectNode)input;
-            final long from = config.get("from").longValue();
-            final long to = config.get("to").longValue();
-            return new SliceTransformSpec(from, to);
-        }
-    }
 }

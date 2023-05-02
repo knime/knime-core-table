@@ -50,13 +50,6 @@ package org.knime.core.table.virtual.spec;
 
 import java.util.Arrays;
 
-import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 public final class SelectColumnsTransformSpec implements TableTransformSpec {
 
     private final int[] m_columnIndices;
@@ -94,35 +87,6 @@ public final class SelectColumnsTransformSpec implements TableTransformSpec {
         return "SelectColumns " + Arrays.toString(m_columnIndices);
     }
 
-    public static final class SelectColumnsTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<SelectColumnsTransformSpec> {
-
-        public SelectColumnsTransformSpecSerializer() {
-            super("select_columns", 0);
-        }
-
-        @Override
-        protected JsonNode saveInternal(final SelectColumnsTransformSpec spec, final JsonNodeFactory output) {
-            final ObjectNode config = output.objectNode();
-            final ArrayNode columnIndicesConfig = config.putArray("included_columns");
-            for (final int columnIndex : spec.m_columnIndices) {
-                columnIndicesConfig.add(columnIndex);
-            }
-            return config;
-        }
-
-        @Override
-        protected SelectColumnsTransformSpec loadInternal(final JsonNode input) {
-            final ObjectNode root = (ObjectNode)input;
-            final ArrayNode columnIndicesConfig = (ArrayNode)root.get("included_columns");
-            final int[] columnIndices = new int[columnIndicesConfig.size()];
-            for (int i = 0; i < columnIndices.length; i++) {
-                columnIndices[i] = columnIndicesConfig.get(i).intValue();
-            }
-            return new SelectColumnsTransformSpec(columnIndices);
-        }
-    }
-
     /**
      * Helper to compute the column selection resulting from dropping a set of indices.
      * <p>
@@ -143,9 +107,9 @@ public final class SelectColumnsTransformSpec implements TableTransformSpec {
                 // skip duplicates in dropped[]
                 while (++d < dropped.length && dropped[d] == dropped[d - 1]) {
                 }
-            }
-            else
+            } else {
                 remaining[r++] = i++;
+            }
         }
         while (i < numIndices) {
             remaining[r++] = i++;
@@ -160,18 +124,21 @@ public final class SelectColumnsTransformSpec implements TableTransformSpec {
      */
     public static int[] indicesAfterKeepOnly(final int[] indicesToKeep)
     {
-        if (indicesToKeep.length <= 1)
+        if (indicesToKeep.length <= 1) {
             return indicesToKeep;
+        }
         final int[] remaining = indicesToKeep.clone();
         Arrays.sort(remaining);
         int i = 0, r = 0;
         while (true) {
-            if (i != r)
+            if (i != r) {
                 remaining[r] = remaining[i];
+            }
             ++r;
             do {
-                if (++i == remaining.length)
+                if (++i == remaining.length) {
                     return r == remaining.length ? remaining : Arrays.copyOf(remaining, r);
+                }
             } while (remaining[i] == remaining[i - 1]);
         }
     }

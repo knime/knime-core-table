@@ -20,11 +20,6 @@
  */
 package org.knime.core.table.virtual.spec;
 
-import org.knime.core.table.virtual.serialization.AbstractTableTransformSpecSerializer;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-
 /**
  * This transformation is a no-op i.e. it doesn't change the incoming table.
  *
@@ -41,30 +36,4 @@ public enum IdentityTransformSpec implements TableTransformSpec {
         return "Identity";
     }
 
-    /**
-     * Serializer for {@link IdentityTransformSpec}.
-     *
-     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
-     */
-    public static final class IdentityTransformSpecSerializer
-        extends AbstractTableTransformSpecSerializer<IdentityTransformSpec> {
-
-        /**
-         * Constructor.
-         */
-        public IdentityTransformSpecSerializer() {
-            super("identity", 0);
-        }
-
-        @Override
-        protected JsonNode saveInternal(final IdentityTransformSpec spec, final JsonNodeFactory output) {
-            // Nothing to serialize.
-            return null;
-        }
-
-        @Override
-        protected IdentityTransformSpec loadInternal(final JsonNode input) {
-            return IdentityTransformSpec.INSTANCE;
-        }
-    }
 }
