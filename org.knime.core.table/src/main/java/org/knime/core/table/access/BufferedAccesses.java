@@ -745,9 +745,32 @@ public final class BufferedAccesses {
             }
 
             @Override
+            public boolean hasObjectAndSerializer() {
+                return m_value != null && m_serializer != null;
+            }
+
+            @Override
+            public ObjectSerializer<?> getSerializer() {
+                return m_serializer;
+            }
+
+            @Override
+            public <T> T getObject() {
+                return (T)m_value;
+            }
+
+            @Override
             protected void setFromNonMissing(final ReadAccess access) {
-                m_storage = ((VarBinaryReadAccess)access).getByteArray();
-                m_value = null;
+                var binaryAccess = (VarBinaryReadAccess)access;
+                if (binaryAccess.hasObjectAndSerializer()) {
+                    m_value = binaryAccess.getObject();
+                    m_serializer = binaryAccess.getSerializer();
+                    m_storage = null;
+                } else {
+                    m_storage = ((VarBinaryReadAccess)access).getByteArray();
+                    m_value = null;
+                    m_serializer = null;
+                }
                 m_isMissing = false;
             }
 

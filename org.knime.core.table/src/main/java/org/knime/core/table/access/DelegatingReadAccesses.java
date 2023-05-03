@@ -47,6 +47,7 @@ import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
+import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
 
 /**
@@ -414,6 +415,21 @@ public final class DelegatingReadAccesses {
         @Override
         public <T> T getObject(final ObjectDeserializer<T> deserializer) {
             return m_delegateAccess.getObject(deserializer);
+        }
+
+        @Override
+        public boolean hasObjectAndSerializer() {
+            return m_delegateAccess.hasObjectAndSerializer();
+        }
+
+        @Override
+        public ObjectSerializer<?> getSerializer() {
+            return m_delegateAccess.getSerializer();
+        }
+
+        @Override
+        public <T> T getObject() {
+            return m_delegateAccess.getObject();
         }
     }
 

@@ -72,6 +72,21 @@ public final class VarBinaryAccess {
 
         <T> T getObject(ObjectDeserializer<T> deserializer);
 
+        /**
+         * @return true if both {@link #getObject()} and {@link #getSerializer()} are safe to call
+         */
+        default boolean hasObjectAndSerializer() {
+            return false;
+        }
+
+        default ObjectSerializer<?> getSerializer() {
+            throw new UnsupportedOperationException();
+        }
+
+        default <T> T getObject() {
+            throw new UnsupportedOperationException();
+        }
+
         @Override
         default DataSpec getDataSpec() {
             return DataSpec.varBinarySpec();
