@@ -123,8 +123,7 @@ public final class TableTransformSerializer {
                     continue;
                 }
 
-                if (transform.getPrecedingTransforms().size() > 1 &&
-                    transform.getPrecedingTransforms().stream().anyMatch(t -> !serializedTransforms.containsKey(t))) {
+                if (transform.getPrecedingTransforms().stream().anyMatch(t -> !serializedTransforms.containsKey(t))) {
                     // We cannot process the transform yet because not all parents have been visited; guarantees
                     // topological ordering.
                     transformsToTraverse.addLast(transform);
@@ -145,7 +144,8 @@ public final class TableTransformSerializer {
                     // Forward compatibility: make "from" an object to allow adding port information in a future
                     // iteration.
                     final ObjectNode from = connection.putObject("from");
-                    from.put("transform", transformIds.get(parentTransform));
+                    Integer parentID = transformIds.get(parentTransform);
+                    from.put("transform", parentID);
                     final ObjectNode to = connection.putObject("to");
                     to.put("transform", transformId);
                     to.put("port", i);
