@@ -58,7 +58,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.traits.DataTraits;
@@ -67,8 +66,6 @@ import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory.Mapper;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
 import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory;
@@ -266,6 +263,16 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 
+    // TODO (TP) Implement RowIndex propagation.
+    //      (*) MapperWithRowIndexFactory should probably get the actual row index from a Source node?
+    //      (*) How to handle sliced Sources? Should indices start at 0 or at slice.from?
+    //      (*) Add a signature
+    //          VirtualTable.map(int[], MapperWithRowIndexFactory, VirtualTable),
+    //          where the VirtualTable argument specifies which VirtualTable the row index should be taken from.
+    //          Then the method below would be equivalent to
+    //          VirtualTable.map(int[] c, MapperWithRowIndexFactory f) {
+    //              return map(c,f,this);
+    //          }
     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory) {
         final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
@@ -309,49 +316,6 @@ public final class VirtualTable {
             );
         return new VirtualTable(reSourcedTransform, m_schema);
     }
-
-
-
-    // TODO (TP) Implement RowIndex propagation.
-    //      (*) MapperWithRowIndexFactory should probably get the actual row index from a Source node?
-    //      (*) How to handle sliced Sources? Should indices start at 0 or at slice.from?
-    //      (*) Add a signature
-    //          VirtualTable.map(int[], MapperWithRowIndexFactory, VirtualTable),
-    //          where the VirtualTable argument specifies which VirtualTable the row index should be taken from.
-    //          Then the method below would be equivalent to
-    //          VirtualTable.map(int[] c, MapperWithRowIndexFactory f) {
-    //              return map(c,f,this);
-    //          }
-    public VirtualTable map(final int[] columnIndices, final MapperWithRowIndexFactory mapperFactory) {
-        return map(columnIndices, (MapperFactory)mapperFactory);
-    }
-
-    // FIXME This is a hack that only works because the comp graph is processed sequentially.
-    //       Implement proper RowIndex propagation instead.
-    private static MapperFactory wrapAsMapperFactory(final MapperWithRowIndexFactory factory) {
-        return new MapperFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return factory.getOutputSchema();
-            }
-
-            @Override
-            public Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs) {
-                Mapper mapper = factory.createMapperWithRowIndex(inputs, outputs);
-                return new Runnable() {
-                    private long m_rowIndex = 0;
-
-                    @Override
-                    public void run() {
-                        mapper.map(m_rowIndex);
-                        m_rowIndex++;
-                    }
-                };
-            }
-        };
-    }
-
-
 
     // TODO (TP) Implement ProgressTransformSpec handling.
     //      As a workaround, we use a RowFilter that always evaluates to {@code
