@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.LongBinaryOperator;
 
 import org.knime.core.table.cursor.Cursors;
 import org.knime.core.table.row.Selection.RowRangeSelection;
@@ -271,92 +272,130 @@ public class RagBuilder {
      * @return number of rows at the consumer node of the {@code orderedRag}
      */
     public static long numRows(final List<RagNode> orderedRag) {
-        final RagNode node = orderedRag.get(orderedRag.size() - 1);
-        if (!sinkNodeTypes.contains(node.type())) {
-            throw new IllegalArgumentException();
-        }
-        return numRows(node);
+        return numRows(orderedRag, true);
     }
 
     /**
      * Recursively trace along reverse EXEC edges to determine number of rows.
      */
     private static long numRows(final RagNode node) {
-        switch (node.type()) {
-            case SOURCE: {
-                final SourceTransformSpec spec = node.getTransformSpec();
-                long numRows = spec.getProperties().numRows();
-                if ( numRows < 0 ) {
-                    return -1;
-                }
-                final RowRangeSelection range = spec.getRowRange();
-                if ( range.allSelected() ) {
-                    return numRows;
-                } else {
-                    final long from = range.fromIndex();
-                    final long to = range.toIndex();
-                    return Math.max(0, Math.min(numRows, to) - from);
-                }
-            }
-            case SLICE: {
-                final SliceTransformSpec spec = node.getTransformSpec();
-                final long from = spec.getRowRangeSelection().fromIndex();
-                final long to = spec.getRowRangeSelection().toIndex();
-                final long s = maxPredecessorNumRows(node);
-                return s < 0 ? s : Math.max(0, Math.min(s, to) - from);
-            }
-            case CONSUMER:
-            case MATERIALIZE:
-            case WRAPPER:
-            case APPEND: {
-                // If any predecessor doesn't know its size, the size of this node is also unknown.
-                // Otherwise, the size of this node is max of its predecessors.
-                return maxPredecessorNumRows(node);
-            }
-            case CONCATENATE: {
-                // If any predecessor doesn't know its size, the size of this node is also unknown.
-                // Otherwise, the size of this is the sum of its predecessors.
-                long size = 0;
-                for (final RagNode predecessor : node.predecessors(EXEC)) {
-                    final long s = numRows(predecessor);
-                    if ( s < 0 ) {
-                        return -1;
-                    }
-                    size += s;
-                }
-                return size;
-            }
-            case ROWFILTER:
-                return -1;
-            case MISSING:
-            case APPENDMISSING:
-            case COLFILTER:
-            case MAP:
-            case IDENTITY:
-                throw new IllegalArgumentException(
-                        "Unexpected RagNode type " + node.type() + ".");
-            default:
-                throw new IllegalArgumentException();
-        }
+        return new NumRows(false).numRows(node);
+        // TODO (TP) Look at usages. Should do better than recomputing everything all the time.
     }
 
-    /**
-     * Get the maximum numRows of EXEC predecessors of {@code node}.
-     * Returns -1, if at least one predecessor doesn't know its numRows.
-     * Returns 0 if there are no predecessors.
-     */
-    private static long maxPredecessorNumRows(final RagNode node) {
-        // If any predecessor doesn't know its size, the size of this node is also unknown.
-        // Otherwise, the size of this node is max of its predecessors.
-        long size = 0;
-        for (final RagNode predecessor : node.predecessors(EXEC)) {
-            final long s = numRows(predecessor);
-            if ( s < 0 ) {
-                return -1;
-            }
-            size = Math.max(s, size);
+    private static long numRows(final List<RagNode> orderedRag, final boolean setNodeNumRows) {
+        final RagNode node = orderedRag.get(orderedRag.size() - 1);
+        if (!sinkNodeTypes.contains(node.type())) {
+            throw new IllegalArgumentException();
         }
-        return size;
+        return new NumRows(setNodeNumRows).numRows(node);
+    }
+
+    private static class NumRows
+    {
+        /**
+         * @param setNodeNumRows if {@code true}, {@link RagNode#setNumRows store} numRows in each visited node.
+         */
+        NumRows(final boolean setNodeNumRows) {
+            this.setNodeNumRows = setNodeNumRows;
+        }
+
+        private final boolean setNodeNumRows;
+
+        private final Map<RagNode, Long> cache = new HashMap<>();
+
+        private long cache(final RagNode key, final long value) {
+            cache.put(key, value);
+            if (setNodeNumRows) {
+                key.setNumRows(value);
+            }
+            return value;
+        }
+
+        /**
+         * Recursively trace along reverse EXEC edges to determine number of rows.
+         */
+        long numRows(final RagNode node) {
+
+            final Long cachedNumRows = cache.get(node);
+            if (cachedNumRows != null) {
+                return cachedNumRows;
+            }
+
+            switch (node.type()) {
+                case SOURCE: {
+                    final SourceTransformSpec spec = node.getTransformSpec();
+                    long numRows = spec.getProperties().numRows();
+                    if (numRows < 0) {
+                        return cache(node, -1);
+                    }
+                    final RowRangeSelection range = spec.getRowRange();
+                    if (range.allSelected()) {
+                        return cache(node, numRows);
+                    } else {
+                        final long from = range.fromIndex();
+                        final long to = range.toIndex();
+                        return cache(node, Math.max(0, Math.min(numRows, to) - from));
+                    }
+                }
+                case SLICE: {
+                    final SliceTransformSpec spec = node.getTransformSpec();
+                    final long from = spec.getRowRangeSelection().fromIndex();
+                    final long to = spec.getRowRangeSelection().toIndex();
+                    // If any predecessor doesn't know its size, the size of this node is also unknown.
+                    // Otherwise, the size of this node is max of its predecessors.
+                    final long s = accPredecessorNumRows(node, Math::max);
+                    return cache(node, s < 0 ? s : Math.max(0, Math.min(s, to) - from));
+                }
+                case CONSUMER:
+                case MATERIALIZE:
+                case WRAPPER:
+                case APPEND: {
+                    // If any predecessor doesn't know its size, the size of this node is also unknown.
+                    // Otherwise, the size of this node is max of its predecessors.
+                    // If any predecessor doesn't know its size, the size of this node is also unknown.
+                    // Otherwise, the size of this node is max of its predecessors.
+                    return cache(node, accPredecessorNumRows(node, Math::max));
+                }
+                case CONCATENATE: {
+                    // If any predecessor doesn't know its size, the size of this node is also unknown.
+                    // Otherwise, the size of this is the sum of its predecessors.
+                    return cache(node, accPredecessorNumRows(node, Long::sum));
+                }
+                case ROWFILTER:
+                    return cache(node, -1);
+                case MISSING:
+                case APPENDMISSING:
+                case COLFILTER:
+                case MAP:
+                case IDENTITY:
+                    throw new IllegalArgumentException(
+                            "Unexpected RagNode type " + node.type() + ".");
+                default:
+                    throw new IllegalStateException("Unexpected value: " + node.type());
+            }
+        }
+
+        /**
+         * Accumulate numRows of EXEC predecessors of {@code node}.
+         * Returns -1, if at least one predecessor doesn't know its numRows.
+         * Returns 0 if there are no predecessors.
+         */
+        private long accPredecessorNumRows(final RagNode node, final LongBinaryOperator acc) {
+            // If any predecessor doesn't know its size, the size of this node
+            // is also unknown (return -1).
+            // Otherwise, the size of this node is the accumulated size of its
+            // predecessors (via the specified acc operator).
+            long size = 0;
+            for (final RagNode predecessor : node.predecessors(EXEC)) {
+                final long s = numRows(predecessor);
+                if ( s < 0 ) {
+                    return -1;
+                }
+                size = acc.applyAsLong(size, s);
+            }
+            return size;
+        }
     }
 
 
@@ -373,7 +412,8 @@ public class RagBuilder {
      * depend on each other for executing forward steps in order to determine that
      * everybody is on the same row (without looking at produced/consumed data).
      */
-    private static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER);
+    // TODO: move to RagNodeType
+    public static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER);
 
     /**
      * Spawning nodes create new sub-trees of their SPEC predecessor nodes. This
