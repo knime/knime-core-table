@@ -1,0 +1,43 @@
+package org.knime.core.table.virtual.graph.exec;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import org.knime.core.table.access.MissingAccesses;
+import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.schema.DataSpec;
+
+// TODO: This can be unified with NodeImgMissing. The methods are never called
+//       anyway, so this can just implement both RandomAccessNodeImp and NodeImp
+class RandomAccessNodeImpMissing implements RandomAccessNodeImp {
+    private final ReadAccess[] outputs;
+
+    RandomAccessNodeImpMissing(final List<DataSpec> missingValueSpecs) {
+        outputs = new ReadAccess[missingValueSpecs.size()];
+        Arrays.setAll(outputs, i -> MissingAccesses.getMissingAccess(missingValueSpecs.get(i)));
+    }
+
+    @Override
+    public ReadAccess getOutput(final int i) {
+        return outputs[i];
+    }
+
+    @Override
+    public void create() {
+        // should never be called
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void moveTo(final long row) {
+        // should never be called
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close() throws IOException {
+        // should never be called
+        throw new UnsupportedOperationException();
+    }
+}
