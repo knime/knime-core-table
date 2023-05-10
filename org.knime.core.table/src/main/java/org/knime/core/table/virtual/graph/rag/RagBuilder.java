@@ -1027,10 +1027,12 @@ public class RagBuilder {
 
             // insert equivalent "preslice" between "append" and each predecessor
             final TableTransform presliceTransform = new TableTransform(Collections.emptyList(), slice.getTransformSpec());
-            for (RagNode node : append.predecessors(EXEC)) {
+            for (RagEdge edge : new ArrayList<>(append.incomingEdges(EXEC))) {
+                final RagNode node = edge.getSource();
                 final RagNode preslice = graph.addNode(presliceTransform);
                 graph.addEdge(node, preslice, EXEC);
                 graph.addEdge(preslice, append, EXEC);
+                graph.remove(edge);
             }
             return true;
         }
