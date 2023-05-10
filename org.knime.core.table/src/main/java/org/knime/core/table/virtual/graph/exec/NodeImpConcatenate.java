@@ -75,10 +75,6 @@ class NodeImpConcatenate implements NodeImp {
                 outputs[i].setDelegateAccess(access);
             }
             linkedPredecessor = predecessors[predecessorIndex];
-        } else {
-            for (DelegatingReadAccesses.DelegatingReadAccess output : outputs) {
-                output.setDelegateAccess(MissingAccesses.getMissingAccess(output.getDataSpec()));
-            }
         }
     }
 
