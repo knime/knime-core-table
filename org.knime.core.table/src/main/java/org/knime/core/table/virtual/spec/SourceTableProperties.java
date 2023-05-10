@@ -1,7 +1,9 @@
 package org.knime.core.table.virtual.spec;
 
 import org.knime.core.table.cursor.LookaheadCursor;
+import org.knime.core.table.cursor.RandomAccessCursor;
 import org.knime.core.table.row.LookaheadRowAccessible;
+import org.knime.core.table.row.RandomRowAccessible;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 
@@ -18,19 +20,22 @@ public class SourceTableProperties {
 
     private final boolean m_lookahead;
 
+    private final boolean m_randomAccess;
+
     private final long m_numRows;
 
     public SourceTableProperties(final RowAccessible source) {
-        this(source.getSchema(), source instanceof LookaheadRowAccessible, source.size());
+        this(source.getSchema(), source instanceof LookaheadRowAccessible, source instanceof RandomRowAccessible, source.size());
     }
 
     public SourceTableProperties(final ColumnarSchema schema, final boolean lookahead) {
-        this(schema, lookahead, -1);
+        this(schema, lookahead, false, -1);
     }
 
-    public SourceTableProperties(final ColumnarSchema schema, final boolean lookahead, final long numRows) {
+    public SourceTableProperties(final ColumnarSchema schema, final boolean lookahead, final boolean randomAccess, final long numRows) {
         this.m_schema = schema;
         this.m_lookahead = lookahead;
+        this.m_randomAccess = randomAccess;
         this.m_numRows = numRows;
     }
 
@@ -62,6 +67,16 @@ public class SourceTableProperties {
      */
     public boolean supportsLookahead() {
         return m_lookahead;
+    }
+
+    /**
+     * Whether the source table supports {@link RandomAccessCursor}s, i.e., whether the
+     * source table is a {@link RandomRowAccessible}.
+     *
+     * @return {@code true} if this source supports {@code RandomAccessCursor}s
+     */
+    public boolean supportsRandomAccess() {
+        return m_randomAccess;
     }
 
     /**
