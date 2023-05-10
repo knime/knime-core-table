@@ -1,6 +1,7 @@
 package org.knime.core.table.virtual.graph.cap;
 
 import static org.knime.core.table.virtual.graph.rag.RagEdgeType.ORDER;
+import static org.knime.core.table.virtual.graph.rag.RagBuilder.executableNodeTypes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +43,8 @@ class Branches {
     class Branch {
         RagNode head;
 
+        private long numRows = -1;
+
         final List<BranchRef> refs;
 
         Branch() {
@@ -56,7 +59,14 @@ class Branches {
          */
         void append(final RagNode node) {
             head = node;
+            if (executableNodeTypes.contains(node.type())) {
+                numRows = node.numRows();
+            }
             nodeBranchRefs.put(node, refs.get(0));
+        }
+
+        long numRows() {
+            return numRows;
         }
 
         /**
