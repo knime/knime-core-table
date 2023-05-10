@@ -62,7 +62,10 @@ import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.cursor.LookaheadCursor;
+import org.knime.core.table.cursor.RandomAccessCursor;
 import org.knime.core.table.cursor.WriteCursor;
+import org.knime.core.table.row.LookaheadRowAccessible;
+import org.knime.core.table.row.RandomRowAccessible;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
@@ -81,10 +84,47 @@ public final class RowAccessiblesTestUtils {
     }
 
     /**
+     * Wraps a {@link TestRowAccessible} without exposing the {@link RandomRowAccessible} interface
+     */
+    static class TestRowAccessibleNoRandomAccess implements LookaheadRowAccessible {
+
+        private final TestRowAccessible m_delegate;
+
+        private TestRowAccessibleNoRandomAccess(TestRowAccessible delegate) {
+            m_delegate = delegate;
+        }
+
+        @Override
+        public ColumnarSchema getSchema() {
+            return m_delegate.getSchema();
+        }
+
+        @Override
+        public LookaheadCursor<ReadAccessRow> createCursor() {
+            return m_delegate.createCursor();
+        }
+
+        @Override
+        public LookaheadCursor<ReadAccessRow> createCursor(Selection selection) {
+            return m_delegate.createCursor(selection);
+        }
+
+        @Override
+        public long size() {
+            return m_delegate.size();
+        }
+
+        @Override
+        public void close() throws IOException {
+            m_delegate.close();
+        }
+    }
+
+    /**
      * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
      * @since 4.4
      */
-    public static class TestRowAccessible implements RowAccessible {
+    public static class TestRowAccessible implements RandomRowAccessible {
 
         private final ColumnarSchema m_schema;
 
@@ -98,6 +138,13 @@ public final class RowAccessiblesTestUtils {
             m_length = length;
         }
 
+        /**
+         * Wrap as {@code TestRowAccessible} without exposing the {@link RandomRowAccessible} interface
+         */
+        public TestRowAccessibleNoRandomAccess toRowAccessible() {
+            return new TestRowAccessibleNoRandomAccess(this);
+        }
+
         @Override
         public void close() throws IOException {
         }
@@ -108,13 +155,13 @@ public final class RowAccessiblesTestUtils {
         }
 
         @Override
-        public Cursor<ReadAccessRow> createCursor() {
-            return new TestRowAccessCursor(m_accesses, m_length);
+        public RandomAccessCursor<ReadAccessRow> createCursor() {
+            return new TestRandomRowAccessCursor(m_accesses, m_length);
         }
 
         @Override
-        public Cursor<ReadAccessRow> createCursor(final Selection selection) {
-            return new TestRowAccessCursor(m_accesses, selection, m_length);
+        public RandomAccessCursor<ReadAccessRow> createCursor(final Selection selection) {
+            return new TestRandomRowAccessCursor(m_accesses, selection, m_length);
         }
 
         @Override
@@ -122,28 +169,33 @@ public final class RowAccessiblesTestUtils {
             return m_length;
         }
 
-        private static final class TestRowAccessCursor implements Cursor<ReadAccessRow>, ReadAccessRow {
+        private static final class TestRandomRowAccessCursor implements RandomAccessCursor<ReadAccessRow>, ReadAccessRow {
 
             private final TestAccess[] m_accesses;
 
-            private final int m_length;
+            // inclusive
+            private final int m_fromIndex;
+
+            // exclusive
+            private final int m_toIndex;
 
             private int m_index;
 
-            TestRowAccessCursor(final TestAccess[] accesses, final long length) {
+            TestRandomRowAccessCursor(final TestAccess[] accesses, final long length) {
                 this(accesses, Selection.all(), length);
             }
 
-            TestRowAccessCursor(final TestAccess[] accesses, final Selection selection, final long length) {
+            TestRandomRowAccessCursor(final TestAccess[] accesses, final Selection selection, final long length) {
                 m_accesses = new TestAccess[accesses.length];
                 Arrays.setAll(m_accesses, i -> selection.columns().isSelected(i) ? accesses[i].copy() : null);
                 if (selection.rows().allSelected()) {
-                    m_index = -1;
-                    m_length = (int)length;
+                    m_fromIndex = 0;
+                    m_toIndex = (int)length;
                 } else {
-                    m_index = (int)selection.rows().fromIndex() - 1;
-                    m_length = (int)Math.min(selection.rows().toIndex(), length);
+                    m_fromIndex = (int)selection.rows().fromIndex();
+                    m_toIndex = (int)Math.min(selection.rows().toIndex(), length);
                 }
+                m_index = m_fromIndex - 1;
             }
 
             @Override
@@ -156,17 +208,34 @@ public final class RowAccessiblesTestUtils {
             }
 
             @Override
-            public boolean forward() {
-                if (++m_index >= m_length) {
-                    return false;
-                } else {
-                    for (TestAccess access : m_accesses) {
-                        if (access != null) {
-                            access.setIndex(m_index);
-                        }
+            public void moveTo(long row) {
+                setRowIndex(row + m_fromIndex);
+            }
+
+            private void setRowIndex(long row) {
+                if (row < m_fromIndex || row >= m_toIndex) {
+                    throw new IndexOutOfBoundsException(String.format("%d out of bounds [%d, %d)", row, m_fromIndex, m_toIndex));
+                }
+                m_index = (int)row;
+                for (TestAccess access : m_accesses) {
+                    if (access != null) {
+                        access.setIndex(m_index);
                     }
                 }
-                return true;
+            }
+
+            @Override
+            public boolean canForward() {
+                return m_index + 1 < m_toIndex;
+            }
+
+            @Override
+            public boolean forward() {
+                if (canForward()) {
+                    setRowIndex(m_index + 1);
+                    return true;
+                }
+                return false;
             }
 
             @Override
@@ -297,7 +366,11 @@ public final class RowAccessiblesTestUtils {
      */
     @SuppressWarnings("resource")
     public static RowAccessible createRowAccessibleFromRowWiseValues(final ColumnarSchema schema,
-        final Object[][] valuesPerRow) {
+            final Object[][] valuesPerRow) {
+        return toRowAccessible(writeTable(schema, valuesPerRow));
+    }
+
+    private static TestRowWriteAccessible writeTable(ColumnarSchema schema, Object[][] valuesPerRow) {
         final TestRowWriteAccessible table = createRowWriteAccessible(schema);
         try (final Cursor<WriteAccessRow> cursor = table.getWriteCursor()) {
             final WriteAccessRow row = cursor.access();
@@ -310,7 +383,7 @@ public final class RowAccessiblesTestUtils {
         } catch (IOException e) {
             // will not happen
         }
-        return toRowAccessible(table);
+        return table;
     }
 
     /**
