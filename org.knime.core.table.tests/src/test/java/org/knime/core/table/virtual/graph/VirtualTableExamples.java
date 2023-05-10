@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.RowAccessiblesTestUtils.assertCanForwardPredictsForward;
 import static org.knime.core.table.RowAccessiblesTestUtils.assertTableEqualsValues;
+import static org.knime.core.table.RowAccessiblesTestUtils.assertTableEqualsValuesInRandomRowOrder;
 import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.INT;
@@ -23,6 +24,7 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.row.LookaheadRowAccessible;
+import org.knime.core.table.row.RandomRowAccessible;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -43,6 +45,18 @@ public class VirtualTableExamples {
             final int expectedNumRows,
             final Supplier<RowAccessible[]> sourcesSupplier,
             final BiFunction<UUID[], RowAccessible[], VirtualTable> virtualTableSupplier) {
+
+        testTransformedTable(expectedSchema, expectedValues, expectedNumRows, sourcesSupplier, virtualTableSupplier, false);
+        testTransformedTable(expectedSchema, expectedValues, expectedNumRows, sourcesSupplier, virtualTableSupplier, true);
+    }
+
+    private static void testTransformedTable(
+            final ColumnarSchema expectedSchema,
+            final Object[][] expectedValues,
+            final int expectedNumRows,
+            final Supplier<RowAccessible[]> sourcesSupplier,
+            final BiFunction<UUID[], RowAccessible[], VirtualTable> virtualTableSupplier,
+            final boolean useRandomAccess) {
 
         final RowAccessible[] sources = sourcesSupplier.get();
         final UUID[] sourceIds = new UUID[sources.length];
@@ -96,10 +110,41 @@ public class VirtualTableExamples {
         }
     }
 
+    private static void testTransformedTableRandomAccess(
+            final boolean expectedRandomAccessible,
+            final ColumnarSchema expectedSchema,
+            final Object[][] expectedValues,
+            final int expectedNumRows,
+            final Supplier<RowAccessible[]> sourcesSupplier,
+            final BiFunction<UUID[], RowAccessible[], VirtualTable> virtualTableSupplier) {
+
+        final RowAccessible[] sources = sourcesSupplier.get();
+        final UUID[] sourceIds = new UUID[sources.length];
+        Arrays.setAll(sourceIds, i -> randomUUID());
+        final VirtualTable table = virtualTableSupplier.apply(sourceIds, sources);
+
+        final List<RagNode> rag = RagBuilder.createOrderedRag(table);
+        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
+        final ColumnarSchema schema = RagBuilder.createSchema(rag);
+
+        final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
+        for (int i = 0; i < sourceIds.length; ++i) {
+            sourceMap.put(sourceIds[i], sources[i]);
+        }
+        final RowAccessible rowAccessible = createRowAccessible(schema, cap, sourceMap);
+        final boolean randomAccessible = rowAccessible instanceof RandomRowAccessible;
+
+        assertEquals(expectedRandomAccessible, randomAccessible);
+        if (randomAccessible) {
+            assertEquals(expectedSchema, table.getSchema());
+            assertTableEqualsValuesInRandomRowOrder(expectedValues, rowAccessible, false);
+            assertTableEqualsValuesInRandomRowOrder(expectedValues, rowAccessible, true);
+        }
+    }
+
 
 
     public static VirtualTable vtMinimal(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
         return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).permute(0, 2, 1).filterColumns(1);
     }
 
@@ -131,6 +176,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtMinimal);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtMinimal);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtMinimal);
     }
 
 
@@ -159,6 +205,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataLinear, VirtualTableExamples::vtLinear);
         testTransformedTableLookahead(true, VirtualTableExamples::dataLinear, VirtualTableExamples::vtLinear);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataLinear, VirtualTableExamples::vtLinear);
     }
 
 
@@ -201,6 +248,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataForkJoin, VirtualTableExamples::vtForkJoin);
         testTransformedTableLookahead(true, VirtualTableExamples::dataForkJoin, VirtualTableExamples::vtForkJoin);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataForkJoin, VirtualTableExamples::vtForkJoin);
     }
 
 
@@ -233,6 +281,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataForkJoinLookALike, VirtualTableExamples::vtForkJoinLookALike);
         testTransformedTableLookahead(true, VirtualTableExamples::dataForkJoinLookALike, VirtualTableExamples::vtForkJoinLookALike);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataForkJoinLookALike, VirtualTableExamples::vtForkJoinLookALike);
     }
 
 
@@ -282,6 +331,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppend, VirtualTableExamples::vtAppend);
         testTransformedTableLookahead(true, VirtualTableExamples::dataAppend, VirtualTableExamples::vtAppend);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppend, VirtualTableExamples::vtAppend);
     }
 
 
@@ -329,6 +379,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppendAndFilterColumns, VirtualTableExamples::vtAppendAndFilterColumns);
         testTransformedTableLookahead(true, VirtualTableExamples::dataAppendAndFilterColumns, VirtualTableExamples::vtAppendAndFilterColumns);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppendAndFilterColumns, VirtualTableExamples::vtAppendAndFilterColumns);
     }
 
 
@@ -357,6 +408,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppendAndSlice, VirtualTableExamples::vtAppendAndSlice);
         testTransformedTableLookahead(true, VirtualTableExamples::dataAppendAndSlice, VirtualTableExamples::vtAppendAndSlice);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppendAndSlice, VirtualTableExamples::vtAppendAndSlice);
     }
 
 
@@ -391,6 +443,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppendAndAppendMissing, VirtualTableExamples::vtAppendAndAppendMissing);
         testTransformedTableLookahead(true, VirtualTableExamples::dataAppendAndAppendMissing, VirtualTableExamples::vtAppendAndAppendMissing);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppendAndAppendMissing, VirtualTableExamples::vtAppendAndAppendMissing);
     }
 
 
@@ -438,6 +491,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenate, VirtualTableExamples::vtConcatenate);
         testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenate, VirtualTableExamples::vtConcatenate);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenate, VirtualTableExamples::vtConcatenate);
     }
 
 
@@ -554,6 +608,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSlice);
         testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSlice);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSlice);
     }
 
     @Test
@@ -565,6 +620,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceSingleTable);
         testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceSingleTable);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceSingleTable);
     }
 
     @Test
@@ -578,6 +634,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullSingleTable);
         testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullSingleTable);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullSingleTable);
     }
 
     @Test
@@ -592,6 +649,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullTable);
         testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullTable);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateAndSlice, VirtualTableExamples::vtConcatenateAndSliceFullTable);
     }
 
 
@@ -642,6 +700,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppendMissing, VirtualTableExamples::vtAppendMissing);
         testTransformedTableLookahead(true, VirtualTableExamples::dataAppendMissing, VirtualTableExamples::vtAppendMissing);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataAppendMissing, VirtualTableExamples::vtAppendMissing);
     }
 
 
@@ -687,6 +746,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataSimpleMap, VirtualTableExamples::vtSimpleMap);
         testTransformedTableLookahead(true, VirtualTableExamples::dataSimpleMap, VirtualTableExamples::vtSimpleMap);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataSimpleMap, VirtualTableExamples::vtSimpleMap);
     }
 
 
@@ -726,6 +786,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableExamples::dataSimpleRowFilter, VirtualTableExamples::vtSimpleRowFilter);
         testTransformedTableLookahead(false, VirtualTableExamples::dataSimpleRowFilter, VirtualTableExamples::vtSimpleRowFilter);
+        testTransformedTableRandomAccess(false, expectedSchema, expectedValues, -1, VirtualTableExamples::dataSimpleRowFilter, VirtualTableExamples::vtSimpleRowFilter);
     }
 
 
@@ -767,6 +828,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableExamples::dataConsecutiveRowFilters, VirtualTableExamples::vtConsecutiveRowFilters);
         testTransformedTableLookahead(false, VirtualTableExamples::dataConsecutiveRowFilters, VirtualTableExamples::vtConsecutiveRowFilters);
+        testTransformedTableRandomAccess(false, expectedSchema, expectedValues, -1, VirtualTableExamples::dataConsecutiveRowFilters, VirtualTableExamples::vtConsecutiveRowFilters);
     }
 
 
@@ -811,6 +873,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableExamples::dataMapsAndFilters, VirtualTableExamples::vtMapsAndFilters);
         testTransformedTableLookahead(false, VirtualTableExamples::dataMapsAndFilters, VirtualTableExamples::vtMapsAndFilters);
+        testTransformedTableRandomAccess(false, expectedSchema, expectedValues, -1, VirtualTableExamples::dataMapsAndFilters, VirtualTableExamples::vtMapsAndFilters);
     }
 
 
@@ -868,6 +931,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
         testTransformedTableLookahead(false, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
+        testTransformedTableRandomAccess(false, expectedSchema, expectedValues, -1, VirtualTableExamples::dataFiltersMapAndConcatenate, VirtualTableExamples::vtFiltersMapAndConcatenate);
     }
 
 
