@@ -3,11 +3,12 @@ package org.knime.core.table.virtual.graph.exec;
 import org.knime.core.table.access.ReadAccess;
 
 final class AccessImp {
-    public final NodeImp node;
+
+    public final AbstractNodeImp node;
 
     public final int i;
 
-    public AccessImp(NodeImp node, int i) {
+    public AccessImp(AbstractNodeImp node, int i) {
         this.node = node;
         this.i = i;
     }
