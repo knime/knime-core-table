@@ -56,6 +56,11 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.knime.core.table.TestAccesses.TestAccess;
 import org.knime.core.table.access.ReadAccess;
@@ -473,6 +478,36 @@ public final class RowAccessiblesTestUtils {
             }
             assertFalse("canForward() was true, but then forward() returned false", predictedForward);
         } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    public static void assertTableEqualsValuesInRandomRowOrder(final Object[][] expectedValues, final RowAccessible actualTable, final boolean selectAll) {
+        assertTrue("The table under test is not a RandomRowAccessible", actualTable instanceof RandomRowAccessible);
+        final RandomRowAccessible rra = (RandomRowAccessible)actualTable;
+        final int size = (int)rra.size();
+        assertEquals("The size of the table under test is smaller than the expected size.", expectedValues.length, size);
+        final List<Integer> indices = IntStream.range(0, size).boxed().collect(Collectors.toList());
+        Collections.shuffle(indices, new Random(1L));
+        final ColumnarSchema schema = rra.getSchema();
+        try (final RandomAccessCursor<ReadAccessRow> cursor = selectAll ? rra.createCursor(Selection.all()) : rra.createCursor()) {
+            final ReadAccessRow actualRow = cursor.access();
+            for (int index : indices) {
+                cursor.moveTo(index);
+                final Object[] expectedRow;
+                try {
+                    expectedRow = expectedValues[index];
+                } catch (final IndexOutOfBoundsException ex) {
+                    throw new AssertionError("The size of the table under test is greater than the expected size of "
+                            + expectedValues.length + ".", ex);
+                }
+                try {
+                    assertRowEqualsValues(schema, expectedRow, actualRow);
+                } catch (final AssertionError e) {
+                    throw new AssertionError("At row index " + index + ": " + e.getMessage(), e);
+                }
+            }
+        } catch (final IOException ex) {
             throw new UncheckedIOException(ex);
         }
     }
