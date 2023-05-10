@@ -9,11 +9,13 @@ public class CapNodeConcatenate extends CapNode {
 
     private final CapAccessId[][] inputs;
     private final int[] predecessors;
+    private final long[] predecessorSizes;
 
-    public CapNodeConcatenate(final int index, final CapAccessId[][] inputs, final int[] predecessors) {
+    public CapNodeConcatenate(final int index, final CapAccessId[][] inputs, final int[] predecessors, final long[] predecessorSizes) {
         super(index, CapNodeType.CONCATENATE);
         this.inputs = inputs;
         this.predecessors = predecessors;
+        this.predecessorSizes = predecessorSizes;
     }
 
     @Override
@@ -21,6 +23,7 @@ public class CapNodeConcatenate extends CapNode {
         final StringBuilder sb = new StringBuilder("CONCATENATE(");
         sb.append("inputs=").append(Arrays.deepToString(inputs));
         sb.append(", predecessors=").append(Arrays.toString(predecessors));
+        sb.append(", predecessorSizes=").append(Arrays.toString(predecessorSizes));
         sb.append(')');
         return sb.toString();
     }
@@ -37,9 +40,17 @@ public class CapNodeConcatenate extends CapNode {
     }
 
     /**
-     * TODO javadoc
+     * The {@link #index() index} of each predecessor in the CAP list.
+     * These are always all {@code < this.index()}.
      */
     public int[] predecessors() {
         return predecessors;
+    }
+
+    /**
+     * The number of rows for each predecessor (or negative number if unknown).
+     */
+    public long[] predecessorSizes() {
+        return predecessorSizes;
     }
 }

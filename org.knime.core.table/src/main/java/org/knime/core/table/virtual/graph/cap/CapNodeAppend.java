@@ -10,13 +10,15 @@ public class CapNodeAppend extends CapNode {
     private final CapAccessId[] inputs;
     private final int[] predecessors;
     private final int[][] predecessorOutputIndices;
+    private final long[] predecessorSizes;
 
     public CapNodeAppend(final int index, final CapAccessId[] inputs, final int[] predecessors,
-            final int[][] predecessorOutputIndices) {
+            final int[][] predecessorOutputIndices, final long[] predecessorSizes) {
         super(index, CapNodeType.APPEND);
         this.inputs = inputs;
         this.predecessors = predecessors;
         this.predecessorOutputIndices = predecessorOutputIndices;
+        this.predecessorSizes = predecessorSizes;
     }
 
     @Override
@@ -51,5 +53,12 @@ public class CapNodeAppend extends CapNode {
      */
     public int[][] predecessorOutputIndices() {
         return predecessorOutputIndices;
+    }
+
+    /**
+     * The number of rows for each predecessor (or negative number if unknown).
+     */
+    public long[] predecessorSizes() {
+        return predecessorSizes;
     }
 }

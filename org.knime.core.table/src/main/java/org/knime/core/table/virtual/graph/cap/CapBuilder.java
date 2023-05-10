@@ -48,6 +48,10 @@ public class CapBuilder {
     }
 
     private CursorAssemblyPlan createCAP() {
+
+        final long numRows = RagBuilder.numRows(orderedRag);
+        // NB this also calls setNumRows() for all visited RagNodes
+
         for (int index = 0; index < orderedRag.size(); index++) {
             final RagNode node = orderedRag.get(index);
             switch (node.type()) {
@@ -112,6 +116,7 @@ public class CapBuilder {
                     // Each predecessor is the head of an incoming branch.
                     final List<Branch> predecessorBranches = branches.getPredecessorBranches(node);
                     final int[] predecessors = headIndices(predecessorBranches);
+                    final long[] predecessorSizes = numRows(predecessorBranches);
 
                     // Input AccessId[] come from node.getInputs().
                     // Output AccessId[] come from node.getOutputs().
@@ -178,7 +183,7 @@ public class CapBuilder {
                     });
 
                     final CapNodeAppend capNode =
-                            new CapNodeAppend(index, inputs, predecessors, predecessorOutputIndices);
+                            new CapNodeAppend(index, inputs, predecessors, predecessorOutputIndices, predecessorSizes);
                     append(node, capNode);
 
                     // TODO: Set capAccessIds to point to the CapNodeAppend outputs only if new delegating accesses are created
@@ -197,12 +202,13 @@ public class CapBuilder {
                     // Each predecessor is the head of an incoming branch.
                     final List<Branch> predecessorBranches = branches.getPredecessorBranches(node);
                     final int[] predecessors = headIndices(predecessorBranches);
+                    final long[] predecessorSizes = numRows(predecessorBranches);
 
                     final AccessIds[] inputAccessIdss = node.getInputssArray();
                     final CapAccessId[][] inputs = new CapAccessId[inputAccessIdss.length][];
                     Arrays.setAll(inputs, i -> capAccessIdsFor(inputAccessIdss[i]));
 
-                    final CapNodeConcatenate capNode = new CapNodeConcatenate(index, inputs, predecessors);
+                    final CapNodeConcatenate capNode = new CapNodeConcatenate(index, inputs, predecessors, predecessorSizes);
                     append(node, capNode);
                     createCapAccessIdsFor(node.getOutputs(), capNode);
                     merge(predecessorBranches).append(node);
@@ -238,7 +244,7 @@ public class CapBuilder {
 
         return new CursorAssemblyPlan(cursorAssemblyPlan, //
                 RagBuilder.supportsLookahead(orderedRag), //
-                RagBuilder.numRows(orderedRag), //
+                numRows, //
                 RagBuilder.getSourceAndSinkSchemas(orderedRag));
     }
 
@@ -297,8 +303,17 @@ public class CapBuilder {
      */
     private int[] headIndices(final List<Branch> branches) {
         final int[] predecessors = new int[branches.size()];
-        Arrays.setAll(predecessors, i -> capNodes.get(branches.get(i).head).index());
+        Arrays.setAll(predecessors, i -> headIndex(branches.get(i)));
         return predecessors;
+    }
+
+    /**
+     * Maps the given branches to corresponding number of rows.
+     */
+    private long[] numRows(final List<Branch> branches) {
+        final long[] numRows = new long[branches.size()];
+        Arrays.setAll(numRows, i -> branches.get(i).numRows());
+        return numRows;
     }
 
     /**
