@@ -13,6 +13,7 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
 public final class RagNode implements Typed<RagNodeType> {
 
     private int numColumns = -1;
+    private long numRows = -1;
     private final RagNodeType type;
     private final TableTransform transform;
 
@@ -72,6 +73,21 @@ public final class RagNode implements Typed<RagNodeType> {
     //   TableTransforms know their schema or at least numColumns
     public void setNumColumns(int numColumns) {
         this.numColumns = numColumns;
+    }
+
+    /**
+     * Get the number of rows at this node.
+     * <p>
+     * TODO (TP) explain: where is this computed, for which RagNodeTypes?
+     *
+     * @return the number of rows, or a negative number if the number of rows is unknown.
+     */
+    public long numRows() {
+        return numRows;
+    }
+
+    public void setNumRows(long numRows) {
+        this.numRows = numRows;
     }
 
     /**
