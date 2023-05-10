@@ -7,8 +7,16 @@ import org.knime.core.table.access.ReadAccess;
 class NodeImpSlice implements NodeImp {
     private final NodeImp predecessor;
 
+    /**
+     * Index of the first row (inclusive) to include in the slice.
+     * Row indices are wrt to the rows provided by the predecessor.
+     */
     private final long m_from;
 
+    /**
+     * Index of the last row (exclusive) to include in the slice.
+     * Row indices are wrt to the rows provided by the predecessor.
+     */
     private final long m_to;
 
     private long m_currentIndex;
