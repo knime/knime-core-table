@@ -21,10 +21,19 @@ import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 
 public class CapExecutor {
 
+    /**
+     *
+     * @param schema
+     * @param cap
+     * @param uuidRowAccessibleMap
+     * @param useRandomAccess if {@code true}, then a {@code RandomRowAccessible} will bre created if the {@code cap} supports it.
+     * @return
+     */
     public static RowAccessible createRowAccessible(
             final ColumnarSchema schema,
             final CursorAssemblyPlan cap,
-            final Map<UUID, RowAccessible> uuidRowAccessibleMap ) {
+            final Map<UUID, RowAccessible> uuidRowAccessibleMap,
+            final boolean useRandomAccess) {
 
         final List<RowAccessible> sources = new ArrayList<>();
         final Map<UUID, ColumnarSchema> schemas = cap.schemas();
@@ -41,9 +50,21 @@ public class CapExecutor {
                 sources.add(a);
             }
         }
-        return cap.supportsLookahead() //
-                ? new CapLookaheadRowAccessible(schema, cap, sources) //
-                : new CapRowAccessible(schema, cap, sources);
+        if (useRandomAccess && cap.supportsRandomAccess()) {
+            return new CapRandomRowAccessible(schema, cap, sources);
+        } else if (cap.supportsLookahead()) {
+            return new CapLookaheadRowAccessible(schema, cap, sources);
+        } else {
+            return new CapRowAccessible(schema, cap, sources);
+        }
+    }
+
+    public static RowAccessible createRowAccessible(
+            final ColumnarSchema schema,
+            final CursorAssemblyPlan cap,
+            final Map<UUID, RowAccessible> uuidRowAccessibleMap ) {
+
+        return createRowAccessible(schema, cap, uuidRowAccessibleMap, true);
     }
 
     public static void execute(final CursorAssemblyPlan cap, //
