@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.function.BooleanSupplier;
 
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
 class NodeImpRowFilter implements NodeImp {
