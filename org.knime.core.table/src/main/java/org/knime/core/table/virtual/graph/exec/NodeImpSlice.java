@@ -19,13 +19,22 @@ class NodeImpSlice implements NodeImp {
      */
     private final long m_to;
 
-    private long m_currentIndex;
+    /**
+     * Index of the row that will be provided after the next call to
+     * to {@code forward()}.
+     * <p>
+     * For example, if the slice starts at {@code m_from=0}, then before the
+     * first {@code forward()} it would be 0. Then {@code forward()} provides
+     * values for row 0, and increments to {@code m_nextRowIndex=1}. Row indices
+     * are wrt to the rows provided by the predecessor.
+     */
+    private long m_nextRowIndex;
 
     public NodeImpSlice(final NodeImp predecessor, final long from, final long to) {
         this.predecessor = predecessor;
         m_from = from;
         m_to = to;
-        m_currentIndex = 0;
+        m_nextRowIndex = 0;
     }
 
     @Override
@@ -42,8 +51,8 @@ class NodeImpSlice implements NodeImp {
     @Override
     public boolean forward() {
         forwardToStart();
-        if (m_currentIndex < m_to) {
-            m_currentIndex++;
+        if (m_nextRowIndex < m_to) {
+            m_nextRowIndex++;
             return predecessor.forward();
         } else {
             return false;
@@ -53,7 +62,7 @@ class NodeImpSlice implements NodeImp {
     @Override
     public boolean canForward() {
         forwardToStart();
-        if (m_currentIndex < m_to) {
+        if (m_nextRowIndex < m_to) {
             return predecessor.canForward();
         } else {
             return false;
@@ -61,9 +70,9 @@ class NodeImpSlice implements NodeImp {
     }
 
     private void forwardToStart() {
-        while (m_currentIndex < m_from) {
+        while (m_nextRowIndex < m_from) {
             predecessor.forward();
-            m_currentIndex++;
+            m_nextRowIndex++;
         }
     }
 
