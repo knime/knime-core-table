@@ -522,10 +522,10 @@ public class RagBuilder {
         }
 
         graph.nodes(ROWFILTER).forEach(node -> {
-                    final int numInputColumns = node.<RowFilterTransformSpec>getTransformSpec().getColumnSelection().length;
-                    for (int j = 0; j < numInputColumns; j++) {
-                        traceAndLinkAccess(j, node);
-                    }
+            final int numInputColumns = node.<RowFilterTransformSpec>getTransformSpec().getColumnSelection().length;
+            for (int i = 0; i < numInputColumns; i++) {
+                traceAndLinkAccess(i, node);
+            }
         });
 
         final List<RagEdge> edges = new ArrayList<>(graph.getMissingValuesSource().outgoingEdges(DATA));
