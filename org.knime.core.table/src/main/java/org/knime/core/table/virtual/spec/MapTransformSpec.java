@@ -12,9 +12,11 @@ import java.util.function.IntUnaryOperator;
 
 import org.knime.core.table.access.DoubleAccess;
 import org.knime.core.table.access.IntAccess;
+import org.knime.core.table.access.LongAccess;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory.Mapper;
 
 public final class MapTransformSpec implements TableTransformSpec {
 
@@ -26,7 +28,7 @@ public final class MapTransformSpec implements TableTransformSpec {
      * the inputs, computes the map function, and sets the result values to the
      * output accesses.
      */
-    public interface MapperWithRowIndexFactory extends MapperFactory {
+    public interface MapperWithRowIndexFactory {
 
         interface Mapper {
             void map(long rowIndex);
@@ -35,7 +37,6 @@ public final class MapTransformSpec implements TableTransformSpec {
         /**
          * @return the ColumnarSchema of the columns produced by the map function
          */
-        @Override
         ColumnarSchema getOutputSchema();
 
         /**
@@ -48,23 +49,7 @@ public final class MapTransformSpec implements TableTransformSpec {
          * @param outputs accesses to write results to
          * @return a mapper reading from {@code inputs} and writing to {@code outputs}.
          */
-        Mapper createMapperWithRowIndex(final ReadAccess[] inputs, final WriteAccess[] outputs);
-
-        // FIXME This is a hack that only works because the comp graph is processed sequentially.
-        //       Implement proper RowIndex propagation instead.
-        @Override
-        default Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs) {
-            var mapper = createMapperWithRowIndex(inputs, outputs);
-            return new Runnable() {
-                private long m_rowIndex = 0;
-
-                @Override
-                public void run() {
-                    mapper.map(m_rowIndex);
-                    m_rowIndex++;
-                }
-            };
-        }
+        Mapper createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
     }
 
     /**
@@ -92,6 +77,10 @@ public final class MapTransformSpec implements TableTransformSpec {
          * @return a mapper reading from {@code inputs} and writing to {@code outputs}.
          */
         Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
+
+        default MapperWithRowIndexFactory getMapperWithRowIndexFactory() {
+            return null;
+        }
 
         static MapperFactory doublesToDouble(final DoubleUnaryOperator fn) {
             return new DefaultMapperFactory(ColumnarSchema.of(DOUBLE), //
@@ -174,6 +163,38 @@ public final class MapTransformSpec implements TableTransformSpec {
         }
     }
 
+    public static class WrappedMapperWithRowIndexFactory implements MapperFactory {
+
+        private MapperWithRowIndexFactory factory;
+
+        public WrappedMapperWithRowIndexFactory(final MapperWithRowIndexFactory factory) {
+            this.factory = factory;
+        }
+
+        @Override
+        public ColumnarSchema getOutputSchema() {
+            return factory.getOutputSchema();
+        }
+
+        @Override
+        public Runnable createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+
+            // the last input is the rowIndex
+            final LongAccess.LongReadAccess rowIndex = (LongAccess.LongReadAccess)inputs[inputs.length - 1];
+
+            // create a MapperWithRowIndex with the remaining inputs
+            final ReadAccess[] inputsWithoutRowIndex = Arrays.copyOf(inputs, inputs.length - 1);
+            final Mapper mapper = factory.createMapper(inputsWithoutRowIndex, outputs);
+
+            return () -> mapper.map(rowIndex.getLongValue());
+        }
+
+        @Override
+        public MapperWithRowIndexFactory getMapperWithRowIndexFactory() {
+            return factory;
+        }
+    }
+
     private final int[] inputColumnIndices;
 
     private final MapperFactory mapperFactory;
@@ -181,6 +202,11 @@ public final class MapTransformSpec implements TableTransformSpec {
     public MapTransformSpec(final int[] columnIndices, final MapperFactory mapperFactory) {
         this.inputColumnIndices = columnIndices;
         this.mapperFactory = mapperFactory;
+    }
+
+    public MapTransformSpec(final int[] columnIndices, final MapperWithRowIndexFactory mapperFactory) {
+        this.inputColumnIndices = columnIndices;
+        this.mapperFactory = new WrappedMapperWithRowIndexFactory(mapperFactory);
     }
 
     /**
@@ -192,6 +218,10 @@ public final class MapTransformSpec implements TableTransformSpec {
 
     public MapperFactory getMapperFactory() {
         return mapperFactory;
+    }
+
+    public boolean needsRowIndex() {
+        return mapperFactory.getMapperWithRowIndexFactory() != null;
     }
 
     @Override
