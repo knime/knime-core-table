@@ -22,6 +22,9 @@ import java.util.function.Supplier;
 
 import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
+import org.knime.core.table.access.DoubleAccess;
+import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
@@ -32,6 +35,7 @@ import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
 
@@ -883,5 +887,45 @@ public class VirtualTableExamples {
                 .permute(0, 2, 1)
                 .filterColumns(1)
                 .materialize(sinkIdentifiers[0]);
+    }
+
+
+
+    public static VirtualTable vtRowIndexMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
+            @Override
+            public ColumnarSchema getOutputSchema() {
+                return ColumnarSchema.of(DOUBLE);
+            }
+
+            @Override
+            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+                MapperFactory.verify(inputs, 1, outputs, 1);
+                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+            }
+        };
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable mappedCols = table.map(new int[]{0}, addRowIndex);
+        return mappedCols.append(table.filterColumns(2));
+    }
+
+    public static VirtualTable vtRowIndexMap() {
+        return vtRowIndexMap(new UUID[]{randomUUID()}, dataMinimal());
+    }
+
+    @Test
+    public void testRowIndexMap() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(DOUBLE, STRING);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{0.1, "First"}, //
+                new Object[]{1.2, "Second"}, //
+                new Object[]{2.3, "Third"}, //
+                new Object[]{3.4, "Fourth"}, //
+                new Object[]{4.5, "Fifth"} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMap);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMap);
     }
 }
