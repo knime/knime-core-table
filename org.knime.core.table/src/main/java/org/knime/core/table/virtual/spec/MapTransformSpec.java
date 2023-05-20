@@ -124,7 +124,7 @@ public final class MapTransformSpec implements TableTransformSpec {
                     });
         }
 
-        private static void verify(final ReadAccess[] inputs, final int expectedNumInputs, final WriteAccess[] outputs,
+        static void verify(final ReadAccess[] inputs, final int expectedNumInputs, final WriteAccess[] outputs,
                 final int expectedNumOutputs) {
             if (inputs == null || outputs == null) {
                 throw new NullPointerException();
