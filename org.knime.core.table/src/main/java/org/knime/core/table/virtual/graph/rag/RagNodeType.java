@@ -25,7 +25,8 @@ public enum RagNodeType {
     CONSUMER, //
     MATERIALIZE, //
     WRAPPER, //
-    IDENTITY;
+    IDENTITY, //
+    ROWINDEX;
 
     public static RagNodeType forSpec(final TableTransformSpec spec) {
         if (spec instanceof SourceTransformSpec)
@@ -54,6 +55,8 @@ public enum RagNodeType {
             return RagNodeType.WRAPPER;
         else if (spec instanceof IdentityTransformSpec)
             return RagNodeType.IDENTITY;
+        else if (spec instanceof RowIndexTransformSpec)
+            return RagNodeType.ROWINDEX;
         else
             throw new IllegalArgumentException();
     }
