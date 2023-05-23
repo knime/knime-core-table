@@ -5,6 +5,7 @@ public enum CapNodeType {
     MISSING, //
     SLICE, //
     ROWFILTER, //
+    ROWINDEX, //
     MAP, //
     APPEND, //
     CONCATENATE, //

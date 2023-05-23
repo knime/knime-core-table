@@ -16,6 +16,7 @@ import org.knime.core.table.virtual.graph.cap.CapNodeMap;
 import org.knime.core.table.virtual.graph.cap.CapNodeMaterialize;
 import org.knime.core.table.virtual.graph.cap.CapNodeMissing;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
+import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 
@@ -59,6 +60,12 @@ class AssembleRandomAccessibleNodeImps {
                             map.mapperFactory()));
                     break;
                 }
+                case ROWINDEX: {
+                    final CapNodeRowIndex rowIndex = (CapNodeRowIndex)node;
+                    imps.add(new RandomAccessNodeImpRowIndex(imps.get(rowIndex.predecessor())));
+                    break;
+
+                }
                 case APPEND: {
                     final CapNodeAppend append = (CapNodeAppend)node;
                     final AccessImp[] inputs = accessImps(append.inputs());
@@ -90,6 +97,8 @@ class AssembleRandomAccessibleNodeImps {
                     throw new IllegalArgumentException(
                             "MATERIALIZE is not yet supported. TODO");
                 }
+                default:
+                    throw new IllegalStateException("Unexpected value: " + node.type());
             }
         }
     }

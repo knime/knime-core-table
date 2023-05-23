@@ -40,7 +40,11 @@ import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
+<<<<<<< HEAD
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
+=======
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
+>>>>>>> d97ea23 (ROWINDEX CapNode and execution)
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
@@ -246,7 +250,8 @@ public class RagBuilder {
             case APPEND:
             case CONCATENATE:
             case CONSUMER:
-            case MATERIALIZE: {
+            case MATERIALIZE:
+            case ROWINDEX: {
                 for (RagNode predecessor : node.predecessors(EXEC)) {
                     if (!supportsLookahead(predecessor)) {
                         return false;
@@ -292,7 +297,8 @@ public class RagBuilder {
             case APPEND:
             case CONSUMER:
             case MATERIALIZE:
-            case SLICE: {
+            case SLICE:
+            case ROWINDEX: {
                 for (RagNode predecessor : node.predecessors(EXEC)) {
                     if (!supportsRandomAccess(predecessor)) {
                         return false;
@@ -422,6 +428,7 @@ public class RagBuilder {
                 case CONSUMER:
                 case MATERIALIZE:
                 case WRAPPER:
+                case ROWINDEX:
                 case APPEND: {
                     // If any predecessor doesn't know its size, the size of this node is also unknown.
                     // Otherwise, the size of this node is max of its predecessors.
