@@ -16,6 +16,7 @@ import org.knime.core.table.virtual.graph.cap.CapNodeMap;
 import org.knime.core.table.virtual.graph.cap.CapNodeMaterialize;
 import org.knime.core.table.virtual.graph.cap.CapNodeMissing;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
+import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 
@@ -61,6 +62,12 @@ class AssembleNodeImps {
                             map.mapperFactory()));
                     break;
                 }
+                case ROWINDEX: {
+                    final CapNodeRowIndex rowIndex = (CapNodeRowIndex)node;
+                    imps.add(new NodeImpRowIndex(imps.get(rowIndex.predecessor())));
+                    break;
+
+                }
                 case APPEND: {
                     final CapNodeAppend append = (CapNodeAppend)node;
                     final AccessImp[] inputs = accessImps(append.inputs());
@@ -91,6 +98,8 @@ class AssembleNodeImps {
                     imps.add(new NodeImpMaterialize(sinksIter.next(), inputs, predecessor));
                     break;
                 }
+                default:
+                    throw new IllegalStateException("Unexpected value: " + node.type());
             }
         }
     }

@@ -86,6 +86,7 @@ import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
@@ -124,6 +125,16 @@ public final class BufferedAccesses {
      */
     public static BufferedAccess createBufferedAccess(final DataSpec spec) {
         return spec.accept(DataSpecToBufferedAccessMapper.INSTANCE);
+    }
+
+    /**
+     * Creates a {@link BufferedAccess} for the provided {@link DataSpecWithTraits}.
+     *
+     * @param spec for which a {@link BufferedAccess} is required
+     * @return a {@link BufferedAccess} for the provided {@link DataSpec}
+     */
+    public static BufferedAccess createBufferedAccess(final DataSpecWithTraits spec) {
+        return spec.spec().accept(DataSpecToBufferedAccessMapper.INSTANCE);
     }
 
     /**
