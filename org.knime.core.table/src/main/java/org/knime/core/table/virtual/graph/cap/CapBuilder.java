@@ -19,6 +19,7 @@ import org.knime.core.table.virtual.graph.rag.AccessIds;
 import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.graph.rag.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
@@ -107,6 +108,16 @@ public class CapBuilder {
                     final int[] cols = columnIndicesFor(outputs);// column indices of map() outputs that are consumed
                     final CapNodeMap capNode =
                             new CapNodeMap(index, inputs, headIndex(branch), cols, spec.getMapperFactory());
+                    append(node, capNode);
+                    createCapAccessIdsFor(outputs, capNode);
+                    branch.append(node);
+                    break;
+                }
+                case ROWINDEX: {
+                    final RowIndexTransformSpec spec = node.getTransformSpec();
+                    final Branch branch = branches.getPredecessorBranch(node);
+                    final Collection<AccessId> outputs = node.getOutputs();
+                    final CapNodeRowIndex capNode = new CapNodeRowIndex(index, headIndex(branch));
                     append(node, capNode);
                     createCapAccessIdsFor(outputs, capNode);
                     branch.append(node);
