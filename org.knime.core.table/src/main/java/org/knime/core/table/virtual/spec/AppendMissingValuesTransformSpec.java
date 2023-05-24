@@ -49,9 +49,6 @@
 package org.knime.core.table.virtual.spec;
 
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.traits.DataTraits;
 
 public final class AppendMissingValuesTransformSpec implements TableTransformSpec {
 
@@ -60,8 +57,8 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
     /**
      * @param columns The specs of the missing columns to append.
      */
-    public AppendMissingValuesTransformSpec(final DataSpec[] columnSpecs, final DataTraits[] columnTraits) {
-        m_columns = new DefaultColumnarSchema(columnSpecs, columnTraits);
+    public AppendMissingValuesTransformSpec(final ColumnarSchema columns) {
+        m_columns = columns;
     }
 
     /**

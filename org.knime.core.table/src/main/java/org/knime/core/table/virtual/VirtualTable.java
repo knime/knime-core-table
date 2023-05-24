@@ -60,6 +60,7 @@ import java.util.stream.Collectors;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
@@ -191,9 +192,10 @@ public final class VirtualTable {
     }
 
     public VirtualTable appendMissingValueColumns(final List<DataSpec> columns, final List<DataTraits> traits) {
-        final AppendMissingValuesTransformSpec transformSpec =
-            new AppendMissingValuesTransformSpec(columns.toArray(DataSpec[]::new), traits.toArray(DataTraits[]::new));
-        final ColumnarSchema schema = ColumnarSchemas.append(List.of(m_schema, transformSpec.getAppendedSchema()));
+        var appendSchema =
+            new DefaultColumnarSchema(columns.toArray(DataSpec[]::new), traits.toArray(DataTraits[]::new));
+        final AppendMissingValuesTransformSpec transformSpec = new AppendMissingValuesTransformSpec(appendSchema);
+        final ColumnarSchema schema = ColumnarSchemas.append(List.of(m_schema, appendSchema));
         return new VirtualTable(new TableTransform(m_transform, transformSpec), schema);
     }
 
