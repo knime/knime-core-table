@@ -928,4 +928,42 @@ public class VirtualTableExamples {
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMap);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMap);
     }
+
+
+
+    public static VirtualTable vtRowIndexMapAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
+            @Override
+            public ColumnarSchema getOutputSchema() {
+                return ColumnarSchema.of(DOUBLE);
+            }
+
+            @Override
+            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+                MapperFactory.verify(inputs, 1, outputs, 1);
+                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+            }
+        };
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable mappedCols = table.map(new int[]{0}, addRowIndex);
+        return mappedCols.append(table.filterColumns(2)).slice(2, 4);
+    }
+
+    public static VirtualTable vtRowIndexMapAndSlice() {
+        return vtRowIndexMapAndSlice(new UUID[]{randomUUID()}, dataMinimal());
+    }
+
+    @Test
+    public void testRowIndexMapAndSlice() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(DOUBLE, STRING);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{2.3, "Third"}, //
+                new Object[]{3.4, "Fourth"}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapAndSlice);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapAndSlice);
+    }
+
 }
