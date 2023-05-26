@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.access.DoubleAccess;
 import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.access.StringAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RowAccessible;
@@ -965,5 +966,62 @@ public class VirtualTableExamples {
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapAndSlice);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapAndSlice);
     }
+
+
+
+    public static VirtualTable vtRowIndexMapsParallel(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
+            @Override
+            public ColumnarSchema getOutputSchema() {
+                return ColumnarSchema.of(DOUBLE);
+            }
+
+            @Override
+            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+                MapperFactory.verify(inputs, 1, outputs, 1);
+                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+            }
+        };
+        final MapperWithRowIndexFactory appendRowIndex = new MapperWithRowIndexFactory() {
+            @Override
+            public ColumnarSchema getOutputSchema() {
+                return ColumnarSchema.of(STRING);
+            }
+
+            @Override
+            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+                MapperFactory.verify(inputs, 1, outputs, 1);
+                final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
+                final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
+                return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
+            }
+        };
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable mappedCols1 = table.map(new int[]{0}, addRowIndex);
+        final VirtualTable mappedCols2 = table.map(new int[]{2}, appendRowIndex);
+        return mappedCols1.append(table.filterColumns(1)).append(mappedCols2);
+    }
+
+    public static VirtualTable vtRowIndexMapsParallel() {
+        return vtRowIndexMapsParallel(new UUID[]{randomUUID()}, dataMinimal());
+    }
+
+    @Test
+    public void testRowIndexMapsParallel() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{0.1, 1, "First-0"}, //
+                new Object[]{1.2, 2, "Second-1"}, //
+                new Object[]{2.3, 3, "Third-2"}, //
+                new Object[]{3.4, 4, "Fourth-3"}, //
+                new Object[]{4.5, 5, "Fifth-4"} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallel);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallel);
+    }
+
+
 
 }
