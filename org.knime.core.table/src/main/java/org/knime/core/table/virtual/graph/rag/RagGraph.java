@@ -1,5 +1,6 @@
 package org.knime.core.table.virtual.graph.rag;
 
+import static org.knime.core.table.virtual.graph.rag.RagEdgeType.EXEC;
 import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
 
@@ -183,6 +184,22 @@ public class RagGraph {
             }
         }
         nodesToRemove.forEach(this::remove);
+    }
+
+    void transitiveReduction(final RagEdgeType edgeType) {
+        final List<RagNode> vertices = new ArrayList<>(nodes());
+        ArrayList<RagEdge> oldEdges = new ArrayList<>(edges.unmodifiable(edgeType));
+        final int n = vertices.size();
+        final boolean[] adjacency = RagGraphUtils.transitiveReduction(RagGraphUtils.adjacency(vertices, edgeType));
+        if (adjacency.length != n * n)
+            throw new IllegalArgumentException("adjacency size doesn't match");
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (adjacency[i * n + j])
+                    oldEdges.remove( getOrAddEdge(vertices.get(i), vertices.get(j), edgeType) );
+            }
+        }
+        oldEdges.forEach(this::remove);
     }
 
     @Override

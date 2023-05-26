@@ -12,10 +12,16 @@ class RandomAccessNodeImpRowIndex implements RandomAccessNodeImp {
 
     private final RandomAccessNodeImp predecessor;
 
+    /**
+     * offset to add to row index.
+     */
+    private final long offset;
+
     private final LongWriteAccess access;
 
-    public RandomAccessNodeImpRowIndex(final RandomAccessNodeImp predecessor) {
+    public RandomAccessNodeImpRowIndex(final RandomAccessNodeImp predecessor, final long offset) {
         this.predecessor = predecessor;
+        this.offset = offset;
         access = (LongWriteAccess)BufferedAccesses.createBufferedAccess(LONG);
     }
 
@@ -33,7 +39,7 @@ class RandomAccessNodeImpRowIndex implements RandomAccessNodeImp {
     public void moveTo(final long row) {
         // NB no bounds checking here, because that is done at the sink NodeImp
         predecessor.moveTo(row);
-        access.setLongValue(row);
+        access.setLongValue(row + offset);
     }
 
     @Override

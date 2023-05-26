@@ -62,7 +62,7 @@ class AssembleRandomAccessibleNodeImps {
                 }
                 case ROWINDEX: {
                     final CapNodeRowIndex rowIndex = (CapNodeRowIndex)node;
-                    imps.add(new RandomAccessNodeImpRowIndex(imps.get(rowIndex.predecessor())));
+                    imps.add(new RandomAccessNodeImpRowIndex(imps.get(rowIndex.predecessor()), rowIndex.offset()));
                     break;
 
                 }
