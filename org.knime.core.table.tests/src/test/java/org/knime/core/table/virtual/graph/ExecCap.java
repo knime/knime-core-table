@@ -103,9 +103,13 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataMinimal();
 //        final VirtualTable table = VirtualTableExamples.vtRowIndexMap(sourceIdentifiers, sourceAccessibles);
 
+//        final UUID[] sourceIdentifiers = createSourceIds(1);
+//        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataMinimal();
+//        final VirtualTable table = VirtualTableExamples.vtRowIndexMapAndSlice(sourceIdentifiers, sourceAccessibles);
+
         final UUID[] sourceIdentifiers = createSourceIds(1);
         final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataMinimal();
-        final VirtualTable table = VirtualTableExamples.vtRowIndexMapAndSlice(sourceIdentifiers, sourceAccessibles);
+        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsParallel(sourceIdentifiers, sourceAccessibles);
 
         if ( doExecute ) {
 
