@@ -16,6 +16,7 @@ import org.knime.core.table.virtual.graph.cap.Branches.Branch;
 import org.knime.core.table.virtual.graph.rag.AccessId;
 import org.knime.core.table.virtual.graph.rag.AccessIds;
 import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec;
+import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec.Column;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -64,7 +65,9 @@ public class CapBuilder {
                 }
                 case MISSING: {
                     final MissingValuesSourceTransformSpec spec = node.getTransformSpec();
-                    final List<DataSpec> missingValueSpecs = spec.getMissingValueSpecs();
+                    final List<DataSpec> missingValueSpecs = spec.getMissingValueSpecs().stream()
+                            .map(Column::spec)
+                            .toList();
                     final CapNodeMissing capNode = new CapNodeMissing(index, missingValueSpecs);
                     append(node, capNode);
                     createCapAccessIdsFor(node.getOutputs(), capNode);
@@ -305,8 +308,9 @@ public class CapBuilder {
     private Branch merge(final List<Branch> branches)
     {
         final Branch main = branches.get(0);
-        for (int j = 1; j < branches.size(); j++)
+        for (int j = 1; j < branches.size(); j++) {
             main.merge(branches.get(j));
+        }
         return main;
 
     }

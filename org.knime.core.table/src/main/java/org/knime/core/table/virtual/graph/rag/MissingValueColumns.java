@@ -5,32 +5,34 @@ import java.util.Collections;
 import java.util.List;
 
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec.Column;
 
 class MissingValueColumns {
 
-    private final List<DataSpec> specs = new ArrayList<>();
+    private final List<Column> specs = new ArrayList<>();
 
-    final List<DataSpec> unmodifiable = Collections.unmodifiableList(specs);
+    final List<Column> unmodifiable = Collections.unmodifiableList(specs);
 
     /**
-     * We keep track of which types of missing-value columns we need. For example, we
-     * only need one {@code DoubleDataSpec} column, even if there are multiple missing
-     * {@code DoubleDataSpec} columns used throughout a {@code VirtualTable}
-     * construction.
+     * We keep track of which types of missing-value columns we need. For example, we only need one
+     * {@code DoubleDataSpec} column, even if there are multiple missing {@code DoubleDataSpec} columns used throughout
+     * a {@code VirtualTable} construction.
      * <p>
-     * Newly occurring {@code DataSpec}s are assigned consecutive {2code int} indices.
-     * These indices correspond to column indices in the (singleton) MISSING node
-     * {@link RagGraph#getMissingValuesSource()}.
+     * Newly occurring {@code DataSpec}s are assigned consecutive {2code int} indices. These indices correspond to
+     * column indices in the (singleton) MISSING node {@link RagGraph#getMissingValuesSource()}.
      *
      * @param spec a {@code DataSpec} for which a missing-value column is needed.
      * @return column index in {@link RagGraph#getMissingValuesSource() missing-values source}
      */
-    public int getOrAdd(final DataSpec spec) {
-        int i = specs.indexOf(spec);
+    public int getOrAdd(final DataSpec spec, final DataTraits traits) {
+        var column = new Column(spec, traits);
+        int i = specs.indexOf(column);
         if (i < 0) {
             i = specs.size();
-            specs.add(spec);
+            specs.add(column);
         }
         return i;
     }
+
 }

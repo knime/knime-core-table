@@ -34,15 +34,14 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
-import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
-import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -171,7 +170,7 @@ public class RagBuilder {
             }
             case MISSING: {
                 final MissingValuesSourceTransformSpec spec = producer.getTransformSpec();
-                return spec.getMissingValueSpecs().get(accessId.getColumnIndex());
+                return spec.getMissingValueSpecs().get(accessId.getColumnIndex()).spec();
             }
             case APPEND:
             case CONCATENATE: {
@@ -195,8 +194,8 @@ public class RagBuilder {
                 return spec.getSchema().getTraits(accessId.getColumnIndex());
             }
             case MISSING: {
-                // FIXME missing column might also have traits (e.g. LogicalTypeTrait in KNIME)
-                return DefaultDataTraits.EMPTY;
+                final MissingValuesSourceTransformSpec spec = producer.getTransformSpec();
+                return spec.getMissingValueSpecs().get(accessId.getColumnIndex()).traits();
             }
             case APPEND:
             case CONCATENATE: {
@@ -637,10 +636,11 @@ public class RagBuilder {
                     // get the DataSpec of output i
                     final ColumnarSchema appendedSchema = ((AppendMissingValuesTransformSpec)spec).getAppendedSchema();
                     final DataSpec dataSpec = appendedSchema.getSpec(i - numPredecessorColumns);
+                    final DataTraits traits = appendedSchema.getTraits(i - numPredecessorColumns);
                     // get/add the index of the missing AccessId for that DataSpec
                     // and get/add missingValuesSource output AccessId for that index
                     final RagNode missingValuesSource = graph.getMissingValuesSource();
-                    return missingValuesSource.getOrCreateOutput(missingValueColumns.getOrAdd(dataSpec));
+                    return missingValuesSource.getOrCreateOutput(missingValueColumns.getOrAdd(dataSpec, traits));
                 }
             case COLFILTER:
                 final int[] selection = ((SelectColumnsTransformSpec)spec).getColumnSelection();
@@ -1174,8 +1174,9 @@ public class RagBuilder {
      * @return the set of SOURCE nodes transitively linking to {@code node} via EXEC edges.
      */
     private Set<RagNode> getAncestorSources(final RagNode node) {
-        if (node.type() == SOURCE)
+        if (node.type() == SOURCE) {
             return Set.of(node);
+        }
 
         final Set<RagNode> sources = new HashSet<>();
         List<RagNode> predecessors = node.predecessors(EXEC);
