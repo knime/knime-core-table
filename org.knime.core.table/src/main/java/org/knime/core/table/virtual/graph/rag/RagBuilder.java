@@ -840,6 +840,7 @@ public class RagBuilder {
             changed = false;
             changed |= eliminateAppends();
             changed |= mergeSlices();
+            changed |= mergeRowIndexSiblings();
             changed |= moveSlicesBeforeAppends();
             changed |= moveSlicesBeforeRowIndexes();
             changed |= moveSlicesBeforeConcatenates();
@@ -1118,6 +1119,55 @@ public class RagBuilder {
                 graph.remove(edge);
             }
             return true;
+        }
+        return false;
+    }
+
+
+
+    // --------------------------------------------------------------------
+    // mergeSlices()
+
+    boolean mergeRowIndexSiblings() {
+        for (final RagNode node : graph.nodes(ROWINDEX)) {
+            if (tryMergeRowIndexSiblings(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryMergeRowIndexSiblings(final RagNode rowIndex) {
+        final List<RagNode> predecessors = rowIndex.predecessors(EXEC);
+        if (predecessors.size() == 1) {
+            final RagNode node = predecessors.get(0);
+            final RowIndexTransformSpec spec = rowIndex.getTransformSpec();
+            for (RagNode successor : node.successors(EXEC)) {
+                if ( successor.type() == ROWINDEX && !successor.equals(rowIndex)) {
+                    // successor is another ROWINDEX
+                    final RagNode rowIndex2 = successor;
+                    final RowIndexTransformSpec spec2 = rowIndex2.getTransformSpec();
+                    if (spec.getOffset() == spec2.getOffset()) {
+                        // merge them:
+                        // attach all successors of rowIndex2 to rowIndex (both EXEC and DATA)
+                        relinkSuccessorsToNewSource(rowIndex2, rowIndex, EXEC);
+                        relinkSuccessorsToNewSource(rowIndex2, rowIndex, DATA);
+
+                        // For the single output in rowIndex2.getOutputs():
+                        //   For each consumer in output.getConsumers():
+                        //     Find consumer.inputs[j] corresponding to output, and replace by single output in rowIndex.getOutputs()
+                        final AccessId rowIndex2Output = rowIndex2.getOutputs().getAtSlot(0);
+                        final AccessId rowIndexOutput = rowIndex.getOutputs().getAtSlot(0);
+                        for (RagNode consumer : rowIndex2Output.getConsumers()) {
+                            consumer.replaceInput(rowIndex2Output, rowIndexOutput);
+                        }
+
+                        // and remove rowIndex2
+                        graph.remove(rowIndex2);
+                        return true;
+                    }
+                }
+            }
         }
         return false;
     }
