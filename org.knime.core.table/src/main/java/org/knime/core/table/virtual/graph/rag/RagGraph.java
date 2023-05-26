@@ -185,6 +185,30 @@ public class RagGraph {
         nodesToRemove.forEach(this::remove);
     }
 
+    /**
+     * Perform a transitive reduction wrt the given {@code edgeType}.
+     * <p>
+     * That is, remove edges (of {@code edgeType}) that are transitively implied
+     * by other edges (of {@code edgeType}).
+     *
+     * @param edgeType
+     */
+    void transitiveReduction(final RagEdgeType edgeType) {
+        final List<RagNode> vertices = new ArrayList<>(nodes());
+        ArrayList<RagEdge> oldEdges = new ArrayList<>(edges.unmodifiable(edgeType));
+        final int n = vertices.size();
+        final boolean[] adjacency = RagGraphUtils.transitiveReduction(RagGraphUtils.adjacency(vertices, edgeType));
+        if (adjacency.length != n * n)
+            throw new IllegalArgumentException("adjacency size doesn't match");
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (adjacency[i * n + j])
+                    oldEdges.remove( getOrAddEdge(vertices.get(i), vertices.get(j), edgeType) );
+            }
+        }
+        oldEdges.forEach(this::remove);
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();

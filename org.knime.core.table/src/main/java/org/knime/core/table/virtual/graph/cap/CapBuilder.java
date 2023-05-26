@@ -117,7 +117,7 @@ public class CapBuilder {
                     final RowIndexTransformSpec spec = node.getTransformSpec();
                     final Branch branch = branches.getPredecessorBranch(node);
                     final Collection<AccessId> outputs = node.getOutputs();
-                    final CapNodeRowIndex capNode = new CapNodeRowIndex(index, headIndex(branch));
+                    final CapNodeRowIndex capNode = new CapNodeRowIndex(index, headIndex(branch), spec.getOffset());
                     append(node, capNode);
                     createCapAccessIdsFor(outputs, capNode);
                     branch.append(node);

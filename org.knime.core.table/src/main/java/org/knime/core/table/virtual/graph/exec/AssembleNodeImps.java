@@ -64,7 +64,7 @@ class AssembleNodeImps {
                 }
                 case ROWINDEX: {
                     final CapNodeRowIndex rowIndex = (CapNodeRowIndex)node;
-                    imps.add(new NodeImpRowIndex(imps.get(rowIndex.predecessor())));
+                    imps.add(new NodeImpRowIndex(imps.get(rowIndex.predecessor()), rowIndex.offset()));
                     break;
 
                 }

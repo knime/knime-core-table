@@ -15,20 +15,15 @@ class NodeImpRowIndex implements NodeImp {
     private final LongWriteAccess access;
 
     /**
-     * Index of the row that will be provided after the next call to
-     * to {@code forward()}.
-     * <p>
-     * For example, if the slice starts at {@code m_from=0}, then before the
-     * first {@code forward()} it would be 0. Then {@code forward()} provides
-     * values for row 0, and increments to {@code m_nextRowIndex=1}. Row indices
-     * are wrt to the rows provided by the predecessor.
+     * Index of the row that will be provided after the next call to {@code
+     * forward()}.
      */
     private long m_nextRowIndex;
 
-    public NodeImpRowIndex(final NodeImp predecessor) {
+    public NodeImpRowIndex(final NodeImp predecessor, final long offset) {
         this.predecessor = predecessor;
         access = (LongWriteAccess)BufferedAccesses.createBufferedAccess(LONG);
-        m_nextRowIndex = 0;
+        m_nextRowIndex = offset;
     }
 
     @Override

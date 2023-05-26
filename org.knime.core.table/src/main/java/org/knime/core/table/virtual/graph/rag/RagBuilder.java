@@ -834,12 +834,14 @@ public class RagBuilder {
 
     void optimize() {
         graph.trim();
+        graph.transitiveReduction(EXEC);
         boolean changed = true;
         while (changed) {
             changed = false;
             changed |= eliminateAppends();
             changed |= mergeSlices();
             changed |= moveSlicesBeforeAppends();
+            changed |= moveSlicesBeforeRowIndexes();
             changed |= moveSlicesBeforeConcatenates();
             changed |= eliminateSingletonConcatenates();
             // TODO other optimizations
@@ -1038,6 +1040,47 @@ public class RagBuilder {
             }
         }
         concatenate.setInputssArray(inputss);
+    }
+
+
+
+    // --------------------------------------------------------------------
+    // moveSliceBeforeRowIndex()
+
+    boolean moveSlicesBeforeRowIndexes() {
+        for (final RagNode node : graph.nodes(SLICE)) {
+            if (tryMoveSliceBeforeRowIndex(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryMoveSliceBeforeRowIndex(final RagNode slice) {
+        final List<RagNode> predecessors = slice.predecessors(EXEC);
+        if (predecessors.size() == 1 && predecessors.get(0).type() == ROWINDEX) {
+            final RagNode rowIndex = predecessors.get(0);
+
+            // remove "slice":
+            // short-circuit "rowindex" to successors of "slice"
+            graph.relinkSuccessorsToNewSource(slice, rowIndex, EXEC);
+            // remove "slice" node and associated edges
+            graph.remove(slice);
+
+            // insert equivalent "preslice" between "rowindex" and it's predecessor:
+            final SliceTransformSpec sliceTransformSpec = slice.getTransformSpec();
+            final TableTransform presliceTransform = new TableTransform(Collections.emptyList(), sliceTransformSpec);
+            final RagNode preslice = graph.addNode(presliceTransform);
+            graph.relinkPredecessorsToNewTarget(rowIndex, preslice, EXEC);
+            graph.addEdge(preslice, rowIndex, EXEC);
+
+            // add offset to rowindex to compensate for preslice
+            final RowIndexTransformSpec rowIndexTransformSpec = rowIndex.getTransformSpec();
+            rowIndexTransformSpec.setOffset(Math.max(sliceTransformSpec.getRowRangeSelection().fromIndex(), 0));
+
+            return true;
+        }
+        return false;
     }
 
 
