@@ -1131,4 +1131,57 @@ public class VirtualTableExamples {
     }
 
 
+
+    public static VirtualTable vtRowIndexMapsSequentialAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
+            @Override
+            public ColumnarSchema getOutputSchema() {
+                return ColumnarSchema.of(DOUBLE);
+            }
+
+            @Override
+            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+                MapperFactory.verify(inputs, 1, outputs, 1);
+                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+            }
+        };
+        final MapperWithRowIndexFactory appendRowIndex = new MapperWithRowIndexFactory() {
+            @Override
+            public ColumnarSchema getOutputSchema() {
+                return ColumnarSchema.of(STRING);
+            }
+
+            @Override
+            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+                MapperFactory.verify(inputs, 1, outputs, 1);
+                final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
+                final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
+                return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
+            }
+        };
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable mappedCols1 = table.map(new int[]{0}, addRowIndex);
+        final VirtualTable table2 = table.append(mappedCols1);
+        final VirtualTable mappedCols2 = table2.map(new int[]{2}, appendRowIndex);
+        return table2.append(mappedCols2).selectColumns(3, 1, 4).slice(2, 4);
+    }
+
+    public static VirtualTable vtRowIndexMapsSequentialAndSlice() {
+        return vtRowIndexMapsSequentialAndSlice(new UUID[]{randomUUID()}, dataMinimal());
+    }
+
+    @Test
+    public void testRowIndexMapsSequentialAndSlice() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{2.3, 3, "Third-2"}, //
+                new Object[]{3.4, 4, "Fourth-3"}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequentialAndSlice);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequentialAndSlice);
+    }
+
+
 }

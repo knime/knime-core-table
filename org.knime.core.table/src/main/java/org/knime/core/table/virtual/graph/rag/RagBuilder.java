@@ -841,6 +841,7 @@ public class RagBuilder {
             changed |= eliminateAppends();
             changed |= mergeSlices();
             changed |= mergeRowIndexSiblings();
+            changed |= mergeRowIndexSequence();
             changed |= moveSlicesBeforeAppends();
             changed |= moveSlicesBeforeRowIndexes();
             changed |= moveSlicesBeforeConcatenates();
@@ -1126,7 +1127,60 @@ public class RagBuilder {
 
 
     // --------------------------------------------------------------------
-    // mergeSlices()
+    // mergeRowIndexSequence()
+
+    boolean mergeRowIndexSequence() {
+        for (final RagNode node : graph.nodes(ROWINDEX)) {
+            if (tryMergeRowIndexSequence(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryMergeRowIndexSequence(final RagNode rowIndex) {
+        final List<RagNode> successors = rowIndex.successors(EXEC);
+        if (successors.size() == 1) {
+            final RagNode successor = successors.get(0);
+            if ( successor.type() == ROWINDEX) {
+                // successor is another ROWINDEX
+                final RagNode rowIndex2 = successor;
+                final RowIndexTransformSpec spec = rowIndex.getTransformSpec();
+                final RowIndexTransformSpec spec2 = rowIndex2.getTransformSpec();
+                if (spec.getOffset() == spec2.getOffset()) {
+                    // merge them
+                    mergeRowIndexes(rowIndex, rowIndex2);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Merge {@code rowIndex2} into {@code rowIndex}, removing {@code rowIndex2}.
+     */
+    private void mergeRowIndexes(final RagNode rowIndex, final RagNode rowIndex2) {
+        // attach all successors of rowIndex2 to rowIndex (both EXEC and DATA)
+        graph.relinkSuccessorsToNewSource(rowIndex2, rowIndex, EXEC, DATA);
+
+        // For the single output in rowIndex2.getOutputs():
+        //   For each consumer in output.getConsumers():
+        //     Find consumer.inputs[j] corresponding to output, and replace by single output in rowIndex.getOutputs()
+        final AccessId rowIndex2Output = rowIndex2.getOutputs().getAtSlot(0);
+        final AccessId rowIndexOutput = rowIndex.getOutputs().getAtSlot(0);
+        for (RagNode consumer : rowIndex2Output.getConsumers()) {
+            consumer.replaceInput(rowIndex2Output, rowIndexOutput);
+        }
+
+        // and remove rowIndex2
+        graph.remove(rowIndex2);
+    }
+
+
+
+    // --------------------------------------------------------------------
+    // mergeRowIndexSiblings()
 
     boolean mergeRowIndexSiblings() {
         for (final RagNode node : graph.nodes(ROWINDEX)) {
@@ -1148,22 +1202,8 @@ public class RagBuilder {
                     final RagNode rowIndex2 = successor;
                     final RowIndexTransformSpec spec2 = rowIndex2.getTransformSpec();
                     if (spec.getOffset() == spec2.getOffset()) {
-                        // merge them:
-                        // attach all successors of rowIndex2 to rowIndex (both EXEC and DATA)
-                        relinkSuccessorsToNewSource(rowIndex2, rowIndex, EXEC);
-                        relinkSuccessorsToNewSource(rowIndex2, rowIndex, DATA);
-
-                        // For the single output in rowIndex2.getOutputs():
-                        //   For each consumer in output.getConsumers():
-                        //     Find consumer.inputs[j] corresponding to output, and replace by single output in rowIndex.getOutputs()
-                        final AccessId rowIndex2Output = rowIndex2.getOutputs().getAtSlot(0);
-                        final AccessId rowIndexOutput = rowIndex.getOutputs().getAtSlot(0);
-                        for (RagNode consumer : rowIndex2Output.getConsumers()) {
-                            consumer.replaceInput(rowIndex2Output, rowIndexOutput);
-                        }
-
-                        // and remove rowIndex2
-                        graph.remove(rowIndex2);
+                        // merge them
+                        mergeRowIndexes(rowIndex, rowIndex2);
                         return true;
                     }
                 }

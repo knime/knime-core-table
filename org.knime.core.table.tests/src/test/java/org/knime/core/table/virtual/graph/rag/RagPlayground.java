@@ -32,7 +32,8 @@ public class RagPlayground {
 //        final VirtualTable table = VirtualTableExamples.vtRowIndexMap();
 //        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsParallel();
 //        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsParallelAndSlice();
-        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsSequential();
+//        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsSequential();
+        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsSequentialAndSlice();
 
         var mermaid = new Mermaid();
         var rag = new RagBuilder();
