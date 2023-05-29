@@ -174,6 +174,8 @@ public final class DelegatingReadAccesses {
          * @param access to delegate to
          */
         void setDelegateAccess(ReadAccess access);
+
+        ReadAccess getDelegate();
     }
 
     private static final class DataSpecToDelegatingReadAccessMapper implements DataSpec.Mapper<DelegatingReadAccess> {
@@ -447,6 +449,11 @@ public final class DelegatingReadAccesses {
         @Override
         public void setDelegateAccess(final ReadAccess access) {
             m_delegateAccess = (A)access;
+        }
+
+        @Override
+        public ReadAccess getDelegate() {
+            return m_delegateAccess;
         }
 
         @Override
