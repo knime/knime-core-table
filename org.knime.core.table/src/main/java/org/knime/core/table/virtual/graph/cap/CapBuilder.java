@@ -12,11 +12,11 @@ import java.util.UUID;
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.virtual.graph.cap.Branches.Branch;
 import org.knime.core.table.virtual.graph.rag.AccessId;
 import org.knime.core.table.virtual.graph.rag.AccessIds;
 import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec;
-import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec.Column;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -66,7 +66,7 @@ public class CapBuilder {
                 case MISSING: {
                     final MissingValuesSourceTransformSpec spec = node.getTransformSpec();
                     final List<DataSpec> missingValueSpecs = spec.getMissingValueSpecs().stream()
-                            .map(Column::spec)
+                            .map(DataSpecWithTraits::spec)
                             .toList();
                     final CapNodeMissing capNode = new CapNodeMissing(index, missingValueSpecs);
                     append(node, capNode);

@@ -5,14 +5,14 @@ import java.util.Collections;
 import java.util.List;
 
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
-import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec.Column;
 
 class MissingValueColumns {
 
-    private final List<Column> specs = new ArrayList<>();
+    private final List<DataSpecWithTraits> specs = new ArrayList<>();
 
-    final List<Column> unmodifiable = Collections.unmodifiableList(specs);
+    final List<DataSpecWithTraits> unmodifiable = Collections.unmodifiableList(specs);
 
     /**
      * We keep track of which types of missing-value columns we need. For example, we only need one
@@ -26,7 +26,7 @@ class MissingValueColumns {
      * @return column index in {@link RagGraph#getMissingValuesSource() missing-values source}
      */
     public int getOrAdd(final DataSpec spec, final DataTraits traits) {
-        var column = new Column(spec, traits);
+        var column = new DataSpecWithTraits(spec, traits);
         int i = specs.indexOf(column);
         if (i < 0) {
             i = specs.size();

@@ -31,29 +31,12 @@ import org.knime.core.table.schema.traits.LogicalTypeTrait;
 @SuppressWarnings("javadoc")
 public final class DataSpecs {
 
-    public static final class DataSpecWithTraits {
-
-        private final DataSpec m_spec;
-
-        private final DataTraits m_traits;
-
-        public DataSpecWithTraits(final DataSpec spec, final DataTraits traits) {
-            this.m_spec = spec;
-            this.m_traits = traits;
-        }
+    public record DataSpecWithTraits(DataSpec spec, DataTraits traits) {
 
         DataSpecWithTraits(final DataSpec spec, final DataTrait... traits) {
-            this.m_spec = spec;
-            this.m_traits = (traits.length == 0) ? DefaultDataTraits.EMPTY : new DefaultDataTraits(traits);
+            this(spec, (traits.length == 0) ? DefaultDataTraits.EMPTY : new DefaultDataTraits(traits));
         }
 
-        public DataSpec spec() {
-            return m_spec;
-        }
-
-        public DataTraits traits() {
-            return m_traits;
-        }
     }
 
     public static final DataTrait DICT_ENCODING = new DictEncodingTrait();
