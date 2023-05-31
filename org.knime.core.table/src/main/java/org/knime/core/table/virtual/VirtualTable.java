@@ -280,16 +280,6 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
     }
 
-    // TODO (TP) Implement RowIndex propagation.
-    //      (*) MapperWithRowIndexFactory should probably get the actual row index from a Source node?
-    //      (*) How to handle sliced Sources? Should indices start at 0 or at slice.from?
-    //      (*) Add a signature
-    //          VirtualTable.map(int[], MapperWithRowIndexFactory, VirtualTable),
-    //          where the VirtualTable argument specifies which VirtualTable the row index should be taken from.
-    //          Then the method below would be equivalent to
-    //          VirtualTable.map(int[] c, MapperWithRowIndexFactory f) {
-    //              return map(c,f,this);
-    //          }
     public VirtualTable map(final int[] columnIndices, final MapperWithRowIndexFactory mapperFactory) {
         final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
