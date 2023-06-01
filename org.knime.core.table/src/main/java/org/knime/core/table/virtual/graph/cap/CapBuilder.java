@@ -22,6 +22,7 @@ import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -96,6 +97,16 @@ public class CapBuilder {
                     final CapAccessId[] inputs = capAccessIdsFor(node.getInputs());
                     final CapNodeRowFilter capNode =
                             new CapNodeRowFilter(index, inputs, headIndex(branch), spec.getFilterFactory());
+                    append(node, capNode);
+                    branch.append(node);
+                    break;
+                }
+                case OBSERVER: {
+                    final ProgressListenerTransformSpec spec = node.getTransformSpec();
+                    final Branch branch = branches.getPredecessorBranch(node);
+                    final CapAccessId[] inputs = capAccessIdsFor(node.getInputs());
+                    final CapNodeObserver capNode =
+                            new CapNodeObserver(index, inputs, headIndex(branch), spec.getProgressListenerFactory());
                     append(node, capNode);
                     branch.append(node);
                     break;

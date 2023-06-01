@@ -7,6 +7,7 @@ public enum CapNodeType {
     ROWFILTER, //
     ROWINDEX, //
     MAP, //
+    OBSERVER, //
     APPEND, //
     CONCATENATE, //
     CONSUMER, //
