@@ -11,6 +11,7 @@ import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONSUMER;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MAP;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MATERIALIZE;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.OBSERVER;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.ROWFILTER;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.ROWINDEX;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.SLICE;
@@ -40,11 +41,8 @@ import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
-<<<<<<< HEAD
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
-=======
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
->>>>>>> d97ea23 (ROWINDEX CapNode and execution)
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
@@ -251,7 +249,8 @@ public class RagBuilder {
             case CONCATENATE:
             case CONSUMER:
             case MATERIALIZE:
-            case ROWINDEX: {
+            case ROWINDEX:
+            case OBSERVER: {
                 for (RagNode predecessor : node.predecessors(EXEC)) {
                     if (!supportsLookahead(predecessor)) {
                         return false;
@@ -298,7 +297,8 @@ public class RagBuilder {
             case CONSUMER:
             case MATERIALIZE:
             case SLICE:
-            case ROWINDEX: {
+            case ROWINDEX:
+            case OBSERVER: {
                 for (RagNode predecessor : node.predecessors(EXEC)) {
                     if (!supportsRandomAccess(predecessor)) {
                         return false;
@@ -429,6 +429,7 @@ public class RagBuilder {
                 case MATERIALIZE:
                 case WRAPPER:
                 case ROWINDEX:
+                case OBSERVER:
                 case APPEND: {
                     // If any predecessor doesn't know its size, the size of this node is also unknown.
                     // Otherwise, the size of this node is max of its predecessors.
@@ -489,7 +490,7 @@ public class RagBuilder {
      * everybody is on the same row (without looking at produced/consumed data).
      */
     // TODO: move to RagNodeType
-    public static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER, ROWINDEX);
+    public static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER, ROWINDEX, OBSERVER);
 
     /**
      * Spawning nodes create new sub-trees of their SPEC predecessor nodes. This
@@ -573,6 +574,12 @@ public class RagBuilder {
                     final RagNode index = graph.addNode(indexTransform);
                     graph.addEdge(input, index, SPEC);
                     graph.addEdge(index, node, SPEC);
+                } else if (node.type() == OBSERVER && node.<ProgressListenerTransformSpec>getTransformSpec().needsRowIndex()) {
+                    // TODO: unify with MAP case
+                    final var indexTransform = new TableTransform(Collections.emptyList(), new RowIndexTransformSpec());
+                    final RagNode index = graph.addNode(indexTransform);
+                    graph.addEdge(input, index, SPEC);
+                    graph.addEdge(index, node, SPEC);
                 } else {
                     graph.addEdge(input, node, SPEC);
                 }
@@ -599,6 +606,10 @@ public class RagBuilder {
                 case IDENTITY:
                 case WRAPPER:
                     numColumns = node.predecessor(SPEC).numColumns();
+                    break;
+                case OBSERVER:
+                    final boolean needsRowIndex = node.<ProgressListenerTransformSpec>getTransformSpec().needsRowIndex();
+                    numColumns = node.predecessor(SPEC).numColumns() - (needsRowIndex ? 1 : 0);
                     break;
                 case ROWINDEX:
                     // append one column for the row index
@@ -657,6 +668,15 @@ public class RagBuilder {
             }
         });
 
+        graph.nodes(OBSERVER).forEach(node -> {
+            final ProgressListenerTransformSpec spec = node.getTransformSpec();
+            final boolean needsRowIndex = spec.needsRowIndex();
+            final int numInputColumns = spec.getColumnSelection().length + (needsRowIndex ? 1 : 0);
+            for (int i = 0; i < numInputColumns; i++) {
+                traceAndLinkAccess(i, node);
+            }
+        });
+
         final List<RagEdge> edges = new ArrayList<>(graph.getMissingValuesSource().outgoingEdges(DATA));
         edges.forEach(graph::remove);
     }
@@ -696,6 +716,15 @@ public class RagBuilder {
             }
             case MAP: {
                 final int[] selection = node.<MapTransformSpec>getTransformSpec().getColumnSelection();
+                final int j = ( i == selection.length ) // is i the added row index column?
+                        ? node.predecessor(SPEC).numColumns() - 1 // last predecessor column is row index
+                        : selection[i];
+                accessIds[0] = traceAccess(j, node.predecessor(SPEC));
+                break;
+            }
+            case OBSERVER: {
+                // TODO: unify with MAP case
+                final int[] selection = node.<ProgressListenerTransformSpec>getTransformSpec().getColumnSelection();
                 final int j = ( i == selection.length ) // is i the added row index column?
                         ? node.predecessor(SPEC).numColumns() - 1 // last predecessor column is row index
                         : selection[i];
@@ -765,6 +794,7 @@ public class RagBuilder {
             case ROWFILTER:
             case SLICE:
             case IDENTITY:
+            case OBSERVER:
                 return traceAccess(i, node.predecessor(SPEC));
             case APPEND:
             case CONCATENATE:
@@ -835,6 +865,7 @@ public class RagBuilder {
             case ROWFILTER:
             case WRAPPER:
             case ROWINDEX:
+            case OBSERVER:
                 traceExecConsumer(node, node, false);
 //                traceExecConsumer(node, node);
                 break;
