@@ -7,7 +7,11 @@ import java.util.function.IntPredicate;
 
 import org.knime.core.table.access.DoubleAccess;
 import org.knime.core.table.access.IntAccess;
+import org.knime.core.table.access.LongAccess;
 import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.access.WriteAccess;
+import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory.ProgressListener;
 
 public final class ProgressListenerTransformSpec implements TableTransformSpec {
 
@@ -52,9 +56,41 @@ public final class ProgressListenerTransformSpec implements TableTransformSpec {
          * @return a progress listener reading from {@code inputs}.
          */
         Runnable createProgressListener(final ReadAccess[] inputs);
+
+        default ProgressListenerWithRowIndexFactory getProgressListenerWithRowIndexFactory() {
+            return null;
+        }
+    }
+
+    public static class WrappedProgressListenerWithRowIndexFactory implements ProgressListenerFactory {
+
+        private ProgressListenerWithRowIndexFactory factory;
+
+        public WrappedProgressListenerWithRowIndexFactory(final ProgressListenerWithRowIndexFactory factory) {
+            this.factory = factory;
+        }
+
+        @Override
+        public Runnable createProgressListener(ReadAccess[] inputs) {
+
+            // the last input is the rowIndex
+            final LongAccess.LongReadAccess rowIndex = (LongAccess.LongReadAccess)inputs[inputs.length - 1];
+
+            // create a ProgressListenerWithRowIndex with the remaining inputs
+            final ReadAccess[] inputsWithoutRowIndex = Arrays.copyOf(inputs, inputs.length - 1);
+            final ProgressListener progress = factory.createProgressListener(inputsWithoutRowIndex);
+
+            return () -> progress.update(rowIndex.getLongValue());
+        }
+
+        @Override
+        public ProgressListenerWithRowIndexFactory getProgressListenerWithRowIndexFactory() {
+            return factory;
+        }
     }
 
     private final int[] inputColumnIndices;
+
     private final ProgressListenerFactory progressListenerFactory;
 
     /**
@@ -81,6 +117,15 @@ public final class ProgressListenerTransformSpec implements TableTransformSpec {
     }
 
     /**
+     * TODO javadoc
+     */
+    public ProgressListenerTransformSpec(final int[] columnIndices, final ProgressListenerWithRowIndexFactory factory) {
+        this.inputColumnIndices = columnIndices;
+        this.progressListenerFactory = new WrappedProgressListenerWithRowIndexFactory(factory);
+    }
+
+
+    /**
      * @return The (input) column indices required to test the filter predicate.
      */
     public int[] getColumnSelection() {
@@ -89,6 +134,10 @@ public final class ProgressListenerTransformSpec implements TableTransformSpec {
 
     public ProgressListenerFactory getProgressListenerFactory() {
         return progressListenerFactory;
+    }
+
+    public boolean needsRowIndex() {
+        return progressListenerFactory.getProgressListenerWithRowIndexFactory() != null;
     }
 
     @Override
