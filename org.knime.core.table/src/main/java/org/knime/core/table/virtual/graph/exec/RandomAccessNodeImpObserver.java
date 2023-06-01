@@ -1,0 +1,57 @@
+package org.knime.core.table.virtual.graph.exec;
+
+import java.io.IOException;
+
+import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
+
+class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
+
+    private final AccessImp[] inputs;
+
+    private final ReadAccess[] observerInputs;
+
+    private final ProgressListenerFactory observerFactory;
+
+    private Runnable observer;
+
+    private final RandomAccessNodeImp predecessor;
+
+    public RandomAccessNodeImpObserver(final AccessImp[] inputs, final RandomAccessNodeImp predecessor,final ProgressListenerFactory observerFactory) {
+        this.inputs = inputs;
+        this.predecessor = predecessor;
+        observerInputs = new ReadAccess[inputs.length];
+        this.observerFactory = observerFactory;
+    }
+
+    @Override
+    public ReadAccess getOutput(int i) {
+        // Observer doesn't have outputs
+        throw new UnsupportedOperationException();
+    }
+
+    private void link() {
+        for (int i = 0; i < inputs.length; i++) {
+            observerInputs[i] = inputs[i].getReadAccess();
+        }
+        observer = observerFactory.createProgressListener(observerInputs);
+    }
+
+    @Override
+    public void create() {
+        predecessor.create();
+        link();
+    }
+
+    @Override
+    public void moveTo(final long row) {
+        // NB no bounds checking here, because that is done at the sink NodeImp
+        predecessor.moveTo(row);
+        observer.run();
+    }
+
+    @Override
+    public void close() throws IOException {
+        predecessor.close();
+    }
+}
