@@ -442,6 +442,40 @@ public class VirtualTableExamples {
 
 
 
+    public static VirtualTable vtConcatenateSelf(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
+        final VirtualTable table1 = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        return table1.concatenate(table1);
+    }
+
+    public static VirtualTable vtConcatenateSelf() {
+        return vtConcatenateSelf(new UUID[]{randomUUID()}, dataMinimal());
+    }
+
+    public static RowAccessible[] dataConcatenateSelf() {
+        final ColumnarSchema schema = ColumnarSchema.of(STRING);
+        final Object[][] values = new Object[][]{ //
+                new Object[]{"First"}, //
+                new Object[]{"Second"}, //
+        };
+        return new RowAccessible[]{RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema, values)};
+    }
+
+    @Test
+    public void testConcatenateSelf() throws IOException {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(STRING);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{"First"}, //
+                new Object[]{"Second"}, //
+                new Object[]{"First"}, //
+                new Object[]{"Second"}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataConcatenateSelf, VirtualTableExamples::vtConcatenateSelf);
+        testTransformedTableLookahead(true, VirtualTableExamples::dataConcatenateSelf, VirtualTableExamples::vtConcatenateSelf);
+    }
+
+
+
     public static VirtualTable vtConcatenateAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources, final long sliceFrom, final long sliceTo) {
         final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).permute(1, 0);
         final VirtualTable transformedTable3 = new VirtualTable(sourceIdentifiers[2], new SourceTableProperties(sources[2])).permute(1, 0);
@@ -850,5 +884,4 @@ public class VirtualTableExamples {
                 .filterColumns(1)
                 .materialize(sinkIdentifiers[0]);
     }
-
 }
