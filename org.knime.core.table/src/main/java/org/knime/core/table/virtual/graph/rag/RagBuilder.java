@@ -377,7 +377,7 @@ public class RagBuilder {
      * prevents (incorrect) fork-join type fusion of branches when forwarding structure
      * diverges.
      */
-    private static final EnumSet<RagNodeType> spawningNodeTypes = EnumSet.of(SLICE);
+    private static final EnumSet<RagNodeType> spawningNodeTypes = EnumSet.of(SLICE, CONCATENATE);
 
     /**
      * Sink nodes are consumer-like endpoints.
