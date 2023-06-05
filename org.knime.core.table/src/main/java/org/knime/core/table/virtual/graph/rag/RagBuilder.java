@@ -490,13 +490,7 @@ public class RagBuilder {
                     final RagNode wrap = graph.addNode(wrapTransform);
                     graph.addEdge(input, wrap, SPEC);
                     graph.addEdge(wrap, node, SPEC);
-                } else if (node.type() == MAP && node.<MapTransformSpec>getTransformSpec().needsRowIndex()) {
-                    final var indexTransform = new TableTransform(Collections.emptyList(), new RowIndexTransformSpec());
-                    final RagNode index = graph.addNode(indexTransform);
-                    graph.addEdge(input, index, SPEC);
-                    graph.addEdge(index, node, SPEC);
-                } else if (node.type() == OBSERVER && node.<ProgressListenerTransformSpec>getTransformSpec().needsRowIndex()) {
-                    // TODO: unify with MAP case
+                } else if ((node.type() == MAP || node.type() == OBSERVER) && needsRowIndex(node.getTransformSpec())) {
                     final var indexTransform = new TableTransform(Collections.emptyList(), new RowIndexTransformSpec());
                     final RagNode index = graph.addNode(indexTransform);
                     graph.addEdge(input, index, SPEC);
@@ -507,6 +501,15 @@ public class RagBuilder {
             }
         }
         return node;
+    }
+
+    private boolean needsRowIndex(TableTransformSpec spec) {
+        if (spec instanceof MapTransformSpec m)
+            return m.needsRowIndex();
+        else if (spec instanceof ProgressListenerTransformSpec o)
+            return o.needsRowIndex();
+        else
+            throw new IllegalArgumentException();
     }
 
     /**
@@ -635,17 +638,9 @@ public class RagBuilder {
                 }
                 break;
             }
-            case MAP: {
-                final int[] selection = node.<MapTransformSpec>getTransformSpec().getColumnSelection();
-                final int j = ( i == selection.length ) // is i the added row index column?
-                        ? node.predecessor(SPEC).numColumns() - 1 // last predecessor column is row index
-                        : selection[i];
-                accessIds[0] = traceAccess(j, node.predecessor(SPEC));
-                break;
-            }
+            case MAP:
             case OBSERVER: {
-                // TODO: unify with MAP case
-                final int[] selection = node.<ProgressListenerTransformSpec>getTransformSpec().getColumnSelection();
+                final int[] selection = getColumnSelection(node.getTransformSpec());
                 final int j = ( i == selection.length ) // is i the added row index column?
                         ? node.predecessor(SPEC).numColumns() - 1 // last predecessor column is row index
                         : selection[i];
@@ -683,6 +678,15 @@ public class RagBuilder {
             // add Data Dependency Edge (if it doesn't exist yet)
             graph.getOrAddEdge(accessId.getProducer(), node, DATA);
         }
+    }
+
+    private int[] getColumnSelection(TableTransformSpec spec) {
+        if (spec instanceof MapTransformSpec m)
+            return m.getColumnSelection();
+        else if (spec instanceof ProgressListenerTransformSpec o)
+            return o.getColumnSelection();
+        else
+            throw new IllegalArgumentException();
     }
 
     /**
