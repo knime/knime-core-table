@@ -68,9 +68,9 @@ import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverFactory;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
@@ -314,16 +314,13 @@ public final class VirtualTable {
         return new VirtualTable(reSourcedTransform, m_schema);
     }
 
-
-    // TODO rename to observe()?
-    public VirtualTable progress(final int[] columnIndices, final ProgressListenerFactory factory) {
-        final ProgressListenerTransformSpec transformSpec = new ProgressListenerTransformSpec(columnIndices, factory);
+    public VirtualTable observe(final int[] columnIndices, final ObserverFactory factory) {
+        final ObserverTransformSpec transformSpec = new ObserverTransformSpec(columnIndices, factory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 
-    // TODO rename to observe()?
-    public VirtualTable progress(final int[] columnIndices, final ProgressListenerWithRowIndexFactory factory) {
-        final ProgressListenerTransformSpec transformSpec = new ProgressListenerTransformSpec(columnIndices, factory);
+    public VirtualTable observe(final int[] columnIndices, final ObserverWithRowIndexFactory factory) {
+        final ObserverTransformSpec transformSpec = new ObserverTransformSpec(columnIndices, factory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 }
