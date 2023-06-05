@@ -213,9 +213,12 @@ public final class RowAccessiblesTestUtils {
 
             @Override
             public void moveTo(long row) {
-                row += m_fromIndex;
+                setRowIndex(row + m_fromIndex);
+            }
+
+            private void setRowIndex(long row) {
                 if (row < m_fromIndex || row >= m_toIndex) {
-                    throw new IndexOutOfBoundsException();
+                    throw new IndexOutOfBoundsException(String.format("%d out of bounds [%d, %d)", row, m_fromIndex, m_toIndex));
                 }
                 m_index = (int)row;
                 for (TestAccess access : m_accesses) {
@@ -233,7 +236,7 @@ public final class RowAccessiblesTestUtils {
             @Override
             public boolean forward() {
                 if (canForward()) {
-                    moveTo(m_index + 1);
+                    setRowIndex(m_index + 1);
                     return true;
                 }
                 return false;
