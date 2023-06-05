@@ -37,7 +37,6 @@ import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
 import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SourceTableProperties;

@@ -15,6 +15,7 @@ import org.knime.core.table.virtual.graph.cap.CapNodeConsumer;
 import org.knime.core.table.virtual.graph.cap.CapNodeMap;
 import org.knime.core.table.virtual.graph.cap.CapNodeMaterialize;
 import org.knime.core.table.virtual.graph.cap.CapNodeMissing;
+import org.knime.core.table.virtual.graph.cap.CapNodeObserver;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
@@ -60,6 +61,12 @@ class AssembleNodeImps {
                     final AccessImp[] inputs = accessImps(map.inputs());
                     imps.add(new NodeImpMap(inputs, imps.get(map.predecessor()), map.mapOutputSpecs(), map.cols(),
                             map.mapperFactory()));
+                    break;
+                }
+                case OBSERVER: {
+                    final CapNodeObserver observer = (CapNodeObserver)node;
+                    final AccessImp[] inputs = accessImps(observer.inputs());
+                    imps.add(new NodeImpObserver(inputs, imps.get(observer.predecessor()), observer.observerFactory()));
                     break;
                 }
                 case ROWINDEX: {
