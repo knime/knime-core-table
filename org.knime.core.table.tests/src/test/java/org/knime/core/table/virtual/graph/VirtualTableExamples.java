@@ -37,7 +37,7 @@ import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
 
@@ -1188,9 +1188,9 @@ public class VirtualTableExamples {
     public static VirtualTable vtObserve(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).selectColumns(1, 0);
         // TODO: also use observed columns, not only rowIndex
-        final ProgressListenerWithRowIndexFactory factory = inputs -> rowIndex -> System.out.println("ProgressListener.update(rowIndex=" + rowIndex + ")");
+        final ObserverWithRowIndexFactory factory = inputs -> rowIndex -> System.out.println("Observer.update(rowIndex=" + rowIndex + ")");
         return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).selectColumns(1, 2)
-                .append(transformedTable2).selectColumns(0, 2).slice(1, 4).progress(new int[]{0, 1}, factory);
+                .append(transformedTable2).selectColumns(0, 2).slice(1, 4).observe(new int[]{0, 1}, factory);
     }
 
     public static VirtualTable vtObserve() {

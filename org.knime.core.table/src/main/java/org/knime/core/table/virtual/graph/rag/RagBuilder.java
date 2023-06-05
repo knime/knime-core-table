@@ -43,7 +43,7 @@ import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
@@ -506,7 +506,7 @@ public class RagBuilder {
     private boolean needsRowIndex(TableTransformSpec spec) {
         if (spec instanceof MapTransformSpec m)
             return m.needsRowIndex();
-        else if (spec instanceof ProgressListenerTransformSpec o)
+        else if (spec instanceof ObserverTransformSpec o)
             return o.needsRowIndex();
         else
             throw new IllegalArgumentException();
@@ -532,7 +532,7 @@ public class RagBuilder {
                     numColumns = node.predecessor(SPEC).numColumns();
                     break;
                 case OBSERVER:
-                    final boolean needsRowIndex = node.<ProgressListenerTransformSpec>getTransformSpec().needsRowIndex();
+                    final boolean needsRowIndex = node.<ObserverTransformSpec>getTransformSpec().needsRowIndex();
                     numColumns = node.predecessor(SPEC).numColumns() - (needsRowIndex ? 1 : 0);
                     break;
                 case ROWINDEX:
@@ -593,7 +593,7 @@ public class RagBuilder {
         });
 
         graph.nodes(OBSERVER).forEach(node -> {
-            final ProgressListenerTransformSpec spec = node.getTransformSpec();
+            final ObserverTransformSpec spec = node.getTransformSpec();
             final boolean needsRowIndex = spec.needsRowIndex();
             final int numInputColumns = spec.getColumnSelection().length + (needsRowIndex ? 1 : 0);
             for (int i = 0; i < numInputColumns; i++) {
@@ -683,7 +683,7 @@ public class RagBuilder {
     private int[] getColumnSelection(TableTransformSpec spec) {
         if (spec instanceof MapTransformSpec m)
             return m.getColumnSelection();
-        else if (spec instanceof ProgressListenerTransformSpec o)
+        else if (spec instanceof ObserverTransformSpec o)
             return o.getColumnSelection();
         else
             throw new IllegalArgumentException();
