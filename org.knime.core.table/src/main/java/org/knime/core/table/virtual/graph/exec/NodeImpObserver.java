@@ -3,21 +3,22 @@ package org.knime.core.table.virtual.graph.exec;
 import java.io.IOException;
 
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
 
-class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
+class NodeImpObserver implements NodeImp {
 
     private final AccessImp[] inputs;
 
     private final ReadAccess[] observerInputs;
 
-    private final ProgressListenerFactory observerFactory;
+    private final ProgressListenerTransformSpec.ProgressListenerFactory observerFactory;
 
     private Runnable observer;
 
-    private final RandomAccessNodeImp predecessor;
+    private final NodeImp predecessor;
 
-    public RandomAccessNodeImpObserver(final AccessImp[] inputs, final RandomAccessNodeImp predecessor, final ProgressListenerFactory observerFactory) {
+    public NodeImpObserver(final AccessImp[] inputs, final NodeImp predecessor,
+            final ProgressListenerTransformSpec.ProgressListenerFactory observerFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         observerInputs = new ReadAccess[inputs.length];
@@ -44,10 +45,18 @@ class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
     }
 
     @Override
-    public void moveTo(final long row) {
-        // NB no bounds checking here, because that is done at the sink NodeImp
-        predecessor.moveTo(row);
-        observer.run();
+    public boolean forward() {
+        if (predecessor.forward()) {
+            observer.run();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean canForward() {
+        return predecessor.canForward();
     }
 
     @Override
