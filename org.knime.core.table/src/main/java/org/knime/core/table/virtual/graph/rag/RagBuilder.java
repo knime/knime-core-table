@@ -155,7 +155,8 @@ public class RagBuilder {
 
     private static ColumnarSchema createSinkSchema(final RagNode node) {
         if (!sinkNodeTypes.contains(node.type())) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(
+                    "Unexpected RagNode type " + node.type() + ".");
         }
         final List<DataSpec> columnSpecs = new ArrayList<>();
         final List<DataTraits> columnTraits = new ArrayList<>();
@@ -449,8 +450,10 @@ public class RagBuilder {
                 case COLFILTER:
                 case MAP:
                 case IDENTITY:
+                    throw new IllegalArgumentException(
+                            "Unexpected RagNode type " + node.type() + ".");
                 default:
-                    throw new IllegalArgumentException();
+                    throw new IllegalStateException("Unexpected value: " + node.type());
             }
         }
 
@@ -634,7 +637,7 @@ public class RagBuilder {
                 case MISSING:
                     break;
                 default:
-                    throw new IllegalArgumentException("Unexpected value: " + node.type());
+                    throw new IllegalStateException("Unexpected value: " + node.type());
             }
             node.setNumColumns(numColumns);
         }
@@ -749,7 +752,9 @@ public class RagBuilder {
             case MISSING:
             case IDENTITY:
             case ROWINDEX:
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("Unexpected RagNode type " + node.type() + ".");
+            default:
+                throw new IllegalStateException("Unexpected value: " + node.type());
         }
         for (int j = 0; j < accessIds.length; j++) {
             final AccessId accessId = accessIds[j];
@@ -823,8 +828,9 @@ public class RagBuilder {
             case CONSUMER:
             case MATERIALIZE:
             case MISSING:
+                throw new IllegalArgumentException("Unexpected RagNode type " + node.type() + ".");
             default:
-                throw new IllegalArgumentException();
+                throw new IllegalStateException("Unexpected value: " + node.type());
         }
     }
 
@@ -870,7 +876,7 @@ public class RagBuilder {
 //                traceExecConsumer(node, node);
                 break;
             default:
-                throw new IllegalArgumentException();
+                throw new IllegalStateException("Unexpected value: " + node.type());
         }
     }
 
