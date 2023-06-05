@@ -3,7 +3,7 @@ package org.knime.core.table.virtual.graph.exec;
 import java.io.IOException;
 
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 
 class NodeImpObserver implements NodeImp {
 
@@ -11,14 +11,14 @@ class NodeImpObserver implements NodeImp {
 
     private final ReadAccess[] observerInputs;
 
-    private final ProgressListenerTransformSpec.ProgressListenerFactory observerFactory;
+    private final ObserverTransformSpec.ObserverFactory observerFactory;
 
     private Runnable observer;
 
     private final NodeImp predecessor;
 
     public NodeImpObserver(final AccessImp[] inputs, final NodeImp predecessor,
-            final ProgressListenerTransformSpec.ProgressListenerFactory observerFactory) {
+            final ObserverTransformSpec.ObserverFactory observerFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         observerInputs = new ReadAccess[inputs.length];
@@ -35,7 +35,7 @@ class NodeImpObserver implements NodeImp {
         for (int i = 0; i < inputs.length; i++) {
             observerInputs[i] = inputs[i].getReadAccess();
         }
-        observer = observerFactory.createProgressListener(observerInputs);
+        observer = observerFactory.createObserver(observerInputs);
     }
 
     @Override

@@ -41,7 +41,7 @@ import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
@@ -574,7 +574,7 @@ public class RagBuilder {
                     final RagNode index = graph.addNode(indexTransform);
                     graph.addEdge(input, index, SPEC);
                     graph.addEdge(index, node, SPEC);
-                } else if (node.type() == OBSERVER && node.<ProgressListenerTransformSpec>getTransformSpec().needsRowIndex()) {
+                } else if (node.type() == OBSERVER && node.<ObserverTransformSpec>getTransformSpec().needsRowIndex()) {
                     // TODO: unify with MAP case
                     final var indexTransform = new TableTransform(Collections.emptyList(), new RowIndexTransformSpec());
                     final RagNode index = graph.addNode(indexTransform);
@@ -608,7 +608,7 @@ public class RagBuilder {
                     numColumns = node.predecessor(SPEC).numColumns();
                     break;
                 case OBSERVER:
-                    final boolean needsRowIndex = node.<ProgressListenerTransformSpec>getTransformSpec().needsRowIndex();
+                    final boolean needsRowIndex = node.<ObserverTransformSpec>getTransformSpec().needsRowIndex();
                     numColumns = node.predecessor(SPEC).numColumns() - (needsRowIndex ? 1 : 0);
                     break;
                 case ROWINDEX:
@@ -669,7 +669,7 @@ public class RagBuilder {
         });
 
         graph.nodes(OBSERVER).forEach(node -> {
-            final ProgressListenerTransformSpec spec = node.getTransformSpec();
+            final ObserverTransformSpec spec = node.getTransformSpec();
             final boolean needsRowIndex = spec.needsRowIndex();
             final int numInputColumns = spec.getColumnSelection().length + (needsRowIndex ? 1 : 0);
             for (int i = 0; i < numInputColumns; i++) {
@@ -724,7 +724,7 @@ public class RagBuilder {
             }
             case OBSERVER: {
                 // TODO: unify with MAP case
-                final int[] selection = node.<ProgressListenerTransformSpec>getTransformSpec().getColumnSelection();
+                final int[] selection = node.<ObserverTransformSpec>getTransformSpec().getColumnSelection();
                 final int j = ( i == selection.length ) // is i the added row index column?
                         ? node.predecessor(SPEC).numColumns() - 1 // last predecessor column is row index
                         : selection[i];

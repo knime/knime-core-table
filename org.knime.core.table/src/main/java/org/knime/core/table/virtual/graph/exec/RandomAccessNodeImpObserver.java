@@ -3,7 +3,7 @@ package org.knime.core.table.virtual.graph.exec;
 import java.io.IOException;
 
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 
 class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
 
@@ -11,13 +11,13 @@ class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
 
     private final ReadAccess[] observerInputs;
 
-    private final ProgressListenerFactory observerFactory;
+    private final ObserverTransformSpec.ObserverFactory observerFactory;
 
     private Runnable observer;
 
     private final RandomAccessNodeImp predecessor;
 
-    public RandomAccessNodeImpObserver(final AccessImp[] inputs, final RandomAccessNodeImp predecessor, final ProgressListenerFactory observerFactory) {
+    public RandomAccessNodeImpObserver(final AccessImp[] inputs, final RandomAccessNodeImp predecessor, final ObserverTransformSpec.ObserverFactory observerFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         observerInputs = new ReadAccess[inputs.length];
@@ -34,7 +34,7 @@ class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
         for (int i = 0; i < inputs.length; i++) {
             observerInputs[i] = inputs[i].getReadAccess();
         }
-        observer = observerFactory.createProgressListener(observerInputs);
+        observer = observerFactory.createObserver(observerInputs);
     }
 
     @Override

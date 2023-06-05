@@ -2,7 +2,7 @@ package org.knime.core.table.virtual.graph.cap;
 
 import java.util.Arrays;
 
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverFactory;
 
 /**
  * Represents a observer operation in the CAP.
@@ -15,10 +15,10 @@ public class CapNodeObserver extends CapNode {
 
     private final CapAccessId[] inputs;
     private final int predecessor;
-    private final ProgressListenerFactory observerFactory;
+    private final ObserverFactory observerFactory;
 
     public CapNodeObserver(final int index, final CapAccessId[] inputs, final int predecessor,
-            ProgressListenerFactory observerFactory) {
+            ObserverFactory observerFactory) {
         super(index, CapNodeType.OBSERVER);
         this.inputs = inputs;
         this.predecessor = predecessor;
@@ -57,7 +57,7 @@ public class CapNodeObserver extends CapNode {
     /**
      * @return the observer factory
      */
-    public ProgressListenerFactory observerFactory() {
+    public ObserverFactory observerFactory() {
         return observerFactory;
     }
 }

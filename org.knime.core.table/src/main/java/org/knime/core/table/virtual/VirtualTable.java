@@ -57,7 +57,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
@@ -68,11 +67,10 @@ import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory.Mapper;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory;
-import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory.ProgressListener;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverFactory;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
@@ -316,16 +314,13 @@ public final class VirtualTable {
         return new VirtualTable(reSourcedTransform, m_schema);
     }
 
-
-    // TODO rename to observe()?
-    public VirtualTable progress(final int[] columnIndices, final ProgressListenerFactory factory) {
-        final ProgressListenerTransformSpec transformSpec = new ProgressListenerTransformSpec(columnIndices, factory);
+    public VirtualTable observe(final int[] columnIndices, final ObserverFactory factory) {
+        final ObserverTransformSpec transformSpec = new ObserverTransformSpec(columnIndices, factory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 
-    // TODO rename to observe()?
-    public VirtualTable progress(final int[] columnIndices, final ProgressListenerWithRowIndexFactory factory) {
-        final ProgressListenerTransformSpec transformSpec = new ProgressListenerTransformSpec(columnIndices, factory);
+    public VirtualTable observe(final int[] columnIndices, final ObserverWithRowIndexFactory factory) {
+        final ObserverTransformSpec transformSpec = new ObserverTransformSpec(columnIndices, factory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 }
