@@ -18,12 +18,9 @@
  * History
  *   Created on Oct 22, 2021 by eric.axt
  */
-package org.knime.core.table.virtual;
+package org.knime.core.table.row;
 
 import org.knime.core.table.cursor.LookaheadCursor;
-import org.knime.core.table.row.ReadAccessRow;
-import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.row.Selection;
 
 /**
  * A {@link RowAccessible} that creates {@link LookaheadCursor LookaheadCursors}.

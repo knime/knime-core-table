@@ -3,11 +3,11 @@ package org.knime.core.table.virtual.graph.exec;
 import java.util.List;
 
 import org.knime.core.table.cursor.LookaheadCursor;
+import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.LookaheadRowAccessible;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 
 class CapLookaheadRowAccessible extends CapRowAccessible implements LookaheadRowAccessible {
