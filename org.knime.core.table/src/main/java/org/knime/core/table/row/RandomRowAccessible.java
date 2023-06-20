@@ -21,7 +21,6 @@
 package org.knime.core.table.row;
 
 import org.knime.core.table.cursor.LookaheadCursor;
-import org.knime.core.table.virtual.LookaheadRowAccessible;
 
 /**
  * {@link LookaheadRowAccessible} whose cursors also support random access via the

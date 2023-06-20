@@ -1,9 +1,9 @@
 package org.knime.core.table.virtual.spec;
 
 import org.knime.core.table.cursor.LookaheadCursor;
+import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.LookaheadRowAccessible;
 
 /**
  * Meta-data describing a {@link RowAccessible source} of a {@code VirtualTable},

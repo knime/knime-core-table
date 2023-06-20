@@ -58,6 +58,7 @@ import java.util.List;
 import org.knime.core.table.access.DelegatingReadAccesses;
 import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccessRow;
 import org.knime.core.table.cursor.LookaheadCursor;
+import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
