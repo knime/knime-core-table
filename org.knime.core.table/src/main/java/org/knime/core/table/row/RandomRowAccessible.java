@@ -31,17 +31,17 @@ import org.knime.core.table.cursor.LookaheadCursor;
 public interface RandomRowAccessible extends LookaheadRowAccessible {
 
     @Override
-    RandomAccessCursor createCursor();
+    RandomAccessCursor<ReadAccessRow> createCursor();
 
     @Override
-    RandomAccessCursor createCursor(Selection selection);
+    RandomAccessCursor<ReadAccessRow> createCursor(Selection selection);
 
     /**
      * Cursor that provides random access via the {@link #moveTo(long)} method.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    interface RandomAccessCursor extends LookaheadCursor<ReadAccessRow> {
+    interface RandomAccessCursor<A> extends LookaheadCursor<A> {
 
         void moveTo(long row);
 
