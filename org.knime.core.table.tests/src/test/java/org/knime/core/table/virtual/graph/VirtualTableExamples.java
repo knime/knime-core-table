@@ -22,10 +22,10 @@ import java.util.function.Supplier;
 
 import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
+import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.LookaheadRowAccessible;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
