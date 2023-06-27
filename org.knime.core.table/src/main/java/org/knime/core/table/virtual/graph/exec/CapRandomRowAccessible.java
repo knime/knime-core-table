@@ -57,6 +57,6 @@ class CapRandomRowAccessible implements RandomRowAccessible {
     }
 
     RandomAccessNodeImpConsumer assembleConsumer() {
-        return new AssembleRandomAccessibleNodeImps(cap.nodes(), sources, Collections.emptyList()).getConsumer();
+        return new AssembleRandomAccessibleNodeImps(cap.nodes(), sources).getConsumer();
     }
 }

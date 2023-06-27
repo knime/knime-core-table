@@ -27,11 +27,9 @@ class AssembleRandomAccessibleNodeImps {
 
     public AssembleRandomAccessibleNodeImps(
             final List<CapNode> cap,
-            final List<RowAccessible> sources,
-            final List<RowWriteAccessible> sinks) {
+            final List<RowAccessible> sources) {
         imps = new ArrayList<>(cap.size());
         final Iterator<RowAccessible> sourceIter = sources.iterator();
-        final Iterator<RowWriteAccessible> sinksIter = sinks.iterator();
         for (CapNode node : cap) {
             switch (node.type()) {
                 case SOURCE: {
@@ -50,7 +48,6 @@ class AssembleRandomAccessibleNodeImps {
                     break;
                 }
                 case ROWFILTER: {
-                    final CapNodeRowFilter rowfilter = (CapNodeRowFilter)node;
                     throw new IllegalArgumentException(
                             "Cannot construct RandomAccessCursor for graphs containing ROWFILTER");
                 }
