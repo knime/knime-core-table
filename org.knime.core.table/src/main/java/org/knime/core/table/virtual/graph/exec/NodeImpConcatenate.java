@@ -75,11 +75,6 @@ class NodeImpConcatenate implements NodeImp {
                 outputs[i].setDelegateAccess(access);
             }
             linkedPredecessor = predecessors[predecessorIndex];
-        } else {
-            // TODO (TP) Is this necessary? Why not just do nothing (no check either)?
-            for (DelegatingReadAccesses.DelegatingReadAccess output : outputs) {
-                output.setDelegateAccess(MissingAccesses.getMissingAccess(output.getDataSpec()));
-            }
         }
     }
 
