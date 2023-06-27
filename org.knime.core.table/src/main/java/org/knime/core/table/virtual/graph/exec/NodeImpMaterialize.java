@@ -1,10 +1,10 @@
 package org.knime.core.table.virtual.graph.exec;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.row.DefaultReadAccessRow;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.row.WriteAccessRow;
@@ -44,7 +44,7 @@ class NodeImpMaterialize implements NodeImp {
         }
         final Cursor<WriteAccessRow> writeCursor = accessible.getWriteCursor();
         final WriteAccessRow writeRow = writeCursor.access();
-        final ReadRow readRow = new ReadRow(inputs);
+        final ReadAccessRow readRow = new DefaultReadAccessRow(inputs.length, i -> inputs[i].getReadAccess());
         while (predecessor.forward()) {
             writeCursor.forward();
             writeRow.setFrom(readRow);
@@ -60,25 +60,5 @@ class NodeImpMaterialize implements NodeImp {
     @Override
     public void close() throws IOException {
         predecessor.close();
-    }
-
-    private static class ReadRow implements ReadAccessRow {
-
-        private final ReadAccess[] accesses;
-
-        ReadRow(final AccessImp[] inputs) {
-            accesses = new ReadAccess[inputs.length];
-            Arrays.setAll(accesses, i -> inputs[i].getReadAccess());
-        }
-
-        @Override
-        public int size() {
-            return accesses.length;
-        }
-
-        @Override
-        public <A extends ReadAccess> A getAccess(final int index) {
-            return (A)accesses[index];
-        }
     }
 }
