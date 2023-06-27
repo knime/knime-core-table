@@ -1,9 +1,8 @@
 package org.knime.core.table.virtual.graph.exec;
 
 import java.io.IOException;
-import java.util.Arrays;
 
-import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.row.DefaultReadAccessRow;
 import org.knime.core.table.row.RandomRowAccessible;
 import org.knime.core.table.row.ReadAccessRow;
 
@@ -11,7 +10,7 @@ class CapRandomAccessCursor implements RandomRowAccessible.RandomAccessCursor<Re
 
     private final RandomAccessNodeImpConsumer node;
 
-    private final CapReadAccessRow access;
+    private final ReadAccessRow access;
 
     private final long numRows;
 
@@ -21,7 +20,7 @@ class CapRandomAccessCursor implements RandomRowAccessible.RandomAccessCursor<Re
         this.node = node;
         this.numRows = numRows;
         node.create();
-        access = new CapReadAccessRow(node);
+        access = new DefaultReadAccessRow(node.numOutputs(), node::getOutput);
         nextRow = 0;
     }
 
@@ -54,25 +53,5 @@ class CapRandomAccessCursor implements RandomRowAccessible.RandomAccessCursor<Re
     @Override
     public void close() throws IOException {
         node.close();
-    }
-
-    static class CapReadAccessRow implements ReadAccessRow {
-
-        private final ReadAccess[] accesses;
-
-        CapReadAccessRow(final RandomAccessNodeImpConsumer node) {
-            accesses = new ReadAccess[node.numOutputs()];
-            Arrays.setAll(accesses, node::getOutput);
-        }
-
-        @Override
-        public int size() {
-            return accesses.length;
-        }
-
-        @Override
-        public <A extends ReadAccess> A getAccess(int index) {
-            return (A)accesses[index];
-        }
     }
 }

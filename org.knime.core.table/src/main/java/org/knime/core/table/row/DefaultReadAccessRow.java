@@ -1,17 +1,18 @@
-package org.knime.core.table.virtual.graph.exec;
+package org.knime.core.table.row;
 
 import java.util.Arrays;
+import java.util.function.IntFunction;
 
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.row.ReadAccessRow;
 
-class CapReadAccessRow implements ReadAccessRow {
+public class DefaultReadAccessRow implements ReadAccessRow {
 
     private final ReadAccess[] accesses;
 
-    CapReadAccessRow(final NodeImpConsumer node) {
-        accesses = new ReadAccess[node.numOutputs()];
-        Arrays.setAll(accesses, node::getOutput);
+    public DefaultReadAccessRow(final int size, final IntFunction<? extends ReadAccess> generator) {
+        accesses = new ReadAccess[size];
+        Arrays.setAll(accesses, generator);
     }
 
     @Override

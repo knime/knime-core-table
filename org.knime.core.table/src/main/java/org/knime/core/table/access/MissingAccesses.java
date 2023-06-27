@@ -75,6 +75,7 @@ import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VoidDataSpec;
+import org.knime.core.table.row.DefaultReadAccessRow;
 
 /**
  * A collection of access implementations that are all {@code isMissing} and can be
@@ -105,7 +106,7 @@ public final class MissingAccesses {
      * @return the missing ReadAccessRow
      */
     public static ReadAccessRow getMissingReadAccessRow(final ColumnarSchema schema) {
-        return new MissingReadAccessRow(schema);
+        return new DefaultReadAccessRow(schema.numColumns(), i -> getMissingAccess(schema.getSpec(i)));
     }
 
 
@@ -119,28 +120,6 @@ public final class MissingAccesses {
         }
     }
 
-    private static final class MissingReadAccessRow implements ReadAccessRow {
-
-        private final MissingAccess[] m_accesses;
-
-        MissingReadAccessRow(final ColumnarSchema schema) {
-            m_accesses = schema.specStream()//
-                    .map(MissingAccesses::getMissingAccess)//
-                    .toArray(MissingAccess[]::new);
-        }
-
-        @Override
-        public int size() {
-            return m_accesses.length;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public <A extends ReadAccess> A getAccess(final int index) {
-            return (A)m_accesses[index];
-        }
-
-    }
 
     private static final class DataSpecToMissingAccessMapper implements DataSpec.Mapper<MissingAccess> {
 
