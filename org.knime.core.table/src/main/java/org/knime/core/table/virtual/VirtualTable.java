@@ -57,6 +57,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.cursor.LookaheadCursor;
+import org.knime.core.table.cursor.RandomAccessCursor;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
@@ -76,6 +79,7 @@ import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
@@ -133,23 +137,22 @@ public final class VirtualTable {
      * @param sourceIdentifier unique identifier for the source. This is later used by the {@code VirtualTableExecutor}
      *            to attach a {@code RowAccessible}.
      * @param schema the {@code ColumnarSchema} of the source
-     * @param lookahead whether the source supports LookaheadCursors (meaning the {@code RowAccessible} attached to this
-     *            source will be {@code LookaheadRowAccessible})
+     * @param cursorType which Cursor types the source provides ({@link Cursor}, {@link LookaheadCursor}, or {@link RandomAccessCursor})
      */
-    public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema, final boolean lookahead) {
-        this(sourceIdentifier, new SourceTableProperties(schema, lookahead));
+    public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema, final CursorType cursorType) {
+        this(sourceIdentifier, new SourceTableProperties(schema, cursorType));
     }
 
     /**
      * Construct a VirtualTable that wraps a source table with the given UUID and schema. It is assumed that the source
-     * table does not support LookaheadCursors.
+     * table only supports basic {@link Cursor}s.
      *
      * @param sourceIdentifier unique identifier for the source. This is later used by the {@code VirtualTableExecutor}
      *            to attach a {@code RowAccessible}.
      * @param schema the {@code ColumnarSchema} of the source
      */
     public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema) {
-        this(sourceIdentifier, new SourceTableProperties(schema, false));
+        this(sourceIdentifier, schema, CursorType.BASIC);
     }
 
     public VirtualTable(final TableTransform producingTransform, final ColumnarSchema schema) {
