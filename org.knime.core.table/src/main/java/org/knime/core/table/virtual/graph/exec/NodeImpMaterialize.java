@@ -19,7 +19,7 @@ class NodeImpMaterialize implements NodeImp {
 
     private boolean m_canForward = true;
 
-    public NodeImpMaterialize(final RowWriteAccessible accessible, final AccessImp[] inputs, final NodeImp predecessor) {
+    NodeImpMaterialize(final RowWriteAccessible accessible, final AccessImp[] inputs, final NodeImp predecessor) {
         this.accessible = accessible;
         this.inputs = inputs;
         this.predecessor = predecessor;
