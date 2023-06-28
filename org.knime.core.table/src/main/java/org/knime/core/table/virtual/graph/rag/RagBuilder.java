@@ -463,8 +463,10 @@ public class RagBuilder {
          * Returns 0 if there are no predecessors.
          */
         private long accPredecessorNumRows(final RagNode node, final LongBinaryOperator acc) {
-            // If any predecessor doesn't know its size, the size of this node is also unknown.
-            // Otherwise, the size of this node is max of its predecessors.
+            // If any predecessor doesn't know its size, the size of this node
+            // is also unknown (return -1).
+            // Otherwise, the size of this node is the accumulated size of its
+            // predecessors (via the specified acc operator).
             long size = 0;
             for (final RagNode predecessor : node.predecessors(EXEC)) {
                 final long s = numRows(predecessor);
