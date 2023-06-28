@@ -31,7 +31,7 @@ class NodeImpMap implements NodeImp {
      * @param cols           these indices among {@code mapOutputSpecs} are the outputs of this NodeImp
      * @param mapperFactory
      */
-    public NodeImpMap(final AccessImp[] inputs, final NodeImp predecessor, final List<DataSpec> mapOutputSpecs,
+    NodeImpMap(final AccessImp[] inputs, final NodeImp predecessor, final List<DataSpec> mapOutputSpecs,
             final int[] cols, final MapperFactory mapperFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;

@@ -21,7 +21,7 @@ class NodeImpAppend implements NodeImp {
      * @param predecessorOutputIndices {@code predecessorOutputIndices[i]} is the list
      *                                 of output indices to switch to missing when the i-th predecessor is exhausted.
      */
-    public NodeImpAppend(AccessImp[] inputs, NodeImp[] predecessors, final int[][] predecessorOutputIndices) {
+    NodeImpAppend(final AccessImp[] inputs, final NodeImp[] predecessors, final int[][] predecessorOutputIndices) {
         this.inputs = inputs;
         outputs = new DelegatingReadAccesses.DelegatingReadAccess[inputs.length];
 
@@ -31,7 +31,7 @@ class NodeImpAppend implements NodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 

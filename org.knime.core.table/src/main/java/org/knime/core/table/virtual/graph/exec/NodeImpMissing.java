@@ -11,13 +11,13 @@ import org.knime.core.table.schema.DataSpec;
 class NodeImpMissing implements NodeImp {
     private final ReadAccess[] outputs;
 
-    public NodeImpMissing(List<DataSpec> missingValueSpecs) {
+    NodeImpMissing(final List<DataSpec> missingValueSpecs) {
         outputs = new ReadAccess[missingValueSpecs.size()];
         Arrays.setAll(outputs, i -> MissingAccesses.getMissingAccess(missingValueSpecs.get(i)));
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 

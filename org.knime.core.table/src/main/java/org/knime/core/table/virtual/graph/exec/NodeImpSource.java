@@ -22,7 +22,7 @@ class NodeImpSource implements NodeImp {
 
     private LookaheadCursor<ReadAccessRow> lookahead;
 
-    public NodeImpSource(RowAccessible accessible, int[] cols, long fromRow, long toRow) {
+    NodeImpSource(final RowAccessible accessible, final int[] cols, final long fromRow, final long toRow) {
         this.accessible = accessible;
         this.cols = cols;
         this.selection = Selection.all().retainColumns(cols).retainRows(fromRow, toRow);
@@ -30,7 +30,7 @@ class NodeImpSource implements NodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 
