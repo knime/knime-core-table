@@ -30,7 +30,7 @@ class NodeImpSlice implements NodeImp {
      */
     private long m_nextRowIndex;
 
-    public NodeImpSlice(final NodeImp predecessor, final long from, final long to) {
+    NodeImpSlice(final NodeImp predecessor, final long from, final long to) {
         this.predecessor = predecessor;
         m_from = from;
         m_to = to;
@@ -38,7 +38,7 @@ class NodeImpSlice implements NodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         // SLICE doesn't have inputs or outputs
         throw new UnsupportedOperationException();
     }

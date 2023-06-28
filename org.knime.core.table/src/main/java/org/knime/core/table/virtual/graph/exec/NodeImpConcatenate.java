@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.knime.core.table.access.DelegatingReadAccesses;
-import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
 
 class NodeImpConcatenate implements NodeImp {
@@ -23,13 +22,15 @@ class NodeImpConcatenate implements NodeImp {
 
     private NodeImp linkedPredecessor;
 
-    public NodeImpConcatenate(AccessImp[][] inputs, NodeImp[] predecessors) {
-        if (inputs.length != predecessors.length)
+    NodeImpConcatenate(final AccessImp[][] inputs, final NodeImp[] predecessors) {
+        if (inputs.length != predecessors.length) {
             throw new IllegalArgumentException();
+        }
         final int numOutputs = inputs[0].length;
         for (int i = 1; i < inputs.length; i++) {
-            if (inputs[i].length != numOutputs)
+            if (inputs[i].length != numOutputs) {
                 throw new IllegalArgumentException();
+            }
         }
 
         this.inputss = inputs;
@@ -93,7 +94,7 @@ class NodeImpConcatenate implements NodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 
@@ -146,8 +147,9 @@ class NodeImpConcatenate implements NodeImp {
     @Override
     public void close() throws IOException {
         closeLinkedPredecessor();
-        if (!exceptionsWhileClosing.isEmpty())
+        if (!exceptionsWhileClosing.isEmpty()) {
             // TODO use IOExceptionList once org.apache.commons.io >= 2.7.0 is available in the nightlies
             throw exceptionsWhileClosing.get(0);
+        }
     }
 }

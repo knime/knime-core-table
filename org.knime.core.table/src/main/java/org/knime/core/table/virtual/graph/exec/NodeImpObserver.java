@@ -17,8 +17,11 @@ class NodeImpObserver implements NodeImp {
 
     private final NodeImp predecessor;
 
-    public NodeImpObserver(final AccessImp[] inputs, final NodeImp predecessor,
-            final ObserverTransformSpec.ObserverFactory observerFactory) {
+    NodeImpObserver(//
+        final AccessImp[] inputs, //
+        final NodeImp predecessor, //
+        final ObserverTransformSpec.ObserverFactory observerFactory) {
+
         this.inputs = inputs;
         this.predecessor = predecessor;
         observerInputs = new ReadAccess[inputs.length];
@@ -26,7 +29,7 @@ class NodeImpObserver implements NodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         // Observer doesn't have outputs
         throw new UnsupportedOperationException();
     }

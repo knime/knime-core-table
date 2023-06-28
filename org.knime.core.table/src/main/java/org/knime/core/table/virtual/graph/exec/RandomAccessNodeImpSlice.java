@@ -14,13 +14,13 @@ class RandomAccessNodeImpSlice implements RandomAccessNodeImp {
      */
     private final long m_from;
 
-    public RandomAccessNodeImpSlice(final RandomAccessNodeImp predecessor, final long from) {
+    RandomAccessNodeImpSlice(final RandomAccessNodeImp predecessor, final long from) {
         this.predecessor = predecessor;
         m_from = from;
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         // SLICE doesn't have inputs or outputs
         throw new UnsupportedOperationException();
     }
@@ -32,7 +32,7 @@ class RandomAccessNodeImpSlice implements RandomAccessNodeImp {
 
     @Override
     public void moveTo(final long row) {
-        // NB no bounds checking here, because that is done at the sink NodeImp
+        // NB no bounds checking here, this is done in CapRandomAccessCursor
         predecessor.moveTo(m_from + row);
     }
 

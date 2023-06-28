@@ -12,14 +12,14 @@ class NodeImpConsumer implements NodeImp {
 
     private final ReadAccess[] outputs;
 
-    public NodeImpConsumer(AccessImp[] inputs, NodeImp predecessor) {
+    NodeImpConsumer(final AccessImp[] inputs, final NodeImp predecessor) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         outputs = new ReadAccess[inputs.length];
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 

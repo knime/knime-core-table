@@ -30,8 +30,13 @@ class RandomAccessNodeImpMap implements RandomAccessNodeImp {
      * @param cols           these indices among {@code mapOutputSpecs} are the outputs of this NodeImp
      * @param mapperFactory
      */
-    public RandomAccessNodeImpMap(final AccessImp[] inputs, final RandomAccessNodeImp predecessor, final List<DataSpec> mapOutputSpecs,
-            final int[] cols, final MapperFactory mapperFactory) {
+    RandomAccessNodeImpMap(//
+        final AccessImp[] inputs, //
+        final RandomAccessNodeImp predecessor, //
+        final List<DataSpec> mapOutputSpecs, //
+        final int[] cols, //
+        final MapperFactory mapperFactory) {
+
         this.inputs = inputs;
         this.predecessor = predecessor;
 
@@ -45,7 +50,7 @@ class RandomAccessNodeImpMap implements RandomAccessNodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 
@@ -63,7 +68,7 @@ class RandomAccessNodeImpMap implements RandomAccessNodeImp {
     }
 
     @Override
-    public void moveTo(long row) {
+    public void moveTo(final long row) {
         predecessor.moveTo(row);
         mapper.run();
     }

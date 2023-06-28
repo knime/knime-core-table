@@ -31,13 +31,19 @@ class RandomAccessNodeImpConcatenate implements RandomAccessNodeImp {
      */
     private long predecessorToRow = -1;
 
-    public RandomAccessNodeImpConcatenate(AccessImp[][] inputs, RandomAccessNodeImp[] predecessors, long[] predecessorSizes) {
-        if (inputs.length != predecessors.length)
+    RandomAccessNodeImpConcatenate(//
+        final AccessImp[][] inputs, //
+        final RandomAccessNodeImp[] predecessors, //
+        final long[] predecessorSizes) {
+
+        if (inputs.length != predecessors.length) {
             throw new IllegalArgumentException();
+        }
         final int numOutputs = inputs[0].length;
         for (int i = 1; i < inputs.length; i++) {
-            if (inputs[i].length != numOutputs)
+            if (inputs[i].length != numOutputs) {
                 throw new IllegalArgumentException();
+            }
         }
 
         this.inputss = inputs;
@@ -57,7 +63,7 @@ class RandomAccessNodeImpConcatenate implements RandomAccessNodeImp {
      * row index 8 is the first to fall into predecessor 2,
      * and row index 11 is the first out of bounds.
      */
-    private static long[] computeStartRowIndices(long[] sizes) {
+    private static long[] computeStartRowIndices(final long[] sizes) {
         final long[] starts = new long[sizes.length + 1];
         for (int i = 0; i < sizes.length; ++i) {
             starts[i + 1] = starts[i] + sizes[i];
@@ -84,7 +90,7 @@ class RandomAccessNodeImpConcatenate implements RandomAccessNodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 
@@ -101,7 +107,7 @@ class RandomAccessNodeImpConcatenate implements RandomAccessNodeImp {
 
     @Override
     public void moveTo(final long row) {
-        // NB no bounds checking here, because that is done at the sink NodeImp
+        // NB no bounds checking here, this is done in CapRandomAccessCursor
         if (row < predecessorFromRow || row >= predecessorToRow) {
             // we are moving to a different predecessor
             int p = Arrays.binarySearch(predecessorStarts, row);

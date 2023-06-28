@@ -13,13 +13,13 @@ import org.knime.core.table.schema.DataSpec;
 class RandomAccessNodeImpMissing implements RandomAccessNodeImp {
     private final ReadAccess[] outputs;
 
-    public RandomAccessNodeImpMissing(List<DataSpec> missingValueSpecs) {
+    RandomAccessNodeImpMissing(final List<DataSpec> missingValueSpecs) {
         outputs = new ReadAccess[missingValueSpecs.size()];
         Arrays.setAll(outputs, i -> MissingAccesses.getMissingAccess(missingValueSpecs.get(i)));
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 
@@ -30,7 +30,7 @@ class RandomAccessNodeImpMissing implements RandomAccessNodeImp {
     }
 
     @Override
-    public void moveTo(long row) {
+    public void moveTo(final long row) {
         // should never be called
         throw new UnsupportedOperationException();
     }

@@ -50,10 +50,15 @@ class RandomAccessNodeImpAppend implements RandomAccessNodeImp {
     private final boolean[] linked;
 
     /**
-     * @param predecessorOutputIndices {@code predecessorOutputIndices[i]} is the list
-     *                                 of output indices to switch to missing when the i-th predecessor is exhausted.
+     * @param predecessorOutputIndices {@code predecessorOutputIndices[i]} is the list of output indices to switch to
+     *            missing when the i-th predecessor is exhausted.
      */
-    public RandomAccessNodeImpAppend(AccessImp[] inputs, RandomAccessNodeImp[] predecessors, int[][] predecessorOutputIndices, long[] predecessorSizes) {
+    RandomAccessNodeImpAppend(//
+        final AccessImp[] inputs, //
+        final RandomAccessNodeImp[] predecessors, //
+        final int[][] predecessorOutputIndices, //
+        final long[] predecessorSizes) {
+
         this.inputs = inputs;
         outputs = new DelegatingReadAccesses.DelegatingReadAccess[inputs.length];
 
@@ -67,7 +72,7 @@ class RandomAccessNodeImpAppend implements RandomAccessNodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 
@@ -117,7 +122,7 @@ class RandomAccessNodeImpAppend implements RandomAccessNodeImp {
 
     @Override
     public void moveTo(final long row) {
-        // NB no bounds checking here, because that is done at the sink NodeImp
+        // NB no bounds checking here, this is done in CapRandomAccessCursor
         if (row < sectionFromRow || row >= sectionToRow) {
             // we are moving to a different section
             int s = Arrays.binarySearch(sectionStarts, row);
@@ -128,8 +133,9 @@ class RandomAccessNodeImpAppend implements RandomAccessNodeImp {
         }
 
         for (int i = 0; i < predecessors.length; i++) {
-            if (linked[i])
+            if (linked[i]) {
                 predecessors[i].moveTo(row);
+            }
         }
     }
 

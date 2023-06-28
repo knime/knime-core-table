@@ -12,14 +12,14 @@ class RandomAccessNodeImpConsumer implements RandomAccessNodeImp {
 
     private final ReadAccess[] outputs;
 
-    public RandomAccessNodeImpConsumer(AccessImp[] inputs, RandomAccessNodeImp predecessor) {
+    RandomAccessNodeImpConsumer(final AccessImp[] inputs, final RandomAccessNodeImp predecessor) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         outputs = new ReadAccess[inputs.length];
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 
@@ -40,7 +40,7 @@ class RandomAccessNodeImpConsumer implements RandomAccessNodeImp {
     }
 
     @Override
-    public void moveTo(long row) {
+    public void moveTo(final long row) {
         predecessor.moveTo(row);
     }
 

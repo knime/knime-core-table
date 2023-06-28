@@ -17,7 +17,7 @@ class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
 
     private final RandomAccessNodeImp predecessor;
 
-    public RandomAccessNodeImpObserver(final AccessImp[] inputs, final RandomAccessNodeImp predecessor, final ObserverTransformSpec.ObserverFactory observerFactory) {
+    RandomAccessNodeImpObserver(final AccessImp[] inputs, final RandomAccessNodeImp predecessor, final ObserverTransformSpec.ObserverFactory observerFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         observerInputs = new ReadAccess[inputs.length];
@@ -25,7 +25,7 @@ class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         // Observer doesn't have outputs
         throw new UnsupportedOperationException();
     }
@@ -45,7 +45,7 @@ class RandomAccessNodeImpObserver implements RandomAccessNodeImp {
 
     @Override
     public void moveTo(final long row) {
-        // NB no bounds checking here, because that is done at the sink NodeImp
+        // NB no bounds checking here, this is done in CapRandomAccessCursor
         predecessor.moveTo(row);
         observer.run();
     }

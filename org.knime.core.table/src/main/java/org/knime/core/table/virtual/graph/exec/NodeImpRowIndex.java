@@ -20,14 +20,14 @@ class NodeImpRowIndex implements NodeImp {
      */
     private long m_nextRowIndex;
 
-    public NodeImpRowIndex(final NodeImp predecessor, final long offset) {
+    NodeImpRowIndex(final NodeImp predecessor, final long offset) {
         this.predecessor = predecessor;
         access = (LongWriteAccess)BufferedAccesses.createBufferedAccess(LONG);
         m_nextRowIndex = offset;
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return (ReadAccess)access;
     }
 

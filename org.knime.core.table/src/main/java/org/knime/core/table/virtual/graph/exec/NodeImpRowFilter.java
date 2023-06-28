@@ -17,9 +17,7 @@ class NodeImpRowFilter implements NodeImp {
 
     private BooleanSupplier filter;
 
-
-    public NodeImpRowFilter(final AccessImp[] inputs, final NodeImp predecessor,
-            final RowFilterFactory filterFactory) {
+    NodeImpRowFilter(final AccessImp[] inputs, final NodeImp predecessor, final RowFilterFactory filterFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         this.filterFactory = filterFactory;
@@ -27,7 +25,7 @@ class NodeImpRowFilter implements NodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         // RowFilter doesn't have outputs
         throw new UnsupportedOperationException();
     }
@@ -48,8 +46,9 @@ class NodeImpRowFilter implements NodeImp {
     @Override
     public boolean forward() {
         while (predecessor.forward()) {
-            if (filter.getAsBoolean())
+            if (filter.getAsBoolean()) {
                 return true;
+            }
         }
         return false;
     }
