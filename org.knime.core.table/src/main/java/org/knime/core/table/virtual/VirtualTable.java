@@ -67,6 +67,7 @@ import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerFactory;
 import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec.ProgressListenerWithRowIndexFactory;
@@ -276,6 +277,11 @@ public final class VirtualTable {
     //              return map(c,f,this);
     //          }
     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory) {
+        final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
+        return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
+    }
+
+    public VirtualTable map(final int[] columnIndices, final MapperWithRowIndexFactory mapperFactory) {
         final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
     }
