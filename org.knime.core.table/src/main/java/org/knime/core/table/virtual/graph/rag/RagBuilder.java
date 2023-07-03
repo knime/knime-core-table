@@ -485,8 +485,6 @@ public class RagBuilder {
 
     final RagGraph graph = new RagGraph();
 
-    private final MissingValueColumns missingValueColumns = new MissingValueColumns();
-
     /**
      * Executable nodes are linked by EXEC edges.
      * <p>
@@ -521,11 +519,6 @@ public class RagBuilder {
      * edges between them. Set numColumns for each node.
      */
     void buildSpec(final TableTransform tableTransform) {
-
-        final TableTransform missingValuesTransform = new TableTransform(//
-                Collections.emptyList(),//
-                new MissingValuesSourceTransformSpec(missingValueColumns.unmodifiable));
-        graph.setMissingValuesSource(graph.addNode(missingValuesTransform));
 
         // For now, we expect only a single output table.
         // Either the final transform is already a MaterializeTransformSpec, in
@@ -824,8 +817,7 @@ public class RagBuilder {
                     final DataTraits traits = appendedSchema.getTraits(i - numPredecessorColumns);
                     // get/add the index of the missing AccessId for that DataSpec
                     // and get/add missingValuesSource output AccessId for that index
-                    final RagNode missingValuesSource = graph.getMissingValuesSource();
-                    return missingValuesSource.getOrCreateOutput(missingValueColumns.getOrAdd(dataSpec, traits));
+                    return graph.getMissingValuesAccessId(dataSpec, traits);
                 }
             case COLFILTER:
                 final SelectColumnsTransformSpec spec = node.getTransformSpec();

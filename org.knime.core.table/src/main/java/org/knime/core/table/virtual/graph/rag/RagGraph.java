@@ -1,15 +1,17 @@
 package org.knime.core.table.virtual.graph.rag;
 
-import static org.knime.core.table.virtual.graph.rag.RagEdgeType.EXEC;
 import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.TableTransform;
 
 /**
@@ -24,56 +26,17 @@ public class RagGraph {
 
     private final TypedObjects<RagEdgeType, RagEdge> edges = new TypedObjects<>(RagEdgeType.class);
 
+    private final MissingValueColumns missingValueColumns = new MissingValueColumns();
+
+    private final RagNode missingValuesSource;
+
     // the Consumer node representing the final virtual table
     private RagNode root;
 
-    private RagNode missingValuesSource;
-
-
-
-
-
-
-
-    // -- copy --
-
-    // N.B. This will not wrok to make afull copy of a RagGraph after tracing Accesses etc...
-    RagGraph copySpecGraph() {
-        final RagGraph copy = new RagGraph();
-        final Map<RagNode, RagNode> nodeMap = new HashMap<>();
-        nodes().forEach(node -> {
-            final var nodeCopy = new RagNode(node.getTransformSpec());
-            nodeCopy.setNumColumns(node.numColumns());
-            nodeCopy.setNumRows(node.numRows());
-            nodeMap.put(node, nodeCopy);
-            copy.nodes.add(nodeCopy);
-        });
-        final Map<RagEdge, RagEdge> edgeMap = new HashMap<>();
-        edges().forEach(edge -> {
-            final var sourceCopy = nodeMap.get(edge.getSource());
-            final var targetCopy = nodeMap.get(edge.getTarget());
-            final var edgeCopy = new RagEdge(sourceCopy, targetCopy, edge.type());
-            edgeMap.put(edge, edgeCopy);
-            copy.edges.add(edgeCopy);
-        });
-        nodes().forEach(node -> {
-            final var nodeCopy = nodeMap.get(node);
-            node.incoming.unmodifiable().forEach(edge -> nodeCopy.incoming.add(edgeMap.get(edge)));
-            node.outgoing.unmodifiable().forEach(edge -> nodeCopy.outgoing.add(edgeMap.get(edge)));
-        });
-        return copy;
-    }
-
-    // -- copy --
-
-
-
-
-
-
-
-
     public RagGraph()  {
+        missingValuesSource = addNode(new TableTransform(//
+                Collections.emptyList(),//
+                new MissingValuesSourceTransformSpec(missingValueColumns.unmodifiable)));
     }
 
     public RagNode addNode(final TableTransform transform) {
@@ -207,10 +170,6 @@ public class RagGraph {
         return missingValuesSource;
     }
 
-    public void setMissingValuesSource(final RagNode missingValuesSource) {
-        this.missingValuesSource = missingValuesSource;
-    }
-
     /**
      * Trim unnecessary nodes and edges.
      * <p>
@@ -265,5 +224,45 @@ public class RagGraph {
         sb.append("  }\n");
         sb.append("}");
         return sb.toString();
+    }
+
+    // N.B. This will currently not work to make a full copy of a RagGraph after
+    // tracing Accesses etc...
+    RagGraph copy() {
+        final RagGraph copy = new RagGraph();
+        final Map<RagNode, RagNode> nodeMap = new HashMap<>();
+        nodes().forEach(node -> {
+            final RagNode nodeCopy;
+            if (node == missingValuesSource) {
+                nodeCopy = copy.missingValuesSource;
+            } else {
+                nodeCopy = new RagNode(node.getTransformSpec(), node.getInputssArray().length);
+            }
+            nodeCopy.setNumColumns(node.numColumns());
+            nodeCopy.setNumRows(node.numRows());
+            nodeMap.put(node, nodeCopy);
+            copy.nodes.add(nodeCopy);
+        });
+        final Map<RagEdge, RagEdge> edgeMap = new HashMap<>();
+        edges().forEach(edge -> {
+            final var sourceCopy = nodeMap.get(edge.getSource());
+            final var targetCopy = nodeMap.get(edge.getTarget());
+            final var edgeCopy = new RagEdge(sourceCopy, targetCopy, edge.type());
+            edgeMap.put(edge, edgeCopy);
+            copy.edges.add(edgeCopy);
+        });
+        nodes().forEach(node -> {
+            final var nodeCopy = nodeMap.get(node);
+            node.incoming.unmodifiable().forEach(edge -> nodeCopy.incoming.add(edgeMap.get(edge)));
+            node.outgoing.unmodifiable().forEach(edge -> nodeCopy.outgoing.add(edgeMap.get(edge)));
+        });
+        missingValueColumns.unmodifiable.forEach(s -> copy.missingValueColumns.getOrAdd(s.spec(), s.traits()));
+        copy.root = nodeMap.get(root);
+        return copy;
+    }
+
+    AccessId getMissingValuesAccessId(final DataSpec dataSpec, final DataTraits traits) {
+        final int columnIndex = missingValueColumns.getOrAdd(dataSpec, traits);
+        return missingValuesSource.getOrCreateOutput(columnIndex);
     }
 }
