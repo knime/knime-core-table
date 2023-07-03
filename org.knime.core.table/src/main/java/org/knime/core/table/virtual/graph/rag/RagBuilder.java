@@ -95,14 +95,14 @@ public class RagBuilder {
         return nodes.get(0);
     };
 
-    public static List<RagNode> createOrderedRag(final VirtualTable table) {
-        return createOrderedRag(table.getProducingTransform(), DEFAULT_POLICY);
+    public static RagGraph buildSpecGraph(final TableTransform tableTransform) {
+        final RagBuilder specs = new RagBuilder();
+        specs.buildSpec(tableTransform);
+        return specs.graph;
     }
 
-    public static List<RagNode> createOrderedRag(
-            final VirtualTable table,
-            final Function<List<RagNode>, RagNode> policy) {
-        return createOrderedRag(table.getProducingTransform(), policy);
+    public static List<RagNode> createOrderedRag(final VirtualTable table) {
+        return createOrderedRag(table.getProducingTransform(), DEFAULT_POLICY);
     }
 
     public static List<RagNode> createOrderedRag(final TableTransform tableTransform) {
@@ -115,6 +115,14 @@ public class RagBuilder {
 
         final RagBuilder specs = new RagBuilder();
         specs.buildSpec(tableTransform);
+        return createOrderedRag(specs.graph, policy);
+    }
+
+    public static List<RagNode> createOrderedRag(
+            final RagGraph graph,
+            final Function<List<RagNode>, RagNode> policy) {
+
+        final RagBuilder specs = new RagBuilder(graph);
         specs.traceAccesses();
         specs.traceExec();
         specs.optimize();
@@ -483,7 +491,7 @@ public class RagBuilder {
 
 
 
-    final RagGraph graph = new RagGraph();
+    final RagGraph graph;
 
     /**
      * Executable nodes are linked by EXEC edges.
@@ -508,6 +516,11 @@ public class RagBuilder {
     private static final EnumSet<RagNodeType> sinkNodeTypes = EnumSet.of(CONSUMER, MATERIALIZE);
 
     RagBuilder() {
+        graph = new RagGraph();
+    }
+
+    RagBuilder(final RagGraph graph) {
+        this.graph = graph;
     }
 
 
