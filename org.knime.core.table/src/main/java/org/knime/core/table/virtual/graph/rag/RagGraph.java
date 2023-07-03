@@ -6,7 +6,9 @@ import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.knime.core.table.virtual.TableTransform;
 
@@ -26,6 +28,50 @@ public class RagGraph {
     private RagNode root;
 
     private RagNode missingValuesSource;
+
+
+
+
+
+
+
+    // -- copy --
+
+    // N.B. This will not wrok to make afull copy of a RagGraph after tracing Accesses etc...
+    RagGraph copySpecGraph() {
+        final RagGraph copy = new RagGraph();
+        final Map<RagNode, RagNode> nodeMap = new HashMap<>();
+        nodes().forEach(node -> {
+            final var nodeCopy = new RagNode(node.getTransformSpec());
+            nodeCopy.setNumColumns(node.numColumns());
+            nodeCopy.setNumRows(node.numRows());
+            nodeMap.put(node, nodeCopy);
+            copy.nodes.add(nodeCopy);
+        });
+        final Map<RagEdge, RagEdge> edgeMap = new HashMap<>();
+        edges().forEach(edge -> {
+            final var sourceCopy = nodeMap.get(edge.getSource());
+            final var targetCopy = nodeMap.get(edge.getTarget());
+            final var edgeCopy = new RagEdge(sourceCopy, targetCopy, edge.type());
+            edgeMap.put(edge, edgeCopy);
+            copy.edges.add(edgeCopy);
+        });
+        nodes().forEach(node -> {
+            final var nodeCopy = nodeMap.get(node);
+            node.incoming.unmodifiable().forEach(edge -> nodeCopy.incoming.add(edgeMap.get(edge)));
+            node.outgoing.unmodifiable().forEach(edge -> nodeCopy.outgoing.add(edgeMap.get(edge)));
+        });
+        return copy;
+    }
+
+    // -- copy --
+
+
+
+
+
+
+
 
     public RagGraph()  {
     }
