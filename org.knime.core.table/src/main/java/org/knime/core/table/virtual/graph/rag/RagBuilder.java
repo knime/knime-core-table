@@ -4,7 +4,6 @@ import static org.knime.core.table.virtual.graph.rag.RagEdgeType.DATA;
 import static org.knime.core.table.virtual.graph.rag.RagEdgeType.EXEC;
 import static org.knime.core.table.virtual.graph.rag.RagEdgeType.ORDER;
 import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
-import static org.knime.core.table.virtual.graph.rag.RagGraphUtils.topologicalSort;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.APPEND;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONCATENATE;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONSUMER;
@@ -38,7 +37,6 @@ import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.TableTransform;
-import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -54,7 +52,7 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
  * Create a {@code RagGraph} from a {@code VirtualTable} spec.
  *
  * <ol>
- * <li>{@link #buildSpec(TableTransform)}:
+ * <li>{@link SpecGraphBuilder#buildSpecGraph(TableTransform)}:
  *      Build RagGraph nodes for each TableTransform in the given VirtualTable, and SPEC
  *      edges between them. Set numColumns for each node.</li>
  * <li>{@link #traceAccesses()}:
@@ -85,26 +83,72 @@ public class RagBuilder {
         return nodes.get(0);
     };
 
-    public static List<RagNode> createOrderedRag(final VirtualTable table) {
-        return createOrderedRag(table.getProducingTransform(), DEFAULT_POLICY);
+    /**
+     * Optimize and sequentialize the given {@code specGraph} using the default
+     * sequentialization policy.
+     * <p>
+     * The {@code specGraph} is not modified, optimization is done on a copy.
+     *
+     *
+     * @param specGraph
+     *          the spec graph (see {@link SpecGraphBuilder})
+     */
+    public static List<RagNode> createOrderedRag(final RagGraph specGraph) {
+        return createOrderedRag(specGraph, DEFAULT_POLICY, true);
     }
 
+    /**
+     * Optimize and sequentialize the given {@code specGraph} using the default
+     * sequentialization policy.
+     * <p>
+     * If {@code copySpecGraph==true} then a copy of {@code specGraph} will be
+     * used. If {@code copySpecGraph==false} then {@code specGraph} will be
+     * modified in place. Note that in-place modification destroys the
+     * "spec-graph-ness", because SPEC edges are removed in the process.
+     *
+     * @param specGraph
+     *          the spec graph (see {@link SpecGraphBuilder})
+     * @param copySpecGraph {@code true}, if optimization should work on a
+     *          separate copy of {@code specGraph}.
+     * @return sequentialized {@code RagGraph} that can be passed to {@link
+     *          CapBuilder#createCursorAssemblyPlan}.
+     */
     public static List<RagNode> createOrderedRag(
-            final VirtualTable table,
-            final Function<List<RagNode>, RagNode> policy) {
-        return createOrderedRag(table.getProducingTransform(), policy);
+            final RagGraph specGraph,
+            final boolean copySpecGraph) {
+        return createOrderedRag(specGraph, DEFAULT_POLICY, copySpecGraph);
     }
 
-    public static List<RagNode> createOrderedRag(final TableTransform tableTransform) {
-        return createOrderedRag(tableTransform, DEFAULT_POLICY);
-    }
-
+    /**
+     * Optimize and sequentialize the given {@code specGraph}.
+     * <p>
+     * If {@code copySpecGraph==true} then a copy of {@code specGraph} will be
+     * used. If {@code copySpecGraph==false} then {@code specGraph} will be
+     * modified in place. Note that in-place modification destroys the
+     * "spec-graph-ness", because SPEC edges are removed in the process.
+     * <p>
+     * If there are choices in how the graph may be sequentialized, the given
+     * {@code policy} is used: Given a list of possible {@code RagNode}s, the
+     * policy should pick the one that should come next in the sequence. (The
+     * default policy tries to order nodes to avoid unnecessary work. For
+     * example, when choosing between a SLICE and a MAP, it would pick SLICE,
+     * because that avoids to compute the MAP function on rows that would be
+     * sliced away later.)
+     *
+     * @param specGraph
+     *          the spec graph (see {@link SpecGraphBuilder})
+     * @param policy sequentialization policy
+     * @param copySpecGraph {@code true}, if optimization should work on a
+     *          separate copy of {@code specGraph}
+     * @return sequentialized {@code RagGraph} that can be passed to {@link
+     *          CapBuilder#createCursorAssemblyPlan}.
+     */
     public static List<RagNode> createOrderedRag(
-            final TableTransform tableTransform,
-            final Function<List<RagNode>, RagNode> policy) {
+            final RagGraph specGraph,
+            final Function<List<RagNode>, RagNode> policy,
+            final boolean copySpecGraph) {
 
-        final RagBuilder specs = new RagBuilder();
-        specs.buildSpec(tableTransform);
+        final RagBuilder specs = new RagBuilder(copySpecGraph ? specGraph.copy() : specGraph);
         specs.traceAccesses();
         specs.traceExec();
         specs.optimize();
@@ -472,7 +516,7 @@ public class RagBuilder {
 
 
 
-    final RagGraph graph = new RagGraph();
+    final RagGraph graph;
 
     /**
      * Executable nodes are linked by EXEC edges.
@@ -485,149 +529,16 @@ public class RagBuilder {
     public static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER, ROWINDEX, OBSERVER);
 
     /**
-     * Spawning nodes create new sub-trees of their SPEC predecessor nodes. This
-     * prevents (incorrect) fork-join type fusion of branches when forwarding structure
-     * diverges.
-     */
-    private static final EnumSet<RagNodeType> spawningNodeTypes = EnumSet.of(SLICE, CONCATENATE);
-
-    /**
      * Sink nodes are consumer-like endpoints.
      */
     private static final EnumSet<RagNodeType> sinkNodeTypes = EnumSet.of(CONSUMER, MATERIALIZE);
 
     RagBuilder() {
+        graph = new RagGraph();
     }
 
-
-    // --------------------------------------------------------------------
-    // buildSpec(VirtualTable)
-
-    /**
-     * Build RagGraph nodes for each TableTransform in the given VirtualTable, and SPEC
-     * edges between them. Set numColumns for each node.
-     */
-    void buildSpec(final TableTransform tableTransform) {
-
-        // For now, we expect only a single output table.
-        // Either the final transform is already a MaterializeTransformSpec, in
-        // which case this becomes the root node (a MATERIALIZE node).
-        // Or, the final transform just describes some other VirtualTable, in which
-        // case, an artificial CONSUMER node is appended and becomes the root.
-        if ( tableTransform.getSpec() instanceof MaterializeTransformSpec) {
-            final RagNode root = createNodes(tableTransform, new HashMap<>());
-            graph.setRoot(root);
-        } else {
-            final var consumerTransform = new TableTransform(//
-                    List.of(tableTransform),//
-                    new ConsumerTransformSpec());
-            final RagNode root = createNodes(consumerTransform, new HashMap<>());
-            graph.setRoot(root);
-        }
-
-        buildNumColumns();
-    }
-
-    /**
-     * Create a Node for the given TableTransform, and recursively create Nodes (and
-     * Edges) for its precedingTransforms.
-     *
-     * @param transform
-     * @param nodeLookup
-     *          Links TableTransforms to already existing Nodes. This is used to handle
-     *          fork-join-type structures.
-     * @return
-     */
-    // TODO: make iterative instead of recursive
-    private RagNode createNodes(final TableTransform transform, final Map<TableTransform, RagNode> nodeLookup) {
-        RagNode node = nodeLookup.get(transform);
-        if (node == null) {
-
-            // create node for current TableTransform
-            node = graph.addNode(transform);
-            nodeLookup.put(transform, node);
-
-            // create and link nodes for preceding TableTransforms
-            for (final TableTransform t : transform.getPrecedingTransforms()) {
-                Map<TableTransform, RagNode> lookup = spawningNodeTypes.contains(node.type()) ? new HashMap<>() : nodeLookup;
-                final RagNode input = createNodes(t, lookup);
-                if (node.type() == CONCATENATE) {
-                    final var wrapTransform = new TableTransform(Collections.emptyList(), new WrapperTransformSpec());
-                    final RagNode wrap = graph.addNode(wrapTransform);
-                    graph.addEdge(input, wrap, SPEC);
-                    graph.addEdge(wrap, node, SPEC);
-                } else if ((node.type() == MAP || node.type() == OBSERVER) && needsRowIndex(node.getTransformSpec())) {
-                    final var indexTransform = new TableTransform(Collections.emptyList(), new RowIndexTransformSpec());
-                    final RagNode index = graph.addNode(indexTransform);
-                    graph.addEdge(input, index, SPEC);
-                    graph.addEdge(index, node, SPEC);
-                } else {
-                    graph.addEdge(input, node, SPEC);
-                }
-            }
-        }
-        return node;
-    }
-
-    private boolean needsRowIndex(TableTransformSpec spec) {
-        if (spec instanceof MapTransformSpec m)
-            return m.needsRowIndex();
-        else if (spec instanceof ObserverTransformSpec o)
-            return o.needsRowIndex();
-        else
-            throw new IllegalArgumentException();
-    }
-
-    /**
-     * Starting at SOURCE nodes, find number of columns for each node.
-     */
-    private void buildNumColumns() {
-        for (final RagNode node : topologicalSort(graph, SPEC)) {
-            final TableTransformSpec spec = node.getTransformSpec();
-            int numColumns = 0;
-            switch (node.type()) {
-                case SOURCE:
-                    numColumns = ((SourceTransformSpec)spec).getSchema().numColumns();
-                    break;
-                case CONSUMER:
-                case MATERIALIZE:
-                case SLICE:
-                case ROWFILTER:
-                case IDENTITY:
-                case WRAPPER:
-                    numColumns = node.predecessor(SPEC).numColumns();
-                    break;
-                case OBSERVER:
-                    final boolean needsRowIndex = node.<ObserverTransformSpec>getTransformSpec().needsRowIndex();
-                    numColumns = node.predecessor(SPEC).numColumns() - (needsRowIndex ? 1 : 0);
-                    break;
-                case ROWINDEX:
-                    // append one column for the row index
-                    numColumns = node.predecessor(SPEC).numColumns() + 1;
-                    break;
-                case CONCATENATE:
-                    numColumns = node.predecessors(SPEC).get(0).numColumns();
-                    break;
-                case APPEND:
-                    numColumns = node.predecessors(SPEC).stream().mapToInt(RagNode::numColumns).sum();
-                    break;
-                case APPENDMISSING:
-                    numColumns = node.predecessor(SPEC).numColumns()//
-                            + ((AppendMissingValuesTransformSpec)spec).getAppendedSchema().numColumns();
-                    break;
-                case COLFILTER:
-                    numColumns = ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
-                    break;
-                case MAP:
-                    numColumns = ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
-                    break;
-                case MISSING:
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unexpected value: " + node.type());
-            }
-            node.setNumColumns(numColumns);
-        }
+    RagBuilder(final RagGraph graph) {
+        this.graph = graph;
     }
 
 
