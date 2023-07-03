@@ -26,7 +26,7 @@ public class CapExecutor {
      * @param schema
      * @param cap
      * @param uuidRowAccessibleMap
-     * @param useRandomAccess if {@code true}, then a {@code RandomRowAccessible} will bre created if the {@code cap} supports it.
+     * @param useRandomAccess if {@code true}, then a {@code RandomRowAccessible} will be created if the {@code cap} supports it.
      * @return
      */
     public static RowAccessible createRowAccessible(
