@@ -15,7 +15,7 @@ public final class RagNode implements Typed<RagNodeType> {
     private int numColumns = -1;
     private long numRows = -1;
     private final RagNodeType type;
-    private final TableTransform transform;
+    private final TableTransformSpec transformSpec;
 
     final TypedObjects<RagEdgeType, RagEdge> outgoing = new TypedObjects<>(RagEdgeType.class);
     final TypedObjects<RagEdgeType, RagEdge> incoming = new TypedObjects<>(RagEdgeType.class);
@@ -41,16 +41,30 @@ public final class RagNode implements Typed<RagNodeType> {
      */
     private AccessIds[] inputs;
 
-    RagNode(final TableTransform transform) {
-        this.transform = transform;
-        type = RagNodeType.forSpec(transform.getSpec());
+    /**
+     * Create a node corresponding to a transform with the given {@code spec}.
+     * <p>
+     * For CONCATENATE nodes, {@code numInputsArrays} gives the number of SPEC
+     * predecessors that connect to the node (arrays of input {@code
+     * ReadAccess}es to switch between). All other transform types should give
+     * {@code numInputsArrays=1}.
+     */
+    RagNode(final TableTransformSpec spec, final int numInputsArrays) {
+        transformSpec = spec;
+        type = RagNodeType.forSpec(transformSpec);
         outputs = new AccessIds();
 
-        final int numInputsArrays = (type == RagNodeType.CONCATENATE) ? transform.getPrecedingTransforms().size() : 1;
         inputs = new AccessIds[numInputsArrays];
         Arrays.setAll(inputs, i -> new AccessIds());
 
         id = nextNodeId++;
+    }
+
+    RagNode(final TableTransform transform) {
+        this(transform.getSpec(),//
+                (RagNodeType.forSpec(transform.getSpec()) == RagNodeType.CONCATENATE)//
+                        ? transform.getPrecedingTransforms().size() //
+                        : 1);
     }
 
     @Override
@@ -59,7 +73,7 @@ public final class RagNode implements Typed<RagNodeType> {
     }
 
     public <T extends TableTransformSpec> T getTransformSpec() {
-        return (T)transform.getSpec();
+        return (T)transformSpec;
     }
 
     public int numColumns() {
@@ -114,7 +128,7 @@ public final class RagNode implements Typed<RagNodeType> {
         final StringBuilder sb = new StringBuilder("{");
         sb.append(String.format("<%d>, ", id));
         sb.append(String.format("numColumns=%d, ", numColumns));
-        sb.append(String.format("spec=\"%s\"", transform.getSpec()));
+        sb.append(String.format("spec=\"%s\"", transformSpec));
         sb.append(", outputs=").append(outputs);
         sb.append(", inputs=").append(Arrays.toString(inputs));
         sb.append(", mark=").append(mark);
@@ -280,7 +294,6 @@ public final class RagNode implements Typed<RagNodeType> {
     public void setMark(int mark) {
         this.mark = mark;
     }
-
 
     // ------------------------------------------------------------------------
     //   debugging stuff
