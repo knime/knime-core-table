@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.function.IntFunction;
 
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.row.ReadAccessRow;
 
 public class DefaultReadAccessRow implements ReadAccessRow {
 
