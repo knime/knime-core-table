@@ -37,10 +37,12 @@ public class RagPlayground {
         final VirtualTable table = VirtualTableExamples.vtObserve();
 
         var mermaid = new Mermaid();
-        var rag = new RagBuilder();
+        var spec =  new SpecGraphBuilder();
 
-        rag.buildSpec(table.getProducingTransform());
-        mermaid.append("buildSpec(table)", "SPEC edges", rag.graph);
+        spec.buildSpec(table.getProducingTransform());
+        mermaid.append("buildSpec(table)", "SPEC edges", spec.graph);
+
+        var rag = new RagBuilder(spec.graph);
 
         rag.traceAccesses();
         rag.traceExec();
@@ -83,10 +85,12 @@ public class RagPlayground {
 
     public static void buildRag(final VirtualTable table, final String name) {
         var mermaid = new Mermaid();
-        var rag = new RagBuilder();
+        var spec =  new SpecGraphBuilder();
 
-        rag.buildSpec(table.getProducingTransform());
-        mermaid.append("buildSpec(table)", "SPEC edges", rag.graph);
+        spec.buildSpec(table.getProducingTransform());
+        mermaid.append("buildSpec(table)", "SPEC edges", spec.graph);
+
+        var rag = new RagBuilder(spec.graph);
 
         rag.traceAccesses();
         mermaid.append("traceAccesses()", "adds DATA edges",  rag.graph);
