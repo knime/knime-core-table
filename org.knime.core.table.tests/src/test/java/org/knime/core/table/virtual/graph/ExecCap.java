@@ -26,7 +26,9 @@ import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
+import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 
 public class ExecCap {
@@ -169,10 +171,11 @@ public class ExecCap {
                 uuidRowAccessibleMap.put(sourceIdentifiers[i], sourceAccessibles[i]);
             }
 
-            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(table);
+            final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
+            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
             final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
             final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
-            final RowAccessible rows = createRowAccessible(schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
+            final RowAccessible rows = createRowAccessible(graph, schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
 
             final boolean supportsRandomAccess = RagBuilder.supportsRandomAccess(orderedRag);
             System.out.println("supportsRandomAccess = " + supportsRandomAccess);

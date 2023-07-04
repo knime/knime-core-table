@@ -18,11 +18,13 @@ import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CapNodeMaterialize;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
+import org.knime.core.table.virtual.graph.rag.RagGraph;
 
 public class CapExecutor {
 
     /**
      *
+     * @param specGraph
      * @param schema
      * @param cap
      * @param uuidRowAccessibleMap
@@ -30,6 +32,7 @@ public class CapExecutor {
      * @return
      */
     public static RowAccessible createRowAccessible(
+            final RagGraph specGraph,
             final ColumnarSchema schema,
             final CursorAssemblyPlan cap,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap,
@@ -51,7 +54,7 @@ public class CapExecutor {
             }
         }
         if (useRandomAccess && cap.supportsRandomAccess()) {
-            return new CapRandomRowAccessible(schema, cap, sources);
+            return new CapRandomRowAccessible(specGraph, schema, cap, sources);
         } else if (cap.supportsLookahead()) {
             return new CapLookaheadRowAccessible(schema, cap, sources);
         } else {
@@ -64,7 +67,8 @@ public class CapExecutor {
             final CursorAssemblyPlan cap,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap ) {
 
-        return createRowAccessible(schema, cap, uuidRowAccessibleMap, true);
+        throw new UnsupportedOperationException("TODO (TP)");
+//        return createRowAccessible(null, schema, cap, uuidRowAccessibleMap, true);
     }
 
     public static void execute(final CursorAssemblyPlan cap, //

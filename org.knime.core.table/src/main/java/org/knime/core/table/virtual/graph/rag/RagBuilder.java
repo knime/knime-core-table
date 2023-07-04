@@ -55,7 +55,7 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
  * Create a {@code RagGraph} from a {@code VirtualTable} spec.
  *
  * <ol>
- * <li>{@link #buildSpec(TableTransform)}:
+ * <li>{@link SpecGraphBuilder#buildSpecGraph(TableTransform)}:
  *      Build RagGraph nodes for each TableTransform in the given VirtualTable, and SPEC
  *      edges between them. Set numColumns for each node.</li>
  * <li>{@link #traceAccesses()}:
@@ -95,34 +95,34 @@ public class RagBuilder {
         return nodes.get(0);
     };
 
-    public static RagGraph buildSpecGraph(final TableTransform tableTransform) {
-        final RagBuilder specs = new RagBuilder();
-        specs.buildSpec(tableTransform);
-        return specs.graph;
-    }
-
+    // TODO (TP): Remove
     public static List<RagNode> createOrderedRag(final VirtualTable table) {
         return createOrderedRag(table.getProducingTransform(), DEFAULT_POLICY);
     }
 
+    // TODO (TP): Remove
     public static List<RagNode> createOrderedRag(final TableTransform tableTransform) {
         return createOrderedRag(tableTransform, DEFAULT_POLICY);
     }
 
+    public static List<RagNode> createOrderedRag(final RagGraph specGraph) {
+        return createOrderedRag(specGraph, DEFAULT_POLICY);
+    }
+
+    // TODO (TP): Remove
     public static List<RagNode> createOrderedRag(
             final TableTransform tableTransform,
             final Function<List<RagNode>, RagNode> policy) {
 
-        final RagBuilder specs = new RagBuilder();
-        specs.buildSpec(tableTransform);
-        return createOrderedRag(specs.graph, policy);
+        final RagGraph specGraph = SpecGraphBuilder.buildSpecGraph(tableTransform);
+        return createOrderedRag(specGraph, policy);
     }
 
     public static List<RagNode> createOrderedRag(
-            final RagGraph graph,
+            final RagGraph specGraph,
             final Function<List<RagNode>, RagNode> policy) {
 
-        final RagBuilder specs = new RagBuilder(graph);
+        final RagBuilder specs = new RagBuilder(specGraph);
         specs.traceAccesses();
         specs.traceExec();
         specs.optimize();
@@ -504,13 +504,6 @@ public class RagBuilder {
     public static final EnumSet<RagNodeType> executableNodeTypes = EnumSet.of(APPEND, SOURCE, CONCATENATE, SLICE, ROWFILTER, WRAPPER, ROWINDEX, OBSERVER);
 
     /**
-     * Spawning nodes create new sub-trees of their SPEC predecessor nodes. This
-     * prevents (incorrect) fork-join type fusion of branches when forwarding structure
-     * diverges.
-     */
-    private static final EnumSet<RagNodeType> spawningNodeTypes = EnumSet.of(SLICE, CONCATENATE);
-
-    /**
      * Sink nodes are consumer-like endpoints.
      */
     private static final EnumSet<RagNodeType> sinkNodeTypes = EnumSet.of(CONSUMER, MATERIALIZE);
@@ -521,137 +514,6 @@ public class RagBuilder {
 
     RagBuilder(final RagGraph graph) {
         this.graph = graph;
-    }
-
-
-    // --------------------------------------------------------------------
-    // buildSpec(VirtualTable)
-
-    /**
-     * Build RagGraph nodes for each TableTransform in the given VirtualTable, and SPEC
-     * edges between them. Set numColumns for each node.
-     */
-    void buildSpec(final TableTransform tableTransform) {
-
-        // For now, we expect only a single output table.
-        // Either the final transform is already a MaterializeTransformSpec, in
-        // which case this becomes the root node (a MATERIALIZE node).
-        // Or, the final transform just describes some other VirtualTable, in which
-        // case, an artificial CONSUMER node is appended and becomes the root.
-        if ( tableTransform.getSpec() instanceof MaterializeTransformSpec) {
-            final RagNode root = createNodes(tableTransform, new HashMap<>());
-            graph.setRoot(root);
-        } else {
-            final var consumerTransform = new TableTransform(//
-                    List.of(tableTransform),//
-                    new ConsumerTransformSpec());
-            final RagNode root = createNodes(consumerTransform, new HashMap<>());
-            graph.setRoot(root);
-        }
-
-        buildNumColumns();
-    }
-
-    /**
-     * Create a Node for the given TableTransform, and recursively create Nodes (and
-     * Edges) for its precedingTransforms.
-     *
-     * @param transform
-     * @param nodeLookup
-     *          Links TableTransforms to already existing Nodes. This is used to handle
-     *          fork-join-type structures.
-     * @return
-     */
-    // TODO: make iterative instead of recursive
-    private RagNode createNodes(final TableTransform transform, final Map<TableTransform, RagNode> nodeLookup) {
-        RagNode node = nodeLookup.get(transform);
-        if (node == null) {
-
-            // create node for current TableTransform
-            node = graph.addNode(transform);
-            nodeLookup.put(transform, node);
-
-            // create and link nodes for preceding TableTransforms
-            for (final TableTransform t : transform.getPrecedingTransforms()) {
-                Map<TableTransform, RagNode> lookup = spawningNodeTypes.contains(node.type()) ? new HashMap<>() : nodeLookup;
-                final RagNode input = createNodes(t, lookup);
-                if (node.type() == CONCATENATE) {
-                    final var wrapTransform = new TableTransform(Collections.emptyList(), new WrapperTransformSpec());
-                    final RagNode wrap = graph.addNode(wrapTransform);
-                    graph.addEdge(input, wrap, SPEC);
-                    graph.addEdge(wrap, node, SPEC);
-                } else if ((node.type() == MAP || node.type() == OBSERVER) && needsRowIndex(node.getTransformSpec())) {
-                    final var indexTransform = new TableTransform(Collections.emptyList(), new RowIndexTransformSpec());
-                    final RagNode index = graph.addNode(indexTransform);
-                    graph.addEdge(input, index, SPEC);
-                    graph.addEdge(index, node, SPEC);
-                } else {
-                    graph.addEdge(input, node, SPEC);
-                }
-            }
-        }
-        return node;
-    }
-
-    private boolean needsRowIndex(TableTransformSpec spec) {
-        if (spec instanceof MapTransformSpec m)
-            return m.needsRowIndex();
-        else if (spec instanceof ObserverTransformSpec o)
-            return o.needsRowIndex();
-        else
-            throw new IllegalArgumentException();
-    }
-
-    /**
-     * Starting at SOURCE nodes, find number of columns for each node.
-     */
-    private void buildNumColumns() {
-        for (final RagNode node : topologicalSort(graph, SPEC)) {
-            final TableTransformSpec spec = node.getTransformSpec();
-            int numColumns = 0;
-            switch (node.type()) {
-                case SOURCE:
-                    numColumns = ((SourceTransformSpec)spec).getSchema().numColumns();
-                    break;
-                case CONSUMER:
-                case MATERIALIZE:
-                case SLICE:
-                case ROWFILTER:
-                case IDENTITY:
-                case WRAPPER:
-                    numColumns = node.predecessor(SPEC).numColumns();
-                    break;
-                case OBSERVER:
-                    final boolean needsRowIndex = node.<ObserverTransformSpec>getTransformSpec().needsRowIndex();
-                    numColumns = node.predecessor(SPEC).numColumns() - (needsRowIndex ? 1 : 0);
-                    break;
-                case ROWINDEX:
-                    // append one column for the row index
-                    numColumns = node.predecessor(SPEC).numColumns() + 1;
-                    break;
-                case CONCATENATE:
-                    numColumns = node.predecessors(SPEC).get(0).numColumns();
-                    break;
-                case APPEND:
-                    numColumns = node.predecessors(SPEC).stream().mapToInt(RagNode::numColumns).sum();
-                    break;
-                case APPENDMISSING:
-                    numColumns = node.predecessor(SPEC).numColumns()//
-                            + ((AppendMissingValuesTransformSpec)spec).getAppendedSchema().numColumns();
-                    break;
-                case COLFILTER:
-                    numColumns = ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
-                    break;
-                case MAP:
-                    numColumns = ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
-                    break;
-                case MISSING:
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected value: " + node.type());
-            }
-            node.setNumColumns(numColumns);
-        }
     }
 
 
