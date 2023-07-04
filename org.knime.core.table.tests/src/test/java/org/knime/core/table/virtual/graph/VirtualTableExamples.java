@@ -36,7 +36,9 @@ import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
+import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverWithRowIndexFactory;
@@ -69,7 +71,8 @@ public class VirtualTableExamples {
         Arrays.setAll(sourceIds, i -> randomUUID());
         final VirtualTable table = virtualTableSupplier.apply(sourceIds, sources);
 
-        final List<RagNode> rag = RagBuilder.createOrderedRag(table);
+        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
+        final List<RagNode> rag = RagBuilder.createOrderedRag(graph.copy());
         final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
         final ColumnarSchema schema = RagBuilder.createSchema(rag);
 
@@ -77,7 +80,7 @@ public class VirtualTableExamples {
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        final RowAccessible rowAccessible = createRowAccessible(schema, cap, sourceMap);
+        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cap, sourceMap, useRandomAccess);
 
         if ( expectedNumRows < 0 ) {
             assertTrue(rowAccessible.size() < 0);
@@ -99,7 +102,8 @@ public class VirtualTableExamples {
         Arrays.setAll(sourceIds, i -> randomUUID());
         final VirtualTable table = virtualTableSupplier.apply(sourceIds, sources);
 
-        final List<RagNode> rag = RagBuilder.createOrderedRag(table);
+        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
+        final List<RagNode> rag = RagBuilder.createOrderedRag(graph.copy());
         final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
         final ColumnarSchema schema = RagBuilder.createSchema(rag);
 
@@ -107,7 +111,7 @@ public class VirtualTableExamples {
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        final RowAccessible rowAccessible = createRowAccessible(schema, cap, sourceMap);
+        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cap, sourceMap, true);
         final boolean lookahead = rowAccessible instanceof LookaheadRowAccessible;
 
         assertEquals(expectedLookahead, lookahead);
@@ -129,7 +133,8 @@ public class VirtualTableExamples {
         Arrays.setAll(sourceIds, i -> randomUUID());
         final VirtualTable table = virtualTableSupplier.apply(sourceIds, sources);
 
-        final List<RagNode> rag = RagBuilder.createOrderedRag(table);
+        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
+        final List<RagNode> rag = RagBuilder.createOrderedRag(graph.copy());
         final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
         final ColumnarSchema schema = RagBuilder.createSchema(rag);
 
@@ -137,9 +142,14 @@ public class VirtualTableExamples {
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        final RowAccessible rowAccessible = createRowAccessible(schema, cap, sourceMap);
+        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cap, sourceMap, true);
         final boolean randomAccessible = rowAccessible instanceof RandomRowAccessible;
 
+        if ( expectedNumRows < 0 ) {
+            assertTrue(rowAccessible.size() < 0);
+        } else {
+            assertEquals(expectedNumRows, rowAccessible.size());
+        }
         assertEquals(expectedRandomAccessible, randomAccessible);
         if (randomAccessible) {
             assertEquals(expectedSchema, table.getSchema());
@@ -993,7 +1003,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMap);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMap);
-        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, -1, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMap);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMap);
     }
 
 
@@ -1031,7 +1041,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapAndSlice);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapAndSlice);
-        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, -1, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapAndSlice);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapAndSlice);
     }
 
 
@@ -1087,7 +1097,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallel);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallel);
-        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, -1, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallel);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallel);
     }
 
 
@@ -1140,7 +1150,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallelAndSlice);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallelAndSlice);
-        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, -1, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallelAndSlice);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsParallelAndSlice);
     }
 
 
@@ -1197,7 +1207,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequential);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequential);
-        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, -1, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequential);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequential);
     }
 
 
@@ -1251,7 +1261,7 @@ public class VirtualTableExamples {
         };
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequentialAndSlice);
         testTransformedTableLookahead(true, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequentialAndSlice);
-        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, -1, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequentialAndSlice);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataMinimal, VirtualTableExamples::vtRowIndexMapsSequentialAndSlice);
     }
 
 

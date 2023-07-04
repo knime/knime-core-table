@@ -16,6 +16,7 @@ import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 
 public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
@@ -25,7 +26,7 @@ public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
     public GraphVirtualTableExecutor(final TableTransform leafTransform)
     {
-        specGraph = RagBuilder.buildSpecGraph(leafTransform);
+        specGraph = SpecGraphBuilder.buildSpecGraph(leafTransform);
         final List<RagNode> orderedRag = RagBuilder.createOrderedRag(specGraph.copy());
         schema = RagBuilder.createSchema(orderedRag);
         cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);

@@ -18,7 +18,9 @@ import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
+import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 
 public class ExecCapAll {
@@ -169,10 +171,11 @@ public class ExecCapAll {
             uuidRowAccessibleMap.put(sourceIdentifiers[i], accessibles[i]);
         }
 
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(table);
+        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
+        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph.copy());
         final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
         final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-        final RowAccessible rows = createRowAccessible(schema, cursorAssemblyPlan, uuidRowAccessibleMap);
+        final RowAccessible rows = createRowAccessible(graph, schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
 
         System.out.println(exampleName);
         System.out.println("------------------------");

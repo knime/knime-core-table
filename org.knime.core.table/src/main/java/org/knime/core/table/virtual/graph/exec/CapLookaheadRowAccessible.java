@@ -1,6 +1,8 @@
 package org.knime.core.table.virtual.graph.exec;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.LookaheadRowAccessible;
@@ -8,12 +10,8 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
-import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagGraphSelection;
-import org.knime.core.table.virtual.graph.rag.RagNode;
 
 class CapLookaheadRowAccessible extends CapRowAccessible implements LookaheadRowAccessible {
 
@@ -21,34 +19,18 @@ class CapLookaheadRowAccessible extends CapRowAccessible implements LookaheadRow
             final RagGraph specGraph, //
             final ColumnarSchema schema, //
             final CursorAssemblyPlan cap, //
-            final List<RowAccessible> sources) {
+            final Map<UUID, RowAccessible> availableSources) {
 
-        super(specGraph, schema, cap, sources);
+        super(specGraph, schema, cap, availableSources);
     }
 
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor() {
-        return new CapLookaheadCursor(assembleConsumer(cap));
+        return new CapLookaheadCursor(getCursorData(null));
     }
 
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
-
-        if (selection.allSelected()) {
-            return createCursor();
-        }
-
-        final RagGraph graph = specGraph.copy();
-        RagGraphSelection.appendSelection(graph, selection);
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
-        final CursorAssemblyPlan scap = CapBuilder.createCursorAssemblyPlan(orderedRag);
-
-        final Selection.ColumnSelection cols = selection.columns();
-        if (cols.allSelected(0, schema.numColumns())) {
-            return new CapLookaheadCursor( assembleConsumer(scap) );
-        } else {
-            final int[] selected = cols.getSelected(0, schema.numColumns());
-            return new CapLookaheadCursor( assembleConsumer(scap), selected );
-        }
+        return new CapLookaheadCursor(getCursorData(selection));
     }
 }

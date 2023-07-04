@@ -14,6 +14,7 @@ import org.knime.core.table.virtual.spec.SliceTransformSpec;
 
 public class RagGraphSelection {
 
+    // TODO (TP): move to SpecGraphBuilder
     public static void appendSelection(final RagGraph graph, final Selection selection) {
 
         final RagNode root = graph.getRoot();
@@ -27,6 +28,7 @@ public class RagGraphSelection {
             final RagNode slice = graph.addNode(sliceTransform);
             relinkPredecessorsToNewTarget(graph, root, slice, SPEC);
             graph.addEdge(slice, root, SPEC);
+            SpecGraphBuilder.buildNumColumns(slice);
         }
 
         if (!selection.columns().allSelected()) {
@@ -36,7 +38,10 @@ public class RagGraphSelection {
             final RagNode selectCols = graph.addNode(selectColsTransform);
             relinkPredecessorsToNewTarget(graph, root, selectCols, SPEC);
             graph.addEdge(selectCols, root, SPEC);
+            SpecGraphBuilder.buildNumColumns(selectCols);
         }
+
+        SpecGraphBuilder.buildNumColumns(root);
     }
 
     /**

@@ -43,16 +43,16 @@ public class SpecGraphBuilder {
      */
     private static final EnumSet<RagNodeType> spawningNodeTypes = EnumSet.of(SLICE, CONCATENATE);
 
-    private final RagGraph graph = new RagGraph();
+    final RagGraph graph = new RagGraph();
 
-    private SpecGraphBuilder() {
+    SpecGraphBuilder() {
     }
 
     /**
      * Build RagGraph nodes for each TableTransform in the given VirtualTable, and SPEC
      * edges between them. Set numColumns for each node.
      */
-    private void buildSpec(final TableTransform tableTransform) {
+    void buildSpec(final TableTransform tableTransform) {
 
         // For now, we expect only a single output table.
         // Either the final transform is already a MaterializeTransformSpec, in
@@ -127,51 +127,53 @@ public class SpecGraphBuilder {
      * Starting at SOURCE nodes, find number of columns for each node.
      */
     private void buildNumColumns() {
-        for (final RagNode node : topologicalSort(graph, SPEC)) {
-            final TableTransformSpec spec = node.getTransformSpec();
-            int numColumns = 0;
-            switch (node.type()) {
-                case SOURCE:
-                    numColumns = ((SourceTransformSpec)spec).getSchema().numColumns();
-                    break;
-                case CONSUMER:
-                case MATERIALIZE:
-                case SLICE:
-                case ROWFILTER:
-                case IDENTITY:
-                case WRAPPER:
-                    numColumns = node.predecessor(SPEC).numColumns();
-                    break;
-                case OBSERVER:
-                    final boolean needsRowIndex = node.<ObserverTransformSpec>getTransformSpec().needsRowIndex();
-                    numColumns = node.predecessor(SPEC).numColumns() - (needsRowIndex ? 1 : 0);
-                    break;
-                case ROWINDEX:
-                    // append one column for the row index
-                    numColumns = node.predecessor(SPEC).numColumns() + 1;
-                    break;
-                case CONCATENATE:
-                    numColumns = node.predecessors(SPEC).get(0).numColumns();
-                    break;
-                case APPEND:
-                    numColumns = node.predecessors(SPEC).stream().mapToInt(RagNode::numColumns).sum();
-                    break;
-                case APPENDMISSING:
-                    numColumns = node.predecessor(SPEC).numColumns()//
-                            + ((AppendMissingValuesTransformSpec)spec).getAppendedSchema().numColumns();
-                    break;
-                case COLFILTER:
-                    numColumns = ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
-                    break;
-                case MAP:
-                    numColumns = ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
-                    break;
-                case MISSING:
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected value: " + node.type());
-            }
-            node.setNumColumns(numColumns);
+        topologicalSort(graph, SPEC).forEach(SpecGraphBuilder::buildNumColumns);
+    }
+
+    /* TODO (TP): make private again */  static void buildNumColumns(final RagNode node) {
+        final TableTransformSpec spec = node.getTransformSpec();
+        int numColumns = 0;
+        switch (node.type()) {
+            case SOURCE:
+                numColumns = ((SourceTransformSpec)spec).getSchema().numColumns();
+                break;
+            case CONSUMER:
+            case MATERIALIZE:
+            case SLICE:
+            case ROWFILTER:
+            case IDENTITY:
+            case WRAPPER:
+                numColumns = node.predecessor(SPEC).numColumns();
+                break;
+            case OBSERVER:
+                final boolean needsRowIndex = node.<ObserverTransformSpec>getTransformSpec().needsRowIndex();
+                numColumns = node.predecessor(SPEC).numColumns() - (needsRowIndex ? 1 : 0);
+                break;
+            case ROWINDEX:
+                // append one column for the row index
+                numColumns = node.predecessor(SPEC).numColumns() + 1;
+                break;
+            case CONCATENATE:
+                numColumns = node.predecessors(SPEC).get(0).numColumns();
+                break;
+            case APPEND:
+                numColumns = node.predecessors(SPEC).stream().mapToInt(RagNode::numColumns).sum();
+                break;
+            case APPENDMISSING:
+                numColumns = node.predecessor(SPEC).numColumns()//
+                        + ((AppendMissingValuesTransformSpec)spec).getAppendedSchema().numColumns();
+                break;
+            case COLFILTER:
+                numColumns = ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
+                break;
+            case MAP:
+                numColumns = ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
+                break;
+            case MISSING:
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + node.type());
         }
+        node.setNumColumns(numColumns);
     }
 }

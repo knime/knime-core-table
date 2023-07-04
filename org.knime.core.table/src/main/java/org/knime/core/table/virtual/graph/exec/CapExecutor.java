@@ -38,37 +38,13 @@ public class CapExecutor {
             final Map<UUID, RowAccessible> uuidRowAccessibleMap,
             final boolean useRandomAccess) {
 
-        final List<RowAccessible> sources = new ArrayList<>();
-        final Map<UUID, ColumnarSchema> schemas = cap.schemas();
-        for (CapNode node : cap.nodes()) {
-            if (node.type() == SOURCE) {
-                final UUID uuid = ((CapNodeSource)node).uuid();
-                final RowAccessible a = uuidRowAccessibleMap.get(uuid);
-                if (a == null) {
-                    throw new IllegalArgumentException("No RowAccessible found for UUID " + uuid );
-                }
-                if (!Objects.equals(a.getSchema(), schemas.get(uuid))) {
-                    throw new IllegalArgumentException("RowAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
-                }
-                sources.add(a);
-            }
-        }
         if (useRandomAccess && cap.supportsRandomAccess()) {
-            return new CapRandomRowAccessible(specGraph, schema, cap, sources);
+            return new CapRandomRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
         } else if (cap.supportsLookahead()) {
-            return new CapLookaheadRowAccessible(schema, cap, sources);
+            return new CapLookaheadRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
         } else {
-            return new CapRowAccessible(schema, cap, sources);
+            return new CapRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
         }
-    }
-
-    public static RowAccessible createRowAccessible(
-            final ColumnarSchema schema,
-            final CursorAssemblyPlan cap,
-            final Map<UUID, RowAccessible> uuidRowAccessibleMap ) {
-
-        throw new UnsupportedOperationException("TODO (TP)");
-//        return createRowAccessible(null, schema, cap, uuidRowAccessibleMap, true);
     }
 
     public static void execute(final CursorAssemblyPlan cap, //
@@ -77,22 +53,9 @@ public class CapExecutor {
     ) throws CompletionException, CancellationException {
 
         try {
-            final List<RowAccessible> sources = new ArrayList<>();
-            final Map<UUID, ColumnarSchema> schemas = cap.schemas();
-            for (CapNode node : cap.nodes()) {
-                if (node.type() == SOURCE) {
-                    final UUID uuid = ((CapNodeSource)node).uuid();
-                    final RowAccessible a = uuidRowAccessibleMap.get(uuid);
-                    if (a == null) {
-                        throw new IllegalArgumentException("No RowAccessible found for UUID " + uuid);
-                    }
-                    if (!Objects.equals(a.getSchema(), schemas.get(uuid))) {
-                        throw new IllegalArgumentException(
-                            "RowAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
-                    }
-                    sources.add(a);
-                }
-            }
+            final List<RowAccessible> sources = CapExecutorUtils.getSources(cap, uuidRowAccessibleMap);
+
+            // TODO (TP) extract as method getSinks() in CapExecutorUtils
             final List<RowWriteAccessible> sinks = new ArrayList<>();
             for (CapNode node : cap.nodes()) {
                 if (node.type() == MATERIALIZE) {
@@ -120,4 +83,5 @@ public class CapExecutor {
             throw new CompletionException(ex);
         }
     }
+
 }
