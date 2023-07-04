@@ -228,7 +228,7 @@ public class RagGraph {
 
     // N.B. This will currently not work to make a full copy of a RagGraph after
     // tracing Accesses etc...
-    RagGraph copy() {
+    public RagGraph copy() {
         final RagGraph copy = new RagGraph();
         final Map<RagNode, RagNode> nodeMap = new HashMap<>();
         nodes().forEach(node -> {
