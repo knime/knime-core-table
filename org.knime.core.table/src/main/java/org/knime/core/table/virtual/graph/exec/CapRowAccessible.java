@@ -17,8 +17,8 @@ import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagGraphSelection;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 
 class CapRowAccessible implements RowAccessible {
 
@@ -98,8 +98,7 @@ class CapRowAccessible implements RowAccessible {
             return new CapCursorData(cap, sources, numColumns, null);
         }
 
-        final RagGraph graph = specGraph.copy();
-        RagGraphSelection.appendSelection(graph, selection);
+        final RagGraph graph = SpecGraphBuilder.appendSelection(specGraph, selection);
         final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
         final CursorAssemblyPlan scap = CapBuilder.createCursorAssemblyPlan(orderedRag);
 

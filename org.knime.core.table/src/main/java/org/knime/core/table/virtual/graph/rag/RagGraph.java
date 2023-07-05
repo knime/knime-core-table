@@ -261,8 +261,42 @@ public class RagGraph {
         return copy;
     }
 
+
+    /**
+     * Get or create an {@code AccessId} from {@code missingValuesSource},
+     * matching the given DataSpec. {@code missingValuesSource} columns are
+     * reused for all missing-value columns with the same DataSpec so a new one
+     * is created if no missing-value column matching ({@code dataspec}, {@code
+     * traits}) exists yet.
+     */
     AccessId getMissingValuesAccessId(final DataSpec dataSpec, final DataTraits traits) {
         final int columnIndex = missingValueColumns.getOrAdd(dataSpec, traits);
         return missingValuesSource.getOrCreateOutput(columnIndex);
+    }
+
+    /**
+     * For each successor (of the specified {@code edgeType}) of {@code
+     * oldNode}: Replace the edge linking {@code oldNode} to successor with an
+     * edge linking {@code newNode} to successor.
+     */
+    public void relinkSuccessorsToNewSource(final RagNode oldNode, final RagNode newNode, final RagEdgeType... edgeTypes)
+    {
+        for (final var edgeType : edgeTypes) {
+            final List<RagEdge> edges = new ArrayList<>(oldNode.outgoingEdges(edgeType));
+            edges.forEach(edge -> replaceEdgeSource(edge, newNode));
+        }
+    }
+
+    /**
+     * For each predecessor (of the specified {@code edgeType}) of {@code
+     * oldNode}: Replace the edge linking predecessor to {@code oldNode} with an
+     * edge linking predecessor to {@code newNode}.
+     */
+    public void relinkPredecessorsToNewTarget(final RagNode oldNode, final RagNode newNode, final RagEdgeType... edgeTypes)
+    {
+        for (final var edgeType : edgeTypes) {
+            final List<RagEdge> edges = new ArrayList<>(oldNode.incomingEdges(edgeType));
+            edges.forEach(edge -> replaceEdgeTarget(edge, newNode));
+        }
     }
 }

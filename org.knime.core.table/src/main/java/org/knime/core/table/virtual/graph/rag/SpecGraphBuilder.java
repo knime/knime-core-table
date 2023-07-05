@@ -3,6 +3,7 @@ package org.knime.core.table.virtual.graph.rag;
 import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
 import static org.knime.core.table.virtual.graph.rag.RagGraphUtils.topologicalSort;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONCATENATE;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONSUMER;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MAP;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.OBSERVER;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.SLICE;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
@@ -20,6 +22,7 @@ import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
+import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
@@ -175,5 +178,42 @@ public class SpecGraphBuilder {
                 throw new IllegalStateException("Unexpected value: " + node.type());
         }
         node.setNumColumns(numColumns);
+    }
+
+    /**
+     * Creates a copy of {@code specGraph}, with SLICE and COLFILTER operations
+     * appended, that implement the given {@code selection}.
+     */
+    public static RagGraph appendSelection(final RagGraph specGraph, final Selection selection) {
+
+        RagGraph graph = specGraph.copy();
+
+        final RagNode root = graph.getRoot();
+        if (root.type() != CONSUMER)
+            throw new IllegalArgumentException();
+
+        if (!selection.rows().allSelected()) {
+            final TableTransform sliceTransform = new TableTransform(//
+                    Collections.emptyList(),//
+                    new SliceTransformSpec(selection.rows()));
+            final RagNode slice = graph.addNode(sliceTransform);
+            graph.relinkPredecessorsToNewTarget(root, slice, SPEC);
+            graph.addEdge(slice, root, SPEC);
+            buildNumColumns(slice);
+        }
+
+        if (!selection.columns().allSelected()) {
+            final TableTransform selectColsTransform = new TableTransform(//
+                    Collections.emptyList(),//
+                    new SelectColumnsTransformSpec(selection.columns().getSelected()));
+            final RagNode selectCols = graph.addNode(selectColsTransform);
+            graph.relinkPredecessorsToNewTarget(root, selectCols, SPEC);
+            graph.addEdge(selectCols, root, SPEC);
+            buildNumColumns(selectCols);
+        }
+
+        buildNumColumns(root);
+
+        return graph;
     }
 }

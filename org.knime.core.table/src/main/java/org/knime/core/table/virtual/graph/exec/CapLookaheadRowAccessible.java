@@ -1,6 +1,5 @@
 package org.knime.core.table.virtual.graph.exec;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
