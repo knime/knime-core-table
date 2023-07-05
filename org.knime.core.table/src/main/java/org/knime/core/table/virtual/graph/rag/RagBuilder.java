@@ -95,27 +95,8 @@ public class RagBuilder {
         return nodes.get(0);
     };
 
-    // TODO (TP): Remove
-    public static List<RagNode> createOrderedRag(final VirtualTable table) {
-        return createOrderedRag(table.getProducingTransform(), DEFAULT_POLICY);
-    }
-
-    // TODO (TP): Remove
-    public static List<RagNode> createOrderedRag(final TableTransform tableTransform) {
-        return createOrderedRag(tableTransform, DEFAULT_POLICY);
-    }
-
     public static List<RagNode> createOrderedRag(final RagGraph specGraph) {
         return createOrderedRag(specGraph, DEFAULT_POLICY);
-    }
-
-    // TODO (TP): Remove
-    public static List<RagNode> createOrderedRag(
-            final TableTransform tableTransform,
-            final Function<List<RagNode>, RagNode> policy) {
-
-        final RagGraph specGraph = SpecGraphBuilder.buildSpecGraph(tableTransform);
-        return createOrderedRag(specGraph, policy);
     }
 
     public static List<RagNode> createOrderedRag(

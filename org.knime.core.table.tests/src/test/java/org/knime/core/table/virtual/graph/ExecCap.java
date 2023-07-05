@@ -141,7 +141,8 @@ public class ExecCap {
                 uuidRowWriteAccessibleMap.put(sinkIdentifiers[i], sinkAccessibles[i]);
             }
 
-            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(table);
+            final RagGraph specGraph = SpecGraphBuilder.buildSpecGraph(table);
+            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(specGraph);
             final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
 
             try {
