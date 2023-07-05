@@ -819,33 +819,6 @@ public class RagBuilder {
 
 
     // --------------------------------------------------------------------
-    // helpers
-
-    /**
-     * For each successor (of the specified {@code edgeType}) of {@code
-     * oldNode}: Replace the edge linking {@code oldNode} to successor with an
-     * edge linking {@code newNode} to successor.
-     */
-    private void relinkSuccessorsToNewSource(final RagNode oldNode, final RagNode newNode, final RagEdgeType edgeType)
-    {
-        final List<RagEdge> edges = new ArrayList<>(oldNode.outgoingEdges(edgeType));
-        edges.forEach(edge -> graph.replaceEdgeSource(edge, newNode));
-    }
-
-    /**
-     * For each predecessor (of the specified {@code edgeType}) of {@code
-     * oldNode}: Replace the edge linking predecessor to {@code oldNode} with an
-     * edge linking predecessor to {@code newNode}.
-     */
-    private void relinkPredecessorsToNewTarget(final RagNode oldNode, final RagNode newNode, final RagEdgeType edgeType)
-    {
-        final List<RagEdge> edges = new ArrayList<>(oldNode.incomingEdges(edgeType));
-        edges.forEach(edge -> graph.replaceEdgeTarget(edge, newNode));
-    }
-
-
-
-    // --------------------------------------------------------------------
     // eliminateSingletonConcatenates()
 
     boolean eliminateSingletonConcatenates() {
@@ -1002,7 +975,7 @@ public class RagBuilder {
                     final RagNode preslice = graph.addNode(presliceTransform);
 
                     // insert preslice between wrapper and its EXEC predecessors
-                    relinkPredecessorsToNewTarget(wrapper, preslice, EXEC);
+                    graph.relinkPredecessorsToNewTarget(wrapper, preslice, EXEC);
                     graph.addEdge(preslice, wrapper, EXEC);
                 }
                 // Note, that if rows.allSelected() == true then we don't have
@@ -1010,7 +983,7 @@ public class RagBuilder {
             }
 
             // short-circuit SLICE successors to CONCATENATE
-            relinkSuccessorsToNewSource(slice, concatenate, EXEC);
+            graph.relinkSuccessorsToNewSource(slice, concatenate, EXEC);
 
             graph.remove(slice);
             return true;
@@ -1058,7 +1031,7 @@ public class RagBuilder {
 
             // remove "slice":
             // short-circuit "append" to successors of "slice"
-            relinkSuccessorsToNewSource(slice, append, EXEC);
+            graph.relinkSuccessorsToNewSource(slice, append, EXEC);
             // remove "slice" node and associated edges
             graph.remove(slice);
 
@@ -1138,10 +1111,10 @@ public class RagBuilder {
         }
         // re-link DATA edges of source to merged
         // (link merged to all DATA successors of source)
-        relinkSuccessorsToNewSource(source, merged, DATA);
+        graph.relinkSuccessorsToNewSource(source, merged, DATA);
 
         // link merged to all EXEC successors of slice
-        relinkSuccessorsToNewSource(slice, merged, EXEC);
+        graph.relinkSuccessorsToNewSource(slice, merged, EXEC);
 
         // remove source and slice (and associated edges)
         graph.remove(source);
@@ -1165,10 +1138,10 @@ public class RagBuilder {
         final RagNode merged = graph.addNode(mergedTableTransform);
 
         // link all predecessors of predecessor to merged
-        relinkPredecessorsToNewTarget(predecessor, merged, EXEC);
+        graph.relinkPredecessorsToNewTarget(predecessor, merged, EXEC);
 
         // link merged to all EXEC successors of slice
-        relinkSuccessorsToNewSource(slice, merged, EXEC);
+        graph.relinkSuccessorsToNewSource(slice, merged, EXEC);
 
         // remove all EXEC edges from slice and predecessor
         final List<RagEdge> edgesToRemove = new ArrayList<>(slice.incomingEdges(EXEC));
@@ -1326,9 +1299,7 @@ public class RagBuilder {
                     id.addConsumer(concatenate);
                     concatenateInputs.putAtColumnIndex(id, wrapperInputs.columnAtSlot(slot));
                 }
-                relinkPredecessorsToNewTarget(wrapper, concatenate, EXEC);
-                relinkPredecessorsToNewTarget(wrapper, concatenate, DATA);
-                relinkPredecessorsToNewTarget(wrapper, concatenate, ORDER);
+                graph.relinkPredecessorsToNewTarget(wrapper, concatenate, EXEC, DATA, ORDER);
                 graph.remove(wrapper);
             }
         }
