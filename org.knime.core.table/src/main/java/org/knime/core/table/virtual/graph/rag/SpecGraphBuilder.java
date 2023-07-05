@@ -133,7 +133,7 @@ public class SpecGraphBuilder {
         topologicalSort(graph, SPEC).forEach(SpecGraphBuilder::buildNumColumns);
     }
 
-    /* TODO (TP): make private again */  static void buildNumColumns(final RagNode node) {
+    private static void buildNumColumns(final RagNode node) {
         final TableTransformSpec spec = node.getTransformSpec();
         int numColumns = 0;
         switch (node.type()) {
