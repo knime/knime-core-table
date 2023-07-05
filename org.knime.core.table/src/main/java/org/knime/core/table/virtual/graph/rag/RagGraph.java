@@ -203,4 +203,30 @@ public class RagGraph {
         sb.append("}");
         return sb.toString();
     }
+
+    /**
+     * For each successor (of the specified {@code edgeType}) of {@code
+     * oldNode}: Replace the edge linking {@code oldNode} to successor with an
+     * edge linking {@code newNode} to successor.
+     */
+    public void relinkSuccessorsToNewSource(final RagNode oldNode, final RagNode newNode, final RagEdgeType... edgeTypes)
+    {
+        for (final var edgeType : edgeTypes) {
+            final List<RagEdge> edges = new ArrayList<>(oldNode.outgoingEdges(edgeType));
+            edges.forEach(edge -> replaceEdgeSource(edge, newNode));
+        }
+    }
+
+    /**
+     * For each predecessor (of the specified {@code edgeType}) of {@code
+     * oldNode}: Replace the edge linking predecessor to {@code oldNode} with an
+     * edge linking predecessor to {@code newNode}.
+     */
+    public void relinkPredecessorsToNewTarget(final RagNode oldNode, final RagNode newNode, final RagEdgeType... edgeTypes)
+    {
+        for (final var edgeType : edgeTypes) {
+            final List<RagEdge> edges = new ArrayList<>(oldNode.incomingEdges(edgeType));
+            edges.forEach(edge -> replaceEdgeTarget(edge, newNode));
+        }
+    }
 }
