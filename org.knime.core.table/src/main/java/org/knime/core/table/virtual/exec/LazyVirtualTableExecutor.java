@@ -40,9 +40,11 @@ import org.knime.core.table.virtual.RowAccessibles;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
-import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.IdentityTransformSpec;
+import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.MaskTransformSpec;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -116,8 +118,7 @@ public class LazyVirtualTableExecutor implements VirtualTableExecutor {
             }
 
             // Test for incomplete argument list of non-unary transforms.
-            if (node.getPrecedingTransforms().size() > 1
-                && node.getPrecedingTransforms().stream().anyMatch(t -> !tables.containsKey(t))) {
+            if (node.getPrecedingTransforms().stream().anyMatch(t -> !tables.containsKey(t))) {
                 // We cannot process the node yet because not all parents have been visited.
                 transformStack.addLast(node);
                 continue;
@@ -151,6 +152,10 @@ public class LazyVirtualTableExecutor implements VirtualTableExecutor {
         } else if (spec instanceof SliceTransformSpec) {
             final RowRangeSelection rowRange = ((SliceTransformSpec)spec).getRowRangeSelection();
             return List.of(RowAccessibles.slice(predecessor, rowRange));
+        } else if (spec instanceof MaskTransformSpec maskSpec) {
+            return List.of(RowAccessibles.mask(predecessor, predecessors.get(1), maskSpec));
+        } else if (spec instanceof MapTransformSpec mapSpec) {
+            return List.of(RowAccessibles.map(predecessor, mapSpec.getColumnSelection(), mapSpec.getMapperFactory()));
         } else if (spec instanceof IdentityTransformSpec) {
             return List.of(predecessor);
         } else {

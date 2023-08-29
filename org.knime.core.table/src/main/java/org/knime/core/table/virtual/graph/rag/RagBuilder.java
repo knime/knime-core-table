@@ -471,6 +471,7 @@ public class RagBuilder {
                 case MATERIALIZE:
                 case SLICE:
                 case ROWFILTER:
+                case MASK:
                 case IDENTITY:
                 case WRAPPER:
                     numColumns = node.predecessor(SPEC).numColumns();
@@ -625,6 +626,7 @@ public class RagBuilder {
                 return traceAccess(i, node.predecessor(SPEC));
             case APPEND:
             case CONCATENATE:
+            case MASK:
             case WRAPPER:
                 traceAndLinkAccess(i, node);
                 return node.getOrCreateOutput(i);

@@ -32,6 +32,7 @@ import org.knime.core.table.row.Selection;
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
+import org.knime.core.table.virtual.spec.MaskTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
 /**
@@ -79,6 +80,10 @@ public final class RowAccessibles {
 
     public static RowAccessible map(final RowAccessible in, final int[] columnIndices, final MapperFactory mapperFactory) {
         return new MappedRowAccessible(in, columnIndices, mapperFactory);
+    }
+
+    public static RowAccessible mask(final RowAccessible table, final RowAccessible mask, final MaskTransformSpec spec) {
+        return new MaskedRowAccessible(toLookahead(table), toLookahead(mask), spec);
     }
 
     public static RowAccessible filterRows(final RowAccessible in, final int[] columnIndices, final RowFilterFactory filterFactory)
