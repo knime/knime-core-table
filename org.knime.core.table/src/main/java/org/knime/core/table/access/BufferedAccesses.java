@@ -170,6 +170,12 @@ public final class BufferedAccesses {
          * @return the access for column
          */
         public <A extends BufferedAccess> A getBufferedAccess(int index);
+
+        /**
+         * Reset all accesses of this row, which should be when the BufferedAccessRow is advanced to a new row and it
+         * is not guaranteed that all accesses of this row will be set to a new value (or set missing explicitly).
+         */
+        public void reset();
     }
 
     private static final class DefaultBufferedAccessRow implements BufferedAccessRow {
@@ -226,6 +232,11 @@ public final class BufferedAccesses {
         @Override
         public String toString() {
             return Arrays.toString(m_accesses);
+        }
+
+        @Override
+        public void reset() {
+            Arrays.stream(m_accesses).forEach(WriteAccess::setMissing);
         }
 
     }
