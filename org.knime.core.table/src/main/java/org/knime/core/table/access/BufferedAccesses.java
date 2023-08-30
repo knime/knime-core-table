@@ -112,6 +112,13 @@ public final class BufferedAccesses {
     /**
      * Creates a {@link BufferedAccess} for the provided {@link DataSpec}.
      *
+     * NOTE: Whenever this access is advanced to the next row for writing, all cells must be set to a value or set to
+     * missing, or on read they might still return values buffered for the previous row.
+     *
+     * IMPLEMENTATION NOTE: An alternative would be to have a unique ID per row and store that for each cell that is
+     * set. Then we could check at each read whether the buffered value was written for the row that is being read. But
+     * this approach is more complicated, more error prone, and probably also slower because it involves more lookups.
+     *
      * @param spec for which a {@link BufferedAccess} is required
      * @return a {@link BufferedAccess} for the provided {@link DataSpec}
      */
@@ -144,6 +151,9 @@ public final class BufferedAccesses {
 
     /**
      * Both a {@link ReadAccessRow} and {@link WriteAccessRow} that is based on {@link BufferedAccess BufferedAccesses}.
+     *
+     * NOTE: Whenever a {@link BufferedAccessRow} is advanced to the next row for writing, all cells must be set to a
+     * value or set to missing, or on read they might still return values buffered for the previous row.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */

@@ -96,6 +96,8 @@ final class BufferingLookaheadCursor implements LookaheadCursor<ReadAccessRow> {
         if (!m_nextRowBuffered) {
             m_canForward = m_cursor.forward();
             if (m_canForward) {
+                // Note: all cells of a BufferedAccessRow need to be populated when advancing to a new row,
+                //       which we do here, so no need to call setMissing() on all cells first.
                 getFreeBuffer().setFrom(m_cursor.access());
             }
             m_nextRowBuffered = true;
