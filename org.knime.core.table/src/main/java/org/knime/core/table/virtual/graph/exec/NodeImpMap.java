@@ -7,6 +7,7 @@ import java.util.List;
 import org.knime.core.table.access.BufferedAccesses;
 import org.knime.core.table.access.BufferedAccesses.BufferedAccess;
 import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
@@ -45,7 +46,7 @@ class NodeImpMap implements NodeImp {
     }
 
     @Override
-    public ReadAccess getOutput(int i) {
+    public ReadAccess getOutput(final int i) {
         return outputs[i];
     }
 
@@ -65,6 +66,9 @@ class NodeImpMap implements NodeImp {
     @Override
     public boolean forward() {
         if (predecessor.forward()) {
+            // As per buffered access contract, we need to set all fields to missing if we're writing to a new row.
+            // We don't know whether the user provided mapper will write a value to each cell, so we call setMissing.
+            Arrays.stream(mapOutputs).forEach(WriteAccess::setMissing);
             mapper.run();
             return true;
         } else {
