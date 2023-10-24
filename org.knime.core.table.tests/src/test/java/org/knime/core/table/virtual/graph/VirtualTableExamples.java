@@ -23,9 +23,7 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.access.DoubleAccess;
-import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.StringAccess;
-import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
@@ -35,6 +33,7 @@ import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.spec.MapTransformUtils;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverWithRowIndexFactory;
@@ -653,7 +652,7 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtSimpleMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperFactory add = MapperFactory.doublesToDouble((a, b) -> a + b);
+        final MapperFactory add = MapTransformUtils.doublesToDouble((a, b) -> a + b);
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols = table.map(new int[]{2, 3}, add);
         return table
@@ -782,7 +781,7 @@ public class VirtualTableExamples {
         final RowFilterFactory isGreaterThanFive = RowFilterFactory.doublePredicate(d -> d > 5);
 
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-        final VirtualTable mappedCols = table.map(new int[]{1, 2}, MapperFactory.doublesToDouble((a, b) -> a + b));
+        final VirtualTable mappedCols = table.map(new int[]{1, 2}, MapTransformUtils.doublesToDouble((a, b) -> a + b));
         return table //
                 .append(List.of(mappedCols)) //
                 .filterRows(new int[]{4}, isGreaterThanFive) //
@@ -829,7 +828,7 @@ public class VirtualTableExamples {
         final VirtualTable table1 = table //
                 .filterRows(new int[]{2}, isGreaterThanThree) //
                 .filterRows(new int[]{0}, isEven);
-        final VirtualTable mappedCols = table1.map(new int[]{1, 2}, MapperFactory.doublesToDouble(Double::sum));
+        final VirtualTable mappedCols = table1.map(new int[]{1, 2}, MapTransformUtils.doublesToDouble(Double::sum));
         final VirtualTable table2 = table1 //
                 .append(List.of(mappedCols)) //
                 .filterColumns(3, 4);
@@ -894,20 +893,14 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(DOUBLE);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
-                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
-                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
-            }
-        };
+        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(DOUBLE), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                    final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                    return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+                });
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols = table.map(new int[]{0}, addRowIndex);
         return mappedCols.append(table.filterColumns(2));
@@ -934,20 +927,14 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(DOUBLE);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
-                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
-                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
-            }
-        };
+        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(DOUBLE), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                    final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                    return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+                });
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols = table.map(new int[]{0}, addRowIndex);
         return mappedCols.append(table.filterColumns(2)).slice(2, 4);
@@ -971,34 +958,22 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapsParallel(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(DOUBLE);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
-                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
-                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
-            }
-        };
-        final MapperWithRowIndexFactory appendRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(STRING);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
-                final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
-                return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
-            }
-        };
+        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(DOUBLE), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                    final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                    return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+                });
+        final MapperWithRowIndexFactory appendRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(STRING), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
+                    final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
+                    return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
+                });
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols1 = table.map(new int[]{0}, addRowIndex);
         final VirtualTable mappedCols2 = table.map(new int[]{2}, appendRowIndex);
@@ -1026,34 +1001,22 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapsParallelAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(DOUBLE);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
-                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
-                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
-            }
-        };
-        final MapperWithRowIndexFactory appendRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(STRING);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
-                final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
-                return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
-            }
-        };
+        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(DOUBLE), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                    final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                    return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+                });
+        final MapperWithRowIndexFactory appendRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(STRING), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
+                    final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
+                    return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
+                });
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols1 = table.map(new int[]{0}, addRowIndex);
         final VirtualTable mappedCols2 = table.map(new int[]{2}, appendRowIndex);
@@ -1078,34 +1041,22 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapsSequential(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(DOUBLE);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
-                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
-                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
-            }
-        };
-        final MapperWithRowIndexFactory appendRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(STRING);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
-                final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
-                return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
-            }
-        };
+        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(DOUBLE), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                    final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                    return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+                });
+        final MapperWithRowIndexFactory appendRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(STRING), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
+                    final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
+                    return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
+                });
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols1 = table.map(new int[]{0}, addRowIndex);
         final VirtualTable table2 = table.append(mappedCols1);
@@ -1134,34 +1085,22 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapsSequentialAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(DOUBLE);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
-                final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
-                return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
-            }
-        };
-        final MapperWithRowIndexFactory appendRowIndex = new MapperWithRowIndexFactory() {
-            @Override
-            public ColumnarSchema getOutputSchema() {
-                return ColumnarSchema.of(STRING);
-            }
-
-            @Override
-            public Mapper createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-                MapperFactory.verify(inputs, 1, outputs, 1);
-                final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
-                final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
-                return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
-            }
-        };
+        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(DOUBLE), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                    final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                    return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+                });
+        final MapperWithRowIndexFactory appendRowIndex = MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(STRING), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
+                    final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
+                    return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
+                });
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
         final VirtualTable mappedCols1 = table.map(new int[]{0}, addRowIndex);
         final VirtualTable table2 = table.append(mappedCols1);

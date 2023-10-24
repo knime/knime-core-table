@@ -59,6 +59,7 @@ import org.junit.Test;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.RowAccessibles;
+import org.knime.core.table.virtual.spec.MapTransformUtils;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
 /**
@@ -77,7 +78,7 @@ public final class MapTransformTest {
         };
 
         final int[] columnIndices = {0};
-        final MapperFactory addOne = MapperFactory.doublesToDouble(v -> v + 1);
+        final MapperFactory addOne = MapTransformUtils.doublesToDouble(v -> v + 1);
         final ColumnarSchema expectedSchema = ColumnarSchema.of(DOUBLE);
         final Object[][] expectedValues = new Object[][] { //
                 new Object[]{1.1}, //

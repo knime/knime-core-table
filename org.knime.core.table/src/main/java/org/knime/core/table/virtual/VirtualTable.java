@@ -267,6 +267,9 @@ public final class VirtualTable {
 
     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory) {
         final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
+        // TODO (TP) It would be nice to verify here that the MapperFactory
+        //   inputs conform to the selected columns. To do this, MapperFactory
+        //   should also provide the expected input ColumnarSchema.
         return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
     }
 
