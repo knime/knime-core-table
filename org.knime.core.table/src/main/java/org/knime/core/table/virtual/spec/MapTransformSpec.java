@@ -1,22 +1,11 @@
 package org.knime.core.table.virtual.spec;
 
-import static org.knime.core.table.schema.DataSpecs.DOUBLE;
-import static org.knime.core.table.schema.DataSpecs.INT;
-
 import java.util.Arrays;
 import java.util.function.BiFunction;
-import java.util.function.DoubleBinaryOperator;
-import java.util.function.DoubleUnaryOperator;
-import java.util.function.IntBinaryOperator;
-import java.util.function.IntUnaryOperator;
 
-import org.knime.core.table.access.DoubleAccess;
-import org.knime.core.table.access.IntAccess;
-import org.knime.core.table.access.LongAccess;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory.Mapper;
 
 public final class MapTransformSpec implements TableTransformSpec {
 
@@ -40,16 +29,31 @@ public final class MapTransformSpec implements TableTransformSpec {
         ColumnarSchema getOutputSchema();
 
         /**
-         * Create a mapper with the specified {@code inputs} and {@code outputs}. Whenever
-         * the returned mapper is {@code run()}, it reads the current values from the input
-         * accesses, computes the map function, and sets the result values to the output
-         * accesses.
+         * Create a mapper with the specified {@code inputs} and {@code outputs}.
+         * Whenever {@code Mapper.map(rowIndex)} is called, the returned mapper reads
+         * the current values from the input accesses, computes the map function, and
+         * sets the result values to the output accesses.
          *
          * @param inputs  accesses to read input values from
          * @param outputs accesses to write results to
          * @return a mapper reading from {@code inputs} and writing to {@code outputs}.
          */
         Mapper createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
+
+        /**
+         * Wrap {@code createMapper} as a {@code MapperWithRowIndexFactory} with
+         * the given output {@code schema}. The BiFunction {@code createMapper}
+         * takes an array of input {@code ReadAccess}es and an array of output
+         * {@code WriteAccess}es and produces a {@link Mapper} function.
+         *
+         * @param schema output schema
+         * @param createMapper creates {@link Mapper}s
+         */
+        static MapperWithRowIndexFactory of( //
+                final ColumnarSchema schema, //
+                final BiFunction<ReadAccess[], WriteAccess[], Mapper> createMapper) {
+            return new MapTransformUtils.DefaultMapperWithRowIndexFactory(schema, createMapper);
+        }
     }
 
     /**
@@ -78,120 +82,27 @@ public final class MapTransformSpec implements TableTransformSpec {
          */
         Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
 
+        /**
+         * @return the {@code MapperWithRowIndexFactory} wrapped by this
+         * factory, or {@code null}, if this factory is not a wrapper.
+         */
         default MapperWithRowIndexFactory getMapperWithRowIndexFactory() {
             return null;
         }
 
-        static MapperFactory doublesToDouble(final DoubleUnaryOperator fn) {
-            return new DefaultMapperFactory(ColumnarSchema.of(DOUBLE), //
-                    (inputs, outputs) -> {
-                        verify(inputs, 1, outputs, 1);
-                        final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
-                        final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
-                        return () -> o.setDoubleValue(fn.applyAsDouble(i.getDoubleValue()));
-                    });
-        }
-
-        static MapperFactory doublesToDouble(final DoubleBinaryOperator fn) {
-            return new DefaultMapperFactory(ColumnarSchema.of(DOUBLE), //
-                    (inputs, outputs) -> {
-                        verify(inputs, 2, outputs, 1);
-                        final DoubleAccess.DoubleReadAccess i0 = (DoubleAccess.DoubleReadAccess)inputs[0];
-                        final DoubleAccess.DoubleReadAccess i1 = (DoubleAccess.DoubleReadAccess)inputs[1];
-                        final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
-                        return () -> o.setDoubleValue(fn.applyAsDouble(i0.getDoubleValue(), i1.getDoubleValue()));
-                    });
-        }
-
-        static MapperFactory intsToInt(final IntUnaryOperator fn) {
-            return new DefaultMapperFactory(ColumnarSchema.of(INT), //
-                    (inputs, outputs) -> {
-                        verify(inputs, 1, outputs, 1);
-                        final IntAccess.IntReadAccess i = (IntAccess.IntReadAccess)inputs[0];
-                        final IntAccess.IntWriteAccess o = (IntAccess.IntWriteAccess)outputs[0];
-                        return () -> o.setIntValue(fn.applyAsInt(i.getIntValue()));
-                    });
-        }
-
-        static MapperFactory intsToInt(final IntBinaryOperator fn) {
-            return new DefaultMapperFactory(ColumnarSchema.of(INT), //
-                    (inputs, outputs) -> {
-                        verify(inputs, 2, outputs, 1);
-                        final IntAccess.IntReadAccess i0 = (IntAccess.IntReadAccess)inputs[0];
-                        final IntAccess.IntReadAccess i1 = (IntAccess.IntReadAccess)inputs[1];
-                        final IntAccess.IntWriteAccess o = (IntAccess.IntWriteAccess)outputs[0];
-                        return () -> o.setIntValue(fn.applyAsInt(i0.getIntValue(), i1.getIntValue()));
-                    });
-        }
-
-        static void verify(final ReadAccess[] inputs, final int expectedNumInputs, final WriteAccess[] outputs,
-                final int expectedNumOutputs) {
-            if (inputs == null || outputs == null) {
-                throw new NullPointerException();
-            }
-            if (inputs.length != expectedNumInputs) {
-                throw new IllegalArgumentException(
-                        "expected " + expectedNumInputs + " inputs (instead of " + inputs.length + ")");
-            }
-            if (outputs.length != expectedNumOutputs) {
-                throw new IllegalArgumentException(
-                        "expected " + expectedNumOutputs + " outputs (instead of " + outputs.length + ")");
-            }
-        }
-    }
-
-    public static class DefaultMapperFactory implements MapperFactory {
-
-        private final ColumnarSchema schema;
-
-        private final BiFunction<ReadAccess[], WriteAccess[], Runnable> createMapper;
-
-        public DefaultMapperFactory(final ColumnarSchema schema,
+        /**
+         * Wrap {@code createMapper} as a {@code MapperFactory} with the given
+         * output {@code schema}. The BiFunction {@code createMapper} takes an
+         * array of input {@code ReadAccess}es and an array of output {@code
+         * WriteAccess}es and produces a {@code Runnable} mapper function.
+         *
+         * @param schema output schema
+         * @param createMapper creates {@code Runnable} mappers
+         */
+        static MapperFactory of( //
+                final ColumnarSchema schema, //
                 final BiFunction<ReadAccess[], WriteAccess[], Runnable> createMapper) {
-            this.schema = schema;
-            this.createMapper = createMapper;
-        }
-
-        @Override
-        public ColumnarSchema getOutputSchema() {
-            return schema;
-        }
-
-        @Override
-        public Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs) {
-            return createMapper.apply(inputs, outputs);
-        }
-    }
-
-    public static class WrappedMapperWithRowIndexFactory implements MapperFactory {
-
-        private MapperWithRowIndexFactory factory;
-
-        public WrappedMapperWithRowIndexFactory(final MapperWithRowIndexFactory factory) {
-            this.factory = factory;
-        }
-
-        @Override
-        public ColumnarSchema getOutputSchema() {
-            return factory.getOutputSchema();
-        }
-
-        @Override
-        public Runnable createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
-
-            // the last input is the rowIndex
-            final LongAccess.LongReadAccess rowIndex = (LongAccess.LongReadAccess)inputs[inputs.length - 1];
-
-            // create a MapperWithRowIndex with the remaining inputs
-            final ReadAccess[] inputsWithoutRowIndex = Arrays.copyOf(inputs, inputs.length - 1);
-            final Mapper mapper = factory.createMapper(inputsWithoutRowIndex, outputs);
-
-            return () -> mapper.map(rowIndex.getLongValue());
-        }
-
-        @Override
-        public MapperWithRowIndexFactory getMapperWithRowIndexFactory() {
-            return factory;
+            return new MapTransformUtils.DefaultMapperFactory(schema, createMapper);
         }
     }
 
@@ -206,7 +117,7 @@ public final class MapTransformSpec implements TableTransformSpec {
 
     public MapTransformSpec(final int[] columnIndices, final MapperWithRowIndexFactory mapperFactory) {
         this.inputColumnIndices = columnIndices;
-        this.mapperFactory = new WrappedMapperWithRowIndexFactory(mapperFactory);
+        this.mapperFactory = new MapTransformUtils.WrappedMapperWithRowIndexFactory(mapperFactory);
     }
 
     /**
@@ -216,10 +127,25 @@ public final class MapTransformSpec implements TableTransformSpec {
         return inputColumnIndices.clone();
     }
 
+    /**
+     * Get the factory used to create mappers. Mappers accept the {@link
+     * #getColumnSelection() selected columns} as inputs and produces outputs
+     * according to {@link MapperFactory#getOutputSchema()}.
+     *
+     * @return the MapperFactory
+     */
     public MapperFactory getMapperFactory() {
         return mapperFactory;
     }
 
+    /**
+     * Whether mappers created by this factory require row-index values (that
+     * is, the factory has a {@link MapperFactory#getMapperWithRowIndexFactory}.
+     * If true, the row index will be passed as the last input column (in
+     * addition to the inputs columns declared by the {@link MapTransformSpec}.
+     *
+     * @return {@code true}, if row-index values are required.
+     */
     public boolean needsRowIndex() {
         return mapperFactory.getMapperWithRowIndexFactory() != null;
     }
