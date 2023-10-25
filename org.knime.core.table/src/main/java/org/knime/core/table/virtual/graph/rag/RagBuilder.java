@@ -217,7 +217,7 @@ public class RagBuilder {
      * Cursors#toLookahead}).
      * <p>
      * This is possible, if all sources provide {@code LookaheadCursor}s and there are
-     * no row-filter (or other nodes that would destroy lookahead capability.)
+     * no row-filters (or other nodes that would destroy lookahead capability.)
      *
      * @param orderedRag a linearized {@code RagGraph}
      * @return {@code true} if the {@code orderedRag} supports {@code LookaheadCursor}s
