@@ -261,6 +261,79 @@ public class RagBuilder {
     }
 
     /**
+     * Returns {@code true} if the given linearized {@code RagGraph} supports {@code
+     * RandomAccessCursor}s without additional prefetching and buffering.
+     * <p>
+     * This is possible, if all sources are {@code RandomRowAccessible}s and there are
+     * no row-filters (or other nodes that would destroy lookahead capability.)
+     *
+     * @param orderedRag a linearized {@code RagGraph}
+     * @return {@code true} if the {@code orderedRag} supports {@code RandomAccessCursor}s
+     */
+    public static boolean supportsRandomAccess(final List<RagNode> orderedRag) {
+        final RagNode node = orderedRag.get(orderedRag.size() - 1);
+        if (!sinkNodeTypes.contains(node.type())) {
+            throw new IllegalArgumentException();
+        }
+        return supportsRandomAccess(node);
+    }
+
+    private static boolean supportsRandomAccess(final RagNode node) {
+        switch (node.type()) {
+            case SOURCE: {
+                final SourceTransformSpec spec = node.getTransformSpec();
+                return spec.getProperties().supportsRandomAccess();
+            }
+            case APPEND:
+            case CONSUMER:
+            case MATERIALIZE:
+            case SLICE:
+            case ROWINDEX:
+            case OBSERVER: {
+                for (RagNode predecessor : node.predecessors(EXEC)) {
+                    if (!supportsRandomAccess(predecessor)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            case CONCATENATE: {
+                // all predecessors need to support random-access AND
+                // all predecessors except the last one need to know numRows()
+                List<RagNode> predecessors = node.predecessors(EXEC);
+                for (int i = 0; i < predecessors.size(); i++) {
+                    RagNode predecessor = predecessors.get(i);
+                    if (!supportsRandomAccess(predecessor)) {
+                        return false;
+                    }
+                    if ( i != predecessors.size() - 1 && numRows(predecessor) < 0 ) {
+                        return false;
+                    }
+                }
+                for (RagNode predecessor : predecessors) {
+                    if (!supportsRandomAccess(predecessor)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            case ROWFILTER: {
+                return false;
+            }
+            case APPENDMISSING:
+            case COLFILTER:
+            case MISSING:
+            case MAP:
+            case WRAPPER:
+            case IDENTITY:
+                throw new IllegalArgumentException(
+                        "Unexpected RagNode type " + node.type() + ".");
+            default:
+                throw new IllegalStateException("Unexpected value: " + node.type());
+        }
+    }
+
+    /**
      * Returns the number of rows of the given linearized {@code RagGraph}, or a negative value
      * if the number of rows is unknown.
      *
