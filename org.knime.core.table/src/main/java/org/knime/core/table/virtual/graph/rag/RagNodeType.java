@@ -2,6 +2,7 @@ package org.knime.core.table.virtual.graph.rag;
 
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
+import org.knime.core.table.virtual.spec.ProgressListenerTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.IdentityTransformSpec;
@@ -26,7 +27,8 @@ public enum RagNodeType {
     MATERIALIZE, //
     WRAPPER, //
     IDENTITY, //
-    ROWINDEX;
+    ROWINDEX, //
+    OBSERVER;
 
     public static RagNodeType forSpec(final TableTransformSpec spec) {
         if (spec instanceof SourceTransformSpec)
@@ -57,6 +59,8 @@ public enum RagNodeType {
             return RagNodeType.IDENTITY;
         else if (spec instanceof RowIndexTransformSpec)
             return RagNodeType.ROWINDEX;
+        else if (spec instanceof ProgressListenerTransformSpec)
+            return RagNodeType.OBSERVER;
         else
             throw new IllegalArgumentException();
     }
