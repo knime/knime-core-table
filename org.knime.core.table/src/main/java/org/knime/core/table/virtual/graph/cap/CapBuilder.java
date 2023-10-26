@@ -266,6 +266,7 @@ public class CapBuilder {
 
         return new CursorAssemblyPlan(cursorAssemblyPlan, //
                 RagBuilder.supportsLookahead(orderedRag), //
+                RagBuilder.supportsRandomAccess(orderedRag), //
                 numRows, //
                 RagBuilder.getSourceAndSinkSchemas(orderedRag));
     }
