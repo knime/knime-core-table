@@ -34,6 +34,8 @@ public class CursorAssemblyPlan {
 
     private final boolean supportsLookahead;
 
+    private final boolean supportsRandomAccess;
+
     private final long numRows;
 
     private final Map<UUID, ColumnarSchema> schemas;
@@ -45,12 +47,14 @@ public class CursorAssemblyPlan {
      *            front-to-back to instantiate a {@code Cursor<ReadAccessRow>}. Each node may only refer back to earlier
      *            nodes in the sequence.
      * @param supportsLookahead whether the constructed cursor should be a {@code LookaheadCursor}.
+     * @param supportsRandomAccess whether the constructed cursor should be a {@code RandomAccessCursor}.
      * @param numRows number of rows. {@code numRows<0} if the number of rows is unknown.
      * @param schemas the {@code ColumnarSchema}s of source and sink {@code RowAccessible}s, for schema verification during execution.
      */
-    public CursorAssemblyPlan(final List<CapNode> nodes, final boolean supportsLookahead, final long numRows, final Map<UUID, ColumnarSchema> schemas) {
+    public CursorAssemblyPlan(final List<CapNode> nodes, final boolean supportsLookahead, final boolean supportsRandomAccess, final long numRows, final Map<UUID, ColumnarSchema> schemas) {
         this.nodes = nodes;
         this.supportsLookahead = supportsLookahead;
+        this.supportsRandomAccess = supportsRandomAccess;
         this.numRows = numRows;
         this.schemas = schemas;
     }
@@ -71,6 +75,15 @@ public class CursorAssemblyPlan {
      */
     public boolean supportsLookahead() {
         return supportsLookahead;
+    }
+
+    /**
+     * Returns {@code true} if the assembled Cursor should be a {@code RandomAccessCursor}.
+     *
+     * @return {@code true} if the assembled Cursor should be a {@code RandomAccessCursor}.
+     */
+    public boolean supportsRandomAccess() {
+        return supportsRandomAccess;
     }
 
     /**
