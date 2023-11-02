@@ -19,7 +19,7 @@ class MissingValueColumns {
      * {@code DoubleDataSpec} column, even if there are multiple missing {@code DoubleDataSpec} columns used throughout
      * a {@code VirtualTable} construction.
      * <p>
-     * Newly occurring {@code DataSpec}s are assigned consecutive {2code int} indices. These indices correspond to
+     * Newly occurring {@code DataSpec}s are assigned consecutive {@code int} indices. These indices correspond to
      * column indices in the (singleton) MISSING node {@link RagGraph#getMissingValuesSource()}.
      *
      * @param spec a {@code DataSpec} for which a missing-value column is needed.
