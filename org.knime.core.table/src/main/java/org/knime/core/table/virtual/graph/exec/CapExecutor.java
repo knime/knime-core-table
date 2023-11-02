@@ -10,11 +10,13 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
+import org.knime.core.table.virtual.graph.rag.RagGraph;
 
 public class CapExecutor {
 
     /**
      *
+     * @param specGraph
      * @param schema
      * @param cap
      * @param uuidRowAccessibleMap
@@ -22,6 +24,7 @@ public class CapExecutor {
      * @return
      */
     public static RowAccessible createRowAccessible(
+            final RagGraph specGraph,
             final ColumnarSchema schema,
             final CursorAssemblyPlan cap,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap,
@@ -37,12 +40,23 @@ public class CapExecutor {
         }
     }
 
+    // TODO (TP) REMOVE
+    @Deprecated
+    public static RowAccessible createRowAccessible(
+            final ColumnarSchema schema,
+            final CursorAssemblyPlan cap,
+            final Map<UUID, RowAccessible> uuidRowAccessibleMap,
+            final boolean useRandomAccess) {
+        return createRowAccessible(null, schema, cap, uuidRowAccessibleMap, useRandomAccess);
+    }
+
+    // TODO (TP) REMOVE
+    @Deprecated
     public static RowAccessible createRowAccessible(
             final ColumnarSchema schema,
             final CursorAssemblyPlan cap,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap ) {
-
-        return createRowAccessible(schema, cap, uuidRowAccessibleMap, true);
+        return createRowAccessible(null, schema, cap, uuidRowAccessibleMap, true);
     }
 
     public static void execute(final CursorAssemblyPlan cap, //
