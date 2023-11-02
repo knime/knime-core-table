@@ -5,8 +5,11 @@ import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
+import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.TableTransform;
 
 /**
@@ -21,12 +24,17 @@ public class RagGraph {
 
     private final TypedObjects<RagEdgeType, RagEdge> edges = new TypedObjects<>(RagEdgeType.class);
 
+    private final MissingValueColumns missingValueColumns = new MissingValueColumns();
+
+    private final RagNode missingValuesSource;
+
     // the Consumer node representing the final virtual table
     private RagNode root;
 
-    private RagNode missingValuesSource;
-
     public RagGraph()  {
+        missingValuesSource = addNode(new TableTransform(//
+                Collections.emptyList(),//
+                new MissingValuesSourceTransformSpec(missingValueColumns.unmodifiable)));
     }
 
     public RagNode addNode(final TableTransform transform) {
@@ -160,10 +168,6 @@ public class RagGraph {
         return missingValuesSource;
     }
 
-    public void setMissingValuesSource(final RagNode missingValuesSource) {
-        this.missingValuesSource = missingValuesSource;
-    }
-
     /**
      * Trim unnecessary nodes and edges.
      * <p>
@@ -226,6 +230,18 @@ public class RagGraph {
         sb.append("  }\n");
         sb.append("}");
         return sb.toString();
+    }
+
+    /**
+     * Get or create an {@code AccessId} from {@code missingValuesSource},
+     * matching the given DataSpec. {@code missingValuesSource} columns are
+     * reused for all missing-value columns with the same DataSpec so a new one
+     * is created if no missing-value column matching ({@code dataspec}, {@code
+     * traits}) exists yet.
+     */
+    AccessId getMissingValuesAccessId(final DataSpec dataSpec, final DataTraits traits) {
+        final int columnIndex = missingValueColumns.getOrAdd(dataSpec, traits);
+        return missingValuesSource.getOrCreateOutput(columnIndex);
     }
 
     /**
