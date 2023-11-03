@@ -175,7 +175,7 @@ public class ExecCapAll {
         final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
         final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
         final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-        final RowAccessible rows = createRowAccessible(schema, cursorAssemblyPlan, uuidRowAccessibleMap);
+        final RowAccessible rows = createRowAccessible(graph, schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
 
         System.out.println(exampleName);
         System.out.println("------------------------");

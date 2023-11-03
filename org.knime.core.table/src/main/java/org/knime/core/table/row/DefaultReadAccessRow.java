@@ -14,8 +14,11 @@ public class DefaultReadAccessRow implements ReadAccessRow {
         Arrays.setAll(accesses, generator);
     }
 
-    public DefaultReadAccessRow(ReadAccess[] accesses) {
-        this.accesses = accesses;
+    public DefaultReadAccessRow(final int size, final IntFunction<? extends ReadAccess> generator, final int[] selected) {
+        accesses = new ReadAccess[size];
+        for (int i = 0; i < selected.length; i++) {
+            accesses[selected[i]] = generator.apply(i);
+        }
     }
 
     @Override

@@ -2,15 +2,12 @@ package org.knime.core.table.virtual.graph.exec;
 
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.virtual.graph.exec.CapRowAccessible.CapCursorData;
 
 class CapLookaheadCursor extends CapCursor implements LookaheadCursor<ReadAccessRow> {
 
-    public CapLookaheadCursor(final NodeImpConsumer node) {
-        super(node);
-    }
-
-    public CapLookaheadCursor(final NodeImpConsumer node, final int[] selected) {
-        super(node, selected);
+    public CapLookaheadCursor(final CapCursorData data) {
+        super(data);
     }
 
     @Override
