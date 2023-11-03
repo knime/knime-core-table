@@ -14,23 +14,27 @@ import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
+import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 
 public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
+    private final RagGraph specGraph;
     private final ColumnarSchema schema;
     private final CursorAssemblyPlan cursorAssemblyPlan;
 
     public GraphVirtualTableExecutor(final TableTransform leafTransform)
     {
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(leafTransform);
+        specGraph = SpecGraphBuilder.buildSpecGraph(leafTransform);
+        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(specGraph);
         schema = RagBuilder.createSchema(orderedRag);
         cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
     }
 
     @Override
     public List<RowAccessible> execute(Map<UUID, RowAccessible> inputs) {
-        final RowAccessible rows = CapExecutor.createRowAccessible(schema, cursorAssemblyPlan, inputs);
+        final RowAccessible rows = CapExecutor.createRowAccessible(specGraph, schema, cursorAssemblyPlan, inputs, true);
         return List.of(rows);
     }
 
