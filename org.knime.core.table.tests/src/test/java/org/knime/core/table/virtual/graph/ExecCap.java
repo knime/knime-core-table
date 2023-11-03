@@ -176,7 +176,7 @@ public class ExecCap {
             final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
             final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
             final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
-            final RowAccessible rows = createRowAccessible(schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
+            final RowAccessible rows = createRowAccessible(graph, schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
 
             final boolean supportsRandomAccess = RagBuilder.supportsRandomAccess(orderedRag);
             System.out.println("supportsRandomAccess = " + supportsRandomAccess);
