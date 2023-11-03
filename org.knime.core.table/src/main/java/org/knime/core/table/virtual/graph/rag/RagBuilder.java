@@ -71,22 +71,13 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
 public class RagBuilder {
 
     public static final Function<List<RagNode>, RagNode> DEFAULT_POLICY = nodes -> {
-        nodes.sort(Comparator.comparingInt(node -> {
-            switch (node.type()) {
-                case SOURCE:
-                default:
-                    return 0;
-                case SLICE:
-                    return 1;
-                case ROWFILTER:
-                    return 2;
-                case APPEND:
-                    return 3;
-                case CONCATENATE:
-                    return 4;
-                case MAP:
-                    return 5;
-            }
+        nodes.sort(Comparator.comparingInt(node -> switch (node.type()) {
+            default -> 0;
+            case SLICE -> 1;
+            case ROWFILTER -> 2;
+            case APPEND -> 3;
+            case CONCATENATE -> 4;
+            case MAP -> 5;
         }));
         return nodes.get(0);
     };
