@@ -2,31 +2,21 @@ package org.knime.core.table.virtual.graph.exec;
 
 import java.io.IOException;
 
-import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
-import org.knime.core.table.row.DefaultReadAccessRow;
 import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.virtual.graph.exec.CapRowAccessible.CapCursorData;
 
 class CapCursor implements Cursor<ReadAccessRow> {
 
     final NodeImpConsumer node;
 
-    private final DefaultReadAccessRow access;
+    private final ReadAccessRow access;
 
-    public CapCursor(final NodeImpConsumer node) {
-        this.node = node;
+    public CapCursor(final CapCursorData data)
+    {
+        node = data.assembleConsumer();
         node.create();
-        access = new DefaultReadAccessRow(node.numOutputs(), node::getOutput);
-    }
-
-    public CapCursor(final NodeImpConsumer node, final int[] selected) {
-        this.node = node;
-        node.create();
-        final ReadAccess[] accesses = new ReadAccess[node.numOutputs()];
-        for (int i = 0; i < selected.length; i++) {
-            accesses[selected[i]] = node.getOutput(i);
-        }
-        access = new DefaultReadAccessRow(accesses);
+        access = data.createReadAccessRow(node::getOutput);
     }
 
     @Override

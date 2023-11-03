@@ -7,7 +7,9 @@ import org.knime.core.table.access.StringAccess;
 
 public class ReadAccessUtils {
     public  static String toString(final ReadAccess access) {
-        if (access instanceof IntAccess.IntReadAccess) {
+        if (access == null) {
+            return "null";
+        } else if (access instanceof IntAccess.IntReadAccess) {
             final IntAccess.IntReadAccess a = (IntAccess.IntReadAccess)access;
             return "(int) " + (a.isMissing() ? "-missing-" : a.getIntValue());
         } else if (access instanceof StringAccess.StringReadAccess) {
@@ -17,6 +19,6 @@ public class ReadAccessUtils {
             final DoubleAccess.DoubleReadAccess a = (DoubleAccess.DoubleReadAccess)access;
             return "(double) " + (a.isMissing() ? "-missing-" : a.getDoubleValue());
         }
-        throw new UnsupportedOperationException("not implemented yet");
+        throw new UnsupportedOperationException("not implemented yet (access = " + access + ")");
     }
 }

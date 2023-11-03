@@ -30,13 +30,12 @@ public class CapExecutor {
             final Map<UUID, RowAccessible> uuidRowAccessibleMap,
             final boolean useRandomAccess) {
 
-        final List<RowAccessible> sources = CapExecutorUtils.getSources(cap, uuidRowAccessibleMap);
         if (useRandomAccess && cap.supportsRandomAccess()) {
-            return new CapRandomRowAccessible(specGraph, schema, cap, sources);
+            return new CapRandomRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
         } else if (cap.supportsLookahead()) {
-            return new CapLookaheadRowAccessible(specGraph, schema, cap, sources);
+            return new CapLookaheadRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
         } else {
-            return new CapRowAccessible(specGraph, schema, cap, sources);
+            return new CapRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
         }
     }
 

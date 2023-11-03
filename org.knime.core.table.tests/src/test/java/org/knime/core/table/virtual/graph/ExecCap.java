@@ -20,6 +20,7 @@ import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
+import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
@@ -47,9 +48,9 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataAppend();
 //        final VirtualTable table = VirtualTableExamples.vtAppend(sourceIdentifiers, sourceAccessibles);
 
-//        final UUID[] sourceIdentifiers = createSourceIds(2);
-//        final RowAccessible[] sourceAccessibles = toLookahead(VirtualTableExamples.dataAppendAndSlice());
-//        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice(sourceIdentifiers, sourceAccessibles);
+        final UUID[] sourceIdentifiers = createSourceIds(2);
+        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataAppendAndSlice();
+        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice(sourceIdentifiers, sourceAccessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataForkJoin();
@@ -121,9 +122,9 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataMinimal();
 //        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsSequential(sourceIdentifiers, sourceAccessibles);
 
-        final UUID[] sourceIdentifiers = createSourceIds(2);
-        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataObserve();
-        final VirtualTable table = VirtualTableExamples.vtObserve(sourceIdentifiers, sourceAccessibles);
+//        final UUID[] sourceIdentifiers = createSourceIds(2);
+//        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataObserve();
+//        final VirtualTable table = VirtualTableExamples.vtObserve(sourceIdentifiers, sourceAccessibles);
 
         if ( doExecute ) {
 
@@ -173,7 +174,7 @@ public class ExecCap {
             }
 
             final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
-            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
+            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph.copy());
             final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
             final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
             final RowAccessible rows = createRowAccessible(graph, schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
@@ -182,6 +183,28 @@ public class ExecCap {
             System.out.println("supportsRandomAccess = " + supportsRandomAccess);
 
             try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
+                while (cursor.forward()) {
+                    System.out.print("a = ");
+                    for (int i = 0; i < cursor.access().size(); i++)
+                        System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                    System.out.println();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(1))) {
+                while (cursor.forward()) {
+                    System.out.print("a = ");
+                    for (int i = 0; i < cursor.access().size(); i++)
+                        System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                    System.out.println();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(0))) {
                 while (cursor.forward()) {
                     System.out.print("a = ");
                     for (int i = 0; i < cursor.access().size(); i++)
