@@ -57,6 +57,6 @@ class CapRowAccessible implements RowAccessible {
     }
 
     NodeImpConsumer assembleConsumer() {
-        return new AssembleNodeImps(cap.nodes(), sources, Collections.emptyList()).getConsumer();
+        return new AssembleNodeImps(cap.nodes(), sources).getConsumer();
     }
 }
