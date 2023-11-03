@@ -2,6 +2,7 @@ package org.knime.core.table.virtual.graph.exec;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,8 +28,16 @@ class AssembleNodeImps {
 
     public AssembleNodeImps(
             final List<CapNode> cap,
-            final List<RowAccessible> sources,
+            final List<RowAccessible> sources) {
+
+        this(cap, sources, Collections.emptyList());
+    }
+
+    public AssembleNodeImps( //
+            final List<CapNode> cap, //
+            final List<RowAccessible> sources, //
             final List<RowWriteAccessible> sinks) {
+
         imps = new ArrayList<>(cap.size());
         final Iterator<RowAccessible> sourceIter = sources.iterator();
         final Iterator<RowWriteAccessible> sinksIter = sinks.iterator();
