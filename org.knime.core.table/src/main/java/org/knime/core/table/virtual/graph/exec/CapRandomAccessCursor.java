@@ -1,7 +1,10 @@
 package org.knime.core.table.virtual.graph.exec;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.row.DefaultReadAccessRow;
 import org.knime.core.table.cursor.RandomAccessCursor;
 import org.knime.core.table.row.ReadAccessRow;
@@ -21,6 +24,18 @@ class CapRandomAccessCursor implements RandomAccessCursor<ReadAccessRow> {
         this.numRows = numRows;
         node.create();
         access = new DefaultReadAccessRow(node.numOutputs(), node::getOutput);
+        nextRow = 0;
+    }
+
+    public CapRandomAccessCursor(final RandomAccessNodeImpConsumer node, final int[] selected, final long numRows) {
+        this.node = node;
+        this.numRows = numRows;
+        node.create();
+        final ReadAccess[] accesses = new ReadAccess[node.numOutputs()];
+        for (int i = 0; i < selected.length; i++) {
+            accesses[selected[i]] = node.getOutput(i);
+        }
+        access = new DefaultReadAccessRow(accesses);
         nextRow = 0;
     }
 

@@ -9,6 +9,10 @@ class CapLookaheadCursor extends CapCursor implements LookaheadCursor<ReadAccess
         super(node);
     }
 
+    public CapLookaheadCursor(final NodeImpConsumer node, final int[] selected) {
+        super(node, selected);
+    }
+
     @Override
     public boolean canForward() {
         return node.canForward();

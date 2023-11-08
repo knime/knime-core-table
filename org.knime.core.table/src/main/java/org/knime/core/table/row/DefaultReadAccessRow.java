@@ -14,6 +14,10 @@ public class DefaultReadAccessRow implements ReadAccessRow {
         Arrays.setAll(accesses, generator);
     }
 
+    public DefaultReadAccessRow(ReadAccess[] accesses) {
+        this.accesses = accesses;
+    }
+
     @Override
     public int size() {
         return accesses.length;
