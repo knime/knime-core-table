@@ -25,7 +25,7 @@ class CapLookaheadRowAccessible extends CapRowAccessible implements LookaheadRow
 
     @Override
     public LookaheadCursor<ReadAccessRow> createCursor() {
-        return new CapLookaheadCursor(getCursorData(null));
+        return new CapLookaheadCursor(getCursorData(Selection.all()));
     }
 
     @Override

@@ -20,6 +20,10 @@ import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
 class CapRowAccessible implements RowAccessible {
 
     private final RagGraph specGraph;
@@ -28,9 +32,9 @@ class CapRowAccessible implements RowAccessible {
 
     private final CursorAssemblyPlan cap;
 
-    private final List<RowAccessible> sources;
-
     private final Map<UUID, RowAccessible> availableSources;
+
+    private final LoadingCache<Selection, CapCursorData> capCache;
 
     CapRowAccessible( //
             final RagGraph specGraph, //
@@ -41,7 +45,21 @@ class CapRowAccessible implements RowAccessible {
         this.schema = schema;
         this.cap = cap;
         this.availableSources = availableSources;
-        this.sources = CapExecutorUtils.getSources(cap, availableSources);
+
+        // TODO (TP) Should we add Caffeine as a dependency?
+        //           The Guava doc recommends to prefer it over com.google.common.cache
+        //           https://guava.dev/releases/snapshot-jre/api/docs/com/google/common/cache/CacheBuilder.html
+        // TODO (TP) It might be better to use softValues().
+        //           This would be better for caching, but I'm not sure how much
+        //           pressure it would put on other caches. In practice,
+        //           CapRowAccessible is probably short-lived anyway, but better
+        //           to be safe for now.
+        this.capCache = CacheBuilder.newBuilder().weakValues().build(new CacheLoader<>() {
+            @Override
+            public CapCursorData load(Selection selection) {
+                return createCursorData(selection);
+            }
+        });
     }
 
     @Override
@@ -51,7 +69,7 @@ class CapRowAccessible implements RowAccessible {
 
     @Override
     public Cursor<ReadAccessRow> createCursor() {
-        return new CapCursor(getCursorData(null));
+        return new CapCursor(getCursorData(Selection.all()));
     }
 
     @Override
@@ -91,25 +109,28 @@ class CapRowAccessible implements RowAccessible {
     }
 
     CapCursorData getCursorData(final Selection selection) {
+        return capCache.getUnchecked(selection);
+    }
+
+    private CapCursorData createCursorData(final Selection selection) {
 
         final int numColumns = schema.numColumns();
+        final CursorAssemblyPlan scap;
+        final int[] selected;
 
-        if (selection == null || selection.allSelected()) {
-            return new CapCursorData(cap, sources, numColumns, null);
-        }
-
-        final RagGraph graph = SpecGraphBuilder.appendSelection(specGraph, selection);
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph, false);
-        final CursorAssemblyPlan scap = CapBuilder.createCursorAssemblyPlan(orderedRag);
-
-        final Selection.ColumnSelection cols = selection.columns();
-        if (cols.allSelected(0, numColumns)) {
-            return new CapCursorData(scap, sources, numColumns, null);
+        if (selection.allSelected()) {
+            scap = cap;
+            selected = null;
         } else {
-            final int[] selected = cols.getSelected(0, numColumns);
-            final List<RowAccessible> sources = CapExecutorUtils.getSources(scap, availableSources);
-            return new CapCursorData(scap, sources, numColumns, selected);
+            final RagGraph graph = SpecGraphBuilder.appendSelection(specGraph, selection);
+            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph, false);
+            scap = CapBuilder.createCursorAssemblyPlan(orderedRag);
+            selected = selection.columns().allSelected(0, numColumns) //
+                    ? null //
+                    : selection.columns().getSelected(0, numColumns);
         }
 
+        final List<RowAccessible> sources = CapExecutorUtils.getSources(scap, availableSources);
+        return new CapCursorData(scap, sources, numColumns, selected);
     }
 }
