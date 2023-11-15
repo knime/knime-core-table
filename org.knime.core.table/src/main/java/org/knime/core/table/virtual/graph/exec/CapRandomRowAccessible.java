@@ -25,7 +25,7 @@ class CapRandomRowAccessible extends CapRowAccessible implements RandomRowAccess
 
     @Override
     public RandomAccessCursor<ReadAccessRow> createCursor() {
-        return new CapRandomAccessCursor(getCursorData(null));
+        return new CapRandomAccessCursor(getCursorData(Selection.all()));
     }
 
     @Override
