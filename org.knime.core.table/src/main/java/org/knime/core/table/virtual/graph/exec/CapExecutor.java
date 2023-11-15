@@ -39,25 +39,6 @@ public class CapExecutor {
         }
     }
 
-    // TODO (TP) REMOVE
-    @Deprecated
-    public static RowAccessible createRowAccessible(
-            final ColumnarSchema schema,
-            final CursorAssemblyPlan cap,
-            final Map<UUID, RowAccessible> uuidRowAccessibleMap,
-            final boolean useRandomAccess) {
-        return createRowAccessible(null, schema, cap, uuidRowAccessibleMap, useRandomAccess);
-    }
-
-    // TODO (TP) REMOVE
-    @Deprecated
-    public static RowAccessible createRowAccessible(
-            final ColumnarSchema schema,
-            final CursorAssemblyPlan cap,
-            final Map<UUID, RowAccessible> uuidRowAccessibleMap ) {
-        return createRowAccessible(null, schema, cap, uuidRowAccessibleMap, true);
-    }
-
     public static void execute(final CursorAssemblyPlan cap, //
             final Map<UUID, RowAccessible> uuidRowAccessibleMap, //
             final Map<UUID, RowWriteAccessible> uuidRowWriteAccessibleMap //
