@@ -129,26 +129,12 @@ public class SpecGraphBuilder {
                     final RagNode wrap = graph.addNode(wrapTransform);
                     graph.addEdge(input, wrap, SPEC);
                     graph.addEdge(wrap, node, SPEC);
-                } else if ((node.type() == MAP || node.type() == OBSERVER) && needsRowIndex(node.getTransformSpec())) {
-                    final var indexTransform = new TableTransform(Collections.emptyList(), new RowIndexTransformSpec());
-                    final RagNode index = graph.addNode(indexTransform);
-                    graph.addEdge(input, index, SPEC);
-                    graph.addEdge(index, node, SPEC);
                 } else {
                     graph.addEdge(input, node, SPEC);
                 }
             }
         }
         return node;
-    }
-
-    private boolean needsRowIndex(TableTransformSpec spec) {
-        if (spec instanceof MapTransformSpec m)
-            return m.needsRowIndex();
-        else if (spec instanceof ObserverTransformSpec o)
-            return o.needsRowIndex();
-        else
-            throw new IllegalArgumentException();
     }
 
     /**
@@ -171,11 +157,8 @@ public class SpecGraphBuilder {
             case ROWFILTER:
             case IDENTITY:
             case WRAPPER:
-                numColumns = node.predecessor(SPEC).numColumns();
-                break;
             case OBSERVER:
-                final boolean needsRowIndex = node.<ObserverTransformSpec>getTransformSpec().needsRowIndex();
-                numColumns = node.predecessor(SPEC).numColumns() - (needsRowIndex ? 1 : 0);
+                numColumns = node.predecessor(SPEC).numColumns();
                 break;
             case ROWINDEX:
                 // append one column for the row index

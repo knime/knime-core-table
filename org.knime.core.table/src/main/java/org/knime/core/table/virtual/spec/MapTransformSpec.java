@@ -10,53 +10,6 @@ import org.knime.core.table.schema.ColumnarSchema;
 public final class MapTransformSpec implements TableTransformSpec {
 
     /**
-     * A {@code MapperWithRowIndexFactory} creates {@code Mapper}s.
-     * <p>
-     * A mapper is created with pre-defined input and output accesses. Whenever
-     * {@code Mapper.map(rowIndex)} is called, it reads the current values from
-     * the inputs, computes the map function, and sets the result values to the
-     * output accesses.
-     */
-    public interface MapperWithRowIndexFactory {
-
-        interface Mapper {
-            void map(long rowIndex);
-        }
-
-        /**
-         * @return the ColumnarSchema of the columns produced by the map function
-         */
-        ColumnarSchema getOutputSchema();
-
-        /**
-         * Create a mapper with the specified {@code inputs} and {@code outputs}.
-         * Whenever {@code Mapper.map(rowIndex)} is called, the returned mapper reads
-         * the current values from the input accesses, computes the map function, and
-         * sets the result values to the output accesses.
-         *
-         * @param inputs  accesses to read input values from
-         * @param outputs accesses to write results to
-         * @return a mapper reading from {@code inputs} and writing to {@code outputs}.
-         */
-        Mapper createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
-
-        /**
-         * Wrap {@code createMapper} as a {@code MapperWithRowIndexFactory} with
-         * the given output {@code schema}. The BiFunction {@code createMapper}
-         * takes an array of input {@code ReadAccess}es and an array of output
-         * {@code WriteAccess}es and produces a {@link Mapper} function.
-         *
-         * @param schema output schema
-         * @param createMapper creates {@link Mapper}s
-         */
-        static MapperWithRowIndexFactory of( //
-                final ColumnarSchema schema, //
-                final BiFunction<ReadAccess[], WriteAccess[], Mapper> createMapper) {
-            return new MapTransformUtils.DefaultMapperWithRowIndexFactory(schema, createMapper);
-        }
-    }
-
-    /**
      * A {@code MapperFactory} creates {@code Runnable} mappers.
      * <p>
      * A mapper is created with pre-defined input and output accesses. Whenever the
@@ -83,14 +36,6 @@ public final class MapTransformSpec implements TableTransformSpec {
         Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
 
         /**
-         * @return the {@code MapperWithRowIndexFactory} wrapped by this
-         * factory, or {@code null}, if this factory is not a wrapper.
-         */
-        default MapperWithRowIndexFactory getMapperWithRowIndexFactory() {
-            return null;
-        }
-
-        /**
          * Wrap {@code createMapper} as a {@code MapperFactory} with the given
          * output {@code schema}. The BiFunction {@code createMapper} takes an
          * array of input {@code ReadAccess}es and an array of output {@code
@@ -101,7 +46,7 @@ public final class MapTransformSpec implements TableTransformSpec {
          */
         static MapperFactory of( //
                 final ColumnarSchema schema, //
-                final BiFunction<ReadAccess[], WriteAccess[], Runnable> createMapper) {
+                final BiFunction<ReadAccess[], WriteAccess[], ? extends Runnable> createMapper) {
             return new MapTransformUtils.DefaultMapperFactory(schema, createMapper);
         }
     }
@@ -113,11 +58,6 @@ public final class MapTransformSpec implements TableTransformSpec {
     public MapTransformSpec(final int[] columnIndices, final MapperFactory mapperFactory) {
         this.inputColumnIndices = columnIndices;
         this.mapperFactory = mapperFactory;
-    }
-
-    public MapTransformSpec(final int[] columnIndices, final MapperWithRowIndexFactory mapperFactory) {
-        this.inputColumnIndices = columnIndices;
-        this.mapperFactory = new MapTransformUtils.WrappedMapperWithRowIndexFactory(mapperFactory);
     }
 
     /**
@@ -138,18 +78,6 @@ public final class MapTransformSpec implements TableTransformSpec {
         return mapperFactory;
     }
 
-    /**
-     * Whether mappers created by this factory require row-index values (that
-     * is, the factory has a {@link MapperFactory#getMapperWithRowIndexFactory}.
-     * If true, the row index will be passed as the last input column (in
-     * addition to the inputs columns declared by the {@link MapTransformSpec}.
-     *
-     * @return {@code true}, if row-index values are required.
-     */
-    public boolean needsRowIndex() {
-        return mapperFactory.getMapperWithRowIndexFactory() != null;
-    }
-
     @Override
     public String toString() {
         return "Map " + Arrays.toString(inputColumnIndices);
@@ -160,11 +88,10 @@ public final class MapTransformSpec implements TableTransformSpec {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof MapTransformSpec)) {
+        if (!(o instanceof MapTransformSpec that)) {
             return false;
         }
 
-        final MapTransformSpec that = (MapTransformSpec)o;
         if (!Arrays.equals(inputColumnIndices, that.inputColumnIndices)) {
             return false;
         }
