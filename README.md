@@ -4,3 +4,13 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=KNIME_knime-core-table&metric=alert_status&token=55129ac721eacd76417f57921368ed587ad8339d)](https://sonarcloud.io/summary/new_code?id=KNIME_knime-core-table)
 
 This repository is maintained by the [KNIME Team Rakete](mailto:team-rakete@knime.com).
+
+The plugin defines general table definitions and the virtual table computation graph.
+
+## Development Notes
+
+You can find instructions on how to work with our code or develop extensions for KNIME Analytics Platform in the _knime-sdk-setup_ repository on [BitBucket](https://bitbucket.org/KNIME/knime-sdk-setup) or [GitHub](http://github.com/knime/knime-sdk-setup).
+
+## Join the Community
+
+* [KNIME Forum](https://forum.knime.com/)
