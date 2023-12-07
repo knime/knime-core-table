@@ -570,9 +570,7 @@ public class RagBuilder {
         });
 
         graph.nodes(OBSERVER).forEach(node -> {
-            final ObserverTransformSpec spec = node.getTransformSpec();
-            final boolean needsRowIndex = spec.needsRowIndex();
-            final int numInputColumns = spec.getColumnSelection().length + (needsRowIndex ? 1 : 0);
+            final int numInputColumns = node.<ObserverTransformSpec>getTransformSpec().getColumnSelection().length;
             for (int i = 0; i < numInputColumns; i++) {
                 traceAndLinkAccess(i, node);
             }
@@ -681,7 +679,7 @@ public class RagBuilder {
                 if (node.getMark() == 0) {
                     node.setMark(1);
                     final MapTransformSpec spec = node.getTransformSpec();
-                    final int numInputColumns = spec.getColumnSelection().length + (spec.needsRowIndex() ? 1 : 0);
+                    final int numInputColumns = spec.getColumnSelection().length;
                     for (int j = 0; j < numInputColumns; j++) {
                         traceAndLinkAccess(j, node);
                     }

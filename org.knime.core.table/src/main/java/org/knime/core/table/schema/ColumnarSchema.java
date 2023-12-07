@@ -45,10 +45,12 @@
  */
 package org.knime.core.table.schema;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.virtual.ColumnarSchemas;
 
 /**
  * The columnar schema of a table.
@@ -132,5 +134,15 @@ public interface ColumnarSchema extends Iterable<DataSpec> {
             columnTraits[i] = specs[i].traits();
         }
         return new DefaultColumnarSchema(columnSpecs, columnTraits);
+    }
+
+    /**
+     * Append columns with the given {@code specs} to this scheme
+     *
+     * @param specs A list of {@link DataSpecWithTraits} to be appended this schema
+     * @return new schema that is constructed by appending {@code specs} to this schema
+     */
+    default ColumnarSchema append(final DataSpecs.DataSpecWithTraits... specs) {
+        return ColumnarSchemas.append(List.of(this, ColumnarSchema.of(specs)));
     }
 }

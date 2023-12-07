@@ -48,10 +48,12 @@
  */
 package org.knime.core.table.virtual;
 
+import static org.knime.core.table.schema.DataSpecs.LONG;
 import static org.knime.core.table.virtual.spec.SelectColumnsTransformSpec.indicesAfterDrop;
 import static org.knime.core.table.virtual.spec.SelectColumnsTransformSpec.indicesAfterKeepOnly;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -60,20 +62,23 @@ import java.util.stream.Collectors;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.cursor.RandomAccessCursor;
+import org.knime.core.table.row.Selection.ColumnSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.virtual.graph.rag.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
+import org.knime.core.table.virtual.spec.MapTransformUtils;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverFactory;
-import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverWithRowIndexFactory;
+import org.knime.core.table.virtual.spec.ObserverTransformUtils;
+import org.knime.core.table.virtual.spec.ObserverTransformUtils.ObserverWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
@@ -268,6 +273,14 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 
+    /**
+     * Append a LONG column that contains the current row index.
+     */
+    public VirtualTable appendRowIndex() {
+        final RowIndexTransformSpec transformSpec = new RowIndexTransformSpec();
+        return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema.append(LONG));
+    }
+
     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory) {
         final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
         // TODO (TP) It would be nice to verify here that the MapperFactory
@@ -276,9 +289,11 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
     }
 
-    public VirtualTable map(final int[] columnIndices, final MapperWithRowIndexFactory mapperFactory) {
-        final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
-        return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
+    public VirtualTable map(final int[] columnIndices, final MapTransformUtils.MapperWithRowIndexFactory mapperFactory) {
+        final int[] columns = Arrays.copyOf(columnIndices, columnIndices.length + 1);
+        columns[columns.length - 1] = m_schema.numColumns();
+        final MapperFactory factory = new MapTransformUtils.WrappedMapperWithRowIndexFactory(mapperFactory);
+        return appendRowIndex().map(columns, factory);
     }
 
     /**
@@ -320,13 +335,18 @@ public final class VirtualTable {
         return new VirtualTable(reSourcedTransform, m_schema);
     }
 
-    public VirtualTable observe(final int[] columnIndices, final ObserverFactory factory) {
-        final ObserverTransformSpec transformSpec = new ObserverTransformSpec(columnIndices, factory);
+    public VirtualTable observe(final int[] columnIndices, final ObserverFactory observerFactory) {
+        final ObserverTransformSpec transformSpec = new ObserverTransformSpec(columnIndices, observerFactory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 
-    public VirtualTable observe(final int[] columnIndices, final ObserverWithRowIndexFactory factory) {
-        final ObserverTransformSpec transformSpec = new ObserverTransformSpec(columnIndices, factory);
-        return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
+    public VirtualTable observe(final int[] columnIndices, final ObserverWithRowIndexFactory observerFactory) {
+        final int[] columns = Arrays.copyOf(columnIndices, columnIndices.length + 1);
+        final int rowIndexColumn = m_schema.numColumns();
+        columns[columns.length - 1] = rowIndexColumn;
+        final ObserverFactory factory = new ObserverTransformUtils.WrappedObserverWithRowIndexFactory(observerFactory);
+        return appendRowIndex() //
+                .observe(columns, factory) //
+                .dropColumns(rowIndexColumn);
     }
 }

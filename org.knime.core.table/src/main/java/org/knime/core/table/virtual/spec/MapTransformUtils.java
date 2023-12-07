@@ -17,11 +17,9 @@ import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
 
 /**
- * Helpers for constructing {@link MapperFactory
- * MapperFactories}.
+ * Helpers for constructing {@link MapperFactory MapperFactories}.
  */
 public class MapTransformUtils {
 
@@ -120,6 +118,53 @@ public class MapTransformUtils {
     }
 
     /**
+     * A {@code MapperWithRowIndexFactory} creates {@code Mapper}s.
+     * <p>
+     * A mapper is created with pre-defined input and output accesses. Whenever
+     * {@code Mapper.map(rowIndex)} is called, it reads the current values from
+     * the inputs, computes the map function, and sets the result values to the
+     * output accesses.
+     */
+    public interface MapperWithRowIndexFactory {
+
+        interface Mapper {
+            void map(long rowIndex);
+        }
+
+        /**
+         * @return the ColumnarSchema of the columns produced by the map function
+         */
+        ColumnarSchema getOutputSchema();
+
+        /**
+         * Create a mapper with the specified {@code inputs} and {@code outputs}.
+         * Whenever {@code Mapper.map(rowIndex)} is called, the returned mapper reads
+         * the current values from the input accesses, computes the map function, and
+         * sets the result values to the output accesses.
+         *
+         * @param inputs  accesses to read input values from
+         * @param outputs accesses to write results to
+         * @return a mapper reading from {@code inputs} and writing to {@code outputs}.
+         */
+        Mapper createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs);
+
+        /**
+         * Wrap {@code createMapper} as a {@code MapperWithRowIndexFactory} with
+         * the given output {@code schema}. The BiFunction {@code createMapper}
+         * takes an array of input {@code ReadAccess}es and an array of output
+         * {@code WriteAccess}es and produces a {@link Mapper} function.
+         *
+         * @param schema output schema
+         * @param createMapper creates {@link Mapper}s
+         */
+        static MapperWithRowIndexFactory of( //
+                final ColumnarSchema schema, //
+                final BiFunction<ReadAccess[], WriteAccess[], Mapper> createMapper) {
+            return new DefaultMapperWithRowIndexFactory(schema, createMapper);
+        }
+    }
+
+    /**
      * Simple {@code MapperFactory} implementation that can be constructed with
      * a {@link BiFunction} lambda.
      */
@@ -201,7 +246,7 @@ public class MapTransformUtils {
      * When the mapper is {@code run()}, this input is stripped off and passed
      * as the rowIndex argument to the wrapped {@link MapperWithRowIndexFactory.Mapper#map(long)}.
      */
-    static class WrappedMapperWithRowIndexFactory implements MapperFactory {
+    public static class WrappedMapperWithRowIndexFactory implements MapperFactory {
 
         private final MapperWithRowIndexFactory factory;
 
@@ -210,7 +255,7 @@ public class MapTransformUtils {
          * MapperFactory} with the row index appended as an additional input
          * {@code LongReadAccess}.
          */
-        WrappedMapperWithRowIndexFactory(final MapperWithRowIndexFactory factory) {
+        public WrappedMapperWithRowIndexFactory(final MapperWithRowIndexFactory factory) {
             this.factory = factory;
         }
 
@@ -233,7 +278,6 @@ public class MapTransformUtils {
             return () -> mapper.map(rowIndex.getLongValue());
         }
 
-        @Override
         public MapperWithRowIndexFactory getMapperWithRowIndexFactory() {
             return factory;
         }

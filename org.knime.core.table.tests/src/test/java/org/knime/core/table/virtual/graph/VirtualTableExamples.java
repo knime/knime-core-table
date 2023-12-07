@@ -45,8 +45,8 @@ import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.spec.MapTransformUtils;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
-import org.knime.core.table.virtual.spec.MapTransformSpec.MapperWithRowIndexFactory;
-import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverWithRowIndexFactory;
+import org.knime.core.table.virtual.spec.MapTransformUtils.MapperWithRowIndexFactory;
+import org.knime.core.table.virtual.spec.ObserverTransformUtils.ObserverWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
 
@@ -1022,7 +1022,7 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(DOUBLE), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1057,7 +1057,7 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(DOUBLE), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1089,7 +1089,7 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapsParallel(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+        final MapTransformUtils.MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(DOUBLE), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1097,7 +1097,7 @@ public class VirtualTableExamples {
                     final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
                     return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
                 });
-        final MapperWithRowIndexFactory appendRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory appendRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(STRING), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1133,7 +1133,7 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapsParallelAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(DOUBLE), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1141,7 +1141,7 @@ public class VirtualTableExamples {
                     final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
                     return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
                 });
-        final MapperWithRowIndexFactory appendRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory appendRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(STRING), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1174,7 +1174,7 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapsSequential(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(DOUBLE), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1182,7 +1182,7 @@ public class VirtualTableExamples {
                     final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
                     return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
                 });
-        final MapperWithRowIndexFactory appendRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory appendRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(STRING), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1219,7 +1219,7 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtRowIndexMapsSequentialAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final MapperWithRowIndexFactory addRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(DOUBLE), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
@@ -1227,7 +1227,7 @@ public class VirtualTableExamples {
                     final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
                     return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
                 });
-        final MapperWithRowIndexFactory appendRowIndex = MapperWithRowIndexFactory.of( //
+        final MapperWithRowIndexFactory appendRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
                 ColumnarSchema.of(STRING), //
                 (inputs, outputs) -> {
                     MapTransformUtils.verify(inputs, 1, outputs, 1);
