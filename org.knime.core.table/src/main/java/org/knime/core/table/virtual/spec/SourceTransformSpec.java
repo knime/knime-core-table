@@ -37,6 +37,8 @@ public final class SourceTransformSpec implements TableTransformSpec {
 
     private final RowRangeSelection m_rowRange;
 
+    private final long m_numRows;
+
     public SourceTransformSpec(final UUID sourceIdentifier, final SourceTableProperties properties) {
         this(sourceIdentifier, properties, RowRangeSelection.all());
     }
@@ -45,6 +47,7 @@ public final class SourceTransformSpec implements TableTransformSpec {
         m_sourceIdentifier = sourceIdentifier;
         m_properties = properties;
         m_rowRange = rowRange;
+        m_numRows = numRows(properties, rowRange);
     }
 
     public UUID getSourceIdentifier() {
@@ -61,6 +64,15 @@ public final class SourceTransformSpec implements TableTransformSpec {
 
     public RowRangeSelection getRowRange() {
         return m_rowRange;
+    }
+
+    /**
+     * Get the number of rows of this source.
+     *
+     * @return the number of rows, or a negative number if the number of rows is unknown.
+     */
+    public long numRows() {
+        return m_numRows;
     }
 
     @Override
@@ -90,4 +102,17 @@ public final class SourceTransformSpec implements TableTransformSpec {
         return sb.toString();
     }
 
+    private static long numRows(SourceTableProperties properties, RowRangeSelection rowRange) {
+        long numRows = properties.numRows();
+        if (numRows < 0) {
+            return -1;
+        }
+        if (rowRange.allSelected()) {
+            return numRows;
+        } else {
+            final long from = rowRange.fromIndex();
+            final long to = rowRange.toIndex();
+            return Math.max(0, Math.min(numRows, to) - from);
+        }
+    }
 }
