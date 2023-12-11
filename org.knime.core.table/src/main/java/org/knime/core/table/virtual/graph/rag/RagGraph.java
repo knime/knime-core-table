@@ -259,7 +259,6 @@ public class RagGraph {
                 nodeCopy = new RagNode(node.getTransformSpec(), node.getInputssArray().length);
             }
             nodeCopy.setNumColumns(node.numColumns());
-            nodeCopy.setNumRows(node.numRows());
             nodeMap.put(node, nodeCopy);
             copy.nodes.add(nodeCopy);
         });

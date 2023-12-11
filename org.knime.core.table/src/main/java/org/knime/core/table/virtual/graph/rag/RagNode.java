@@ -13,7 +13,6 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
 public final class RagNode implements Typed<RagNodeType> {
 
     private int numColumns = -1;
-    private long numRows = -1;
     private final RagNodeType type;
     private final TableTransformSpec transformSpec;
 
@@ -92,19 +91,14 @@ public final class RagNode implements Typed<RagNodeType> {
     /**
      * Get the number of rows at this node.
      * <p>
-     * The number of rows is computed by {@link RagBuilder#numRows(List)} for
-     * all executable nodes (that is, those linked with {@link RagEdgeType#EXEC
-     * EXEC} edges, not {@link RagNodeType#MAP MAP}, {@link
-     * RagNodeType#COLFILTER ROWFILTER}, etc).
+     * The number of rows is computed recursively, by tracing EXEC edges
+     * backwards to SOURCE nodes.
      *
      * @return the number of rows, or a negative number if the number of rows is unknown.
      */
+    // TODO (TP) inline and remove?
     public long numRows() {
-        return numRows;
-    }
-
-    public void setNumRows(long numRows) {
-        this.numRows = numRows;
+        return RagGraphProperties.numRows(this);
     }
 
     /**
