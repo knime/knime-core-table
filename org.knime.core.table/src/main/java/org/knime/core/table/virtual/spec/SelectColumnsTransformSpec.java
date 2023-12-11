@@ -78,8 +78,7 @@ public final class SelectColumnsTransformSpec implements TableTransformSpec {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof SelectColumnsTransformSpec &&
-            Arrays.equals(m_columnIndices, ((SelectColumnsTransformSpec)obj).m_columnIndices);
+        return obj instanceof SelectColumnsTransformSpec that && Arrays.equals(m_columnIndices, that.m_columnIndices);
     }
 
     @Override

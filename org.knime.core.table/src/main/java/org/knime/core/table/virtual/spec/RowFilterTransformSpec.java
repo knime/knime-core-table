@@ -110,11 +110,10 @@ public final class RowFilterTransformSpec implements TableTransformSpec {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof RowFilterTransformSpec)) {
+        if (!(o instanceof RowFilterTransformSpec that)) {
             return false;
         }
 
-        final RowFilterTransformSpec that = (RowFilterTransformSpec)o;
         if (!Arrays.equals(inputColumnIndices, that.inputColumnIndices)) {
             return false;
         }

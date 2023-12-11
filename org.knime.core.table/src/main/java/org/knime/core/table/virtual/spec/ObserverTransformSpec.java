@@ -75,11 +75,10 @@ public final class ObserverTransformSpec implements TableTransformSpec {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof ObserverTransformSpec)) {
+        if (!(o instanceof ObserverTransformSpec that)) {
             return false;
         }
 
-        final ObserverTransformSpec that = (ObserverTransformSpec)o;
         if (!Arrays.equals(inputColumnIndices, that.inputColumnIndices)) {
             return false;
         }

@@ -83,7 +83,7 @@ public final class SliceTransformSpec implements TableTransformSpec {
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof SliceTransformSpec && m_range.equals(((SliceTransformSpec)obj).m_range);
+        return obj instanceof SliceTransformSpec that && m_range.equals(that.m_range);
     }
 
     @Override

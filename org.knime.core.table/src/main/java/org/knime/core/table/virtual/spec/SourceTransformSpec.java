@@ -73,10 +73,9 @@ public final class SourceTransformSpec implements TableTransformSpec {
         if (this == obj) {
             return true;
         }
-        if (! (obj instanceof SourceTransformSpec)) {
+        if (! (obj instanceof SourceTransformSpec that)) {
             return false;
         }
-        final SourceTransformSpec that = (SourceTransformSpec)obj;
         return m_sourceIdentifier.equals(that.m_sourceIdentifier) && m_rowRange.equals(that.m_rowRange);
     }
 

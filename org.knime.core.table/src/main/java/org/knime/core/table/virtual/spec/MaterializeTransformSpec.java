@@ -45,10 +45,9 @@ public final class MaterializeTransformSpec implements TableTransformSpec {
         if (this == obj) {
             return true;
         }
-        if (! (obj instanceof MaterializeTransformSpec)) {
+        if (! (obj instanceof MaterializeTransformSpec that)) {
             return false;
         }
-        final MaterializeTransformSpec that = (MaterializeTransformSpec)obj;
         return m_sinkIdentifier.equals(that.m_sinkIdentifier);
     }
 
