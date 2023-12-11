@@ -1,6 +1,7 @@
 package org.knime.core.table.virtual.graph;
 
 import static java.util.UUID.randomUUID;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.RowAccessiblesTestUtils.assertCanForwardPredictsForward;
@@ -13,6 +14,8 @@ import static org.knime.core.table.schema.DataSpecs.STRING;
 import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -24,9 +27,12 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.access.DoubleAccess;
+import org.knime.core.table.access.IntAccess;
 import org.knime.core.table.access.StringAccess;
+import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RandomRowAccessible;
+import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -89,6 +95,55 @@ public class VirtualTableExamples {
         assertEquals(expectedSchema, table.getSchema());
         assertTableEqualsValues(expectedValues, rowAccessible, false);
         assertTableEqualsValues(expectedValues, rowAccessible, true);
+    }
+
+    @FunctionalInterface
+    private interface TriFunction<A,B,C,T> {
+        T apply(A a, B b, C c);
+    }
+
+    private static void testTransformedTableObservations(
+            final Object[][] expectedObservations,
+            final Supplier<RowAccessible[]> sourcesSupplier,
+            final TriFunction<UUID[], RowAccessible[], List<Object[]>, VirtualTable> virtualTableSupplier) {
+
+        testTransformedTableObservations(expectedObservations, sourcesSupplier, virtualTableSupplier, false);
+        testTransformedTableObservations(expectedObservations, sourcesSupplier, virtualTableSupplier, true);
+    }
+
+    private static void testTransformedTableObservations(
+            final Object[][] expectedObservations,
+            final Supplier<RowAccessible[]> sourcesSupplier,
+            final TriFunction<UUID[], RowAccessible[], List<Object[]>, VirtualTable> virtualTableSupplier,
+            final boolean useRandomAccess) {
+
+        final RowAccessible[] sources = sourcesSupplier.get();
+        final UUID[] sourceIds = new UUID[sources.length];
+        Arrays.setAll(sourceIds, i -> randomUUID());
+        final List<Object[]> observations = new ArrayList<>();
+        final VirtualTable table = virtualTableSupplier.apply(sourceIds, sources, observations);
+
+        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
+        final List<RagNode> rag = RagBuilder.createOrderedRag(graph);
+        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
+        final ColumnarSchema schema = RagBuilder.createSchema(rag);
+
+        final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
+        for (int i = 0; i < sourceIds.length; ++i) {
+            sourceMap.put(sourceIds[i], sources[i]);
+        }
+        try(final RowAccessible rowAccessible = createRowAccessible(graph, schema, cap, sourceMap, useRandomAccess)) {
+            try (final Cursor<ReadAccessRow> cursor = rowAccessible.createCursor()) {
+                while (cursor.forward()) {
+                }
+                assertEquals(expectedObservations.length, observations.size());
+                for (int i = 0; i < observations.size(); i++) {
+                    assertArrayEquals(expectedObservations[i], observations.get(i));
+                }
+            }
+        } catch (final IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     private static void testTransformedTableLookahead(
@@ -1205,11 +1260,7 @@ public class VirtualTableExamples {
 
 
     public static VirtualTable vtObserve(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
-        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).selectColumns(1, 0);
-        // TODO: also use observed columns, not only rowIndex
-        final ObserverWithRowIndexFactory factory = inputs -> rowIndex -> System.out.println("Observer.update(rowIndex=" + rowIndex + ")");
-        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).selectColumns(1, 2)
-                .append(transformedTable2).selectColumns(0, 2).slice(1, 4).observe(new int[]{0, 1}, factory);
+        return vtObserve(sourceIdentifiers, sources, new ArrayList<>());
     }
 
     public static VirtualTable vtObserve() {
@@ -1220,6 +1271,19 @@ public class VirtualTableExamples {
         return dataAppend();
     }
 
+    public static VirtualTable vtObserve(final UUID[] sourceIdentifiers, final RowAccessible[] sources, final List<Object[]> observations) {
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).selectColumns(1, 0);
+        final ObserverWithRowIndexFactory factory = inputs -> {
+            final IntAccess.IntReadAccess i0 = (IntAccess.IntReadAccess)inputs[0];
+            final DoubleAccess.DoubleReadAccess i1 = (DoubleAccess.DoubleReadAccess)inputs[1];
+            return rowIndex -> {
+                observations.add(new Object[]{i0.getIntValue(), i1.getDoubleValue(), rowIndex});
+            };
+        };
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).selectColumns(1, 2)
+                .append(transformedTable2).selectColumns(0, 2).slice(1, 4).observe(new int[]{0, 1}, factory);
+    }
+
     @Test
     public void testObserve() {
         final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, DOUBLE);
@@ -1228,6 +1292,12 @@ public class VirtualTableExamples {
                 new Object[]{3, 1.3}, //
                 new Object[]{4, 1.4} //
         };
+        final Object[][] expectedObservations = new Object[][]{ //
+                new Object[]{2, 1.2, 0L}, //
+                new Object[]{3, 1.3, 1L}, //
+                new Object[]{4, 1.4, 2L} //
+        };
+        testTransformedTableObservations(expectedObservations, VirtualTableExamples::dataObserve, VirtualTableExamples::vtObserve);
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataObserve, VirtualTableExamples::vtObserve);
         testTransformedTableLookahead(true, VirtualTableExamples::dataObserve, VirtualTableExamples::vtObserve);
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableExamples::dataObserve, VirtualTableExamples::vtObserve);
