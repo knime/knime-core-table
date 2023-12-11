@@ -28,6 +28,7 @@ import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
+import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
@@ -179,8 +180,7 @@ public class ExecCap {
             final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
             final RowAccessible rows = createRowAccessible(graph, schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
 
-            final boolean supportsRandomAccess = RagBuilder.supportsRandomAccess(orderedRag);
-            System.out.println("supportsRandomAccess = " + supportsRandomAccess);
+            System.out.println("supported CursorType = " + RagGraphProperties.supportedCursorType(orderedRag));
 
             try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
                 while (cursor.forward()) {

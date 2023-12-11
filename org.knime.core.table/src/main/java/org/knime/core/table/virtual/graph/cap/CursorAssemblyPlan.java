@@ -1,10 +1,15 @@
 package org.knime.core.table.virtual.graph.cap;
 
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.BASIC;
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.LOOKAHEAD;
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.RANDOMACCESS;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 /**
  * Instructions for building a {@code Cursor<ReadAccessRow>}.
@@ -32,9 +37,7 @@ public class CursorAssemblyPlan {
 
     private final List<CapNode> nodes;
 
-    private final boolean supportsLookahead;
-
-    private final boolean supportsRandomAccess;
+    private final CursorType cursorType;
 
     private final long numRows;
 
@@ -46,15 +49,15 @@ public class CursorAssemblyPlan {
      * @param nodes sequence of nodes representing source tables and various operations, which can be processed
      *            front-to-back to instantiate a {@code Cursor<ReadAccessRow>}. Each node may only refer back to earlier
      *            nodes in the sequence.
-     * @param supportsLookahead whether the constructed cursor should be a {@code LookaheadCursor}.
-     * @param supportsRandomAccess whether the constructed cursor should be a {@code RandomAccessCursor}.
+     * @param cursorType which type of {@code RowAccessible} should be
+     *            constructed. that is, whether cursors should be {@code LookaheadCursor}, {@code RandomAccessCursor},
+     *            or plain {@code Cursor}.
      * @param numRows number of rows. {@code numRows<0} if the number of rows is unknown.
      * @param schemas the {@code ColumnarSchema}s of source and sink {@code RowAccessible}s, for schema verification during execution.
      */
-    public CursorAssemblyPlan(final List<CapNode> nodes, final boolean supportsLookahead, final boolean supportsRandomAccess, final long numRows, final Map<UUID, ColumnarSchema> schemas) {
+    public CursorAssemblyPlan(final List<CapNode> nodes, final CursorType cursorType, final long numRows, final Map<UUID, ColumnarSchema> schemas) {
         this.nodes = nodes;
-        this.supportsLookahead = supportsLookahead;
-        this.supportsRandomAccess = supportsRandomAccess;
+        this.cursorType = cursorType;
         this.numRows = numRows;
         this.schemas = schemas;
     }
@@ -74,7 +77,7 @@ public class CursorAssemblyPlan {
      * @return {@code true} if the assembled Cursor should be a {@code LookaheadCursor}.
      */
     public boolean supportsLookahead() {
-        return supportsLookahead;
+        return cursorType.supportsLookahead();
     }
 
     /**
@@ -83,7 +86,7 @@ public class CursorAssemblyPlan {
      * @return {@code true} if the assembled Cursor should be a {@code RandomAccessCursor}.
      */
     public boolean supportsRandomAccess() {
-        return supportsRandomAccess;
+        return cursorType.supportsRandomAccess();
     }
 
     /**

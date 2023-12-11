@@ -1,63 +1,87 @@
 package org.knime.core.table.virtual.graph.rag;
 
+import static org.knime.core.table.virtual.graph.rag.RagBuilder.sinkNodeTypes;
 import static org.knime.core.table.virtual.graph.rag.RagEdgeType.EXEC;
 
+import java.util.List;
 import java.util.function.LongBinaryOperator;
 
-import org.knime.core.table.row.Selection;
+import org.knime.core.table.cursor.Cursors;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
-// TODO (TP) make this class package-private?
+/**
+ * Analyze properties of a linearized {@code RagGraph}, for example the number
+ * of rows, the ability to support {@code LookaheadCursor}, and the ability to
+ * support {@code RandomAccessCursor}.
+ */
 public class RagGraphProperties {
+
+    /**
+     * Returns the number of rows of the given linearized {@code RagGraph}, or a negative value
+     * if the number of rows is unknown.
+     *
+     * @param orderedRag a linearized {@code RagGraph}
+     * @return number of rows at the consumer node of the {@code orderedRag}
+     */
+    public static long numRows(final List<RagNode> orderedRag) {
+        final RagNode node = orderedRag.get(orderedRag.size() - 1);
+        if (!sinkNodeTypes.contains(node.type())) {
+            throw new IllegalArgumentException();
+        }
+        return RagGraphProperties.numRows(node);
+    }
+
+    /**
+     * Returns the {@link CursorType} supported by the given linearized {@code
+     * RagGraph} (without additional prefetching and buffering).
+     * The result is determined by the {@code CursorType} of the sources, and
+     * the presence of ROWFILTER operations, etc.
+     *
+     * @param orderedRag a linearized {@code RagGraph}
+     * @return cursor supported at the consumer node of the {@code orderedRag}
+     */
+    public static CursorType supportedCursorType(final List<RagNode> orderedRag) {
+        final RagNode node = orderedRag.get(orderedRag.size() - 1);
+        if (!sinkNodeTypes.contains(node.type())) {
+            throw new IllegalArgumentException();
+        }
+        if (RagGraphProperties.supportsRandomAccess(node))
+            return CursorType.RANDOMACCESS;
+        else if (RagGraphProperties.supportsLookahead(node))
+            return CursorType.LOOKAHEAD;
+        else
+            return CursorType.BASIC;
+    }
 
     /**
      * Recursively trace along reverse EXEC edges to determine number of rows.
      */
-    public static long numRows(final RagNode node) {
+    // TODO (TP) add javadoc on illegal node types
+    static long numRows(final RagNode node) {
 
-        switch (node.type()) {
-            case SOURCE: {
-                return node.<SourceTransformSpec>getTransformSpec().numRows();
-            }
-            case SLICE: {
+        return switch (node.type()) {
+            case SOURCE -> node.<SourceTransformSpec>getTransformSpec().numRows();
+            case ROWFILTER -> -1;
+            case SLICE -> {
                 final SliceTransformSpec spec = node.getTransformSpec();
                 final long from = spec.getRowRangeSelection().fromIndex();
                 final long to = spec.getRowRangeSelection().toIndex();
-                // If any predecessor doesn't know its size, the size of this node is also unknown.
-                // Otherwise, the size of this node is max of its predecessors.
                 final long s = accPredecessorNumRows(node, Math::max);
-                return s < 0 ? s : Math.max(0, Math.min(s, to) - from);
+                yield s < 0 ? s : Math.max(0, Math.min(s, to) - from);
             }
-            case CONSUMER:
-            case MATERIALIZE:
-            case WRAPPER:
-            case ROWINDEX:
-            case OBSERVER:
-            case APPEND: {
+            case CONSUMER, MATERIALIZE, WRAPPER, ROWINDEX, OBSERVER, APPEND ->
                 // If any predecessor doesn't know its size, the size of this node is also unknown.
                 // Otherwise, the size of this node is max of its predecessors.
-                // If any predecessor doesn't know its size, the size of this node is also unknown.
-                // Otherwise, the size of this node is max of its predecessors.
-                return accPredecessorNumRows(node, Math::max);
-            }
-            case CONCATENATE: {
+                    accPredecessorNumRows(node, Math::max);
+            case CONCATENATE ->
                 // If any predecessor doesn't know its size, the size of this node is also unknown.
                 // Otherwise, the size of this is the sum of its predecessors.
-                return accPredecessorNumRows(node, Long::sum);
-            }
-            case ROWFILTER:
-                return -1;
-            case MISSING:
-            case APPENDMISSING:
-            case COLFILTER:
-            case MAP:
-            case IDENTITY:
-                throw new IllegalArgumentException(
-                        "Unexpected RagNode type " + node.type() + ".");
-            default:
-                throw new IllegalStateException("Unexpected value: " + node.type());
-        }
+                    accPredecessorNumRows(node, Long::sum);
+            case MISSING, APPENDMISSING, COLFILTER, MAP, IDENTITY ->
+                    throw new IllegalArgumentException("Unexpected RagNode type " + node.type() + ".");
+        };
     }
 
     /**
@@ -81,25 +105,75 @@ public class RagGraphProperties {
         return size;
     }
 
+    /**
+     * Returns {@code true} if the given {@code node} supports {@code
+     * LookaheadCursor}s without additional prefetching and buffering (see
+     * {@link Cursors#toLookahead}).
+     * <p>
+     * This is possible, if all sources provide {@code LookaheadCursor}s and
+     * there are no row-filters (or other nodes that would destroy lookahead
+     * capability) on the path to the {@code node}.
+     *
+     * @return {@code true} if lookahead can be supported at {@code node}.
+     */
+    // TODO (TP) add javadoc on illegal node types
+    private static boolean supportsLookahead(final RagNode node) {
+        return switch (node.type()) {
+            case SOURCE -> node.<SourceTransformSpec>getTransformSpec().getProperties().supportsLookahead();
+            case ROWFILTER -> false;
+            case SLICE, APPEND, CONCATENATE, CONSUMER, MATERIALIZE, WRAPPER, ROWINDEX, OBSERVER -> {
+                for (RagNode predecessor : node.predecessors(EXEC)) {
+                    if (!supportsLookahead(predecessor)) {
+                        yield false;
+                    }
+                }
+                yield true;
+            }
+            case APPENDMISSING, COLFILTER, MISSING, MAP, IDENTITY ->
+                    throw new IllegalArgumentException("Unexpected RagNode type " + node.type() + ".");
+        };
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // TODO (TP) move supportsRandomAccess here
-
+    /**
+     * Returns {@code true} if the given {@code node} supports {@code
+     * RandomAccessCursor}s without additional prefetching and buffering.
+     * <p>
+     * This is possible, if all sources are {@code RandomRowAccessible}s and
+     * there are no row-filters (or other nodes that would destroy random-access
+     * capability.)
+     *
+     * @return {@code true} if random-access can be supported at {@code node}.
+     */
+    // TODO (TP) add javadoc on illegal node types
+    private static boolean supportsRandomAccess(final RagNode node) {
+        return switch (node.type()) {
+            case SOURCE -> node.<SourceTransformSpec>getTransformSpec().getProperties().supportsRandomAccess();
+            case ROWFILTER -> false;
+            case SLICE, APPEND, CONSUMER, MATERIALIZE, WRAPPER, ROWINDEX, OBSERVER -> {
+                for (RagNode predecessor : node.predecessors(EXEC)) {
+                    if (!supportsRandomAccess(predecessor)) {
+                        yield false;
+                    }
+                }
+                yield true;
+            }
+            case CONCATENATE -> {
+                // all predecessors need to support random-access AND
+                // all predecessors except the last one need to know numRows()
+                List<RagNode> predecessors = node.predecessors(EXEC);
+                for (int i = 0; i < predecessors.size(); i++) {
+                    RagNode predecessor = predecessors.get(i);
+                    if (!supportsRandomAccess(predecessor)) {
+                        yield false;
+                    }
+                    if (i != predecessors.size() - 1 && numRows(predecessor) < 0) {
+                        yield false;
+                    }
+                }
+                yield true;
+            }
+            case APPENDMISSING, COLFILTER, MISSING, MAP, IDENTITY ->
+                    throw new IllegalArgumentException("Unexpected RagNode type " + node.type() + ".");
+        };
+    }
 }
