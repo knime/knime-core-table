@@ -18,6 +18,7 @@ import org.knime.core.table.virtual.graph.rag.AccessId;
 import org.knime.core.table.virtual.graph.rag.AccessIds;
 import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
+import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -51,7 +52,7 @@ public class CapBuilder {
 
     private CursorAssemblyPlan createCAP() {
 
-        final long numRows = RagBuilder.numRows(orderedRag);
+        final long numRows = RagGraphProperties.numRows(orderedRag);
         // NB this also calls setNumRows() for all visited RagNodes
 
         for (int index = 0; index < orderedRag.size(); index++) {
@@ -265,8 +266,7 @@ public class CapBuilder {
         }
 
         return new CursorAssemblyPlan(cursorAssemblyPlan, //
-                RagBuilder.supportsLookahead(orderedRag), //
-                RagBuilder.supportsRandomAccess(orderedRag), //
+                RagGraphProperties.supportedCursorType(orderedRag), //
                 numRows, //
                 RagBuilder.getSourceAndSinkSchemas(orderedRag));
     }
