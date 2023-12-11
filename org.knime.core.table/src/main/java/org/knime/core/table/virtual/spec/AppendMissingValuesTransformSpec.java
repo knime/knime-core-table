@@ -75,8 +75,7 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
 
     @Override
     public boolean equals(final Object obj) {
-        return obj instanceof AppendMissingValuesTransformSpec &&
-            m_columns.equals(((AppendMissingValuesTransformSpec)obj).m_columns);
+        return obj instanceof AppendMissingValuesTransformSpec that && m_columns.equals(that.m_columns);
     }
 
     @Override
