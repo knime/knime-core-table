@@ -854,6 +854,7 @@ public class RagBuilder {
             changed |= mergeSlices();
             changed |= mergeRowIndexSiblings();
             changed |= mergeRowIndexSequence();
+            changed |= moveSlicesBeforeObserves();
             changed |= moveSlicesBeforeAppends();
             changed |= moveSlicesBeforeRowIndexes();
             changed |= moveSlicesBeforeConcatenates();
@@ -1054,6 +1055,42 @@ public class RagBuilder {
             }
         }
         concatenate.setInputssArray(inputss);
+    }
+
+
+
+    // --------------------------------------------------------------------
+    // moveSliceBeforeObserves()
+
+    boolean moveSlicesBeforeObserves() {
+        for (final RagNode node : graph.nodes(SLICE)) {
+            if (tryMoveSliceBeforeObserve(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryMoveSliceBeforeObserve(final RagNode slice) {
+        final List<RagNode> predecessors = slice.predecessors(EXEC);
+        if (predecessors.size() == 1 && predecessors.get(0).type() == OBSERVER) {
+            final RagNode observer = predecessors.get(0);
+
+            // remove "observer" --> "slice" link
+            graph.remove(slice.incomingEdges(EXEC).iterator().next());
+
+            // re-link successors of "slice" to "observer"
+            graph.relinkSuccessorsToNewSource(slice, observer, EXEC);
+
+            // re-link predecessors of "observer" to "slice"
+            graph.relinkPredecessorsToNewTarget(observer, slice, EXEC);
+
+            // add "slice" --> "observer" link
+            graph.addEdge(slice, observer, EXEC);
+
+            return true;
+        }
+        return false;
     }
 
 
