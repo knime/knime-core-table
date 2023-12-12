@@ -30,8 +30,6 @@ class CapRowAccessible implements RowAccessible {
 
     private final ColumnarSchema schema;
 
-    private final CursorAssemblyPlan cap;
-
     private final Map<UUID, RowAccessible> availableSources;
 
     private final LoadingCache<Selection, CapCursorData> capCache;
@@ -39,22 +37,15 @@ class CapRowAccessible implements RowAccessible {
     CapRowAccessible( //
             final RagGraph specGraph, //
             final ColumnarSchema schema, //
-            final CursorAssemblyPlan cap, //
             final Map<UUID, RowAccessible> availableSources) {
         this.specGraph = specGraph;
         this.schema = schema;
-        this.cap = cap;
         this.availableSources = availableSources;
 
         // TODO (TP) Should we add Caffeine as a dependency?
         //           The Guava doc recommends to prefer it over com.google.common.cache
         //           https://guava.dev/releases/snapshot-jre/api/docs/com/google/common/cache/CacheBuilder.html
-        // TODO (TP) It might be better to use softValues().
-        //           This would be better for caching, but I'm not sure how much
-        //           pressure it would put on other caches. In practice,
-        //           CapRowAccessible is probably short-lived anyway, but better
-        //           to be safe for now.
-        this.capCache = CacheBuilder.newBuilder().weakValues().build(new CacheLoader<>() {
+        this.capCache = CacheBuilder.newBuilder().softValues().build(new CacheLoader<>() {
             @Override
             public CapCursorData load(Selection selection) {
                 return createCursorData(selection);
@@ -79,7 +70,7 @@ class CapRowAccessible implements RowAccessible {
 
     @Override
     public long size() {
-        return cap.numRows();
+        return getCursorData(Selection.all()).numRows();
     }
 
     @Override
@@ -114,23 +105,15 @@ class CapRowAccessible implements RowAccessible {
 
     private CapCursorData createCursorData(final Selection selection) {
 
+        final RagGraph graph = SpecGraphBuilder.appendSelection(specGraph, selection);
+        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph, false);
+        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(orderedRag);
         final int numColumns = schema.numColumns();
-        final CursorAssemblyPlan scap;
-        final int[] selected;
+        final int[] selected = selection.columns().allSelected(0, numColumns) //
+                ? null //
+                : selection.columns().getSelected(0, numColumns);
 
-        if (selection.allSelected()) {
-            scap = cap;
-            selected = null;
-        } else {
-            final RagGraph graph = SpecGraphBuilder.appendSelection(specGraph, selection);
-            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph, false);
-            scap = CapBuilder.createCursorAssemblyPlan(orderedRag);
-            selected = selection.columns().allSelected(0, numColumns) //
-                    ? null //
-                    : selection.columns().getSelected(0, numColumns);
-        }
-
-        final List<RowAccessible> sources = CapExecutorUtils.getSources(scap, availableSources);
-        return new CapCursorData(scap, sources, numColumns, selected);
+        final List<RowAccessible> sources = CapExecutorUtils.getSources(cap, availableSources);
+        return new CapCursorData(cap, sources, numColumns, selected);
     }
 }

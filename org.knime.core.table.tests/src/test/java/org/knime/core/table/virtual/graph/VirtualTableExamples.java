@@ -37,10 +37,9 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
-import org.knime.core.table.virtual.graph.cap.CapBuilder;
-import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
+import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.spec.MapTransformUtils;
@@ -49,6 +48,7 @@ import org.knime.core.table.virtual.spec.MapTransformUtils.MapperWithRowIndexFac
 import org.knime.core.table.virtual.spec.ObserverTransformUtils.ObserverWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 public class VirtualTableExamples {
 
@@ -78,14 +78,14 @@ public class VirtualTableExamples {
 
         final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
         final List<RagNode> rag = RagBuilder.createOrderedRag(graph);
-        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
+        final CursorType cursorType = RagGraphProperties.supportedCursorType(rag);
         final ColumnarSchema schema = RagBuilder.createSchema(rag);
 
         final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cap, sourceMap, useRandomAccess);
+        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cursorType, sourceMap, useRandomAccess);
 
         if ( expectedNumRows < 0 ) {
             assertTrue(rowAccessible.size() < 0);
@@ -125,14 +125,14 @@ public class VirtualTableExamples {
 
         final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
         final List<RagNode> rag = RagBuilder.createOrderedRag(graph);
-        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
+        final CursorType cursorType = RagGraphProperties.supportedCursorType(rag);
         final ColumnarSchema schema = RagBuilder.createSchema(rag);
 
         final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        try(final RowAccessible rowAccessible = createRowAccessible(graph, schema, cap, sourceMap, useRandomAccess)) {
+        try(final RowAccessible rowAccessible = createRowAccessible(graph, schema, cursorType, sourceMap, useRandomAccess)) {
             try (final Cursor<ReadAccessRow> cursor = rowAccessible.createCursor()) {
                 while (cursor.forward()) {
                 }
@@ -158,14 +158,14 @@ public class VirtualTableExamples {
 
         final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
         final List<RagNode> rag = RagBuilder.createOrderedRag(graph);
-        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
+        final CursorType cursorType = RagGraphProperties.supportedCursorType(rag);
         final ColumnarSchema schema = RagBuilder.createSchema(rag);
 
         final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cap, sourceMap, true);
+        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cursorType, sourceMap, true);
         final boolean lookahead = rowAccessible instanceof LookaheadRowAccessible;
 
         assertEquals(expectedLookahead, lookahead);
@@ -189,14 +189,14 @@ public class VirtualTableExamples {
 
         final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
         final List<RagNode> rag = RagBuilder.createOrderedRag(graph);
-        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(rag);
+        final CursorType cursorType = RagGraphProperties.supportedCursorType(rag);
         final ColumnarSchema schema = RagBuilder.createSchema(rag);
 
         final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cap, sourceMap, true);
+        final RowAccessible rowAccessible = createRowAccessible(graph, schema, cursorType, sourceMap, true);
         final boolean randomAccessible = rowAccessible instanceof RandomRowAccessible;
 
         if ( expectedNumRows < 0 ) {
