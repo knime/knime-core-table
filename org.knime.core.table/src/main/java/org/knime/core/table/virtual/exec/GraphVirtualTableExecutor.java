@@ -10,31 +10,31 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
-import org.knime.core.table.virtual.graph.cap.CapBuilder;
-import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
+import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
     private final RagGraph specGraph;
     private final ColumnarSchema schema;
-    private final CursorAssemblyPlan cursorAssemblyPlan;
+    private final CursorType supportedCursorType;
 
     public GraphVirtualTableExecutor(final TableTransform leafTransform)
     {
         specGraph = SpecGraphBuilder.buildSpecGraph(leafTransform);
         final List<RagNode> orderedRag = RagBuilder.createOrderedRag(specGraph);
         schema = RagBuilder.createSchema(orderedRag);
-        cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
+        supportedCursorType = RagGraphProperties.supportedCursorType(orderedRag);
     }
 
     @Override
     public List<RowAccessible> execute(Map<UUID, RowAccessible> inputs) {
-        final RowAccessible rows = CapExecutor.createRowAccessible(specGraph, schema, cursorAssemblyPlan, inputs, true);
+        final RowAccessible rows = CapExecutor.createRowAccessible(specGraph, schema, supportedCursorType, inputs, true);
         return List.of(rows);
     }
 
@@ -51,6 +51,6 @@ public class GraphVirtualTableExecutor implements VirtualTableExecutor {
             Map<UUID, RowAccessible> inputs,//
             Map<UUID, RowWriteAccessible> outputs//
     ) throws CancellationException, CompletionException {
-        CapExecutor.execute(cursorAssemblyPlan, inputs, outputs);
+        CapExecutor.execute(specGraph, inputs, outputs);
     }
 }

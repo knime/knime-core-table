@@ -9,7 +9,6 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
 
 class CapLookaheadRowAccessible extends CapRowAccessible implements LookaheadRowAccessible {
@@ -17,10 +16,9 @@ class CapLookaheadRowAccessible extends CapRowAccessible implements LookaheadRow
     CapLookaheadRowAccessible( //
             final RagGraph specGraph, //
             final ColumnarSchema schema, //
-            final CursorAssemblyPlan cap, //
             final Map<UUID, RowAccessible> availableSources) {
 
-        super(specGraph, schema, cap, availableSources);
+        super(specGraph, schema, availableSources);
     }
 
     @Override

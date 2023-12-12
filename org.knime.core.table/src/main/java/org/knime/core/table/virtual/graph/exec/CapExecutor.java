@@ -9,42 +9,48 @@ import java.util.concurrent.CompletionException;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
+import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
+import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.spec.SourceTableProperties;
 
 public class CapExecutor {
 
     /**
-     *
      * @param specGraph
      * @param schema
-     * @param cap
+     * @param supportedCursorType
      * @param uuidRowAccessibleMap
-     * @param useRandomAccess if {@code true}, then a {@code RandomRowAccessible} will be created if the {@code cap} supports it.
+     * @param useRandomAccess      if {@code true}, then a {@code RandomRowAccessible} will be created if the {@code cap} supports it.
      * @return
      */
     public static RowAccessible createRowAccessible(
             final RagGraph specGraph,
             final ColumnarSchema schema,
-            final CursorAssemblyPlan cap,
+            final SourceTableProperties.CursorType supportedCursorType,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap,
             final boolean useRandomAccess) {
 
-        if (useRandomAccess && cap.supportsRandomAccess()) {
-            return new CapRandomRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
-        } else if (cap.supportsLookahead()) {
-            return new CapLookaheadRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
+        if (useRandomAccess && supportedCursorType.supportsRandomAccess()) {
+            return new CapRandomRowAccessible(specGraph, schema, uuidRowAccessibleMap);
+        } else if (supportedCursorType.supportsLookahead()) {
+            return new CapLookaheadRowAccessible(specGraph, schema, uuidRowAccessibleMap);
         } else {
-            return new CapRowAccessible(specGraph, schema, cap, uuidRowAccessibleMap);
+            return new CapRowAccessible(specGraph, schema, uuidRowAccessibleMap);
         }
     }
 
-    public static void execute(final CursorAssemblyPlan cap, //
+    public static void execute(
+            final RagGraph specGraph,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap, //
             final Map<UUID, RowWriteAccessible> uuidRowWriteAccessibleMap //
     ) throws CompletionException, CancellationException {
 
         try {
+            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(specGraph);
+            final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(orderedRag);
             final List<RowAccessible> sources = CapExecutorUtils.getSources(cap, uuidRowAccessibleMap);
             final List<RowWriteAccessible> sinks = CapExecutorUtils.getSinks(cap, uuidRowWriteAccessibleMap);
 

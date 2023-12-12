@@ -32,6 +32,8 @@ import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
+import org.knime.core.table.virtual.spec.SourceTableProperties;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 public class ExecCap {
 
@@ -143,11 +145,9 @@ public class ExecCap {
             }
 
             final RagGraph specGraph = SpecGraphBuilder.buildSpecGraph(table);
-            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(specGraph);
-            final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
 
             try {
-                CapExecutor.execute(cursorAssemblyPlan, uuidRowAccessibleMap, uuidRowWriteAccessibleMap);
+                CapExecutor.execute(specGraph, uuidRowAccessibleMap, uuidRowWriteAccessibleMap);
             } catch (CancellationException | CompletionException e) {
                 e.printStackTrace();
             }
@@ -175,10 +175,10 @@ public class ExecCap {
             }
 
             final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
-            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph.copy());
+            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
             final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-            final CursorAssemblyPlan cursorAssemblyPlan = CapBuilder.createCursorAssemblyPlan(orderedRag);
-            final RowAccessible rows = createRowAccessible(graph, schema, cursorAssemblyPlan, uuidRowAccessibleMap, true);
+            final CursorType cursorType = RagGraphProperties.supportedCursorType(orderedRag);
+            final RowAccessible rows = createRowAccessible(graph, schema, cursorType, uuidRowAccessibleMap, true);
 
             System.out.println("supported CursorType = " + RagGraphProperties.supportedCursorType(orderedRag));
 
