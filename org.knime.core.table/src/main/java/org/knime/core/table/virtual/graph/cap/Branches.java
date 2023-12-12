@@ -43,7 +43,11 @@ class Branches {
     class Branch {
         RagNode head;
 
-        private long numRows = -1;
+        /**
+         * The currently last executable node on this branch.
+         * This is used to determine {@link #numRows()} if required.
+         */
+        RagNode executableHead;
 
         final List<BranchRef> refs;
 
@@ -60,13 +64,13 @@ class Branches {
         void append(final RagNode node) {
             head = node;
             if (executableNodeTypes.contains(node.type())) {
-                numRows = node.numRows();
+                executableHead = node;
             }
             nodeBranchRefs.put(node, refs.get(0));
         }
 
         long numRows() {
-            return numRows;
+            return executableHead == null ? -1 : executableHead.numRows();
         }
 
         /**
