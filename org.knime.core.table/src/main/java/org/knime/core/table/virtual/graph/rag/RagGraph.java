@@ -81,12 +81,7 @@ public class RagGraph {
     public RagEdge replaceEdgeSource(final RagEdge edge, final RagNode source) {
         final RagNode target = edge.getTarget();
         remove(edge);
-
-        final RagEdge newEdge = new RagEdge(source, target, edge.type());
-        source.outgoing.add(newEdge);
-        target.incoming.add(newEdge);
-        edges.add(newEdge);
-        return newEdge;
+        return getOrAddEdge(source, target, edge.type());
     }
 
     /**
@@ -102,12 +97,7 @@ public class RagGraph {
     public RagEdge replaceEdgeTarget(final RagEdge edge, final RagNode target) {
         final RagNode source = edge.getSource();
         remove(edge);
-
-        final RagEdge newEdge = new RagEdge(source, target, edge.type());
-        source.outgoing.add(newEdge);
-        target.incoming.add(newEdge);
-        edges.add(newEdge);
-        return newEdge;
+        return getOrAddEdge(source, target, edge.type());
     }
 
     /**
