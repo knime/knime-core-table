@@ -3,13 +3,37 @@ package org.knime.core.table.virtual.graph.rag;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
 /**
- * Artificial {@link TableTransformSpec} that is inserted into the RagGraph at
- * points where row indices should be tracked. It is created when the RagGraph
- * is build.
+ * A {@link TableTransformSpec} that appends a LONG columns containing the row
+ * index. Row index starts at 0 and (conceptually) is incremented for every row
+ * that is passed through this point in the virtual table construct.
+ * <p>
+ * In the actual execution, rows do not have to pass through in order. For
+ * example, a {@code RandomAccessCursor} that is directly moved to row 10 will
+ * see row index 10 (without having seen indices 0 through 9). Cursors that only
+ * cover a row-range selection will only see the corresponding indices, and so
+ * on.
  */
 public class RowIndexTransformSpec implements TableTransformSpec {
 
-    private long offset;
+    private final long offset;
+
+    /**
+     * Create a {@code RowIndexTransformSpec}.
+     *
+     * @param offset the offset that is added to row index
+     */
+    public RowIndexTransformSpec(final long offset)
+    {
+        this.offset = offset;
+    }
+
+    /**
+     * Create a {@code RowIndexTransformSpec} (without an offset).
+     */
+    public RowIndexTransformSpec()
+    {
+        this(0);
+    }
 
     /**
      * Return the offset that is added to row index.
@@ -19,16 +43,6 @@ public class RowIndexTransformSpec implements TableTransformSpec {
      */
     public long getOffset() {
         return offset;
-    }
-
-    /**
-     * Set the offset that is added to row index.
-     * <p>
-     * This is used to maintain correct row indices when re-arranging slice
-     * operations before the RowIndexTransform.
-     */
-    public void setOffset(long offset) {
-        this.offset = offset;
     }
 
     @Override

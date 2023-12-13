@@ -88,7 +88,6 @@ public class RagBuilder {
      * <p>
      * The {@code specGraph} is not modified, optimization is done on a copy.
      *
-     *
      * @param specGraph
      *          the spec graph (see {@link SpecGraphBuilder})
      */
@@ -846,22 +845,34 @@ public class RagBuilder {
         if (predecessors.size() == 1 && predecessors.get(0).type() == ROWINDEX) {
             final RagNode rowIndex = predecessors.get(0);
 
-            // remove "slice":
-            // short-circuit "rowindex" to successors of "slice"
-            graph.relinkSuccessorsToNewSource(slice, rowIndex, EXEC);
-            // remove "slice" node and associated edges
-            graph.remove(slice);
+            // create offsetRowindex node
+            // (add offset to rowindex to compensate for slice)
+            final SliceTransformSpec sliceSpec = slice.getTransformSpec();
+            final RowIndexTransformSpec rowIndexSpec = rowIndex.getTransformSpec();
+            final long offset = rowIndexSpec.getOffset() + Math.max(sliceSpec.getRowRangeSelection().fromIndex(), 0);
+            final RowIndexTransformSpec offsetSpec = new RowIndexTransformSpec(offset);
+            final TableTransform offsetTransform = new TableTransform(Collections.emptyList(), offsetSpec);
+            final RagNode offsetRowIndex = graph.addNode(offsetTransform);
+            offsetRowIndex.setNumColumns(rowIndex.numColumns());
 
-            // insert equivalent "preslice" between "rowindex" and it's predecessor:
-            final SliceTransformSpec sliceTransformSpec = slice.getTransformSpec();
-            final TableTransform presliceTransform = new TableTransform(Collections.emptyList(), sliceTransformSpec);
-            final RagNode preslice = graph.addNode(presliceTransform);
-            graph.relinkPredecessorsToNewTarget(rowIndex, preslice, EXEC);
-            graph.addEdge(preslice, rowIndex, EXEC);
+            // insert "offsetRowindex" between "slice" and its successors:
+            graph.relinkSuccessorsToNewSource(slice, offsetRowIndex, EXEC);
+            graph.addEdge(slice, offsetRowIndex, EXEC);
 
-            // add offset to rowindex to compensate for preslice
-            final RowIndexTransformSpec rowIndexTransformSpec = rowIndex.getTransformSpec();
-            rowIndexTransformSpec.setOffset(Math.max(sliceTransformSpec.getRowRangeSelection().fromIndex(), 0));
+            // remove "rowindex" and link predecessors directly to "slice"
+            graph.relinkPredecessorsToNewTarget(rowIndex, slice, EXEC);
+            graph.remove(rowIndex);
+
+            // For the single output oldOutput in rowIndex.getOutputs():
+            //   For each consumer in oldOutput.getConsumers():
+            //     Find consumer.inputs[j] corresponding to oldOutput, and replace by newOutput
+            final AccessId oldOutput = rowIndex.getOutputs().getAtSlot(0);
+            final AccessId newOutput = offsetRowIndex.getOrCreateOutput(oldOutput.getColumnIndex());
+            for (RagNode consumer : oldOutput.getConsumers()) {
+                consumer.replaceInput(oldOutput, newOutput);
+                newOutput.addConsumer(consumer);
+                graph.addEdge(offsetRowIndex, consumer, DATA);
+            }
 
             return true;
         }
