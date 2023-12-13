@@ -247,10 +247,10 @@ public class RagGraph {
                 nodeCopy = copy.missingValuesSource;
             } else {
                 nodeCopy = new RagNode(node.getTransformSpec(), node.getInputssArray().length);
+                copy.nodes.add(nodeCopy);
             }
             nodeCopy.setNumColumns(node.numColumns());
             nodeMap.put(node, nodeCopy);
-            copy.nodes.add(nodeCopy);
         });
         final Map<RagEdge, RagEdge> edgeMap = new HashMap<>();
         edges().forEach(edge -> {
