@@ -583,6 +583,7 @@ public class RagBuilder {
         boolean changed = true;
         while (changed) {
             changed = false;
+            changed |= eliminateRowIndexes();
             changed |= eliminateAppends();
             changed |= mergeSlices();
             changed |= mergeRowIndexSiblings();
@@ -933,12 +934,16 @@ public class RagBuilder {
     }
 
     private boolean tryMergeRowIndexSequence(final RagNode rowIndex) {
+        if (rowIndex.getOutputs().isEmpty())
+            return false;
         final List<RagNode> successors = rowIndex.successors(EXEC);
         if (successors.size() == 1) {
             final RagNode successor = successors.get(0);
             if ( successor.type() == ROWINDEX) {
                 // successor is another ROWINDEX
                 final RagNode rowIndex2 = successor;
+                if (rowIndex2.getOutputs().isEmpty())
+                    return false;
                 final RowIndexTransformSpec spec = rowIndex.getTransformSpec();
                 final RowIndexTransformSpec spec2 = rowIndex2.getTransformSpec();
                 if (spec.getOffset() == spec2.getOffset()) {
@@ -965,6 +970,7 @@ public class RagBuilder {
         final AccessId rowIndexOutput = rowIndex.getOutputs().getAtSlot(0);
         for (RagNode consumer : rowIndex2Output.getConsumers()) {
             consumer.replaceInput(rowIndex2Output, rowIndexOutput);
+            rowIndexOutput.addConsumer(consumer);
         }
 
         // and remove rowIndex2
@@ -986,6 +992,8 @@ public class RagBuilder {
     }
 
     private boolean tryMergeRowIndexSiblings(final RagNode rowIndex) {
+        if (rowIndex.getOutputs().isEmpty())
+            return false;
         final List<RagNode> predecessors = rowIndex.predecessors(EXEC);
         if (predecessors.size() == 1) {
             final RagNode node = predecessors.get(0);
@@ -994,6 +1002,8 @@ public class RagBuilder {
                 if ( successor.type() == ROWINDEX && !successor.equals(rowIndex)) {
                     // successor is another ROWINDEX
                     final RagNode rowIndex2 = successor;
+                    if (rowIndex2.getOutputs().isEmpty())
+                        return false;
                     final RowIndexTransformSpec spec2 = rowIndex2.getTransformSpec();
                     if (spec.getOffset() == spec2.getOffset()) {
                         // merge them
@@ -1108,6 +1118,37 @@ public class RagBuilder {
         // edgesToRemove.addAll(predecessor.outgoingEdges(EXEC));
         for (final RagEdge edge : edgesToRemove) {
             graph.remove(edge);
+        }
+    }
+
+
+
+    // --------------------------------------------------------------------
+    // eliminateRowIndexes()
+
+    private boolean eliminateRowIndexes() {
+        for (final RagNode node : graph.nodes(ROWINDEX)) {
+            if (tryEliminateRowIndex(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean tryEliminateRowIndex(final RagNode node) {
+        // if the rowindex value is never used, remove the node
+        if (node.getOutputs().isEmpty()) {
+            // Short-circuit EXEC edges from predecessors to successors
+            for (RagNode predecessor : node.predecessors(EXEC)) {
+                for (RagNode successor : node.successors(EXEC)) {
+                    graph.getOrAddEdge(predecessor, successor, EXEC);
+                }
+            }
+
+            graph.remove(node);
+            return true;
+        } else {
+            return false;
         }
     }
 
