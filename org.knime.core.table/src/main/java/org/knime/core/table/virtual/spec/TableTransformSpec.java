@@ -48,6 +48,11 @@
  */
 package org.knime.core.table.virtual.spec;
 
+/**
+ * Specifies a virtual table transform.
+ * <p>
+ * Implementations of this interface should be immutable.
+ */
 public interface TableTransformSpec {
     // NB: Marker interface
 }
