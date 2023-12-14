@@ -22,19 +22,19 @@ public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
     private final RagGraph specGraph;
     private final ColumnarSchema schema;
-    private final CursorType supportedCursorType;
+    private final CursorType cursorType;
 
     public GraphVirtualTableExecutor(final TableTransform leafTransform)
     {
         specGraph = SpecGraphBuilder.buildSpecGraph(leafTransform);
         final List<RagNode> orderedRag = RagBuilder.createOrderedRag(specGraph);
         schema = RagBuilder.createSchema(orderedRag);
-        supportedCursorType = RagGraphProperties.supportedCursorType(orderedRag);
+        cursorType = RagGraphProperties.supportedCursorType(orderedRag);
     }
 
     @Override
     public List<RowAccessible> execute(Map<UUID, RowAccessible> inputs) {
-        final RowAccessible rows = CapExecutor.createRowAccessible(specGraph, schema, supportedCursorType, inputs, true);
+        final RowAccessible rows = CapExecutor.createRowAccessible(specGraph, schema, cursorType, inputs);
         return List.of(rows);
     }
 
