@@ -18,6 +18,7 @@ import static org.knime.core.table.virtual.graph.rag.RagNodeType.SOURCE;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.WRAPPER;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -29,11 +30,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
-import org.knime.core.table.cursor.Cursors;
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DefaultColumnarSchema;
+import org.knime.core.table.schema.DataSpecs;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
@@ -190,63 +191,36 @@ public class RagBuilder {
             throw new IllegalArgumentException(
                     "Unexpected RagNode type " + node.type() + ".");
         }
-        final List<DataSpec> columnSpecs = new ArrayList<>();
-        final List<DataTraits> columnTraits = new ArrayList<>();
-        for (AccessId input : node.getInputs()) {
-            columnSpecs.add(getSpec(input));
-            columnTraits.add(getTraits(input));
-        }
-        return new DefaultColumnarSchema(columnSpecs, columnTraits);
+
+        final AccessIds inputs = node.getInputs();
+        final DataSpecWithTraits[] specs = new DataSpecWithTraits[inputs.size()];
+        Arrays.setAll(specs, i -> getSpecWithTraits(inputs.getAtSlot(i)));
+        return ColumnarSchema.of(specs);
     }
 
-    private static DataSpec getSpec(final AccessId accessId) {
+    private static DataSpecWithTraits getSpecWithTraits(final AccessId accessId) {
         final RagNode producer = accessId.getProducer();
-        switch (producer.type()) {
-            case SOURCE: {
+        return switch (producer.type()) {
+            case SOURCE -> {
                 final SourceTransformSpec spec = producer.getTransformSpec();
-                return spec.getSchema().getSpec(accessId.getColumnIndex());
+                yield spec.getSchema().getSpecWithTraits(accessId.getColumnIndex());
             }
-            case MISSING: {
+            case MISSING -> {
                 final MissingValuesSourceTransformSpec spec = producer.getTransformSpec();
-                return spec.getMissingValueSpecs().get(accessId.getColumnIndex()).spec();
+                yield spec.getMissingValueSpecs().get(accessId.getColumnIndex());
             }
-            case APPEND:
-            case CONCATENATE: {
+            case APPEND, CONCATENATE -> {
                 final int slot = producer.getOutputs().slotIndexOf(accessId);
-                return getSpec(producer.getInputs(0).getAtSlot(slot));
+                yield getSpecWithTraits(producer.getInputs(0).getAtSlot(slot));
             }
-            case MAP: {
+            case MAP -> {
                 final MapTransformSpec spec = producer.getTransformSpec();
-                return spec.getMapperFactory().getOutputSchema().getSpec(accessId.getColumnIndex());
+                yield spec.getMapperFactory().getOutputSchema().getSpecWithTraits(accessId.getColumnIndex());
             }
-            default:
-                throw new IllegalArgumentException("unexpected node type " + producer.type());
-        }
-    }
-
-    private static DataTraits getTraits(final AccessId accessId) {
-        var producer = accessId.getProducer();
-        switch (producer.type()) {
-            case SOURCE: {
-                final SourceTransformSpec spec = producer.getTransformSpec();
-                return spec.getSchema().getTraits(accessId.getColumnIndex());
-            }
-            case MISSING: {
-                final MissingValuesSourceTransformSpec spec = producer.getTransformSpec();
-                return spec.getMissingValueSpecs().get(accessId.getColumnIndex()).traits();
-            }
-            case APPEND:
-            case CONCATENATE: {
-                final int slot = producer.getOutputs().slotIndexOf(accessId);
-                return getTraits(producer.getInputs(0).getAtSlot(slot));
-            }
-            case MAP: {
-                final MapTransformSpec spec = producer.getTransformSpec();
-                return spec.getMapperFactory().getOutputSchema().getTraits(accessId.getColumnIndex());
-            }
-            default:
-                throw new IllegalArgumentException("unexpected node type " + producer.type());
-        }
+            case ROWINDEX -> DataSpecs.LONG;
+            case SLICE, APPENDMISSING, COLFILTER, ROWFILTER, CONSUMER, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
+                    throw new IllegalArgumentException("unexpected node type " + producer.type());
+        };
     }
 
     final RagGraph graph;
