@@ -47,6 +47,27 @@ public final class AccessId {
             consumers.add(node);
     }
 
+    /**
+     * For each {@link #getConsumers() consumer} of this {@code AccessId}:
+     * replace {@code this} with {@code newId} in the inputs of {@code
+     * consumer}, add {@code consumer} to the consumers of {@code newId}.
+     * Finally, clear the consumers of this {@code AccessId}.
+     *
+     * @param newId
+     * @return {@code true} if any replacement was made (that is, unless {@link #getConsumers()} is empty).
+     */
+    public boolean replaceInConsumersWith(final AccessId newId) {
+        if (consumers.isEmpty())
+            return false;
+
+        for (RagNode consumer : consumers) {
+            consumer.replaceInput(this, newId);
+            newId.addConsumer(consumer);
+        }
+        consumers.clear();
+        return true;
+    }
+
     public void removeConsumer(RagNode node) {
         consumers.remove(node);
     }
