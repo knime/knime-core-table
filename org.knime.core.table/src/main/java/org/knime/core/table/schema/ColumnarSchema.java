@@ -145,4 +145,15 @@ public interface ColumnarSchema extends Iterable<DataSpec> {
     default ColumnarSchema append(final DataSpecs.DataSpecWithTraits... specs) {
         return ColumnarSchemas.append(List.of(this, ColumnarSchema.of(specs)));
     }
+
+    /**
+     * Obtain the {@link DataSpec} and {@link DataTraits} of the column at a given index.
+     *
+     * @param index the index of the column for which to obtain the spec and traits
+     * @return the column's spec and traits
+     * @throws IndexOutOfBoundsException if the index is negative or equal to or greater than the number of columns
+     */
+    default DataSpecWithTraits getSpecWithTraits(int index) {
+        return new DataSpecWithTraits(getSpec(index), getTraits(index));
+    }
 }
