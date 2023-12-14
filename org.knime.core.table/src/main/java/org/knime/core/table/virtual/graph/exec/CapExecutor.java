@@ -14,32 +14,27 @@ import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagNode;
-import org.knime.core.table.virtual.spec.SourceTableProperties;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 public class CapExecutor {
 
     /**
      * @param specGraph
      * @param schema
-     * @param supportedCursorType
+     * @param cursorType
      * @param uuidRowAccessibleMap
-     * @param useRandomAccess      if {@code true}, then a {@code RandomRowAccessible} will be created if the {@code cap} supports it.
      * @return
      */
     public static RowAccessible createRowAccessible(
             final RagGraph specGraph,
             final ColumnarSchema schema,
-            final SourceTableProperties.CursorType supportedCursorType,
-            final Map<UUID, RowAccessible> uuidRowAccessibleMap,
-            final boolean useRandomAccess) {
-
-        if (useRandomAccess && supportedCursorType.supportsRandomAccess()) {
-            return new CapRandomRowAccessible(specGraph, schema, uuidRowAccessibleMap);
-        } else if (supportedCursorType.supportsLookahead()) {
-            return new CapLookaheadRowAccessible(specGraph, schema, uuidRowAccessibleMap);
-        } else {
-            return new CapRowAccessible(specGraph, schema, uuidRowAccessibleMap);
-        }
+            final CursorType cursorType,
+            final Map<UUID, RowAccessible> uuidRowAccessibleMap) {
+        return switch (cursorType) {
+            case BASIC -> new CapRowAccessible(specGraph, schema, uuidRowAccessibleMap);
+            case LOOKAHEAD -> new CapLookaheadRowAccessible(specGraph, schema, uuidRowAccessibleMap);
+            case RANDOMACCESS -> new CapRandomRowAccessible(specGraph, schema, uuidRowAccessibleMap);
+        };
     }
 
     public static void execute(

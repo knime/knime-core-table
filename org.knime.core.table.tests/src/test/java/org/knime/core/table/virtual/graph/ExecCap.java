@@ -178,7 +178,7 @@ public class ExecCap {
             final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
             final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
             final CursorType cursorType = RagGraphProperties.supportedCursorType(orderedRag);
-            final RowAccessible rows = createRowAccessible(graph, schema, cursorType, uuidRowAccessibleMap, true);
+            final RowAccessible rows = createRowAccessible(graph, schema, cursorType, uuidRowAccessibleMap);
 
             System.out.println("supported CursorType = " + RagGraphProperties.supportedCursorType(orderedRag));
 
