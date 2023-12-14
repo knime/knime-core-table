@@ -613,14 +613,12 @@ public class RagBuilder {
                 final AccessId output = outputs.getAtSlot(i);
                 final AccessId input = inputs.getAtSlot(i);
                 input.removeConsumer(wrapper);
-                for (RagNode consumer : output.getConsumers()) {
-                    if (consumer.replaceInput(output, input)) {
-                        input.addConsumer(consumer);
-                        if (input.getProducer().type() != MISSING) {
-                            graph.getOrAddEdge(input.getProducer(), consumer, DATA);
-                        }
+                if (input.getProducer().type() != MISSING) {
+                    for (RagNode consumer : output.getConsumers()) {
+                        graph.getOrAddEdge(input.getProducer(), consumer, DATA);
                     }
                 }
+                output.replaceInConsumersWith(input);
             }
 
             return true;
@@ -841,13 +839,13 @@ public class RagBuilder {
             // For the single output oldOutput in rowIndex.getOutputs():
             //   For each consumer in oldOutput.getConsumers():
             //     Find consumer.inputs[j] corresponding to oldOutput, and replace by newOutput
+            // Add new DATA edges from offsetRowIndex to the (previously) consumers of rowIndex.
             final AccessId oldOutput = rowIndex.getOutputs().getAtSlot(0);
             final AccessId newOutput = offsetRowIndex.getOrCreateOutput(oldOutput.getColumnIndex());
             for (RagNode consumer : oldOutput.getConsumers()) {
-                consumer.replaceInput(oldOutput, newOutput);
-                newOutput.addConsumer(consumer);
                 graph.addEdge(offsetRowIndex, consumer, DATA);
             }
+            oldOutput.replaceInConsumersWith(newOutput);
 
             return true;
         }
@@ -940,12 +938,9 @@ public class RagBuilder {
         // For the single output in rowIndex2.getOutputs():
         //   For each consumer in output.getConsumers():
         //     Find consumer.inputs[j] corresponding to output, and replace by single output in rowIndex.getOutputs()
-        final AccessId rowIndex2Output = rowIndex2.getOutputs().getAtSlot(0);
-        final AccessId rowIndexOutput = rowIndex.getOutputs().getAtSlot(0);
-        for (RagNode consumer : rowIndex2Output.getConsumers()) {
-            consumer.replaceInput(rowIndex2Output, rowIndexOutput);
-            rowIndexOutput.addConsumer(consumer);
-        }
+        final AccessId output2 = rowIndex2.getOutputs().getAtSlot(0);
+        final AccessId output = rowIndex.getOutputs().getAtSlot(0);
+        output2.replaceInConsumersWith(output);
 
         // and remove rowIndex2
         graph.remove(rowIndex2);
@@ -1044,11 +1039,7 @@ public class RagBuilder {
         merged.setNumColumns(source.numColumns());
         for (AccessId oldId : source.getOutputs()) {
             AccessId newId = merged.getOrCreateOutput(oldId.getColumnIndex());
-            for (RagNode consumer : oldId.getConsumers()) {
-                if (consumer.replaceInput(oldId, newId)) {
-                    newId.addConsumer(consumer);
-                }
-            }
+            oldId.replaceInConsumersWith(newId);
         }
         // re-link DATA edges of source to merged
         // (link merged to all DATA successors of source)
@@ -1220,15 +1211,13 @@ public class RagBuilder {
         for (int i = 0; i < outputs.size(); i++) {
             final AccessId output = outputs.getAtSlot(i);
             final AccessId input = inputs.getAtSlot(i);
-            input.removeConsumer(append);
-            for (RagNode consumer : output.getConsumers()) {
-                if (consumer.replaceInput(output, input)) {
-                    input.addConsumer(consumer);
-                    if (input.getProducer().type() != MISSING) {
-                        graph.getOrAddEdge(input.getProducer(), consumer, DATA);
-                    }
+            if (input.getProducer().type() != MISSING) {
+                for (RagNode consumer : output.getConsumers()) {
+                    graph.getOrAddEdge(input.getProducer(), consumer, DATA);
                 }
             }
+            input.removeConsumer(append);
+            output.replaceInConsumersWith(input);
         }
     }
 

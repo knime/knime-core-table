@@ -267,7 +267,8 @@ public final class RagNode implements Typed<RagNodeType> {
      * Replace all uses of {@code oldId} as an input to this node with {@code newId}.
      * <p>
      * Note that neither the consumers of {@code oldId} nor the consumers of {@code
-     * newId} are updated.
+     * newId} are updated. This avoids {@code ConcurrentModificationException}s when
+     * calling {@code replaceInput} in a loop over all consumers of {@code oldId}.
      *
      * @param oldId access to be replaced
      * @param newId access to replace it with
