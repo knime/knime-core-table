@@ -52,8 +52,8 @@ public class ExecCap {
 //        final VirtualTable table = VirtualTableExamples.vtAppend(sourceIdentifiers, sourceAccessibles);
 
         final UUID[] sourceIdentifiers = createSourceIds(2);
-        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataAppendAndSlice();
-        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice(sourceIdentifiers, sourceAccessibles);
+        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppendAndSlice();
+        final VirtualTable table = VirtualTableTests.vtAppendAndSlice(sourceIdentifiers, sourceAccessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final RowAccessible[] sourceAccessibles = VirtualTableExamples.dataForkJoin();

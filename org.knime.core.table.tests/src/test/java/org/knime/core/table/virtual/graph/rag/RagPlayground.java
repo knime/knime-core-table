@@ -5,7 +5,7 @@ import static org.knime.core.table.virtual.graph.rag.RagEdgeType.FLATTENED_ORDER
 import java.util.List;
 
 import org.knime.core.table.virtual.VirtualTable;
-import org.knime.core.table.virtual.graph.VirtualTableExamples;
+import org.knime.core.table.virtual.graph.VirtualTableTests;
 import org.knime.core.table.virtual.graph.util.Mermaid;
 
 public class RagPlayground {
@@ -34,7 +34,7 @@ public class RagPlayground {
 //        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsParallelAndSlice();
 //        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsSequential();
 //        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsSequentialAndSlice();
-        final VirtualTable table = VirtualTableExamples.vtObserve();
+        final VirtualTable table = VirtualTableTests.vtObserve();
 
         var mermaid = new Mermaid();
         var spec =  new SpecGraphBuilder();
