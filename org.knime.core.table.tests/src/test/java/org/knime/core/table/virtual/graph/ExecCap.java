@@ -1,7 +1,6 @@
 package org.knime.core.table.virtual.graph;
 
 import static org.knime.core.table.RowAccessiblesTestUtils.toRowAccessible;
-import static org.knime.core.table.schema.DataSpecs.STRING;
 import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
 
 import java.io.IOException;
@@ -13,7 +12,6 @@ import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 
-import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.RowAccessiblesTestUtils.TestRowAccessible;
 import org.knime.core.table.RowAccessiblesTestUtils.TestRowWriteAccessible;
 import org.knime.core.table.cursor.Cursor;
@@ -23,8 +21,6 @@ import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
-import org.knime.core.table.virtual.graph.cap.CapBuilder;
-import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
@@ -32,7 +28,6 @@ import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
-import org.knime.core.table.virtual.spec.SourceTableProperties;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 public class ExecCap {
