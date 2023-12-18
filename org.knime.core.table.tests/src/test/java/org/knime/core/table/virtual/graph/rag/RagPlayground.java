@@ -5,36 +5,36 @@ import static org.knime.core.table.virtual.graph.rag.RagEdgeType.FLATTENED_ORDER
 import java.util.List;
 
 import org.knime.core.table.virtual.VirtualTable;
-import org.knime.core.table.virtual.graph.VirtualTableExamples;
+import org.knime.core.table.virtual.graph.VirtualTableTests;
 import org.knime.core.table.virtual.graph.util.Mermaid;
 
 public class RagPlayground {
 
     public static void main(final String[] args) {
-//        final VirtualTable table = VirtualTableExamples.vtMinimal();
-//        final VirtualTable table = VirtualTableExamples.vtLinear();
-//        final VirtualTable table = VirtualTableExamples.vtAppend();
-//        final VirtualTable table = VirtualTableExamples.vtAppendAndSlice();
-//        final VirtualTable table = VirtualTableExamples.vtForkJoin();
-//        final VirtualTable table = VirtualTableExamples.vtForkJoinLookALike();
-//        final VirtualTable table = VirtualTableExamples.vtConcatenate();
-//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSlice();
-//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceSingleTable();
-//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceFullSingleTable();
-//        final VirtualTable table = VirtualTableExamples.vtConcatenateAndSliceFullTable();
-//        final VirtualTable table = VirtualTableExamples.vtAppendMissing();
-//        final VirtualTable table = VirtualTableExamples.vtSimpleMap();
-//        final VirtualTable table = VirtualTableExamples.vtSimpleRowFilter();
-//        final VirtualTable table = VirtualTableExamples.vtConsecutiveRowFilters();
-//        final VirtualTable table = VirtualTableExamples.vtMapsAndFilters();
-//        final VirtualTable table = VirtualTableExamples.vtFiltersMapAndConcatenate();
-//        final VirtualTable table = VirtualTableExamples.vtMaterializeMinimal();
-//        final VirtualTable table = VirtualTableExamples.vtRowIndexMap();
-//        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsParallel();
-//        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsParallelAndSlice();
-//        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsSequential();
-//        final VirtualTable table = VirtualTableExamples.vtRowIndexMapsSequentialAndSlice();
-        final VirtualTable table = VirtualTableExamples.vtObserve();
+//        final VirtualTable table = VirtualTableTests.vtMinimal();
+//        final VirtualTable table = VirtualTableTests.vtLinear();
+//        final VirtualTable table = VirtualTableTests.vtAppend();
+//        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
+//        final VirtualTable table = VirtualTableTests.vtForkJoin();
+//        final VirtualTable table = VirtualTableTests.vtForkJoinLookALike();
+//        final VirtualTable table = VirtualTableTests.vtConcatenate();
+//        final VirtualTable table = VirtualTableTests.vtConcatenateAndSlice();
+//        final VirtualTable table = VirtualTableTests.vtConcatenateAndSliceSingleTable();
+//        final VirtualTable table = VirtualTableTests.vtConcatenateAndSliceFullSingleTable();
+//        final VirtualTable table = VirtualTableTests.vtConcatenateAndSliceFullTable();
+//        final VirtualTable table = VirtualTableTests.vtAppendMissing();
+//        final VirtualTable table = VirtualTableTests.vtSimpleMap();
+//        final VirtualTable table = VirtualTableTests.vtSimpleRowFilter();
+//        final VirtualTable table = VirtualTableTests.vtConsecutiveRowFilters();
+//        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
+//        final VirtualTable table = VirtualTableTests.vtFiltersMapAndConcatenate();
+//        final VirtualTable table = VirtualTableTests.vtMaterializeMinimal();
+//        final VirtualTable table = VirtualTableTests.vtRowIndexMap();
+//        final VirtualTable table = VirtualTableTests.vtRowIndexMapsParallel();
+//        final VirtualTable table = VirtualTableTests.vtRowIndexMapsParallelAndSlice();
+//        final VirtualTable table = VirtualTableTests.vtRowIndexMapsSequential();
+//        final VirtualTable table = VirtualTableTests.vtRowIndexMapsSequentialAndSlice();
+        final VirtualTable table = VirtualTableTests.vtObserve();
 
         var mermaid = new Mermaid();
         var spec =  new SpecGraphBuilder();
@@ -70,17 +70,17 @@ public class RagPlayground {
         System.out.println("\n\n=========================\n");
         System.out.println("graph = " + rag.graph);
 
-//        buildRag(VirtualTableExamples.vtMinimal(), "vtMinimal");
-//        buildRag(VirtualTableExamples.vtLinear(), "vtLinear");
-//        buildRag(VirtualTableExamples.vtAppend(), "vtAppend");
-//        buildRag(VirtualTableExamples.vtForkJoin(), "vtForkJoin");
-//        buildRag(VirtualTableExamples.vtForkJoinLookALike(), "vtForkJoinLookALike");
-//        buildRag(VirtualTableExamples.vtConcatenate(), "vtConcatenate");
-//        buildRag(VirtualTableExamples.vtAppendMissing(), "vtAppendMissing");
-//        buildRag(VirtualTableExamples.vtSimpleMap(), "vtSimpleMap");
-//        buildRag(VirtualTableExamples.vtSimpleRowFilter(), "vtSimpleRowFilter");
-//        buildRag(VirtualTableExamples.vtConsecutiveRowFilters(), "vtConsecutiveRowFilters");
-//        buildRag(VirtualTableExamples.vtMapsAndFilters(), "vtMapsAndFilters");
+//        buildRag(VirtualTableTests.vtMinimal(), "vtMinimal");
+//        buildRag(VirtualTableTests.vtLinear(), "vtLinear");
+//        buildRag(VirtualTableTests.vtAppend(), "vtAppend");
+//        buildRag(VirtualTableTests.vtForkJoin(), "vtForkJoin");
+//        buildRag(VirtualTableTests.vtForkJoinLookALike(), "vtForkJoinLookALike");
+//        buildRag(VirtualTableTests.vtConcatenate(), "vtConcatenate");
+//        buildRag(VirtualTableTests.vtAppendMissing(), "vtAppendMissing");
+//        buildRag(VirtualTableTests.vtSimpleMap(), "vtSimpleMap");
+//        buildRag(VirtualTableTests.vtSimpleRowFilter(), "vtSimpleRowFilter");
+//        buildRag(VirtualTableTests.vtConsecutiveRowFilters(), "vtConsecutiveRowFilters");
+//        buildRag(VirtualTableTests.vtMapsAndFilters(), "vtMapsAndFilters");
     }
 
     public static void buildRag(final VirtualTable table, final String name) {
