@@ -9,7 +9,7 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 
-class NodeImpSource implements NodeImp {
+class SequentialNodeImpSource implements SequentialNodeImp {
     private final RowAccessible accessible;
 
     private final int[] cols;
@@ -22,7 +22,7 @@ class NodeImpSource implements NodeImp {
 
     private LookaheadCursor<ReadAccessRow> lookahead;
 
-    NodeImpSource(final RowAccessible accessible, final int[] cols, final long fromRow, final long toRow) {
+    SequentialNodeImpSource(final RowAccessible accessible, final int[] cols, final long fromRow, final long toRow) {
         this.accessible = accessible;
         this.cols = cols;
         this.selection = Selection.all().retainColumns(cols).retainRows(fromRow, toRow);

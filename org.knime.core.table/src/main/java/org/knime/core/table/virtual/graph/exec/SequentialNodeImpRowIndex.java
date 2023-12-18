@@ -8,9 +8,9 @@ import org.knime.core.table.access.BufferedAccesses;
 import org.knime.core.table.access.LongAccess.LongWriteAccess;
 import org.knime.core.table.access.ReadAccess;
 
-class NodeImpRowIndex implements NodeImp {
+class SequentialNodeImpRowIndex implements SequentialNodeImp {
 
-    private final NodeImp predecessor;
+    private final SequentialNodeImp predecessor;
 
     private final LongWriteAccess access;
 
@@ -20,7 +20,7 @@ class NodeImpRowIndex implements NodeImp {
      */
     private long m_nextRowIndex;
 
-    NodeImpRowIndex(final NodeImp predecessor, final long offset) {
+    SequentialNodeImpRowIndex(final SequentialNodeImp predecessor, final long offset) {
         this.predecessor = predecessor;
         access = (LongWriteAccess)BufferedAccesses.createBufferedAccess(LONG);
         m_nextRowIndex = offset;

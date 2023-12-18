@@ -9,17 +9,17 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.row.WriteAccessRow;
 
-class NodeImpMaterialize implements NodeImp {
+class SequentialNodeImpMaterialize implements SequentialNodeImp {
 
     private final RowWriteAccessible accessible;
 
     private final AccessImp[] inputs;
 
-    private final NodeImp predecessor;
+    private final SequentialNodeImp predecessor;
 
     private boolean m_canForward = true;
 
-    NodeImpMaterialize(final RowWriteAccessible accessible, final AccessImp[] inputs, final NodeImp predecessor) {
+    SequentialNodeImpMaterialize(final RowWriteAccessible accessible, final AccessImp[] inputs, final SequentialNodeImp predecessor) {
         this.accessible = accessible;
         this.inputs = inputs;
         this.predecessor = predecessor;

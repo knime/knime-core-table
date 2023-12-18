@@ -6,18 +6,18 @@ import java.util.function.BooleanSupplier;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
-class NodeImpRowFilter implements NodeImp {
+class SequentialNodeImpRowFilter implements SequentialNodeImp {
     private final AccessImp[] inputs;
 
     private final ReadAccess[] filterInputs;
 
-    private final NodeImp predecessor;
+    private final SequentialNodeImp predecessor;
 
     private final RowFilterFactory filterFactory;
 
     private BooleanSupplier filter;
 
-    NodeImpRowFilter(final AccessImp[] inputs, final NodeImp predecessor, final RowFilterFactory filterFactory) {
+    SequentialNodeImpRowFilter(final AccessImp[] inputs, final SequentialNodeImp predecessor, final RowFilterFactory filterFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         this.filterFactory = filterFactory;

@@ -8,7 +8,7 @@ import org.knime.core.table.virtual.graph.exec.CapRowAccessible.CapCursorData;
 
 class CapCursor implements Cursor<ReadAccessRow> {
 
-    final NodeImpConsumer node;
+    final SequentialNodeImpConsumer node;
 
     private final ReadAccessRow access;
 

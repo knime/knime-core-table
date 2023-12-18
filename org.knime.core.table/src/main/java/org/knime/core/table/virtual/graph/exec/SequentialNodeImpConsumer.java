@@ -4,15 +4,15 @@ import java.io.IOException;
 
 import org.knime.core.table.access.ReadAccess;
 
-class NodeImpConsumer implements NodeImp {
+class SequentialNodeImpConsumer implements SequentialNodeImp {
 
     private final AccessImp[] inputs;
 
-    private final NodeImp predecessor;
+    private final SequentialNodeImp predecessor;
 
     private final ReadAccess[] outputs;
 
-    NodeImpConsumer(final AccessImp[] inputs, final NodeImp predecessor) {
+    SequentialNodeImpConsumer(final AccessImp[] inputs, final SequentialNodeImp predecessor) {
         this.inputs = inputs;
         this.predecessor = predecessor;
         outputs = new ReadAccess[inputs.length];

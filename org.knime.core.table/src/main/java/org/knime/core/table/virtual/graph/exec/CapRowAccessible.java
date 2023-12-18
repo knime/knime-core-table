@@ -80,7 +80,7 @@ class CapRowAccessible implements RowAccessible {
 
     record CapCursorData(CursorAssemblyPlan cap, List<RowAccessible> sources, int numColumns, int[] selectedColumns) {
 
-        NodeImpConsumer assembleConsumer() {
+        SequentialNodeImpConsumer assembleConsumer() {
             return new AssembleNodeImps(cap.nodes(), sources).getConsumer();
         }
 

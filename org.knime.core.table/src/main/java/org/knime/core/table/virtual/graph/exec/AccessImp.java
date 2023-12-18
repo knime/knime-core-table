@@ -4,11 +4,11 @@ import org.knime.core.table.access.ReadAccess;
 
 final class AccessImp {
 
-    public final AbstractNodeImp node;
+    public final NodeImp node;
 
     public final int i;
 
-    public AccessImp(AbstractNodeImp node, int i) {
+    public AccessImp(NodeImp node, int i) {
         this.node = node;
         this.i = i;
     }
