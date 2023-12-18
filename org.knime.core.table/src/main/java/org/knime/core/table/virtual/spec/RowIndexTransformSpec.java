@@ -1,4 +1,4 @@
-package org.knime.core.table.virtual.graph.rag;
+package org.knime.core.table.virtual.spec;
 
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
