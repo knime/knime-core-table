@@ -1,29 +1,33 @@
 package org.knime.core.table.virtual.graph.exec;
 
-interface NodeImp extends AbstractNodeImp {
+import java.io.IOException;
+
+import org.knime.core.table.access.ReadAccess;
+
+interface NodeImp {
 
     /**
-     * Recursively call {@link #forward} on predecessors, possibly multiple
-     * times. For example, {@link NodeImpRowFilter row filter} repeatedly calls
-     * {@code predecessor.forward()} until the filter predicate accepts the
-     * current values (current row).
+     * Get the {@code ReadAccess} at the {@code i}-th output slot of this {@code
+     * NodeImp}.
      *
-     * @return {@code true} if forwarding was successful, {@code false}
-     *         otherwise (i.e. at the end)
+     * @param i slot index
+     * @return
      */
-    boolean forward();
+    ReadAccess getOutput(int i);
 
-    /*
-     * Recursively call {@link #canForward} on predecessors.
-     * <p>
-     * Some {@code NodeImp}s simply throw an exception because they cannot
-     * figure out whether it is possible to forward without actually doing so.
-     * {@code #canForward} will be used in the created cursor only if the comp
-     * graph figured out that it is possible.
+    /**
+     * Recursively call {@link #create} on all predecessors. Then do any setup
+     * that this {@code NodeImp} itself requires. After {@link #create}, the
+     * output {@code ReadAccess}es of this {@code NodeImp} must be available via
+     * {@link #getOutput}.
+     */
+    void create();
+
+    /**
+     * Recursively call {@link #close} on all predecessors. Then do any clean-up
+     * this {@code NodeImp} itself requires.
      *
-     * @return {@code true} if more elements are available, that is, the next
-     *         {@link #forward} would return {@code true}.
+     * @throws IOException
      */
-    boolean canForward();
-
+    void close() throws IOException;
 }

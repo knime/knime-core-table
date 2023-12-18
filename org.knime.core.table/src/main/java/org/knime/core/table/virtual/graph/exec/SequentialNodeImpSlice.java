@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import org.knime.core.table.access.ReadAccess;
 
-class NodeImpSlice implements NodeImp {
-    private final NodeImp predecessor;
+class SequentialNodeImpSlice implements SequentialNodeImp {
+    private final SequentialNodeImp predecessor;
 
     /**
      * Index of the first row (inclusive) to include in the slice.
@@ -30,7 +30,7 @@ class NodeImpSlice implements NodeImp {
      */
     private long m_nextRowIndex;
 
-    NodeImpSlice(final NodeImp predecessor, final long from, final long to) {
+    SequentialNodeImpSlice(final SequentialNodeImp predecessor, final long from, final long to) {
         this.predecessor = predecessor;
         m_from = from;
         m_to = to;

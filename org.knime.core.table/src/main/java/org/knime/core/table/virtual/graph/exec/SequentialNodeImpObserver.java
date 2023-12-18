@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 
-class NodeImpObserver implements NodeImp {
+class SequentialNodeImpObserver implements SequentialNodeImp {
 
     private final AccessImp[] inputs;
 
@@ -15,11 +15,11 @@ class NodeImpObserver implements NodeImp {
 
     private Runnable observer;
 
-    private final NodeImp predecessor;
+    private final SequentialNodeImp predecessor;
 
-    NodeImpObserver(//
+    SequentialNodeImpObserver(//
         final AccessImp[] inputs, //
-        final NodeImp predecessor, //
+        final SequentialNodeImp predecessor, //
         final ObserverTransformSpec.ObserverFactory observerFactory) {
 
         this.inputs = inputs;

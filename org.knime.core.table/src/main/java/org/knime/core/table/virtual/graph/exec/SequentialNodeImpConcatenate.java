@@ -7,22 +7,22 @@ import java.util.List;
 import org.knime.core.table.access.DelegatingReadAccesses;
 import org.knime.core.table.access.ReadAccess;
 
-class NodeImpConcatenate implements NodeImp {
+class SequentialNodeImpConcatenate implements SequentialNodeImp {
     private final AccessImp[][] inputss;
 
     private final DelegatingReadAccesses.DelegatingReadAccess[] outputs;
 
-    private final NodeImp[] predecessors;
+    private final SequentialNodeImp[] predecessors;
 
     private final List<IOException> exceptionsWhileClosing;
 
     private int predecessorIndex;
 
-    private NodeImp predecessor;
+    private SequentialNodeImp predecessor;
 
-    private NodeImp linkedPredecessor;
+    private SequentialNodeImp linkedPredecessor;
 
-    NodeImpConcatenate(final AccessImp[][] inputs, final NodeImp[] predecessors) {
+    SequentialNodeImpConcatenate(final AccessImp[][] inputs, final SequentialNodeImp[] predecessors) {
         if (inputs.length != predecessors.length) {
             throw new IllegalArgumentException();
         }
@@ -42,7 +42,7 @@ class NodeImpConcatenate implements NodeImp {
     /**
      * Close {@code node}, catch and record {@code IOException} for re-throwing later.
      */
-    private void tryClose(final NodeImp node) {
+    private void tryClose(final SequentialNodeImp node) {
         try {
             node.close();
         } catch (IOException e) {

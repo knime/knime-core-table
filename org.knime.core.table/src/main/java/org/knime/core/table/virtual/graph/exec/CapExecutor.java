@@ -49,7 +49,7 @@ public class CapExecutor {
             final List<RowAccessible> sources = CapExecutorUtils.getSources(cap, uuidRowAccessibleMap);
             final List<RowWriteAccessible> sinks = CapExecutorUtils.getSinks(cap, uuidRowWriteAccessibleMap);
 
-            final NodeImp terminator = new AssembleNodeImps(cap.nodes(), sources, sinks).getTerminator();
+            final SequentialNodeImp terminator = new AssembleNodeImps(cap.nodes(), sources, sinks).getTerminator();
             terminator.create();
             terminator.forward();
             terminator.close();

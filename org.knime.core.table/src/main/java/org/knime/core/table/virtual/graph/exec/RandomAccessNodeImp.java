@@ -1,6 +1,6 @@
 package org.knime.core.table.virtual.graph.exec;
 
-interface RandomAccessNodeImp extends AbstractNodeImp {
+interface RandomAccessNodeImp extends NodeImp {
 
     /**
      * Recursively call {@link #moveTo} on predecessors.

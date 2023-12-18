@@ -11,7 +11,7 @@ import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
-class NodeImpMap implements NodeImp {
+class SequentialNodeImpMap implements SequentialNodeImp {
     private final AccessImp[] inputs;
 
     private final ReadAccess[] mapInputs;
@@ -24,14 +24,14 @@ class NodeImpMap implements NodeImp {
 
     private final ReadAccess[] outputs;
 
-    private final NodeImp predecessor;
+    private final SequentialNodeImp predecessor;
 
     /**
      * @param mapOutputSpecs these accesses are needed as outputs for the {@code map()} function.
      * @param cols           these indices among {@code mapOutputSpecs} are the outputs of this NodeImp
      * @param mapperFactory
      */
-    NodeImpMap(final AccessImp[] inputs, final NodeImp predecessor, final List<DataSpec> mapOutputSpecs,
+    SequentialNodeImpMap(final AccessImp[] inputs, final SequentialNodeImp predecessor, final List<DataSpec> mapOutputSpecs,
             final int[] cols, final MapperFactory mapperFactory) {
         this.inputs = inputs;
         this.predecessor = predecessor;

@@ -6,12 +6,12 @@ import org.knime.core.table.access.DelegatingReadAccesses;
 import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
 
-class NodeImpAppend implements NodeImp {
+class SequentialNodeImpAppend implements SequentialNodeImp {
     private final AccessImp[] inputs;
 
     private final DelegatingReadAccesses.DelegatingReadAccess[] outputs;
 
-    private final NodeImp[] predecessors;
+    private final SequentialNodeImp[] predecessors;
 
     private final int[][] predecessorOutputIndices;
 
@@ -21,7 +21,7 @@ class NodeImpAppend implements NodeImp {
      * @param predecessorOutputIndices {@code predecessorOutputIndices[i]} is the list
      *                                 of output indices to switch to missing when the i-th predecessor is exhausted.
      */
-    NodeImpAppend(final AccessImp[] inputs, final NodeImp[] predecessors, final int[][] predecessorOutputIndices) {
+    SequentialNodeImpAppend(final AccessImp[] inputs, final SequentialNodeImp[] predecessors, final int[][] predecessorOutputIndices) {
         this.inputs = inputs;
         outputs = new DelegatingReadAccesses.DelegatingReadAccess[inputs.length];
 
@@ -47,7 +47,7 @@ class NodeImpAppend implements NodeImp {
 
     @Override
     public void create() {
-        for (NodeImp predecessor : predecessors) {
+        for (SequentialNodeImp predecessor : predecessors) {
             predecessor.create();
         }
         link();
@@ -57,7 +57,7 @@ class NodeImpAppend implements NodeImp {
     public boolean forward() {
         boolean anyForwarded = false;
         for (int i = 0; i < predecessors.length; i++) {
-            final NodeImp predecessor = predecessors[i];
+            final SequentialNodeImp predecessor = predecessors[i];
             if (predecessor.forward()) {
                 anyForwarded = true;
             } else {
@@ -85,7 +85,7 @@ class NodeImpAppend implements NodeImp {
 
     @Override
     public void close() throws IOException {
-        for (NodeImp predecessor : predecessors) {
+        for (SequentialNodeImp predecessor : predecessors) {
             predecessor.close();
         }
     }

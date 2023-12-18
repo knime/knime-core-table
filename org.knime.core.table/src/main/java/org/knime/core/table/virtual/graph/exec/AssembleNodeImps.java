@@ -24,7 +24,7 @@ import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 
 class AssembleNodeImps {
 
-    private final List<NodeImp> imps;
+    private final List<SequentialNodeImp> imps;
 
     public AssembleNodeImps(
             final List<CapNode> cap,
@@ -45,50 +45,50 @@ class AssembleNodeImps {
             switch (node.type()) {
                 case SOURCE: {
                     final CapNodeSource source = (CapNodeSource)node;
-                    imps.add(new NodeImpSource(sourceIter.next(), source.cols(), source.fromRow(), source.toRow()));
+                    imps.add(new SequentialNodeImpSource(sourceIter.next(), source.cols(), source.fromRow(), source.toRow()));
                     break;
                 }
                 case MISSING: {
                     final CapNodeMissing source = (CapNodeMissing)node;
-                    imps.add(new NodeImpMissing(source.missingValueSpecs()));
+                    imps.add(new SequentialNodeImpMissing(source.missingValueSpecs()));
                     break;
                 }
                 case SLICE: {
                     final CapNodeSlice slice = (CapNodeSlice)node;
-                    imps.add(new NodeImpSlice(imps.get(slice.predecessor()), slice.from(), slice.to()));
+                    imps.add(new SequentialNodeImpSlice(imps.get(slice.predecessor()), slice.from(), slice.to()));
                     break;
                 }
                 case ROWFILTER: {
                     final CapNodeRowFilter rowfilter = (CapNodeRowFilter)node;
                     final AccessImp[] inputs = accessImps(rowfilter.inputs());
                     imps.add(
-                            new NodeImpRowFilter(inputs, imps.get(rowfilter.predecessor()), rowfilter.filterFactory()));
+                            new SequentialNodeImpRowFilter(inputs, imps.get(rowfilter.predecessor()), rowfilter.filterFactory()));
                     break;
                 }
                 case MAP: {
                     final CapNodeMap map = (CapNodeMap)node;
                     final AccessImp[] inputs = accessImps(map.inputs());
-                    imps.add(new NodeImpMap(inputs, imps.get(map.predecessor()), map.mapOutputSpecs(), map.cols(),
+                    imps.add(new SequentialNodeImpMap(inputs, imps.get(map.predecessor()), map.mapOutputSpecs(), map.cols(),
                             map.mapperFactory()));
                     break;
                 }
                 case OBSERVER: {
                     final CapNodeObserver observer = (CapNodeObserver)node;
                     final AccessImp[] inputs = accessImps(observer.inputs());
-                    imps.add(new NodeImpObserver(inputs, imps.get(observer.predecessor()), observer.observerFactory()));
+                    imps.add(new SequentialNodeImpObserver(inputs, imps.get(observer.predecessor()), observer.observerFactory()));
                     break;
                 }
                 case ROWINDEX: {
                     final CapNodeRowIndex rowIndex = (CapNodeRowIndex)node;
-                    imps.add(new NodeImpRowIndex(imps.get(rowIndex.predecessor()), rowIndex.offset()));
+                    imps.add(new SequentialNodeImpRowIndex(imps.get(rowIndex.predecessor()), rowIndex.offset()));
                     break;
 
                 }
                 case APPEND: {
                     final CapNodeAppend append = (CapNodeAppend)node;
                     final AccessImp[] inputs = accessImps(append.inputs());
-                    final NodeImp[] predecessors = nodeImps(append.predecessors());
-                    imps.add(new NodeImpAppend(inputs, predecessors, append.predecessorOutputIndices()));
+                    final SequentialNodeImp[] predecessors = nodeImps(append.predecessors());
+                    imps.add(new SequentialNodeImpAppend(inputs, predecessors, append.predecessorOutputIndices()));
                     break;
                 }
                 case CONCATENATE: {
@@ -96,22 +96,22 @@ class AssembleNodeImps {
                     final CapAccessId[][] capInputs = concatenate.inputs();
                     final AccessImp[][] inputs = new AccessImp[capInputs.length][];
                     Arrays.setAll(inputs, i -> accessImps(capInputs[i]));
-                    final NodeImp[] predecessors = nodeImps(concatenate.predecessors());
-                    imps.add(new NodeImpConcatenate(inputs, predecessors));
+                    final SequentialNodeImp[] predecessors = nodeImps(concatenate.predecessors());
+                    imps.add(new SequentialNodeImpConcatenate(inputs, predecessors));
                     break;
                 }
                 case CONSUMER: {
                     final CapNodeConsumer consumer = (CapNodeConsumer)node;
                     final AccessImp[] inputs = accessImps(consumer.inputs());
-                    final NodeImp predecessor = imps.get(consumer.predecessor());
-                    imps.add(new NodeImpConsumer(inputs, predecessor));
+                    final SequentialNodeImp predecessor = imps.get(consumer.predecessor());
+                    imps.add(new SequentialNodeImpConsumer(inputs, predecessor));
                     break;
                 }
                 case MATERIALIZE: {
                     final CapNodeMaterialize materialize = (CapNodeMaterialize)node;
                     final AccessImp[] inputs = accessImps(materialize.inputs());
-                    final NodeImp predecessor = imps.get(materialize.predecessor());
-                    imps.add(new NodeImpMaterialize(sinksIter.next(), inputs, predecessor));
+                    final SequentialNodeImp predecessor = imps.get(materialize.predecessor());
+                    imps.add(new SequentialNodeImpMaterialize(sinksIter.next(), inputs, predecessor));
                     break;
                 }
                 default:
@@ -120,16 +120,16 @@ class AssembleNodeImps {
         }
     }
 
-    public NodeImp getTerminator()
+    public SequentialNodeImp getTerminator()
     {
         return imps.get(imps.size() - 1);
     }
 
-    public NodeImpConsumer getConsumer()
+    public SequentialNodeImpConsumer getConsumer()
     {
-        NodeImp imp = getTerminator();
-        if (imp instanceof NodeImpConsumer)
-            return (NodeImpConsumer)imp;
+        SequentialNodeImp imp = getTerminator();
+        if (imp instanceof SequentialNodeImpConsumer)
+            return (SequentialNodeImpConsumer)imp;
         throw new IllegalArgumentException("CAP doesn't end with CONSUMER");
     }
 
@@ -142,8 +142,8 @@ class AssembleNodeImps {
         return accessImps;
     }
 
-    private NodeImp[] nodeImps(final int[] capNodeIndices) {
-        final NodeImp[] nodeImps = new NodeImp[capNodeIndices.length];
+    private SequentialNodeImp[] nodeImps(final int[] capNodeIndices) {
+        final SequentialNodeImp[] nodeImps = new SequentialNodeImp[capNodeIndices.length];
         Arrays.setAll(nodeImps, i -> imps.get(capNodeIndices[i]));
         return nodeImps;
     }

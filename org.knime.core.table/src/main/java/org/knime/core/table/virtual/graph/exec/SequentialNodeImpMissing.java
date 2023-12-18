@@ -8,10 +8,10 @@ import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.schema.DataSpec;
 
-class NodeImpMissing implements NodeImp {
+class SequentialNodeImpMissing implements SequentialNodeImp {
     private final ReadAccess[] outputs;
 
-    NodeImpMissing(final List<DataSpec> missingValueSpecs) {
+    SequentialNodeImpMissing(final List<DataSpec> missingValueSpecs) {
         outputs = new ReadAccess[missingValueSpecs.size()];
         Arrays.setAll(outputs, i -> MissingAccesses.getMissingAccess(missingValueSpecs.get(i)));
     }
