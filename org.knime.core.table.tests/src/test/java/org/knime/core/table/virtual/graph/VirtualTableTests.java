@@ -1292,4 +1292,38 @@ public class VirtualTableTests {
         testTransformedTableLookahead(true, VirtualTableTests::dataObserve, VirtualTableTests::vtObserve);
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataObserve, VirtualTableTests::vtObserve);
     }
+
+
+
+    public static VirtualTable vtRowIndexToRowKeyMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperWithRowIndexFactory createRowKey = MapTransformUtils.MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(STRING), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 0, outputs, 1);
+                    final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
+                    return rowIndex -> o.setStringValue("Row" + rowIndex);
+                });
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable mappedCols = table.map(new int[ 0 ], createRowKey);
+        return mappedCols.append(table.filterColumns(2));
+    }
+
+    public static VirtualTable vtRowIndexToRowKeyMap() {
+        return vtRowIndexToRowKeyMap(new UUID[]{randomUUID()}, dataMinimal());
+    }
+
+    @Test
+    public void testRowIndexToRowKeyMap() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(STRING, STRING);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{"Row0", "First"}, //
+                new Object[]{"Row1", "Second"}, //
+                new Object[]{"Row2", "Third"}, //
+                new Object[]{"Row3", "Fourth"}, //
+                new Object[]{"Row4", "Fifth"} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexToRowKeyMap);
+        testTransformedTableLookahead(true, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexToRowKeyMap);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexToRowKeyMap);
+    }
 }
