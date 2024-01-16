@@ -1326,4 +1326,72 @@ public class VirtualTableTests {
         testTransformedTableLookahead(true, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexToRowKeyMap);
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexToRowKeyMap);
     }
+
+
+
+    public static VirtualTable vtSimpleMapWithExpression(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable mappedCols = table.map("$[2] + $[3] * -1.1", DOUBLE);
+//        final VirtualTable mappedCols = table.map("$[2] + $[3] * (10 + 34 * 1.2f)", DOUBLE);
+//        final VirtualTable mappedCols = table.map("$[0] + 10", LONG);
+//        final VirtualTable mappedCols = table.map("$[0] + 10.2", INT);
+//        final VirtualTable mappedCols = table.map("$[0] > 3.2 and $[2] < 0.6", BOOLEAN);
+        return table
+                .selectColumns(0,1)
+                .append(mappedCols);
+    }
+
+    public static VirtualTable vtSimpleMapWithExpression() {
+        return vtSimpleMapWithExpression(new UUID[]{randomUUID()}, dataSimpleMapWithExpression());
+    }
+
+    public static RowAccessible[] dataSimpleMapWithExpression() {
+        return dataSimpleMap();
+    }
+
+    @Test
+    public void testSimpleMapWithExpression() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, STRING, DOUBLE);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{1, "First", -1.0}, //
+                new Object[]{2, "Second", -2.0}, //
+                new Object[]{3, "Third", -3.0}, //
+                new Object[]{4, "Fourth", -4.0}, //
+                new Object[]{5, "Fifth", -5.0}, //
+                new Object[]{6, "Sixth", -6.0}, //
+                new Object[]{7, "Seventh", -7.0} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataSimpleMapWithExpression, VirtualTableTests::vtSimpleMapWithExpression);
+        testTransformedTableLookahead(true, VirtualTableTests::dataSimpleMapWithExpression, VirtualTableTests::vtSimpleMapWithExpression);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataSimpleMapWithExpression, VirtualTableTests::vtSimpleMapWithExpression);
+    }
+
+
+
+    public static VirtualTable vtSimpleRowFilterWithExpression(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable filtered = table.filterRows("$[2] >= 0");
+        return filtered;
+    }
+
+    public static VirtualTable vtSimpleRowFilterWithExpression() {
+        return vtSimpleRowFilterWithExpression(new UUID[]{randomUUID()}, dataSimpleRowFilterWithExpression());
+    }
+
+    public static RowAccessible[] dataSimpleRowFilterWithExpression() {
+        return dataSimpleRowFilter();
+    }
+
+    @Test
+    public void testSimpleRowFilterWithExpression() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, STRING, DOUBLE, DOUBLE);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{1, "First", 0.1, 1.0}, //
+                new Object[]{3, "Third", 0.3, 3.0}, //
+                new Object[]{6, "Sixth", 0.6, 6.0} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableTests::dataSimpleRowFilterWithExpression, VirtualTableTests::vtSimpleRowFilterWithExpression);
+        testTransformedTableLookahead(false, VirtualTableTests::dataSimpleRowFilterWithExpression, VirtualTableTests::vtSimpleRowFilterWithExpression);
+        testTransformedTableRandomAccess(false, expectedSchema, expectedValues, -1, VirtualTableTests::dataSimpleRowFilterWithExpression, VirtualTableTests::vtSimpleRowFilterWithExpression);
+    }
 }
