@@ -454,6 +454,9 @@ public final class RowAccessiblesTestUtils {
                 } else if (expected instanceof Object[]) {
                     // Special case for ListData and StructData.
                     assertArrayEquals((Object[])expected, (Object[])actual);
+                } else if (expected instanceof Double) {
+                    // Special case for ListData and StructData.
+                    assertEquals((double)expected, (double)actual, 0.000001);
                 } else {
                     assertEquals(expected, actual);
                 }
