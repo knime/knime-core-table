@@ -46,9 +46,9 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppend();
 //        final VirtualTable table = VirtualTableTests.vtAppend(sourceIdentifiers, sourceAccessibles);
 
-        final UUID[] sourceIdentifiers = createSourceIds(2);
-        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppendAndSlice();
-        final VirtualTable table = VirtualTableTests.vtAppendAndSlice(sourceIdentifiers, sourceAccessibles);
+//        final UUID[] sourceIdentifiers = createSourceIds(2);
+//        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppendAndSlice();
+//        final VirtualTable table = VirtualTableTests.vtAppendAndSlice(sourceIdentifiers, sourceAccessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataForkJoin();
@@ -123,6 +123,11 @@ public class ExecCap {
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataObserve();
 //        final VirtualTable table = VirtualTableTests.vtObserve(sourceIdentifiers, sourceAccessibles);
+
+        final UUID[] sourceIdentifiers = createSourceIds(1);
+        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataSimpleMapWithExpression();
+        final VirtualTable table = VirtualTableTests.vtSimpleMapWithExpression(sourceIdentifiers, sourceAccessibles);
+
 
         if ( doExecute ) {
 
