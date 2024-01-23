@@ -65,7 +65,6 @@ public interface Typing {
             } else if (node instanceof Ast.BinaryOp n) {
                 final AstType t1 = n.arg1().inferredType();
                 final AstType t2 = n.arg2().inferredType();
-                System.out.println("op " + n.op() + " (" + t1 + ", " + t2 + ")");
 
                 // string concatenation?
                 if (n.op() == PLUS && (t1 == AstType.STRING || t2 == AstType.STRING)) {
@@ -111,7 +110,6 @@ public interface Typing {
 
             } else if (node instanceof Ast.UnaryOp n) {
                 final AstType t1 = n.arg().inferredType();
-                System.out.println("op " + n.op() + " (" + t1 + ")");
 
                 // numeric operation?
                 if (t1.isNumeric()) {
@@ -126,9 +124,6 @@ public interface Typing {
                     throw new IllegalArgumentException("unary expression of unknown type.");
                 }
             }
-            System.out.println("node = " + node + ", type = " + node.inferredType());
-            if (replacement != null)
-                System.out.println("   ==> " + replacement + ", type = " + replacement.inferredType());
         }
         return Ast.Node::inferredType;
     }
