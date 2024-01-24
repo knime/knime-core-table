@@ -141,6 +141,15 @@ public class SourceTableProperties {
     }
 
     /**
+     * Get the {@link CursorType} supported by the source table.
+     *
+     * @return the {@link CursorType} supported by the source table
+     */
+    public CursorType cursorType() {
+        return m_cursorType;
+    }
+
+    /**
      * Get the number of rows in the source table, if it is known.
      * <p>
      * Some tables do not know how many rows they contain. Examples would be streaming tables, or virtual tables which
