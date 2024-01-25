@@ -9,6 +9,8 @@ import java.util.function.IntFunction;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DataSpecs;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
@@ -25,30 +27,33 @@ import org.knime.core.table.schema.VoidDataSpec;
 public interface Typing {
 
     /**
-     * Infer types of the given {@code Ast.Node}s.
-     * Evaluate constant sub-expressions and replace them by single {@code Ast.Node} constants.
+     * Infer types of the given {@code Ast.Node}s. Evaluate constant sub-expressions and replace them by single
+     * {@code Ast.Node} constants.
      * <p>
      * Types are determined as follows:
      * <ul>
-     *   <li>Column references have the {@code AstType} corresponding to the {@code DataSpec} of the respective column.</li>
-     *   <li>Integer literals have the narrowest integral {@code AstType} type that can fit the respective value.</li>
-     *   <li>Floating point literals are {@code FLOAT} if the last char is "f" or "F", and {@code DOUBLE} otherwise.</li>
-     *   <li>Type of unary and binary expression are determined as described in the <a href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-5.html#jls-5.6">Java Language Specification</a>:
-     *       <ol>
-     *         <li>If either operand is of type double, the other is converted to double.</li>
-     *         <li>Otherwise, if either operand is of type float, the other is converted to float.</li>
-     *         <li>Otherwise, if either operand is of type long, the other is converted to long.</li>
-     *         <li>Otherwise, both operands are converted to type int.</li>
-     *       </ol>
-     *       Constant sub-expressions are evaluated and replaced by single {@code Ast.Node}.
-     *       The type of evaluated integer sub-expressions is the narrowest integral {@code AstType} type that can fit the respective value.
-     *       </li>
+     * <li>Column references have the {@code AstType} corresponding to the {@code DataSpec} of the respective
+     * column.</li>
+     * <li>Integer literals have the narrowest integral {@code AstType} type that can fit the respective value.</li>
+     * <li>Floating point literals are {@code FLOAT} if the last char is "f" or "F", and {@code DOUBLE} otherwise.</li>
+     * <li>Type of unary and binary expression are determined as described in the
+     * <a href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-5.html#jls-5.6">Java Language Specification</a>:
+     * <ol>
+     * <li>If either operand is of type double, the other is converted to double.</li>
+     * <li>Otherwise, if either operand is of type float, the other is converted to float.</li>
+     * <li>Otherwise, if either operand is of type long, the other is converted to long.</li>
+     * <li>Otherwise, both operands are converted to type int.</li>
+     * </ol>
+     * Constant sub-expressions are evaluated and replaced by single {@code Ast.Node}. The type of evaluated integer
+     * sub-expressions is the narrowest integral {@code AstType} type that can fit the respective value.</li>
      * </ul>
      *
-     * @param postorder  AST nodes sorted for post-order traversal (so that types of children are known before parent type is determined)
+     * @param postorder AST nodes sorted for post-order traversal (so that types of children are known before parent
+     *            type is determined)
      * @param columnType map from column index (in input table, 0-based) to type
      */
-    static Function<Ast.Node, AstType> inferTypes(List<Ast.Node> postorder, IntFunction<AstType> columnType) {
+    static Function<Ast.Node, AstType> inferTypes(final List<Ast.Node> postorder,
+        final IntFunction<AstType> columnType) {
         for (var node : postorder) {
             Ast.Node replacement = null;
             if (node instanceof Ast.IntConstant c) {
@@ -72,7 +77,7 @@ public interface Typing {
                 }
 
                 // arithmetic operation?
-                else if (t1.isNumeric() && t2.isNumeric() && n.op().isArithmetic() ) {
+                else if (t1.isNumeric() && t2.isNumeric() && n.op().isArithmetic()) {
                     if (n.arg1().isConstant() && n.arg2().isConstant()) {
                         final Ast.Node result = evaluateConstExpr(n);
                         n.replaceWith(result);
@@ -83,14 +88,14 @@ public interface Typing {
                 }
 
                 // logical operation?
-                else if (t1 ==AstType.BOOLEAN && t2 == AstType.BOOLEAN && n.op().isLogical() ) {
+                else if (t1 == AstType.BOOLEAN && t2 == AstType.BOOLEAN && n.op().isLogical()) {
                     // TODO: Evaluate const expression
                     node.setInferredType(AstType.BOOLEAN);
                 }
 
                 // ordering comparison
                 else if (n.op().isOrderingComparison()) {
-                    if ( orderingType( t1, t2 ) == null ) {
+                    if (orderingType(t1, t2) == null) {
                         throw new IllegalArgumentException("types " + t1 + " and " + t2 + " cannot be order-compared");
                     }
                     // TODO: Evaluate const expression
@@ -99,8 +104,9 @@ public interface Typing {
 
                 // equality comparison
                 else if (n.op().isEqualityComparison()) {
-                    if ( equalityType( t1, t2 ) == null ) {
-                        throw new IllegalArgumentException("types " + t1 + " and " + t2 + " cannot be equality-compared");
+                    if (equalityType(t1, t2) == null) {
+                        throw new IllegalArgumentException(
+                            "types " + t1 + " and " + t2 + " cannot be equality-compared");
                     }
                     // TODO: Evaluate const expression
                     node.setInferredType(AstType.BOOLEAN);
@@ -129,7 +135,7 @@ public interface Typing {
     }
 
     // returns a new constant Ast.Node to replace {@code node}.
-    private static Ast.Node evaluateConstExpr(Ast.BinaryOp node) {
+    private static Ast.Node evaluateConstExpr(final Ast.BinaryOp node) {
         Ast.Node arg1 = node.arg1();
         Ast.Node arg2 = node.arg2();
         AstType t1 = arg1.inferredType();
@@ -193,7 +199,7 @@ public interface Typing {
     }
 
     // returns a new constant Ast.Node to replace {@code node}.
-    private static Ast.Node evaluateConstExpr(Ast.UnaryOp node) {
+    private static Ast.Node evaluateConstExpr(final Ast.UnaryOp node) {
         Ast.Node arg1 = node.arg();
         AstType t1 = arg1.inferredType();
         if (t1 == AstType.DOUBLE || t1 == AstType.FLOAT) {
@@ -225,7 +231,7 @@ public interface Typing {
      *
      * @throws IllegalArgumentException if {@code node} does not represent an integer numeric constant.
      */
-    private static long longConstValue(Ast.Node node) {
+    private static long longConstValue(final Ast.Node node) {
         if (node instanceof Ast.IntConstant c) {
             return c.value();
         } else {
@@ -238,7 +244,7 @@ public interface Typing {
      *
      * @throws IllegalArgumentException if {@code node} does not represent a numeric constant.
      */
-    private static double floatConstValue(Ast.Node node) {
+    private static double floatConstValue(final Ast.Node node) {
         if (node instanceof Ast.IntConstant c) {
             return c.value();
         } else if (node instanceof Ast.FloatConstant c) {
@@ -268,7 +274,7 @@ public interface Typing {
      *
      * @return the type that should be used for comparison, or {@code null} if the argument types are not comparable.
      */
-    static AstType equalityType(AstType t1, AstType t2) {
+    static AstType equalityType(final AstType t1, final AstType t2) {
         if (t1 == t2) {
             return t1;
         } else {
@@ -281,7 +287,7 @@ public interface Typing {
      *
      * @return the type that should be used for comparison, or {@code null} if the argument types are not comparable.
      */
-    static AstType orderingType(AstType t1, AstType t2) {
+    static AstType orderingType(final AstType t1, final AstType t2) {
         if (!t1.isNumeric() || !t2.isNumeric()) {
             return null;
         }
@@ -295,7 +301,7 @@ public interface Typing {
     //        - Otherwise, if either operand is of type float, the other is converted to float.
     //        - Otherwise, if either operand is of type long, the other is converted to long.
     //        - Otherwise, both operands are converted to type int.
-    static AstType promotedNumericType(AstType t1, AstType t2) {
+    static AstType promotedNumericType(final AstType t1, final AstType t2) {
         if (!t1.isNumeric() || !t2.isNumeric()) {
             throw new IllegalArgumentException();
         }
@@ -310,7 +316,7 @@ public interface Typing {
         }
     }
 
-    private static AstType promotedNumericType(AstType t1) {
+    private static AstType promotedNumericType(final AstType t1) {
         if (!t1.isNumeric()) {
             throw new IllegalArgumentException();
         }
@@ -326,58 +332,76 @@ public interface Typing {
      */
     DataSpec.Mapper<AstType> toAstType = new DataSpec.Mapper<>() {
         @Override
-        public AstType visit(BooleanDataSpec spec) {
+        public AstType visit(final BooleanDataSpec spec) {
             return AstType.BOOLEAN;
         }
 
         @Override
-        public AstType visit(ByteDataSpec spec) {
+        public AstType visit(final ByteDataSpec spec) {
             return AstType.BYTE;
         }
 
         @Override
-        public AstType visit(DoubleDataSpec spec) {
+        public AstType visit(final DoubleDataSpec spec) {
             return AstType.DOUBLE;
         }
 
         @Override
-        public AstType visit(FloatDataSpec spec) {
+        public AstType visit(final FloatDataSpec spec) {
             return AstType.FLOAT;
         }
 
         @Override
-        public AstType visit(IntDataSpec spec) {
+        public AstType visit(final IntDataSpec spec) {
             return AstType.INT;
         }
 
         @Override
-        public AstType visit(LongDataSpec spec) {
+        public AstType visit(final LongDataSpec spec) {
             return AstType.LONG;
         }
 
         @Override
-        public AstType visit(VarBinaryDataSpec spec) {
+        public AstType visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public AstType visit(VoidDataSpec spec) {
+        public AstType visit(final VoidDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public AstType visit(StructDataSpec spec) {
+        public AstType visit(final StructDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public AstType visit(ListDataSpec listDataSpec) {
+        public AstType visit(final ListDataSpec listDataSpec) {
             throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public AstType visit(StringDataSpec spec) {
+        public AstType visit(final StringDataSpec spec) {
             return AstType.STRING;
         }
     };
+
+    /**
+     * Map AstTypes to DataSpecs
+     *
+     * @param astType
+     * @return DataSpec
+     */
+    static DataSpecWithTraits toDataSpec(final AstType astType) {
+        return switch (astType) {
+            case BOOLEAN -> DataSpecs.BOOLEAN;
+            case BYTE -> DataSpecs.BYTE;
+            case INT -> DataSpecs.INT;
+            case LONG -> DataSpecs.LONG;
+            case FLOAT -> DataSpecs.FLOAT;
+            case DOUBLE -> DataSpecs.DOUBLE;
+            case STRING -> DataSpecs.STRING;
+        };
+    }
 }

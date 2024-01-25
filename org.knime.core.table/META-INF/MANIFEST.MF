@@ -25,6 +25,8 @@ Export-Package: org.knime.core.table,
  org.knime.core.table.util,
  org.knime.core.table.virtual,
  org.knime.core.table.virtual.exec,
+ org.knime.core.table.virtual.expression,
  org.knime.core.table.virtual.serialization,
- org.knime.core.table.virtual.spec
+ org.knime.core.table.virtual.spec,
+ org.rekex.parser
 Automatic-Module-Name: org.knime.core.table
