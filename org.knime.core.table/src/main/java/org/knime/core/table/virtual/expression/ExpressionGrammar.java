@@ -61,6 +61,7 @@ public interface ExpressionGrammar {
     record Atom(Ast.Node ast) {}
     record StrConst(String value) {}
     record Digits(String value) {}
+    record OptWs(String value) {}
 
     class CtorCatalog
     {
@@ -306,6 +307,13 @@ public interface ExpressionGrammar {
             if(h>='a') return (byte)(h-'a'+10);
             return (byte)(h-'A'+10); // 0 - 0xF
         }
+
+        // zero or more whitespaces
+        public OptWs optWs(@Word("") final String ws)
+        {
+            return new OptWs(ws);
+        }
+
     }
 
     // whitespaces ----------------------------------------------------
@@ -318,11 +326,6 @@ public interface ExpressionGrammar {
 
         AnnoMacro<Word, StrWs> toStrWs = StrWs.Macro.of(Word::value, wsChars);
     }
-
-    // zero or more whitespaces
-    enum OptWs {@Word("") I}
-
-
 
 
 
