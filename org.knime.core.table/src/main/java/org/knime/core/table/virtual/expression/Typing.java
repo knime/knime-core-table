@@ -3,7 +3,6 @@ package org.knime.core.table.virtual.expression;
 import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.PLUS;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 
 import org.knime.core.table.schema.BooleanDataSpec;
@@ -52,10 +51,8 @@ public interface Typing {
      *            type is determined)
      * @param columnType map from column index (in input table, 0-based) to type
      */
-    static Function<Ast.Node, AstType> inferTypes(final List<Ast.Node> postorder,
-        final IntFunction<AstType> columnType) {
+    static void inferTypes(final List<Ast.Node> postorder, final IntFunction<AstType> columnType) {
         for (var node : postorder) {
-            Ast.Node replacement = null;
             if (node instanceof Ast.IntConstant c) {
                 node.setInferredType(narrowestType(c.value()));
             } else if (node instanceof Ast.FloatConstant c) {
@@ -80,8 +77,8 @@ public interface Typing {
                 else if (t1.isNumeric() && t2.isNumeric() && n.op().isArithmetic()) {
                     if (n.arg1().isConstant() && n.arg2().isConstant()) {
                         final Ast.Node result = evaluateConstExpr(n);
+                        n.setInferredType(promotedNumericType(result.inferredType()));
                         n.replaceWith(result);
-                        replacement = result;
                     } else {
                         node.setInferredType(promotedNumericType(t1, t2));
                     }
@@ -121,8 +118,8 @@ public interface Typing {
                 if (t1.isNumeric()) {
                     if (n.arg().isConstant()) {
                         final Ast.Node result = evaluateConstExpr(n);
+                        n.setInferredType(promotedNumericType(result.inferredType()));
                         n.replaceWith(result);
-                        replacement = result;
                     } else {
                         node.setInferredType(promotedNumericType(t1));
                     }
@@ -131,7 +128,6 @@ public interface Typing {
                 }
             }
         }
-        return Ast.Node::inferredType;
     }
 
     // returns a new constant Ast.Node to replace {@code node}.
@@ -172,7 +168,7 @@ public interface Typing {
 
             // Both operands are integer values.
             // The result is BYTE, INT, or LONG, depending on the value.
-            // (The narrowest type that can represent the value is chosen
+            // (The narrowest type that can represent the value is chosen)
 
             long v1 = longConstValue(arg1);
             long v2 = longConstValue(arg2);
