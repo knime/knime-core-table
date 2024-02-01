@@ -35,13 +35,13 @@ import org.rekex.spec.Regex;
 
 public interface ExpressionGrammar {
 
-    String genPackageName = "org.knime.core.table.virtual.expression";
+    static final String GEN_PACKAGE_NAME = "org.knime.core.table.virtual.expression";
 
-    String genClassName = "ExpressionParser";
+    static final String GEN_CLASS_NAME = "ExpressionParser";
 
     static PegParser<Expr> parser() {
         try {
-            var klass = Class.forName(genPackageName + "." + genClassName);
+            var klass = Class.forName(GEN_PACKAGE_NAME + "." + GEN_CLASS_NAME);
             var constructor = klass.getConstructor(CtorCatalog.class);
             return (PegParser)constructor.newInstance(new CtorCatalog());
         } catch (ClassNotFoundException e) {
@@ -217,7 +217,7 @@ public interface ExpressionGrammar {
         }
 
         public Atom column(final OptWs ws, @Ch("$") final Void h,
-            @Ch(range = {0x20, 0x10FFFF}, except = BS + QT + wsChars + "$()+-*/%") final int[] chars,
+            @Ch(range = {0x20, 0x10FFFF}, except = BS + QT + WS_CHARS + "$()+-*/%") final int[] chars,
             final OptWs trailingWs) {
             return new Atom(new Ast.ColumnRef(new String(chars, 0, chars.length)));
         }
@@ -299,15 +299,15 @@ public interface ExpressionGrammar {
             return c;
         }
 
-        final static String escN = BS + QT + "/bfnrt";
+        static final String ESC_N = BS + QT + "/bfnrt";
 
-        final static String escV = BS + QT + "/\b\f\n\r\t";
+        static final String ESC_V = BS + QT + "/\b\f\n\r\t";
 
         // escaped char: \b etc.
-        public int escC(@Ch(BS) final Void BSL, @Ch(escN) final char c) {
-            int i = escN.indexOf(c);
+        public int escC(@Ch(BS) final Void BSL, @Ch(ESC_N) final char c) {
+            int i = ESC_N.indexOf(c);
             assert i != -1;
-            return escV.charAt(i);
+            return ESC_V.charAt(i);
         }
 
         // escaped char: \u1234
@@ -336,7 +336,7 @@ public interface ExpressionGrammar {
 
     // whitespaces ----------------------------------------------------
 
-    String wsChars = " \t\n\r";
+    final String WS_CHARS = " \t\n\r";
 
     // equivalent to @StrWs, with default whitespace chars
     @Target(ElementType.TYPE_USE)
@@ -344,14 +344,14 @@ public interface ExpressionGrammar {
     @interface Word {
         String[] value();
 
-        AnnoMacro<Word, StrWs> toStrWs = StrWs.Macro.of(Word::value, wsChars);
+        AnnoMacro<Word, StrWs> toStrWs = StrWs.Macro.of(Word::value, WS_CHARS);
     }
 
     // --- testing ------------------------------------------------------------
 
     static void genJava(final String srcDir) throws Exception {
-        new PegParserBuilder().rootType(Expr.class).catalogClass(CtorCatalog.class).packageName(genPackageName)
-            .className(genClassName).outDirForJava(Paths.get(srcDir)).logger(System.out::println).generateJavaFile();
+        new PegParserBuilder().rootType(Expr.class).catalogClass(CtorCatalog.class).packageName(GEN_PACKAGE_NAME)
+            .className(GEN_CLASS_NAME).outDirForJava(Paths.get(srcDir)).logger(System.out::println).generateJavaFile();
     }
 
     static void main(final String[] args) throws Exception {

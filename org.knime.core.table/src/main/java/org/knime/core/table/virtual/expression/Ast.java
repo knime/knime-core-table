@@ -21,30 +21,30 @@ public interface Ast {
             return List.of();
         }
 
-        Node parent;
+        Node m_parent;
 
         public Node parent() {
-            return parent;
+            return m_parent;
         }
 
         void replaceChild(final Node child, final Node replacement) {
         }
 
         public void replaceWith(final Node node) {
-            if (parent != null) {
-                parent.replaceChild(this, node);
-                parent = null;
+            if (m_parent != null) {
+                m_parent.replaceChild(this, node);
+                m_parent = null;
             }
         }
 
-        private AstType inferredType;
+        private AstType m_inferredType;
 
         public AstType inferredType() {
-            return inferredType;
+            return m_inferredType;
         }
 
         public void setInferredType(final AstType type) {
-            this.inferredType = type;
+            this.m_inferredType = type;
         }
 
         public boolean isConstant() {
@@ -53,54 +53,54 @@ public interface Ast {
     }
 
     final class Call extends Node {
-        private final String func;
+        private final String m_func;
 
-        private final List<Node> args;
+        private final List<Node> n_args;
 
         public Call(final String func, final List<Node> args) {
-            this.func = func;
-            this.args = new ArrayList<>(args);
+            this.m_func = func;
+            this.n_args = new ArrayList<>(args);
         }
 
         public int numArgs() {
-            return args.size();
+            return n_args.size();
         }
 
         public Node arg(final int index) {
-            return args.get(index);
+            return n_args.get(index);
         }
 
         @Override
         public List<Node> children() {
-            return args;
+            return n_args;
         }
 
         @Override
         void replaceChild(final Node child, final Node replacement) {
-            for (int i = 0; i < args.size(); i++) {
-                if (args.get(i).equals(child)) {
-                    args.set(i, replacement);
-                    replacement.parent = this;
+            for (int i = 0; i < n_args.size(); i++) {
+                if (n_args.get(i).equals(child)) {
+                    n_args.set(i, replacement);
+                    replacement.m_parent = this;
                 }
             }
         }
 
         @Override
         public String toString() {
-            final String arguments = args.stream().map(Node::toString).collect(Collectors.joining(", "));
-            return "Call " + func + '(' + arguments + ')';
+            final String arguments = n_args.stream().map(Node::toString).collect(Collectors.joining(", "));
+            return "Call " + m_func + '(' + arguments + ')';
         }
     }
 
     final class IntConstant extends Node {
-        private final long value;
+        private final long m_value;
 
         public IntConstant(final long value) {
-            this.value = value;
+            this.m_value = value;
         }
 
         public long value() {
-            return value;
+            return m_value;
         }
 
         @Override
@@ -110,19 +110,19 @@ public interface Ast {
 
         @Override
         public String toString() {
-            return "IntConstant[" + "value=" + value + ']';
+            return "IntConstant[" + "value=" + m_value + ']';
         }
     }
 
     final class FloatConstant extends Node {
-        private final double value;
+        private final double m_value;
 
         public FloatConstant(final double value) {
-            this.value = value;
+            this.m_value = value;
         }
 
         public double value() {
-            return value;
+            return m_value;
         }
 
         @Override
@@ -132,19 +132,19 @@ public interface Ast {
 
         @Override
         public String toString() {
-            return "FloatConstant[" + "value=" + value + ']';
+            return "FloatConstant[" + "value=" + m_value + ']';
         }
     }
 
     final class StringConstant extends Node {
-        private final String value;
+        private final String m_value;
 
         public StringConstant(final String value) {
-            this.value = value;
+            this.m_value = value;
         }
 
         public String value() {
-            return value;
+            return m_value;
         }
 
         @Override
@@ -154,32 +154,32 @@ public interface Ast {
 
         @Override
         public String toString() {
-            return "StringConstant[" + "value=" + value + ']';
+            return "StringConstant[" + "value=" + m_value + ']';
         }
     }
 
     final class ColumnRef extends Node {
-        private final String name;
+        private final String m_name;
 
         public ColumnRef(final String name) {
-            this.name = name;
+            this.m_name = name;
         }
 
         public String name() {
-            return name;
+            return m_name;
         }
 
         @Override
         public String toString() {
-            return "ColumnRef[" + "name=" + name + ']';
+            return "ColumnRef[" + "name=" + m_name + ']';
         }
     }
 
     final class ColumnIndex extends Node {
-        private final int columnIndex;
+        private final int m_columnIndex;
 
         public ColumnIndex(final int columnIndex) {
-            this.columnIndex = columnIndex;
+            this.m_columnIndex = columnIndex;
         }
 
         /**
@@ -188,12 +188,12 @@ public interface Ast {
          * @return column index
          */
         public int columnIndex() {
-            return columnIndex;
+            return m_columnIndex;
         }
 
         @Override
         public String toString() {
-            return "AstColumnIndex[" + "columnIndex=" + columnIndex + ']';
+            return "AstColumnIndex[" + "columnIndex=" + m_columnIndex + ']';
         }
     }
 
@@ -218,60 +218,60 @@ public interface Ast {
                 CONDITIONAL_AND("and", LOGICAL), //
                 CONDITIONAL_OR("or", LOGICAL); //
 
-            private final String symbol;
+            private final String m_symbol;
 
-            private final OperatorType type;
+            private final OperatorType m_type;
 
             Operator(final String symbol, final OperatorType type) {
-                this.symbol = symbol;
-                this.type = type;
+                this.m_symbol = symbol;
+                this.m_type = type;
             }
 
             public String symbol() {
-                return symbol;
+                return m_symbol;
             }
 
             public OperatorType type() {
-                return type;
+                return m_type;
             }
 
             public boolean isArithmetic() {
-                return type == ARITHMETIC;
+                return m_type == ARITHMETIC;
             }
 
             public boolean isEqualityComparison() {
-                return type == EQUALITY;
+                return m_type == EQUALITY;
             }
 
             public boolean isOrderingComparison() {
-                return type == ORDERING;
+                return m_type == ORDERING;
             }
 
             public boolean isLogical() {
-                return type == LOGICAL;
+                return m_type == LOGICAL;
             }
         }
 
-        private Node arg1;
+        private Node m_arg1;
 
-        private Node arg2;
+        private Node m_arg2;
 
         private final Operator op;
 
         public BinaryOp(final Node arg1, final Node arg2, final Operator op) {
-            this.arg1 = arg1;
-            this.arg2 = arg2;
+            this.m_arg1 = arg1;
+            this.m_arg2 = arg2;
             this.op = op;
-            arg1.parent = this;
-            arg2.parent = this;
+            arg1.m_parent = this;
+            arg2.m_parent = this;
         }
 
         public Node arg1() {
-            return arg1;
+            return m_arg1;
         }
 
         public Node arg2() {
-            return arg2;
+            return m_arg2;
         }
 
         public Operator op() {
@@ -280,23 +280,23 @@ public interface Ast {
 
         @Override
         public List<Node> children() {
-            return List.of(arg1, arg2);
+            return List.of(m_arg1, m_arg2);
         }
 
         @Override
         void replaceChild(final Node child, final Node replacement) {
-            if (arg1.equals(child)) {
-                arg1 = replacement;
-                replacement.parent = this;
-            } else if (arg2.equals(child)) {
-                arg2 = replacement;
-                replacement.parent = this;
+            if (m_arg1.equals(child)) {
+                m_arg1 = replacement;
+                replacement.m_parent = this;
+            } else if (m_arg2.equals(child)) {
+                m_arg2 = replacement;
+                replacement.m_parent = this;
             }
         }
 
         @Override
         public String toString() {
-            return "BinaryOp[" + "arg1=" + arg1 + ", " + "arg2=" + arg2 + ", " + "op=" + op + ']';
+            return "BinaryOp[" + "arg1=" + m_arg1 + ", " + "arg2=" + m_arg2 + ", " + "op=" + op + ']';
         }
     }
 
@@ -306,14 +306,14 @@ public interface Ast {
                 MINUS("-"), //
                 NOT("not"); //
 
-            private final String symbol;
+            private final String m_symbol;
 
             Operator(final String symbol) {
-                this.symbol = symbol;
+                this.m_symbol = symbol;
             }
 
             public String symbol() {
-                return symbol;
+                return m_symbol;
             }
         }
 
@@ -324,7 +324,7 @@ public interface Ast {
         public UnaryOp(final Node arg, final Operator op) {
             this.arg = arg;
             this.op = op;
-            arg.parent = this;
+            arg.m_parent = this;
         }
 
         public Node arg() {
@@ -344,7 +344,7 @@ public interface Ast {
         void replaceChild(final Node child, final Node replacement) {
             if (arg.equals(child)) {
                 arg = replacement;
-                replacement.parent = this;
+                replacement.m_parent = this;
             }
         }
 

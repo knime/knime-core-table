@@ -9,13 +9,13 @@ public enum AstType {
         BOOLEAN(false), //
         STRING(false);
 
-    private final boolean isNumeric;
+    private final boolean m_isNumeric;
 
     AstType(final boolean isNumeric) {
-        this.isNumeric = isNumeric;
+        this.m_isNumeric = isNumeric;
     }
 
     boolean isNumeric() {
-        return isNumeric;
+        return m_isNumeric;
     }
 }
