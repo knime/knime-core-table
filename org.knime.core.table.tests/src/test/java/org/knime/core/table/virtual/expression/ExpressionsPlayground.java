@@ -4,26 +4,26 @@ import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
 import org.rekex.parser.PegParser;
 
 public class ExpressionsPlayground {
-    public static void main(String[] args) throws Exception {
+    public static void main(final String[] args) throws Exception {
         final String input = "$col1 * ($[\"my awkwardly named \\\"column\\\"\"] + 123        ) % 2";
-//        final String input = "3 * $col1";
+        // final String input = "3 * $col1";
         System.out.println("input = " + input);
 
         final PegParser<Expr> parser = ExpressionGrammar.parser();
         final Ast.Node ast = parser.matchFull(input).ast();
         System.out.println("ast = " + ast);
-//        ParseResult<Expr> result = parser.parse(input);
-//        System.out.println("result = " + result);
+        // ParseResult<Expr> result = parser.parse(input);
+        // System.out.println("result = " + result);
         System.out.println(toString(ast));
     }
 
-    static String toString(Ast.Node ast) {
+    static String toString(final Ast.Node ast) {
         var sb = new StringBuilder();
         toString(sb, 0, ast);
         return sb.toString();
     }
 
-    private static void toString(StringBuilder sb, int level, Ast.Node astNode) {
+    private static void toString(final StringBuilder sb, final int level, final Ast.Node astNode) {
         if (astNode instanceof Ast.IntConstant n) {
             indent(sb, level).append(n.value()).append("\n");
         } else if (astNode instanceof Ast.ColumnRef n) {
@@ -38,9 +38,10 @@ public class ExpressionsPlayground {
         }
     }
 
-    private static StringBuilder indent(StringBuilder sb, int level) {
-        for (int i = 0; i < level; i++)
+    private static StringBuilder indent(final StringBuilder sb, final int level) {
+        for (int i = 0; i < level; i++) {
             sb.append("  ");
+        }
         return sb;
     }
 }

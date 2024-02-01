@@ -27,9 +27,10 @@ public interface Ast {
             return parent;
         }
 
-        void replaceChild(Node child, Node replacement) {}
+        void replaceChild(final Node child, final Node replacement) {
+        }
 
-        public void replaceWith(Node node) {
+        public void replaceWith(final Node node) {
             if (parent != null) {
                 parent.replaceChild(this, node);
                 parent = null;
@@ -50,7 +51,6 @@ public interface Ast {
             return false;
         }
     }
-
 
     final class Call extends Node {
         private final String func;
@@ -92,7 +92,6 @@ public interface Ast {
         }
     }
 
-
     final class IntConstant extends Node {
         private final long value;
 
@@ -114,7 +113,6 @@ public interface Ast {
             return "IntConstant[" + "value=" + value + ']';
         }
     }
-
 
     final class FloatConstant extends Node {
         private final double value;
@@ -138,7 +136,6 @@ public interface Ast {
         }
     }
 
-
     final class StringConstant extends Node {
         private final String value;
 
@@ -161,7 +158,6 @@ public interface Ast {
         }
     }
 
-
     final class ColumnRef extends Node {
         private final String name;
 
@@ -178,7 +174,6 @@ public interface Ast {
             return "ColumnRef[" + "name=" + name + ']';
         }
     }
-
 
     final class ColumnIndex extends Node {
         private final int columnIndex;
@@ -202,30 +197,26 @@ public interface Ast {
         }
     }
 
-
     final class BinaryOp extends Node {
 
         public enum OperatorType {
-            ARITHMETIC,
-            EQUALITY,
-            ORDERING,
-            LOGICAL
+                ARITHMETIC, EQUALITY, ORDERING, LOGICAL
         }
 
         public enum Operator {
-            PLUS("+", ARITHMETIC), //
-            MINUS("-", ARITHMETIC), //
-            MULTIPLY("*", ARITHMETIC), //
-            DIVIDE("/", ARITHMETIC), //
-            REMAINDER("%", ARITHMETIC), //
-            EQUAL_TO("==", EQUALITY), //
-            NOT_EQUAL_TO("!=", EQUALITY), //
-            LESS_THAN("<", ORDERING), //
-            LESS_THAN_EQUAL("<=", ORDERING), //
-            GREATER_THAN(">", ORDERING), //
-            GREATER_THAN_EQUAL(">=", ORDERING), //
-            CONDITIONAL_AND("and", LOGICAL), //
-            CONDITIONAL_OR("or", LOGICAL); //
+                PLUS("+", ARITHMETIC), //
+                MINUS("-", ARITHMETIC), //
+                MULTIPLY("*", ARITHMETIC), //
+                DIVIDE("/", ARITHMETIC), //
+                REMAINDER("%", ARITHMETIC), //
+                EQUAL_TO("==", EQUALITY), //
+                NOT_EQUAL_TO("!=", EQUALITY), //
+                LESS_THAN("<", ORDERING), //
+                LESS_THAN_EQUAL("<=", ORDERING), //
+                GREATER_THAN(">", ORDERING), //
+                GREATER_THAN_EQUAL(">=", ORDERING), //
+                CONDITIONAL_AND("and", LOGICAL), //
+                CONDITIONAL_OR("or", LOGICAL); //
 
             private final String symbol;
 
@@ -262,7 +253,9 @@ public interface Ast {
         }
 
         private Node arg1;
+
         private Node arg2;
+
         private final Operator op;
 
         public BinaryOp(final Node arg1, final Node arg2, final Operator op) {
@@ -307,12 +300,11 @@ public interface Ast {
         }
     }
 
-
     final class UnaryOp extends Node {
 
         public enum Operator {
-            MINUS("-"), //
-            NOT("not"); //
+                MINUS("-"), //
+                NOT("not"); //
 
             private final String symbol;
 
@@ -326,6 +318,7 @@ public interface Ast {
         }
 
         private Node arg;
+
         private final Operator op;
 
         public UnaryOp(final Node arg, final Operator op) {
@@ -363,33 +356,32 @@ public interface Ast {
 
     // TODO: Unify ColumnRef and ColumnIndex?
 
-//    final class AstColumnRef implements AstNode {
-//        private final String name;
-//
-//        private int columnIndex;
-//
-//        public AstColumnRef(final String name) {
-//            this.name = name;
-//        }
-//
-//        public String name() {
-//            return name;
-//        }
-//
-//        @Override
-//        public String toString() {
-//            return "AstColumnRef[" + "name=" + name + ", columnIndex=" + columnIndex + "]";
-//        }
-//    }
-
+    //    final class AstColumnRef implements AstNode {
+    //        private final String name;
+    //
+    //        private int columnIndex;
+    //
+    //        public AstColumnRef(final String name) {
+    //            this.name = name;
+    //        }
+    //
+    //        public String name() {
+    //            return name;
+    //        }
+    //
+    //        @Override
+    //        public String toString() {
+    //            return "AstColumnRef[" + "name=" + name + ", columnIndex=" + columnIndex + "]";
+    //        }
+    //    }
 
     /**
      * Collect nodes in the subtree under {@code root} by postorder traversal.
+     *
      * @param root root of the tree
      * @return postorder traversal of the tree
      */
-    static List<Node> postorder(final Node root)
-    {
+    static List<Node> postorder(final Node root) {
         var nodes = new ArrayDeque<Node>();
         var visited = new ArrayList<Node>();
         for (var node = root; node != null; node = nodes.poll()) {
@@ -401,36 +393,31 @@ public interface Ast {
     }
 
     /**
-     * Determine the input columns occurring in the given {@code Ast.Node}s.
-     * Compute a map from column index (inputs to the table, that is
-     * AstColumnIndex.columnIndex()) to input index of the {@link
-     * MapTransformSpec.MapperFactory#createMapper mapper} function. For example, if an
-     * expression uses (only) "$[2]" and "$[5]" then these would map to input
-     * indices 0 and 1, respectively.
+     * Determine the input columns occurring in the given {@code Ast.Node}s. Compute a map from column index (inputs to
+     * the table, that is AstColumnIndex.columnIndex()) to input index of the
+     * {@link MapTransformSpec.MapperFactory#createMapper mapper} function. For example, if an expression uses (only)
+     * "$[2]" and "$[5]" then these would map to input indices 0 and 1, respectively.
      *
      * @param nodes
      * @return mapping from column index to mapper input index, and vice versa
      */
     static RequiredColumns getRequiredColumns(final List<Node> nodes) {
-        int[] columnIndices = nodes.stream()
-                .mapToInt(node -> {
-                    if (node instanceof ColumnIndex n) {
-                        return n.columnIndex();
-                    } else {
-                        return -1;
-                    }
-                })
-                .filter(i -> i != -1)
-                .distinct()
-                .toArray();
+        int[] columnIndices = nodes.stream().mapToInt(node -> {
+            if (node instanceof ColumnIndex n) {
+                return n.columnIndex();
+            } else {
+                return -1;
+            }
+        }).filter(i -> i != -1).distinct().toArray();
         return new RequiredColumns(columnIndices);
     }
 
     record RequiredColumns(int[] columnIndices) {
-        public int getInputIndex(int columnIndex) {
+        public int getInputIndex(final int columnIndex) {
             for (int i = 0; i < columnIndices.length; i++) {
-                if ( columnIndices[i] == columnIndex )
+                if (columnIndices[i] == columnIndex) {
                     return i;
+                }
             }
             throw new IndexOutOfBoundsException();
         }

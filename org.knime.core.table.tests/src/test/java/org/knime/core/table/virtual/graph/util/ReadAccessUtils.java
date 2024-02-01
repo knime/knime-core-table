@@ -8,7 +8,7 @@ import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.StringAccess;
 
 public class ReadAccessUtils {
-    public  static String toString(final ReadAccess access) {
+    public static String toString(final ReadAccess access) {
         if (access == null) {
             return "null";
         } else if (access instanceof IntAccess.IntReadAccess) {

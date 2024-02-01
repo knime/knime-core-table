@@ -44,72 +44,77 @@ public interface Exec {
     interface Computer {
     }
 
-
     @FunctionalInterface
     interface BooleanComputer extends Computer, BooleanSupplier {
 
-        static BooleanComputer column(ReadAccess access) {
+        static BooleanComputer column(final ReadAccess access) {
             var a = (BooleanAccess.BooleanReadAccess)access;
-            return () -> a.getBooleanValue();
+            return a::getBooleanValue;
         }
 
-        static BooleanComputer unary(Ast.UnaryOp.Operator op, BooleanComputer arg1) {
+        static BooleanComputer unary(final Ast.UnaryOp.Operator op, final BooleanComputer arg1) {
             return switch (op) {
                 case NOT -> () -> !arg1.getAsBoolean();
                 case MINUS -> throw new IllegalStateException("Unary operator " + op + " is not applicable to BOOLEAN");
             };
         }
 
-        static BooleanComputer binary(Ast.BinaryOp.Operator op, BooleanComputer arg1, BooleanComputer arg2) {
+        static BooleanComputer binary(final Ast.BinaryOp.Operator op, final BooleanComputer arg1,
+            final BooleanComputer arg2) {
             return switch (op) {
                 case EQUAL_TO -> () -> arg1.getAsBoolean() == arg2.getAsBoolean();
                 case NOT_EQUAL_TO -> () -> arg1.getAsBoolean() != arg2.getAsBoolean();
                 case CONDITIONAL_AND -> () -> arg1.getAsBoolean() && arg2.getAsBoolean();
                 case CONDITIONAL_OR -> () -> arg1.getAsBoolean() || arg2.getAsBoolean();
-                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL ->
-                        throw new IllegalStateException("Binary operator " + op + " is not applicable to BOOLEAN");
+                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, LESS_THAN, //
+                        LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL //
+                        -> throw new IllegalStateException("Binary operator " + op + " is not applicable to BOOLEAN");
             };
         }
 
-        static BooleanComputer comparison(Ast.BinaryOp.Operator op, BooleanComputer arg1, BooleanComputer arg2) {
+        static BooleanComputer comparison(final Ast.BinaryOp.Operator op, final BooleanComputer arg1,
+            final BooleanComputer arg2) {
             return switch (op) {
                 case EQUAL_TO -> () -> arg1.getAsBoolean() == arg2.getAsBoolean();
                 case NOT_EQUAL_TO -> () -> arg1.getAsBoolean() != arg2.getAsBoolean();
-                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Unexpected operator " + op);
+                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, LESS_THAN, LESS_THAN_EQUAL, //
+                        GREATER_THAN, GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Unexpected operator " + op);
             };
         }
     }
 
-
     @FunctionalInterface
     interface DoubleComputer extends Computer, DoubleSupplier {
 
-        static DoubleComputer column(ReadAccess access) {
+        static DoubleComputer column(final ReadAccess access) {
             var a = (DoubleAccess.DoubleReadAccess)access;
             return () -> a.getDoubleValue();
         }
 
-        static DoubleComputer unary(Ast.UnaryOp.Operator op, DoubleComputer arg1) {
+        static DoubleComputer unary(final Ast.UnaryOp.Operator op, final DoubleComputer arg1) {
             return switch (op) {
                 case MINUS -> () -> -arg1.getAsDouble();
                 default -> throw new IllegalStateException("Unary operator " + op + " is not applicable to DOUBLE");
             };
         }
 
-        static DoubleComputer binary(Ast.BinaryOp.Operator op, DoubleComputer arg1, DoubleComputer arg2) {
+        static DoubleComputer binary(final Ast.BinaryOp.Operator op, final DoubleComputer arg1,
+            final DoubleComputer arg2) {
             return switch (op) {
                 case PLUS -> () -> arg1.getAsDouble() + arg2.getAsDouble();
                 case MINUS -> () -> arg1.getAsDouble() - arg2.getAsDouble();
                 case MULTIPLY -> () -> arg1.getAsDouble() * arg2.getAsDouble();
                 case DIVIDE -> () -> arg1.getAsDouble() / arg2.getAsDouble();
                 case REMAINDER -> () -> arg1.getAsDouble() % arg2.getAsDouble();
-                case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Binary operator " + op + " is not applicable to DOUBLE");
+                case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, //
+                        GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Binary operator " + op + " is not applicable to DOUBLE");
             };
         }
 
-        static BooleanComputer comparison(Ast.BinaryOp.Operator op, DoubleComputer arg1, DoubleComputer arg2) {
+        static BooleanComputer comparison(final Ast.BinaryOp.Operator op, final DoubleComputer arg1,
+            final DoubleComputer arg2) {
             return switch (op) {
                 case EQUAL_TO -> () -> arg1.getAsDouble() == arg2.getAsDouble();
                 case NOT_EQUAL_TO -> () -> arg1.getAsDouble() != arg2.getAsDouble();
@@ -117,12 +122,11 @@ public interface Exec {
                 case LESS_THAN_EQUAL -> () -> arg1.getAsDouble() <= arg2.getAsDouble();
                 case GREATER_THAN -> () -> arg1.getAsDouble() > arg2.getAsDouble();
                 case GREATER_THAN_EQUAL -> () -> arg1.getAsDouble() >= arg2.getAsDouble();
-                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Unexpected operator " + op);
+                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Unexpected operator " + op);
             };
         }
     }
-
 
     @FunctionalInterface
     interface FloatComputer extends DoubleComputer {
@@ -134,31 +138,34 @@ public interface Exec {
             return getAsFloat();
         }
 
-        static FloatComputer column(ReadAccess access) {
+        static FloatComputer column(final ReadAccess access) {
             var a = (FloatAccess.FloatReadAccess)access;
             return () -> a.getFloatValue();
         }
 
-        static FloatComputer unary(Ast.UnaryOp.Operator op, FloatComputer arg1) {
+        static FloatComputer unary(final Ast.UnaryOp.Operator op, final FloatComputer arg1) {
             return switch (op) {
                 case MINUS -> () -> -arg1.getAsFloat();
                 default -> throw new IllegalStateException("Unary operator " + op + " is not applicable to FLOAT");
             };
         }
 
-        static FloatComputer binary(Ast.BinaryOp.Operator op, FloatComputer arg1, FloatComputer arg2) {
+        static FloatComputer binary(final Ast.BinaryOp.Operator op, final FloatComputer arg1,
+            final FloatComputer arg2) {
             return switch (op) {
                 case PLUS -> () -> arg1.getAsFloat() + arg2.getAsFloat();
                 case MINUS -> () -> arg1.getAsFloat() - arg2.getAsFloat();
                 case MULTIPLY -> () -> arg1.getAsFloat() * arg2.getAsFloat();
                 case DIVIDE -> () -> arg1.getAsFloat() / arg2.getAsFloat();
                 case REMAINDER -> () -> arg1.getAsFloat() % arg2.getAsFloat();
-                case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Binary operator " + op + " is not applicable to FLOAT");
+                case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, //
+                        GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Binary operator " + op + " is not applicable to FLOAT");
             };
         }
 
-        static BooleanComputer comparison(Ast.BinaryOp.Operator op, FloatComputer arg1, FloatComputer arg2) {
+        static BooleanComputer comparison(final Ast.BinaryOp.Operator op, final FloatComputer arg1,
+            final FloatComputer arg2) {
             return switch (op) {
                 case EQUAL_TO -> () -> arg1.getAsFloat() == arg2.getAsFloat();
                 case NOT_EQUAL_TO -> () -> arg1.getAsFloat() != arg2.getAsFloat();
@@ -166,12 +173,11 @@ public interface Exec {
                 case LESS_THAN_EQUAL -> () -> arg1.getAsFloat() <= arg2.getAsFloat();
                 case GREATER_THAN -> () -> arg1.getAsFloat() > arg2.getAsFloat();
                 case GREATER_THAN_EQUAL -> () -> arg1.getAsFloat() >= arg2.getAsFloat();
-                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Unexpected operator " + op);
+                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Unexpected operator " + op);
             };
         }
     }
-
 
     @FunctionalInterface
     interface LongComputer extends FloatComputer, LongSupplier {
@@ -186,31 +192,33 @@ public interface Exec {
             return getAsLong();
         }
 
-        static LongComputer column(ReadAccess access) {
+        static LongComputer column(final ReadAccess access) {
             var a = (LongAccess.LongReadAccess)access;
             return () -> a.getLongValue();
         }
 
-        static LongComputer unary(Ast.UnaryOp.Operator op, LongComputer arg1) {
+        static LongComputer unary(final Ast.UnaryOp.Operator op, final LongComputer arg1) {
             return switch (op) {
                 case MINUS -> () -> -arg1.getAsLong();
                 default -> throw new IllegalStateException("Unary operator " + op + " is not applicable to LONG");
             };
         }
 
-        static LongComputer binary(Ast.BinaryOp.Operator op, LongComputer arg1, LongComputer arg2) {
+        static LongComputer binary(final Ast.BinaryOp.Operator op, final LongComputer arg1, final LongComputer arg2) {
             return switch (op) {
                 case PLUS -> () -> arg1.getAsLong() + arg2.getAsLong();
                 case MINUS -> () -> arg1.getAsLong() - arg2.getAsLong();
                 case MULTIPLY -> () -> arg1.getAsLong() * arg2.getAsLong();
                 case DIVIDE -> () -> arg1.getAsLong() / arg2.getAsLong();
                 case REMAINDER -> () -> arg1.getAsLong() % arg2.getAsLong();
-                case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Binary operator " + op + " is not applicable to LONG");
+                case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, //
+                        GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Binary operator " + op + " is not applicable to LONG");
             };
         }
 
-        static BooleanComputer comparison(Ast.BinaryOp.Operator op, LongComputer arg1, LongComputer arg2) {
+        static BooleanComputer comparison(final Ast.BinaryOp.Operator op, final LongComputer arg1,
+            final LongComputer arg2) {
             return switch (op) {
                 case EQUAL_TO -> () -> arg1.getAsLong() == arg2.getAsLong();
                 case NOT_EQUAL_TO -> () -> arg1.getAsLong() != arg2.getAsLong();
@@ -218,12 +226,11 @@ public interface Exec {
                 case LESS_THAN_EQUAL -> () -> arg1.getAsLong() <= arg2.getAsLong();
                 case GREATER_THAN -> () -> arg1.getAsLong() > arg2.getAsLong();
                 case GREATER_THAN_EQUAL -> () -> arg1.getAsLong() >= arg2.getAsLong();
-                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Unexpected operator " + op);
+                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Unexpected operator " + op);
             };
         }
     }
-
 
     @FunctionalInterface
     interface IntComputer extends LongComputer, IntSupplier {
@@ -243,31 +250,33 @@ public interface Exec {
             return getAsInt();
         }
 
-        static IntComputer column(ReadAccess access) {
+        static IntComputer column(final ReadAccess access) {
             var a = (IntAccess.IntReadAccess)access;
             return () -> a.getIntValue();
         }
 
-        static IntComputer unary(Ast.UnaryOp.Operator op, IntComputer arg1) {
+        static IntComputer unary(final Ast.UnaryOp.Operator op, final IntComputer arg1) {
             return switch (op) {
                 case MINUS -> () -> -arg1.getAsInt();
                 default -> throw new IllegalStateException("Unary operator " + op + " is not applicable to INT");
             };
         }
 
-        static IntComputer binary(Ast.BinaryOp.Operator op, IntComputer arg1, IntComputer arg2) {
+        static IntComputer binary(final Ast.BinaryOp.Operator op, final IntComputer arg1, final IntComputer arg2) {
             return switch (op) {
                 case PLUS -> () -> arg1.getAsInt() + arg2.getAsInt();
                 case MINUS -> () -> arg1.getAsInt() - arg2.getAsInt();
                 case MULTIPLY -> () -> arg1.getAsInt() * arg2.getAsInt();
                 case DIVIDE -> () -> arg1.getAsInt() / arg2.getAsInt();
                 case REMAINDER -> () -> arg1.getAsInt() % arg2.getAsInt();
-                case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Binary operator " + op + " is not applicable to INT");
+                case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, //
+                        GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Binary operator " + op + " is not applicable to INT");
             };
         }
 
-        static BooleanComputer comparison(Ast.BinaryOp.Operator op, IntComputer arg1, IntComputer arg2) {
+        static BooleanComputer comparison(final Ast.BinaryOp.Operator op, final IntComputer arg1,
+            final IntComputer arg2) {
             return switch (op) {
                 case EQUAL_TO -> () -> arg1.getAsInt() == arg2.getAsInt();
                 case NOT_EQUAL_TO -> () -> arg1.getAsInt() != arg2.getAsInt();
@@ -275,12 +284,11 @@ public interface Exec {
                 case LESS_THAN_EQUAL -> () -> arg1.getAsInt() <= arg2.getAsInt();
                 case GREATER_THAN -> () -> arg1.getAsInt() > arg2.getAsInt();
                 case GREATER_THAN_EQUAL -> () -> arg1.getAsInt() >= arg2.getAsInt();
-                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Unexpected operator " + op);
+                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Unexpected operator " + op);
             };
         }
     }
-
 
     @FunctionalInterface
     interface ByteComputer extends IntComputer {
@@ -307,12 +315,13 @@ public interface Exec {
             return getAsByte();
         }
 
-        static ByteComputer column(ReadAccess access) {
+        static ByteComputer column(final ReadAccess access) {
             var a = (ByteAccess.ByteReadAccess)access;
             return () -> a.getByteValue();
         }
 
-        static BooleanComputer comparison(Ast.BinaryOp.Operator op, ByteComputer arg1, ByteComputer arg2) {
+        static BooleanComputer comparison(final Ast.BinaryOp.Operator op, final ByteComputer arg1,
+            final ByteComputer arg2) {
             return switch (op) {
                 case EQUAL_TO -> () -> arg1.getAsByte() == arg2.getAsByte();
                 case NOT_EQUAL_TO -> () -> arg1.getAsByte() != arg2.getAsByte();
@@ -320,40 +329,39 @@ public interface Exec {
                 case LESS_THAN_EQUAL -> () -> arg1.getAsByte() <= arg2.getAsByte();
                 case GREATER_THAN -> () -> arg1.getAsByte() > arg2.getAsByte();
                 case GREATER_THAN_EQUAL -> () -> arg1.getAsByte() >= arg2.getAsByte();
-                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Unexpected operator " + op);
+                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Unexpected operator " + op);
             };
         }
     }
-
 
     @FunctionalInterface
     interface StringComputer extends Computer, Supplier<String> {
 
-        static StringComputer column(ReadAccess access) {
+        static StringComputer column(final ReadAccess access) {
             var a = (StringAccess.StringReadAccess)access;
             return () -> a.getStringValue();
         }
 
-        static BooleanComputer comparison(Ast.BinaryOp.Operator op, StringComputer arg1, StringComputer arg2) {
+        static BooleanComputer comparison(final Ast.BinaryOp.Operator op, final StringComputer arg1,
+            final StringComputer arg2) {
             return switch (op) {
                 case EQUAL_TO -> () -> Objects.equals(arg1.get(), arg2.get());
                 case NOT_EQUAL_TO -> () -> !Objects.equals(arg1.get(), arg2.get());
-                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, LESS_THAN, LESS_THAN_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR ->
-                        throw new IllegalStateException("Unexpected operator " + op);
+                case PLUS, MINUS, MULTIPLY, DIVIDE, REMAINDER, LESS_THAN, LESS_THAN_EQUAL, //
+                        GREATER_THAN, GREATER_THAN_EQUAL, CONDITIONAL_AND, CONDITIONAL_OR //
+                        -> throw new IllegalStateException("Unexpected operator " + op);
             };
         }
     }
 
-
-    static Computer binary(Ast.BinaryOp n, Function< Ast.Node, Computer> computers) {
+    static Computer binary(final Ast.BinaryOp n, final Function<Ast.Node, Computer> computers) {
         var arg1 = computers.apply(n.arg1());
         var arg2 = computers.apply(n.arg2());
         var t1 = n.arg1().inferredType();
         var t2 = n.arg2().inferredType();
         final Ast.BinaryOp.Operator op = n.op();
-        return switch(op.type())
-        {
+        return switch (op.type()) {
             case ARITHMETIC, LOGICAL -> binary(n.inferredType(), op, arg1, arg2);
             case EQUALITY -> compare(Typing.equalityType(t1, t2), op, arg1, arg2);
             case ORDERING -> compare(Typing.orderingType(t1, t2), op, arg1, arg2);
@@ -361,10 +369,10 @@ public interface Exec {
     }
 
     // create Computer for arithmetic BinaryOp
-    static Computer binary(AstType type, Ast.BinaryOp.Operator op, Computer arg1, Computer arg2) {
+    static Computer binary(final AstType type, final Ast.BinaryOp.Operator op, final Computer arg1,
+        final Computer arg2) {
         return switch (type) {
-            case STRING ->
-                    throw new UnsupportedOperationException("TODO: not implemented"); // TODO
+            case STRING -> throw new UnsupportedOperationException("TODO: not implemented"); // TODO
             case BYTE -> throw new IllegalStateException("no binary op should have BYTE as a result");
             case BOOLEAN -> BooleanComputer.binary(op, (BooleanComputer)arg1, (BooleanComputer)arg2);
             case INT -> IntComputer.binary(op, (IntComputer)arg1, (IntComputer)arg2);
@@ -375,7 +383,8 @@ public interface Exec {
     }
 
     // create Computer for order-comparison BinaryOp
-    static BooleanComputer compare(AstType type, Ast.BinaryOp.Operator op, Computer arg1, Computer arg2) {
+    static BooleanComputer compare(final AstType type, final Ast.BinaryOp.Operator op, final Computer arg1,
+        final Computer arg2) {
         return switch (type) {
             case STRING -> StringComputer.comparison(op, (StringComputer)arg1, (StringComputer)arg2);
             case BOOLEAN -> BooleanComputer.comparison(op, (BooleanComputer)arg1, (BooleanComputer)arg2);
@@ -388,10 +397,9 @@ public interface Exec {
     }
 
     // create Computer for UnaryOp
-    static Computer unary(AstType type, Ast.UnaryOp.Operator op, Computer arg1) {
+    static Computer unary(final AstType type, final Ast.UnaryOp.Operator op, final Computer arg1) {
         return switch (type) {
-            case STRING ->
-                    throw new UnsupportedOperationException("TODO: not implemented"); // TODO
+            case STRING -> throw new UnsupportedOperationException("TODO: not implemented"); // TODO
             case BYTE -> throw new IllegalStateException("no unary op should have BYTE as a result");
             case BOOLEAN -> BooleanComputer.unary(op, (BooleanComputer)arg1);
             case INT -> IntComputer.unary(op, (IntComputer)arg1);
@@ -404,57 +412,57 @@ public interface Exec {
     // create Computer (of appropriate type) that reads from a ReadAccess
     DataSpec.Mapper<Function<ReadAccess, ? extends Computer>> toReaderFactory = new DataSpec.Mapper<>() {
         @Override
-        public Function<ReadAccess, Computer> visit(BooleanDataSpec spec) {
+        public Function<ReadAccess, Computer> visit(final BooleanDataSpec spec) {
             throw new IllegalArgumentException("TODO not implemented"); // TODO
         }
 
         @Override
-        public Function<ReadAccess, ByteComputer> visit(ByteDataSpec spec) {
+        public Function<ReadAccess, ByteComputer> visit(final ByteDataSpec spec) {
             return ByteComputer::column;
         }
 
         @Override
-        public Function<ReadAccess, DoubleComputer> visit(DoubleDataSpec spec) {
+        public Function<ReadAccess, DoubleComputer> visit(final DoubleDataSpec spec) {
             return DoubleComputer::column;
         }
 
         @Override
-        public Function<ReadAccess, FloatComputer> visit(FloatDataSpec spec) {
+        public Function<ReadAccess, FloatComputer> visit(final FloatDataSpec spec) {
             return FloatComputer::column;
         }
 
         @Override
-        public Function<ReadAccess, IntComputer> visit(IntDataSpec spec) {
+        public Function<ReadAccess, IntComputer> visit(final IntDataSpec spec) {
             return IntComputer::column;
         }
 
         @Override
-        public Function<ReadAccess, Computer> visit(LongDataSpec spec) {
+        public Function<ReadAccess, Computer> visit(final LongDataSpec spec) {
             return LongComputer::column;
         }
 
         @Override
-        public Function<ReadAccess, Computer> visit(VarBinaryDataSpec spec) {
+        public Function<ReadAccess, Computer> visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public Function<ReadAccess, Computer> visit(VoidDataSpec spec) {
+        public Function<ReadAccess, Computer> visit(final VoidDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public Function<ReadAccess, Computer> visit(StructDataSpec spec) {
+        public Function<ReadAccess, Computer> visit(final StructDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public Function<ReadAccess, Computer> visit(ListDataSpec listDataSpec) {
+        public Function<ReadAccess, Computer> visit(final ListDataSpec listDataSpec) {
             throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public Function<ReadAccess, Computer> visit(StringDataSpec spec) {
+        public Function<ReadAccess, Computer> visit(final StringDataSpec spec) {
             throw new IllegalArgumentException("TODO not implemented"); // TODO
         }
     };
@@ -462,7 +470,7 @@ public interface Exec {
     // create Runnable that writes value from Computer (of appropriate type) to WriteAccess (of appropriate type)
     DataSpec.Mapper<BiFunction<WriteAccess, Computer, Runnable>> toWriterFactory = new DataSpec.Mapper<>() {
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(BooleanDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final BooleanDataSpec spec) {
             return (access, computer) -> {
                 var a = (BooleanAccess.BooleanWriteAccess)access;
                 var c = (BooleanComputer)computer;
@@ -471,7 +479,7 @@ public interface Exec {
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(ByteDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final ByteDataSpec spec) {
             return (access, computer) -> {
                 var a = (ByteAccess.ByteWriteAccess)access;
                 var c = (ByteComputer)computer;
@@ -480,7 +488,7 @@ public interface Exec {
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(DoubleDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final DoubleDataSpec spec) {
             return (access, computer) -> {
                 var a = (DoubleAccess.DoubleWriteAccess)access;
                 var c = (DoubleComputer)computer;
@@ -489,7 +497,7 @@ public interface Exec {
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(FloatDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final FloatDataSpec spec) {
             return (access, computer) -> {
                 var a = (FloatAccess.FloatWriteAccess)access;
                 var c = (FloatComputer)computer;
@@ -498,7 +506,7 @@ public interface Exec {
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(IntDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final IntDataSpec spec) {
             return (access, computer) -> {
                 var a = (IntAccess.IntWriteAccess)access;
                 var c = (IntComputer)computer;
@@ -507,7 +515,7 @@ public interface Exec {
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(LongDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final LongDataSpec spec) {
             return (access, computer) -> {
                 var a = (LongAccess.LongWriteAccess)access;
                 var c = (LongComputer)computer;
@@ -516,61 +524,60 @@ public interface Exec {
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(VarBinaryDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle VarBinaryDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(VoidDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final VoidDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle VoidDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(StructDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final StructDataSpec spec) {
             throw new IllegalArgumentException("TODO: How to handle StructDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(ListDataSpec listDataSpec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final ListDataSpec listDataSpec) {
             throw new IllegalArgumentException("TODO: How to handle ListDataSpec in expressions?"); // TODO
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(StringDataSpec spec) {
+        public BiFunction<WriteAccess, Computer, Runnable> visit(final StringDataSpec spec) {
             throw new IllegalArgumentException("TODO not implemented"); // TODO
         }
     };
 
     /**
-     * Create a {@code MapTransformSpec.MapperFactory}, that is, the final
-     * realization of the expression.
+     * Create a {@code MapTransformSpec.MapperFactory}, that is, the final realization of the expression.
      *
-     * @param ast                          root note of AST of the expression.
-     * @param columnIndexToComputerFactory function that maps column index to a
-     *                                     factory that produces {@code Computer} (of matching type) from the
-     *                                     {@code ReadAccess[]} array given to the {@code MapperFactory}.
-     * @param outputSpec                   spec of result column
+     * @param ast root note of AST of the expression.
+     * @param columnIndexToComputerFactory function that maps column index to a factory that produces {@code Computer}
+     *            (of matching type) from the {@code ReadAccess[]} array given to the {@code MapperFactory}.
+     * @param outputSpec spec of result column
      * @return a {@code MapperFactory} that implements the given expression.
-     * @throws IllegalArgumentException TODO: Hrmm ... is there a better exception type?
-     *                                  if the {@code DataSpec} of the result column is incompatible with
-     *                                  the {@link Ast.Node#inferredType() inferred type} of the expression.
+     * @throws IllegalArgumentException TODO: Hrmm ... is there a better exception type? if the {@code DataSpec} of the
+     *             result column is incompatible with the {@link Ast.Node#inferredType() inferred type} of the
+     *             expression.
      */
     static MapperFactory createMapperFactory( //
-            final Ast.Node ast, //
-            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory, //
-            final DataSpecs.DataSpecWithTraits outputSpec) //
+        final Ast.Node ast, //
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory, //
+        final DataSpecs.DataSpecWithTraits outputSpec) //
     {
         final AstType astType = ast.inferredType();
         final AstType colType = outputSpec.spec().accept(Typing.toAstType);
         if (!isAssignableTo(astType, colType)) {
-            throw new IllegalArgumentException(
-                    "Expression of type \"" + astType + "\" cannot be assigned to column of type \"" + outputSpec.spec() + "\"");
+            throw new IllegalArgumentException("Expression of type \"" + astType
+                + "\" cannot be assigned to column of type \"" + outputSpec.spec() + "\"");
         }
 
         final BiFunction<WriteAccess, Computer, Runnable> writerFactory = outputSpec.spec().accept(toWriterFactory);
-        final Function<ReadAccess[], Computer> computerFactory = createComputerFactory(ast, columnIndexToComputerFactory);
-        final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory = (readAccesses, writeAccesses) ->
-                writerFactory.apply(writeAccesses[0], computerFactory.apply(readAccesses));
+        final Function<ReadAccess[], Computer> computerFactory =
+            createComputerFactory(ast, columnIndexToComputerFactory);
+        final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory =
+            (readAccesses, writeAccesses) -> writerFactory.apply(writeAccesses[0], computerFactory.apply(readAccesses));
 
         return MapperFactory.of(ColumnarSchema.of(outputSpec), factory);
     }
@@ -583,10 +590,11 @@ public interface Exec {
      * @return
      */
     static RowFilterFactory createRowFilterFactory( //
-            final Ast.Node ast, //
-            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) //
+        final Ast.Node ast, //
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) //
     {
-        final Function<ReadAccess[], Computer> computerFactory = createComputerFactory(ast, columnIndexToComputerFactory);
+        final Function<ReadAccess[], Computer> computerFactory =
+            createComputerFactory(ast, columnIndexToComputerFactory);
         return inputs -> (BooleanComputer)computerFactory.apply(inputs);
     }
 
@@ -598,8 +606,8 @@ public interface Exec {
      * @return
      */
     static Function<ReadAccess[], Computer> createComputerFactory( //
-            final Ast.Node ast, //
-            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) //
+        final Ast.Node ast, //
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) //
     {
         final List<Ast.Node> postorder = Ast.postorder(ast);
         return readAccesses -> {
