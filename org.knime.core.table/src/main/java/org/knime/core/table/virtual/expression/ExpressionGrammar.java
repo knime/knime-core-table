@@ -45,19 +45,19 @@
  */
 package org.knime.core.table.virtual.expression;
 
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.CONDITIONAL_AND;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.CONDITIONAL_OR;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.DIVIDE;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.EQUAL_TO;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.GREATER_THAN;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.GREATER_THAN_EQUAL;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.LESS_THAN;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.LESS_THAN_EQUAL;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.MINUS;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.MULTIPLY;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.NOT_EQUAL_TO;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.PLUS;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.Operator.REMAINDER;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.CONDITIONAL_AND;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.CONDITIONAL_OR;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.DIVIDE;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.EQUAL_TO;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.GREATER_THAN;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.GREATER_THAN_EQUAL;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.LESS_THAN;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.LESS_THAN_EQUAL;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.MINUS;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.MULTIPLY;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.NOT_EQUAL_TO;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.PLUS;
+import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.REMAINDER;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -97,31 +97,31 @@ public interface ExpressionGrammar {
         }
     }
 
-    record Expr(Ast.Node ast) {
+    record Expr(Ast ast) {
     }
 
-    record Disjunction(Ast.Node ast) {
+    record Disjunction(Ast ast) {
     }
 
-    record Conjunction(Ast.Node ast) {
+    record Conjunction(Ast ast) {
     }
 
-    record Inversion(Ast.Node ast) {
+    record Inversion(Ast ast) {
     }
 
-    record Comparison(Ast.Node ast) {
+    record Comparison(Ast ast) {
     }
 
-    record Sum(Ast.Node ast) {
+    record Sum(Ast ast) {
     }
 
-    record Term(Ast.Node ast) {
+    record Term(Ast ast) {
     }
 
-    record Factor(Ast.Node ast) {
+    record Factor(Ast ast) {
     }
 
-    record Atom(Ast.Node ast) {
+    record Atom(Ast ast) {
     }
 
     record StrConst(String value) {
@@ -134,7 +134,7 @@ public interface ExpressionGrammar {
     }
 
     class CtorCatalog {
-        private static Ast.BinaryOp.Operator binaryOperator(final String symbol) {
+        private static Ast.BinaryOp.BinaryOperator binaryOperator(final String symbol) {
             return switch (symbol) {
                 case "+" -> PLUS;
                 case "-" -> MINUS;
@@ -164,7 +164,7 @@ public interface ExpressionGrammar {
         //      | conjunction
         public Disjunction disjunction(final SepBy1<Conjunction, @Str("or") String> conjunctions) {
             return new Disjunction(conjunctions
-                .reduce(c1 -> op -> c2 -> new Conjunction(new Ast.BinaryOp(c1.ast, c2.ast, CONDITIONAL_OR))).ast);
+                .reduce(c1 -> op -> c2 -> new Conjunction(Ast.binaryOp(CONDITIONAL_OR, c1.ast, c2.ast))).ast);
         }
 
         //  conjunction:
@@ -172,14 +172,14 @@ public interface ExpressionGrammar {
         //      | inversion
         public Conjunction conjunction(final SepBy1<Inversion, @Str("and") String> inversions) {
             return new Conjunction(inversions
-                .reduce(i1 -> op -> i2 -> new Inversion(new Ast.BinaryOp(i1.ast, i2.ast, CONDITIONAL_AND))).ast);
+                .reduce(i1 -> op -> i2 -> new Inversion(Ast.binaryOp(CONDITIONAL_AND, i1.ast, i2.ast))).ast);
         }
 
         //  inversion:
         //      | 'not' a=inversion { "not", a }
         //      | comparison
         public Inversion inversion(final OptWs ws, @Str("not") final String op, final Comparison c) {
-            return new Inversion(new Ast.UnaryOp(c.ast, Ast.UnaryOp.Operator.NOT));
+            return new Inversion(Ast.unaryOp(Ast.UnaryOp.UnaryOperator.NOT, c.ast));
         }
 
         public Inversion inversion(final Comparison c) {
@@ -197,7 +197,7 @@ public interface ExpressionGrammar {
         //      | sum
         public Comparison comparison(final Sum s1, @Str({"==", "=", "!=", "<=", "<", ">=", ">"}) final String op,
             final Sum s2) {
-            return new Comparison(new Ast.BinaryOp(s1.ast, s2.ast, binaryOperator(op)));
+            return new Comparison(Ast.binaryOp(binaryOperator(op), s1.ast, s2.ast));
         }
 
         public Comparison comparison(final Sum s) {
@@ -209,8 +209,8 @@ public interface ExpressionGrammar {
         //      | sum '-' term
         //      | term
         public Sum sum(final SepBy1<Term, @Ch("+-") String> terms) {
-            return new Sum(
-                terms.reduce(f1 -> op -> f2 -> new Term(new Ast.BinaryOp(f1.ast, f2.ast, binaryOperator(op)))).ast);
+            return new Sum(terms
+                .reduce(f1 -> op -> f2 -> new Term(Ast.binaryOp(binaryOperator(op), f1.ast, f2.ast))).ast);
         }
 
         //  term:
@@ -219,8 +219,8 @@ public interface ExpressionGrammar {
         //      | term '%' factor
         //      | factor
         public Term term(final SepBy1<Factor, @Ch("*/%") String> factors) {
-            return new Term(
-                factors.reduce(f1 -> op -> f2 -> new Factor(new Ast.BinaryOp(f1.ast, f2.ast, binaryOperator(op)))).ast);
+            return new Term(factors.reduce(
+                f1 -> op -> f2 -> new Factor(Ast.binaryOp(binaryOperator(op), f1.ast, f2.ast))).ast);
         }
 
         //  factor (memo):
@@ -229,7 +229,7 @@ public interface ExpressionGrammar {
         //      | atom
         public Factor factor(final OptWs ws, @Ch("+-") final String op, final Factor f) {
             if (op.equals("-")) {
-                return new Factor(new Ast.UnaryOp(f.ast, Ast.UnaryOp.Operator.MINUS));
+                return new Factor(Ast.unaryOp(Ast.UnaryOp.UnaryOperator.MINUS, f.ast));
             } else {
                 return new Factor(f.ast);
             }
@@ -250,21 +250,15 @@ public interface ExpressionGrammar {
         //  column:
         //      | '$' + NAME
         //      | '$' + '[' + STRING + ']'
-        //      | '$' + '[' + INTEGER + ']'
         public Atom column(final OptWs ws, @Ch("$") final Void h, @Ch("[") final Void ob, final StrConst columnName,
             @Ch("]") final Void cb, final OptWs trailingWs) {
-            return new Atom(new Ast.ColumnRef(columnName.value));
-        }
-
-        public Atom column(final OptWs ws, @Ch("$") final Void h, @Ch("[") final Void ob,
-            @Regex("[0-9]+") final String columnIndex, @Ch("]") final Void cb, final OptWs trailingWs) {
-            return new Atom(new Ast.ColumnIndex(Integer.parseInt(columnIndex)));
+            return new Atom(Ast.columnAccess(columnName.value));
         }
 
         public Atom column(final OptWs ws, @Ch("$") final Void h,
             @Ch(range = {0x20, 0x10FFFF}, except = BS + QT + WS_CHARS + "$()+-*/%") final int[] chars,
             final OptWs trailingWs) {
-            return new Atom(new Ast.ColumnRef(new String(chars, 0, chars.length)));
+            return new Atom(Ast.columnAccess(new String(chars, 0, chars.length)));
         }
 
         //  call:
@@ -278,7 +272,7 @@ public interface ExpressionGrammar {
             final OptWs trailingWs) {
             // TODO: What is the definition for legal identifiers in KNIME Expression Language?
             //       The above RegEx is too simplistic, probably.
-            return new Atom(new Ast.Call(func, arguments.values().stream().map(Expr::ast).toList()));
+            return new Atom(Ast.functionCall(func, arguments.values().stream().map(Expr::ast).toList()));
         }
 
         //  group:
@@ -301,15 +295,13 @@ public interface ExpressionGrammar {
         }
 
         private static Atom float_literal(final String str) {
-            final Ast.FloatConstant ast = new Ast.FloatConstant(Double.parseDouble(str));
-            ast.setInferredType(str.substring(str.length() - 1).equalsIgnoreCase("f") ? AstType.FLOAT : AstType.DOUBLE);
-            return new Atom(ast);
+            return new Atom(Ast.floatConstant(Double.parseDouble(str)));
         }
 
         //  int_literal:
         //      | INTEGER
         public Atom int_literal(final OptWs ws, final Digits digits, final OptWs trailingWs) {
-            return new Atom(new Ast.IntConstant(Long.parseLong(digits.value)));
+            return new Atom(Ast.integerConstant(Long.parseLong(digits.value)));
         }
 
         public Digits digits(@Regex("[0-9]+") final String str) {
@@ -319,7 +311,7 @@ public interface ExpressionGrammar {
         //  string_literal:
         //      | STRING
         public Atom string_literal(final StrConst str) {
-            return new Atom(new Ast.StringConstant(str.value));
+            return new Atom(Ast.stringConstant(str.value));
         }
 
         // (copied from ExampleParser_Json3)

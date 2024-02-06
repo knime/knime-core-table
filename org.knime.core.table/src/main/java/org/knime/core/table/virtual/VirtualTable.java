@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -73,13 +74,10 @@ import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.virtual.expression.Ast;
-import org.knime.core.table.virtual.expression.AstType;
 import org.knime.core.table.virtual.expression.Exec;
 import org.knime.core.table.virtual.expression.Exec.Computer;
-import org.knime.core.table.virtual.expression.ExpressionGrammar;
-import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
-import org.knime.core.table.virtual.expression.Typing;
-import org.knime.core.table.virtual.spec.RowIndexTransformSpec;
+import org.knime.core.table.virtual.expression.Expressions;
+import org.knime.core.table.virtual.expression.Expressions.ExpressionError;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
@@ -93,14 +91,13 @@ import org.knime.core.table.virtual.spec.ObserverTransformUtils;
 import org.knime.core.table.virtual.spec.ObserverTransformUtils.ObserverWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
+import org.knime.core.table.virtual.spec.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
-import org.rekex.parser.ParseResult;
-import org.rekex.parser.PegParser;
 
 import com.google.common.collect.Collections2;
 
@@ -156,7 +153,8 @@ public final class VirtualTable {
      * @param sourceIdentifier unique identifier for the source. This is later used by the {@code VirtualTableExecutor}
      *            to attach a {@code RowAccessible}.
      * @param schema the {@code ColumnarSchema} of the source
-     * @param cursorType which Cursor types the source provides ({@link Cursor}, {@link LookaheadCursor}, or {@link RandomAccessCursor})
+     * @param cursorType which Cursor types the source provides ({@link Cursor}, {@link LookaheadCursor}, or
+     *            {@link RandomAccessCursor})
      */
     public VirtualTable(final UUID sourceIdentifier, final ColumnarSchema schema, final CursorType cursorType) {
         this(sourceIdentifier, new SourceTableProperties(schema, cursorType));
@@ -257,8 +255,7 @@ public final class VirtualTable {
     }
 
     /**
-     * Create virtual table containing all columns of this table, except the
-     * ones specified by {@code columnIndices}.
+     * Create virtual table containing all columns of this table, except the ones specified by {@code columnIndices}.
      *
      * @param columnIndices indices of the columns to drop. may be in any order and contain duplicates.
      * @return virtual table where the specified columns have been removed
@@ -271,9 +268,8 @@ public final class VirtualTable {
      * Create virtual table containing only the columns specified by {@code
      * columnIndices}.
      * <p>
-     * The order or the columns in the new table is the same as the order of
-     * columns in this table. (The order of {@code columnIndices} does not
-     * matter.)
+     * The order or the columns in the new table is the same as the order of columns in this table. (The order of
+     * {@code columnIndices} does not matter.)
      *
      * @param columnIndices indices of the columns to keep. may be in any order and contain duplicates.
      * @return virtual table containing only the specified columns
@@ -303,7 +299,8 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), mapperFactory.getOutputSchema());
     }
 
-    public VirtualTable map(final int[] columnIndices, final MapTransformUtils.MapperWithRowIndexFactory mapperFactory) {
+    public VirtualTable map(final int[] columnIndices,
+        final MapTransformUtils.MapperWithRowIndexFactory mapperFactory) {
         final int[] columns = Arrays.copyOf(columnIndices, columnIndices.length + 1);
         columns[columns.length - 1] = m_schema.numColumns();
         final MapperFactory factory = new MapTransformUtils.WrappedMapperWithRowIndexFactory(mapperFactory);
@@ -311,55 +308,47 @@ public final class VirtualTable {
     }
 
     /**
-     * @param expression expression that computes a new column
+     * @param expression expression that computes a new column (must have resolved column indices)
      * @param outputSpec DataSpec of the computed column. Must be assignable from the result type of the expression
      */
-    public VirtualTable map(final String expression, final DataSpecWithTraits outputSpec) {
-        final PegParser<Expr> parser = ExpressionGrammar.parser();
-        final ParseResult<Expr> result = parser.parse(expression);
-        if (result instanceof ParseResult.Full<Expr> full) {
-            final Ast.Node ast = full.value().ast();
-            final List<Ast.Node> postorder = Ast.postorder(ast);
-            final Ast.RequiredColumns columns = Ast.getRequiredColumns(postorder);
-
-            final IntFunction<AstType> columnIndexToAstType = i -> m_schema.getSpec(i).accept(Typing.toAstType);
-            Typing.inferTypes(postorder, columnIndexToAstType);
-
+    public VirtualTable map(final Ast expression, final DataSpecWithTraits outputSpec) {
+        try {
+            // Column resolver functions
+            var columns = Exec.getRequiredColumns(expression);
             final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
-                    columnIndex -> {
-                        int inputIndex = columns.getInputIndex(columnIndex);
-                        Function<ReadAccess, ? extends Computer> createComputer =
-                                m_schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
-                        return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
-                    };
+                columnIndex -> {
+                    int inputIndex = columns.getInputIndex(columnIndex);
+                    Function<ReadAccess, ? extends Computer> createComputer =
+                        m_schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
+                    return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
+                };
 
+            // Infer types
+            var ast = Expressions.inferTypes(expression, col -> {
+                int colIdx = Expressions.getResolvedColumnIdx(col);
+                return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_AST_TYPE_MAPPER));
+            });
             var mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory, outputSpec);
             return map(columns.columnIndices(), mapperFactory);
-        } else {
-            System.err.println("parse error:\n" + result);
-            throw new IllegalArgumentException();
+        } catch (ExpressionError ex) {
+            throw new IllegalArgumentException(ex);
         }
     }
 
-    public VirtualTable map(final String expression, final DataSpec outputSpec) {
+    public VirtualTable map(final Ast expression, final DataSpec outputSpec) {
         return map(expression, new DataSpecs.DataSpecWithTraits(outputSpec, DefaultDataTraits.EMPTY));
     }
 
     /**
      * Create a {@code new VirtualTable} by including only rows from this {@code
-     * VirtualTable} that match a given predicate. This is defined by an array
-     * of {@code n} column indices that form the inputs of the ({@code n}-ary}
-     * filter predicate. The predicate is evaluated on the values of the
-     * respective columns for each row. Rows for which the predicate evaluates
-     * to {@code true} will be included, rows for which the filter predicate
-     * evaluates to {@code false} will be removed (skipped). The filter is given
-     * by a {@code RowFilterFactory} which can be used to create multiple
-     * instances of the filter predicate for processing multiple lines in
-     * parallel. (Each filter predicate is used single-threaded.) The order in
-     * which {@code columnIndices} are given matters. For example if {@code
-     * columnIndices = {5,1,4}}, then values from the 5th, 1st, and 4th column
-     * are provided as inputs 0, 1, and 2, respectively, to the filter
-     * predicate.
+     * VirtualTable} that match a given predicate. This is defined by an array of {@code n} column indices that form the
+     * inputs of the ({@code n}-ary} filter predicate. The predicate is evaluated on the values of the respective
+     * columns for each row. Rows for which the predicate evaluates to {@code true} will be included, rows for which the
+     * filter predicate evaluates to {@code false} will be removed (skipped). The filter is given by a
+     * {@code RowFilterFactory} which can be used to create multiple instances of the filter predicate for processing
+     * multiple lines in parallel. (Each filter predicate is used single-threaded.) The order in which
+     * {@code columnIndices} are given matters. For example if {@code columnIndices = {5,1,4}}, then values from the
+     * 5th, 1st, and 4th column are provided as inputs 0, 1, and 2, respectively, to the filter predicate.
      *
      * @param columnIndices the indices of the columns that are passed to the filter predicate
      * @param filterFactory factory to create instances of the filter predicate
@@ -373,30 +362,28 @@ public final class VirtualTable {
     /**
      * @param expression expression for filter predicate
      */
-    public VirtualTable filterRows(final String expression) {
-        final PegParser<Expr> parser = ExpressionGrammar.parser();
-        final ParseResult<Expr> result = parser.parse(expression);
-        if (result instanceof ParseResult.Full<Expr> full) {
-            final Ast.Node ast = full.value().ast();
-            final List<Ast.Node> postorder = Ast.postorder(ast);
-            final Ast.RequiredColumns columns = Ast.getRequiredColumns(postorder);
-
-            final IntFunction<AstType> columnIndexToAstType = i -> m_schema.getSpec(i).accept(Typing.toAstType);
-            Typing.inferTypes(postorder, columnIndexToAstType);
-
+    public VirtualTable filterRows(final Ast expression) {
+        try {
+            // Column resolver functions
+            var columns = Exec.getRequiredColumns(expression);
             final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
-                    columnIndex -> {
-                        int inputIndex = columns.getInputIndex(columnIndex);
-                        Function<ReadAccess, ? extends Computer> createComputer =
-                                m_schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
-                        return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
-                    };
+                columnIndex -> {
+                    int inputIndex = columns.getInputIndex(columnIndex);
+                    Function<ReadAccess, ? extends Computer> createComputer =
+                        m_schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
+                    return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
 
+                };
+
+            // Infer types
+            var ast = Expressions.inferTypes(expression, col -> {
+                int colIdx = Expressions.getResolvedColumnIdx(col);
+                return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_AST_TYPE_MAPPER));
+            });
             var filterFactory = Exec.createRowFilterFactory(ast, columnIndexToComputerFactory);
             return filterRows(columns.columnIndices(), filterFactory);
-        } else {
-            System.err.println("parse error:\n" + result);
-            throw new IllegalArgumentException();
+        } catch (ExpressionError ex) {
+            throw new IllegalArgumentException(ex);
         }
     }
 
@@ -407,10 +394,8 @@ public final class VirtualTable {
     }
 
     public VirtualTable resolveSources(final Map<UUID, VirtualTable> sourceMap) {
-        var reSourcedTransform = m_transform.reSource(
-            sourceMap.entrySet().stream()//
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getProducingTransform()))
-            );
+        var reSourcedTransform = m_transform.reSource(sourceMap.entrySet().stream()//
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getProducingTransform())));
         return new VirtualTable(reSourcedTransform, m_schema);
     }
 
@@ -425,7 +410,7 @@ public final class VirtualTable {
         columns[columns.length - 1] = rowIndexColumn;
         final ObserverFactory factory = new ObserverTransformUtils.WrappedObserverWithRowIndexFactory(observerFactory);
         return appendRowIndex() //
-                .observe(columns, factory) //
-                .dropColumns(rowIndexColumn);
+            .observe(columns, factory) //
+            .dropColumns(rowIndexColumn);
     }
 }

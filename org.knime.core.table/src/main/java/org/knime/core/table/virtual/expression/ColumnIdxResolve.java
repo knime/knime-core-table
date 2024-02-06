@@ -42,26 +42,59 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
+ *
+ * History
+ *   Feb 15, 2024 (benjamin): created
  */
 package org.knime.core.table.virtual.expression;
 
-// TODO(AP-22025) remove types that we do not support
-public enum AstType {
-        BYTE(true), // TODO(AP-22025) remove
-        INTEGER(true), //
-        LONG(true), // TODO(AP-22025) remove INTEGER and rename LONG to INTEGER
-        FLOAT(true), //
-        DOUBLE(true), // TODO(AP-22025) remove FLOAT and rename DOUBLE to FLOAT
-        BOOLEAN(false), //
-        STRING(false);
+import java.util.OptionalInt;
+import java.util.function.Function;
 
-    private final boolean m_isNumeric;
+import org.knime.core.table.virtual.expression.Ast.ColumnAccess;
+import org.knime.core.table.virtual.expression.Ast.RecursiveMappingAstVisitor;
+import org.knime.core.table.virtual.expression.Expressions.MissingColumnError;
 
-    AstType(final boolean isNumeric) {
-        this.m_isNumeric = isNumeric;
+/**
+ * Utilities for mapping column names to column indices in an Expression {@link Ast}.
+ *
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ */
+final class ColumnIdxResolve {
+
+    private static final String COLUMN_IDX_DATA_KEY = "colIdx";
+
+    private ColumnIdxResolve() {
     }
 
-    boolean isNumeric() {
-        return m_isNumeric;
+    /**
+     * Resolve column indices for the given Expression {@link Ast}. Adds the field "colIdx" to all
+     * {@link Ast.ColumnAccess} nodes.
+     *
+     * @param columnNameToIdx map a column name to the index. Should return {@link OptionalInt#empty()} for column names
+     *            that do not exist in the table.
+     */
+    static Ast resolveColumnIndices(final Ast root, final Function<String, OptionalInt> columnNameToIdx)
+        throws MissingColumnError {
+        return root.accept(new ColumnIdxVisitor(columnNameToIdx));
+    }
+
+    static int getColumnIdx(final ColumnAccess node) {
+        return (Integer)node.data(COLUMN_IDX_DATA_KEY);
+    }
+
+    private static final class ColumnIdxVisitor extends RecursiveMappingAstVisitor<MissingColumnError> {
+
+        private final Function<String, OptionalInt> m_colIdx;
+
+        public ColumnIdxVisitor(final Function<String, OptionalInt> colIdx) {
+            m_colIdx = colIdx;
+        }
+
+        @Override
+        public Ast visit(final ColumnAccess node) throws MissingColumnError {
+            var colIdx = m_colIdx.apply(node.name()).orElseThrow(() -> new MissingColumnError(node.name()));
+            return Ast.columnAccess(node.name(), Ast.addData(node.data(), COLUMN_IDX_DATA_KEY, colIdx));
+        }
     }
 }

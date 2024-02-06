@@ -45,380 +45,104 @@
  */
 package org.knime.core.table.virtual.expression;
 
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.OperatorType.ARITHMETIC;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.OperatorType.EQUALITY;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.OperatorType.LOGICAL;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOp.OperatorType.ORDERING;
+import static org.knime.core.table.virtual.expression.Ast.OperatorType.ARITHMETIC;
+import static org.knime.core.table.virtual.expression.Ast.OperatorType.EQUALITY;
+import static org.knime.core.table.virtual.expression.Ast.OperatorType.LOGICAL;
+import static org.knime.core.table.virtual.expression.Ast.OperatorType.ORDERING;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.expression.Ast.BinaryOp;
+import org.knime.core.table.virtual.expression.Ast.BooleanConstant;
+import org.knime.core.table.virtual.expression.Ast.ColumnAccess;
+import org.knime.core.table.virtual.expression.Ast.FloatConstant;
+import org.knime.core.table.virtual.expression.Ast.FunctionCall;
+import org.knime.core.table.virtual.expression.Ast.IntegerConstant;
+import org.knime.core.table.virtual.expression.Ast.StringConstant;
+import org.knime.core.table.virtual.expression.Ast.UnaryOp;
 
-public interface Ast {
+/**
+ * An abstract syntax tree of an Expression according to the KNIME Expression Language.
+ *
+ * @author Tobias Pietzsch
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ */
+public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConstant, StringConstant, ColumnAccess,
+    UnaryOp, BinaryOp, FunctionCall {
 
-    abstract sealed class Node {
-        public List<Node> children() {
-            return List.of();
-        }
+    /**
+     * @return a map of data that is attached to the node
+     */
+    Map<String, Object> data();
 
-        Node m_parent;
-
-        public Node parent() {
-            return m_parent;
-        }
-
-        void replaceChild(final Node child, final Node replacement) {
-        }
-
-        public void replaceWith(final Node node) {
-            if (m_parent != null) {
-                m_parent.replaceChild(this, node);
-                m_parent = null;
-            }
-        }
-
-        private AstType m_inferredType;
-
-        public AstType inferredType() {
-            return m_inferredType;
-        }
-
-        public void setInferredType(final AstType type) {
-            this.m_inferredType = type;
-        }
-
-        public boolean isConstant() {
-            return false;
-        }
+    /**
+     * @param key
+     * @return <code>true</code> if the key is present in the {@link #data() data}
+     */
+    default boolean hasData(final String key) {
+        return data().containsKey(key);
     }
 
-    final class Call extends Node {
-        private final String m_func;
-
-        private final List<Node> n_args;
-
-        public Call(final String func, final List<Node> args) {
-            this.m_func = func;
-            this.n_args = new ArrayList<>(args);
-        }
-
-        public int numArgs() {
-            return n_args.size();
-        }
-
-        public Node arg(final int index) {
-            return n_args.get(index);
-        }
-
-        @Override
-        public List<Node> children() {
-            return n_args;
-        }
-
-        @Override
-        void replaceChild(final Node child, final Node replacement) {
-            for (int i = 0; i < n_args.size(); i++) {
-                if (n_args.get(i).equals(child)) {
-                    n_args.set(i, replacement);
-                    replacement.m_parent = this;
-                }
-            }
-        }
-
-        @Override
-        public String toString() {
-            final String arguments = n_args.stream().map(Node::toString).collect(Collectors.joining(", "));
-            return "Call " + m_func + '(' + arguments + ')';
-        }
+    /**
+     * @param key
+     * @return the value of the {@link #data() data} with the given key
+     */
+    default Object data(final String key) {
+        return data().get(key);
     }
 
-    final class IntConstant extends Node {
-        private final long m_value;
-
-        public IntConstant(final long value) {
-            this.m_value = value;
-        }
-
-        public long value() {
-            return m_value;
-        }
-
-        @Override
-        public boolean isConstant() {
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "IntConstant[" + "value=" + m_value + ']';
-        }
+    /**
+     * @return the children of this node
+     */
+    default List<Ast> children() {
+        return List.of();
     }
 
-    final class FloatConstant extends Node {
-        private final double m_value;
+    /**
+     * @return a string representation of the AST for debugging - not the expression
+     */
+    @Override
+    String toString();
 
-        public FloatConstant(final double value) {
-            this.m_value = value;
-        }
+    /**
+     * @return the expression which is represented by this node
+     */
+    String toExpression();
 
-        public double value() {
-            return m_value;
-        }
+    /**
+     * Call the appropriate visit function of the given visitor.
+     *
+     * @param <O> the output type of a visit
+     * @param <E> the type of an exception that might be thrown
+     * @param visitor the visitor
+     * @return the return value of the appropriate visit function
+     * @throws E if the visitor throws
+     */
+    <O, E extends Exception> O accept(AstVisitor<O, E> visitor) throws E;
 
-        @Override
-        public boolean isConstant() {
-            return true;
-        }
+    // ======================================================
+    // UTILITIES
+    // ======================================================
 
-        @Override
-        public String toString() {
-            return "FloatConstant[" + "value=" + m_value + ']';
-        }
+    /**
+     * Create a new data {@link Map} with all newly added data object
+     *
+     * @param data the existing data
+     * @param key the key of the new object
+     * @param value the value of the new object
+     * @return a data {@link Map} containing the exiting data and the new object
+     */
+    static Map<String, Object> addData(final Map<String, Object> data, final String key, final Object value) {
+        var newData = new HashMap<>(data);
+        newData.put(key, value);
+        return newData;
     }
-
-    final class StringConstant extends Node {
-        private final String m_value;
-
-        public StringConstant(final String value) {
-            this.m_value = value;
-        }
-
-        public String value() {
-            return m_value;
-        }
-
-        @Override
-        public boolean isConstant() {
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "StringConstant[" + "value=" + m_value + ']';
-        }
-    }
-
-    final class ColumnRef extends Node {
-        private final String m_name;
-
-        public ColumnRef(final String name) {
-            this.m_name = name;
-        }
-
-        public String name() {
-            return m_name;
-        }
-
-        @Override
-        public String toString() {
-            return "ColumnRef[" + "name=" + m_name + ']';
-        }
-    }
-
-    final class ColumnIndex extends Node {
-        private final int m_columnIndex;
-
-        public ColumnIndex(final int columnIndex) {
-            this.m_columnIndex = columnIndex;
-        }
-
-        /**
-         * Column index (0-based) in the input VirtualTable of the expression.
-         *
-         * @return column index
-         */
-        public int columnIndex() {
-            return m_columnIndex;
-        }
-
-        @Override
-        public String toString() {
-            return "AstColumnIndex[" + "columnIndex=" + m_columnIndex + ']';
-        }
-    }
-
-    final class BinaryOp extends Node {
-
-        public enum OperatorType {
-                ARITHMETIC, EQUALITY, ORDERING, LOGICAL
-        }
-
-        public enum Operator {
-                PLUS("+", ARITHMETIC), //
-                MINUS("-", ARITHMETIC), //
-                MULTIPLY("*", ARITHMETIC), //
-                DIVIDE("/", ARITHMETIC), //
-                REMAINDER("%", ARITHMETIC), //
-                EQUAL_TO("==", EQUALITY), //
-                NOT_EQUAL_TO("!=", EQUALITY), //
-                LESS_THAN("<", ORDERING), //
-                LESS_THAN_EQUAL("<=", ORDERING), //
-                GREATER_THAN(">", ORDERING), //
-                GREATER_THAN_EQUAL(">=", ORDERING), //
-                CONDITIONAL_AND("and", LOGICAL), //
-                CONDITIONAL_OR("or", LOGICAL); //
-
-            private final String m_symbol;
-
-            private final OperatorType m_type;
-
-            Operator(final String symbol, final OperatorType type) {
-                this.m_symbol = symbol;
-                this.m_type = type;
-            }
-
-            public String symbol() {
-                return m_symbol;
-            }
-
-            public OperatorType type() {
-                return m_type;
-            }
-
-            public boolean isArithmetic() {
-                return m_type == ARITHMETIC;
-            }
-
-            public boolean isEqualityComparison() {
-                return m_type == EQUALITY;
-            }
-
-            public boolean isOrderingComparison() {
-                return m_type == ORDERING;
-            }
-
-            public boolean isLogical() {
-                return m_type == LOGICAL;
-            }
-        }
-
-        private Node m_arg1;
-
-        private Node m_arg2;
-
-        private final Operator op;
-
-        public BinaryOp(final Node arg1, final Node arg2, final Operator op) {
-            this.m_arg1 = arg1;
-            this.m_arg2 = arg2;
-            this.op = op;
-            arg1.m_parent = this;
-            arg2.m_parent = this;
-        }
-
-        public Node arg1() {
-            return m_arg1;
-        }
-
-        public Node arg2() {
-            return m_arg2;
-        }
-
-        public Operator op() {
-            return op;
-        }
-
-        @Override
-        public List<Node> children() {
-            return List.of(m_arg1, m_arg2);
-        }
-
-        @Override
-        void replaceChild(final Node child, final Node replacement) {
-            if (m_arg1.equals(child)) {
-                m_arg1 = replacement;
-                replacement.m_parent = this;
-            } else if (m_arg2.equals(child)) {
-                m_arg2 = replacement;
-                replacement.m_parent = this;
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "BinaryOp[" + "arg1=" + m_arg1 + ", " + "arg2=" + m_arg2 + ", " + "op=" + op + ']';
-        }
-    }
-
-    final class UnaryOp extends Node {
-
-        public enum Operator {
-                MINUS("-"), //
-                NOT("not"); //
-
-            private final String m_symbol;
-
-            Operator(final String symbol) {
-                this.m_symbol = symbol;
-            }
-
-            public String symbol() {
-                return m_symbol;
-            }
-        }
-
-        private Node arg;
-
-        private final Operator op;
-
-        public UnaryOp(final Node arg, final Operator op) {
-            this.arg = arg;
-            this.op = op;
-            arg.m_parent = this;
-        }
-
-        public Node arg() {
-            return arg;
-        }
-
-        public Operator op() {
-            return op;
-        }
-
-        @Override
-        public List<Node> children() {
-            return List.of(arg);
-        }
-
-        @Override
-        void replaceChild(final Node child, final Node replacement) {
-            if (arg.equals(child)) {
-                arg = replacement;
-                replacement.m_parent = this;
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "UnaryOp[" + "arg=" + arg + ", " + "op=" + op + ']';
-        }
-    }
-
-    // TODO: Unify ColumnRef and ColumnIndex?
-
-    //    final class AstColumnRef implements AstNode {
-    //        private final String name;
-    //
-    //        private int columnIndex;
-    //
-    //        public AstColumnRef(final String name) {
-    //            this.name = name;
-    //        }
-    //
-    //        public String name() {
-    //            return name;
-    //        }
-    //
-    //        @Override
-    //        public String toString() {
-    //            return "AstColumnRef[" + "name=" + name + ", columnIndex=" + columnIndex + "]";
-    //        }
-    //    }
 
     /**
      * Collect nodes in the subtree under {@code root} by postorder traversal.
@@ -426,9 +150,9 @@ public interface Ast {
      * @param root root of the tree
      * @return postorder traversal of the tree
      */
-    static List<Node> postorder(final Node root) {
-        var nodes = new ArrayDeque<Node>();
-        var visited = new ArrayList<Node>();
+    static List<Ast> postorder(final Ast root) {
+        var nodes = new ArrayDeque<Ast>();
+        var visited = new ArrayList<Ast>();
         for (var node = root; node != null; node = nodes.poll()) {
             visited.add(node);
             node.children().forEach(nodes::push);
@@ -437,39 +161,537 @@ public interface Ast {
         return visited;
     }
 
+    // ======================================================
+    // CREATORS
+    // ======================================================
+
     /**
-     * Determine the input columns occurring in the given {@code Ast.Node}s. Compute a map from column index (inputs to
-     * the table, that is AstColumnIndex.columnIndex()) to input index of the
-     * {@link MapTransformSpec.MapperFactory#createMapper mapper} function. For example, if an expression uses (only)
-     * "$[2]" and "$[5]" then these would map to input indices 0 and 1, respectively.
+     * Create a new {@link BooleanConstant} with the given value and no data.
      *
-     * @param nodes
-     * @return mapping from column index to mapper input index, and vice versa
+     * @param value
+     * @return the node
      */
-    static RequiredColumns getRequiredColumns(final List<Node> nodes) {
-        int[] columnIndices = nodes.stream().mapToInt(node -> {
-            if (node instanceof ColumnIndex n) {
-                return n.columnIndex();
-            } else {
-                return -1;
-            }
-        }).filter(i -> i != -1).distinct().toArray();
-        return new RequiredColumns(columnIndices);
+    static BooleanConstant booleanConstant(final boolean value) {
+        return booleanConstant(value, Map.of());
     }
 
-    record RequiredColumns(int[] columnIndices) {
-        public int getInputIndex(final int columnIndex) {
-            for (int i = 0; i < columnIndices.length; i++) {
-                if (columnIndices[i] == columnIndex) {
-                    return i;
-                }
-            }
-            throw new IndexOutOfBoundsException();
+    /**
+     * Create a new {@link BooleanConstant} with the given value and data.
+     *
+     * @param value
+     * @param data
+     * @return the node
+     */
+    static BooleanConstant booleanConstant(final boolean value, final Map<String, Object> data) {
+        return new BooleanConstant(value, data);
+    }
+
+    /**
+     * Create a new {@link IntegerConstant} with the given value and no data.
+     *
+     * @param value
+     * @return the node
+     */
+    static IntegerConstant integerConstant(final long value) {
+        return integerConstant(value, Map.of());
+    }
+
+    /**
+     * Create a new {@link IntegerConstant} with the given value and data.
+     *
+     * @param value
+     * @param data
+     * @return the node
+     */
+    static IntegerConstant integerConstant(final long value, final Map<String, Object> data) {
+        return new IntegerConstant(value, data);
+    }
+
+    /**
+     * Create a new {@link FloatConstant} with the given value and no data.
+     *
+     * @param value
+     * @return the node
+     */
+    static FloatConstant floatConstant(final double value) {
+        return floatConstant(value, Map.of());
+    }
+
+    /**
+     * Create a new {@link FloatConstant} with the given value and data.
+     *
+     * @param value
+     * @param data
+     * @return the node
+     */
+    static FloatConstant floatConstant(final double value, final Map<String, Object> data) {
+        return new FloatConstant(value, data);
+    }
+
+    /**
+     * Create a new {@link StringConstant} with the given value and no data.
+     *
+     * @param value
+     * @return the node
+     */
+    static StringConstant stringConstant(final String value) {
+        return stringConstant(value, Map.of());
+    }
+
+    /**
+     * Create a new {@link StringConstant} with the given value and data.
+     *
+     * @param value
+     * @param data
+     * @return the node
+     */
+    static StringConstant stringConstant(final String value, final Map<String, Object> data) {
+        return new StringConstant(value, data);
+    }
+
+    /**
+     * Create a new {@link ColumnAccess} for the given column name and with no data.
+     *
+     * @param name the column name
+     * @return the node
+     */
+    static ColumnAccess columnAccess(final String name) {
+        return columnAccess(name, Map.of());
+    }
+
+    /**
+     * Create a new {@link ColumnAccess} for the given column name and data.
+     *
+     * @param name the column name
+     * @param data
+     * @return the node
+     */
+    static ColumnAccess columnAccess(final String name, final Map<String, Object> data) {
+        return new ColumnAccess(name, data);
+    }
+
+    /**
+     * Create a new {@link BinaryOp} on the given nodes and with no data.
+     *
+     * @param op the operator
+     * @param arg1 the argument on the left
+     * @param arg2 the argument on the right
+     * @param data
+     * @return the node
+     */
+    static BinaryOp binaryOp(final BinaryOperator op, final Ast arg1, final Ast arg2) {
+        return binaryOp(op, arg1, arg2, Map.of());
+    }
+
+    /**
+     * Create a new {@link BinaryOp} on the given nodes and with the given data.
+     *
+     * @param op the operator
+     * @param arg1 the argument on the left
+     * @param arg2 the argument on the right
+     * @param data
+     * @return the node
+     */
+    static BinaryOp binaryOp(final BinaryOperator op, final Ast arg1, final Ast arg2, final Map<String, Object> data) {
+        return new BinaryOp(op, arg1, arg2, data);
+    }
+
+    /**
+     * Create a new {@link UnaryOp} on the given node and with no data.
+     *
+     * @param op the operator
+     * @param arg the argument
+     * @param data
+     * @return the node
+     */
+    static UnaryOp unaryOp(final UnaryOperator op, final Ast arg) {
+        return unaryOp(op, arg, Map.of());
+    }
+
+    /**
+     * Create a new {@link UnaryOp} on the given nodes and with the given data.
+     *
+     * @param op the operator
+     * @param arg the argument
+     * @param data
+     * @return the node
+     */
+    static UnaryOp unaryOp(final UnaryOperator op, final Ast arg, final Map<String, Object> data) {
+        return new UnaryOp(op, arg, data);
+    }
+
+    /**
+     * Create a new {@link FunctionCall} with the given arguments and with no data.
+     *
+     * @param name the name of the function
+     * @param args the arguments
+     * @param data
+     * @return the node
+     */
+    static FunctionCall functionCall(final String name, final List<Ast> args) {
+        return functionCall(name, args);
+    }
+
+    /**
+     * Create a new {@link FunctionCall} with the given arguments and with the given data.
+     *
+     * @param name the name of the function
+     * @param args the arguments
+     * @param data
+     * @return the node
+     */
+    static FunctionCall functionCall(final String name, final List<Ast> args, final Map<String, Object> data) {
+        return new FunctionCall(name, args, data);
+    }
+
+    // ======================================================
+    // OPERATORS
+    // ======================================================
+
+    /** Categorization for operators. */
+    enum OperatorType {
+            ARITHMETIC, EQUALITY, ORDERING, LOGICAL
+    }
+
+    /** Available binary operators. Used by {@link BinaryOp}s. */
+    enum BinaryOperator {
+            PLUS("+", ARITHMETIC), //
+            MINUS("-", ARITHMETIC), //
+            MULTIPLY("*", ARITHMETIC), //
+            DIVIDE("/", ARITHMETIC), //
+            FLOOR_DIVIDE("//", ARITHMETIC), //
+            EXPONENTIAL("**", ARITHMETIC), //
+            REMAINDER("%", ARITHMETIC), //
+            EQUAL_TO("==", EQUALITY), //
+            NOT_EQUAL_TO("!=", EQUALITY), //
+            LESS_THAN("<", ORDERING), //
+            LESS_THAN_EQUAL("<=", ORDERING), //
+            GREATER_THAN(">", ORDERING), //
+            GREATER_THAN_EQUAL(">=", ORDERING), //
+            CONDITIONAL_AND("and", LOGICAL), //
+            CONDITIONAL_OR("or", LOGICAL); //
+
+        private final String m_symbol;
+
+        private final OperatorType m_type;
+
+        BinaryOperator(final String symbol, final OperatorType type) {
+            this.m_symbol = symbol;
+            this.m_type = type;
+        }
+
+        public String symbol() {
+            return m_symbol;
+        }
+
+        public OperatorType type() {
+            return m_type;
+        }
+
+        public boolean isArithmetic() {
+            return m_type == ARITHMETIC;
+        }
+
+        public boolean isEqualityComparison() {
+            return m_type == EQUALITY;
+        }
+
+        public boolean isOrderingComparison() {
+            return m_type == ORDERING;
+        }
+
+        public boolean isLogical() {
+            return m_type == LOGICAL;
+        }
+    }
+
+    /** Available unary operators. Used by {@link UnaryOp}s. */
+    enum UnaryOperator {
+            MINUS("-", ARITHMETIC), //
+            NOT("not", LOGICAL); //
+
+        private final String m_symbol;
+
+        private final OperatorType m_type;
+
+        UnaryOperator(final String symbol, final OperatorType type) {
+            m_symbol = symbol;
+            m_type = type;
+        }
+
+        public String symbol() {
+            return m_symbol;
+        }
+
+        public OperatorType getType() {
+            return m_type;
+        }
+    }
+
+    // ======================================================
+    // VISITOR
+    // ======================================================
+
+    /**
+     * Visitor for all implementations of nodes in an {@link Ast}.
+     *
+     * @param <O> the return type of a visit
+     * @param <E> type of the exception that can be thrown when visiting a node
+     */
+    interface AstVisitor<O, E extends Exception> {
+
+        O visit(BooleanConstant node) throws E;
+
+        O visit(IntegerConstant node) throws E;
+
+        O visit(FloatConstant node) throws E;
+
+        O visit(StringConstant node) throws E;
+
+        O visit(ColumnAccess node) throws E;
+
+        O visit(BinaryOp node) throws E;
+
+        O visit(UnaryOp node) throws E;
+
+        O visit(FunctionCall node) throws E;
+    }
+
+    /**
+     * Abstract implementation of an {@link AstVisitor} that just returns the input for all nodes without children and
+     * recursively calls itself for all nodes with children, replacing the children with the return values. Overwrite
+     * only the methods for the types of nodes that should be handled differently.
+     *
+     * @param <E> type of the exception that can be thrown when visiting a node
+     */
+    class RecursiveMappingAstVisitor<E extends Exception> implements AstVisitor<Ast, E> {
+
+        @Override
+        public Ast visit(final BooleanConstant node) throws E {
+            return node;
         }
 
         @Override
-        public String toString() {
-            return "RequiredColumns" + Arrays.toString(columnIndices);
+        public Ast visit(final IntegerConstant node) throws E {
+            return node;
+        }
+
+        @Override
+        public Ast visit(final FloatConstant node) throws E {
+            return node;
+        }
+
+        @Override
+        public Ast visit(final StringConstant node) throws E {
+            return node;
+        }
+
+        @Override
+        public Ast visit(final ColumnAccess node) throws E {
+            return node;
+        }
+
+        @Override
+        public Ast visit(final BinaryOp node) throws E {
+            return Ast.binaryOp(node.op(), node.arg1().accept(this), node.arg2().accept(this), node.data());
+        }
+
+        @Override
+        public Ast visit(final UnaryOp node) throws E {
+            return Ast.unaryOp(node.op(), node.arg().accept(this), node.data());
+        }
+
+        @Override
+        public Ast visit(final FunctionCall node) throws E {
+            var visitedArgs = new ArrayList<Ast>();
+            for (var arg : node.children()) {
+                visitedArgs.add(arg.accept(this));
+            }
+            return Ast.functionCall(node.name(), visitedArgs, node.data());
+        }
+    }
+
+    // ======================================================
+    // TREE IMPLEMENTATION
+    // ======================================================
+
+    /**
+     * {@link Ast} representing a constant BOOLEAN value.
+     *
+     * @param value the value
+     * @param data attached data
+     */
+    record BooleanConstant(boolean value, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return value ? "true" : "false";
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+    }
+
+    /**
+     * {@link Ast} representing a constant INTEGER value.
+     *
+     * @param value the value
+     * @param data attached data
+     */
+    record IntegerConstant(long value, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return String.valueOf(value);
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+    }
+
+    /**
+     * {@link Ast} representing a constant FLOAT value.
+     *
+     * @param value the value
+     * @param data attached data
+     */
+    record FloatConstant(double value, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return String.valueOf(value);
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+    }
+
+    /**
+     * {@link Ast} representing a constant STRING value.
+     *
+     * @param value the value
+     * @param data attached data
+     */
+    record StringConstant(String value, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return "\"" //
+                + value.replace("\\", "\\\\") //
+                    .replace("\'", "\\'") //
+                    .replace("\"", "\\\"") //
+                    .replace("\b", "\\b") //
+                    .replace("\f", "\\f") //
+                    .replace("\n", "\\n") //
+                    .replace("\r", "\\r") //
+                    .replace("\t", "\\t") //
+                + "\"";
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+    }
+
+    /**
+     * {@link Ast} representing a data column access.
+     *
+     * @param name the name of the column
+     * @param data attached data
+     */
+    record ColumnAccess(String name, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return "$[\"" + name + "\"]";
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+    }
+
+    /**
+     * {@link Ast} representing a binary operation
+     *
+     * @param op the operator
+     * @param arg1
+     * @param arg2
+     * @param data attached data
+     */
+    record BinaryOp(BinaryOperator op, Ast arg1, Ast arg2, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return "(" + arg1.toExpression() + " " + op.m_symbol + " " + arg2.toExpression() + ")";
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public List<Ast> children() {
+            return List.of(arg1, arg2);
+        }
+    }
+
+    /**
+     * {@link Ast} representing a unary operation
+     *
+     * @param op the operator
+     * @param arg
+     * @param data attached data
+     */
+    record UnaryOp(UnaryOperator op, Ast arg, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return "(" + op.m_symbol + " " + arg().toExpression() + ")";
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public List<Ast> children() {
+            return List.of(arg);
+        }
+    }
+
+    /**
+     * {@link Ast} representing a function call
+     *
+     * @param name the name of the function
+     * @param args the arguments of the function
+     * @param data attached data
+     */
+    record FunctionCall(String name, List<Ast> args, Map<String, Object> data) implements Ast {
+        @Override
+        public String toExpression() {
+            var argsExpr = args.stream().map(Ast::toExpression).collect(Collectors.joining(", "));
+            return name + "(" + argsExpr + ")";
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public List<Ast> children() {
+            return args;
         }
     }
 

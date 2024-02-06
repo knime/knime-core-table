@@ -67,9 +67,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
@@ -84,14 +86,17 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
+import org.knime.core.table.virtual.expression.Ast;
+import org.knime.core.table.virtual.expression.Expressions;
+import org.knime.core.table.virtual.expression.Expressions.ExpressionError;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
-import org.knime.core.table.virtual.spec.MapTransformUtils;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
+import org.knime.core.table.virtual.spec.MapTransformUtils;
 import org.knime.core.table.virtual.spec.MapTransformUtils.MapperWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.ObserverTransformUtils.ObserverWithRowIndexFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
@@ -137,10 +142,10 @@ public class VirtualTableTests {
     }
 
     private static RowAccessible createRowAccessible(
-            VirtualTable table,
-            UUID[] sourceIds,
-            RowAccessible[] sources,
-            boolean useRandomAccess) {
+            final VirtualTable table,
+            final UUID[] sourceIds,
+            final RowAccessible[] sources,
+            final boolean useRandomAccess) {
 
         final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
         final List<RagNode> rag = RagBuilder.createOrderedRag(graph);
@@ -1376,7 +1381,7 @@ public class VirtualTableTests {
 
     public static VirtualTable vtSimpleMapWithExpression(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-        final VirtualTable mappedCols = table.map("$[2] + $[3] * -1.1", DOUBLE);
+        final VirtualTable mappedCols = table.map(expr("$[\"2\"] + $[\"3\"] * -1.1", Integer::parseInt), DOUBLE);
 //        final VirtualTable mappedCols = table.map("$[2] + $[3] * (10 + 34 * 1.2f)", DOUBLE);
 //        final VirtualTable mappedCols = table.map("$[0] + 10", LONG);
 //        final VirtualTable mappedCols = table.map("$[0] + 10.2", INT);
@@ -1411,12 +1416,10 @@ public class VirtualTableTests {
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataSimpleMapWithExpression, VirtualTableTests::vtSimpleMapWithExpression);
     }
 
-
-
-    public static VirtualTable vtSimpleRowFilterWithExpression(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+    public static VirtualTable vtSimpleRowFilterWithExpression(final UUID[] sourceIdentifiers,
+        final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-        final VirtualTable filtered = table.filterRows("$[2] >= 0");
-        return filtered;
+        return table.filterRows(expr("$[\"2\"] >= 0", Integer::parseInt));
     }
 
     public static VirtualTable vtSimpleRowFilterWithExpression() {
@@ -1438,5 +1441,14 @@ public class VirtualTableTests {
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableTests::dataSimpleRowFilterWithExpression, VirtualTableTests::vtSimpleRowFilterWithExpression);
         testTransformedTableLookahead(false, VirtualTableTests::dataSimpleRowFilterWithExpression, VirtualTableTests::vtSimpleRowFilterWithExpression);
         testTransformedTableRandomAccess(false, expectedSchema, expectedValues, -1, VirtualTableTests::dataSimpleRowFilterWithExpression, VirtualTableTests::vtSimpleRowFilterWithExpression);
+    }
+
+    private static Ast expr(final String input, final ToIntFunction<String> colIdx) {
+        try {
+            return Expressions.resolveColumnIndices(Expressions.parse(input),
+                colName -> OptionalInt.of(colIdx.applyAsInt(colName)));
+        } catch (ExpressionError ex) {
+            throw new AssertionError(ex);
+        }
     }
 }
