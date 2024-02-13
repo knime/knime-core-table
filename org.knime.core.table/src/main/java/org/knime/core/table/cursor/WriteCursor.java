@@ -52,7 +52,8 @@ import java.io.Flushable;
 import java.io.IOException;
 
 /**
- * A {@link Cursor} for writing data to a storage.<br>
+ * A {@link Cursor} for writing data to a storage.
+ * <p>
  * Provides a {@link #flush()} method that ensures that any data that hasn't been written out, yet, is written out.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
@@ -61,11 +62,24 @@ import java.io.IOException;
 public interface WriteCursor<A> extends Cursor<A>, Flushable {
 
     /**
-     * Finishes the write process by e.g. flushing data that hasn't been written out yet.
-     * Does not close the {@link WriteCursor}.
+     * Flush data that hasn't been written out yet. Does not close the {@link WriteCursor}.
      *
      * @throws IOException if flushing fails
      */
     @Override
     void flush() throws IOException;
+
+    /**
+     * Finish writing data that hasn't been written out yet, and close the {@link WriteCursor}.
+     *
+     * TODO: Clarify javadoc:
+     *   What is the difference between "writing data" in flush() and finish()?
+     *   In practice, for the arrow implementation:
+     *     * finish() will serialize pending data, then close the current batch and close() the WriteCursor.
+     *     * flush() will serialize pending data, but will not close the current batch. Therefore, it is not safe to close() the WriteCursor after flush() without losing data.
+     *
+     * @throws IOException if writing fails
+     */
+    void finish() throws IOException;
+
 }
