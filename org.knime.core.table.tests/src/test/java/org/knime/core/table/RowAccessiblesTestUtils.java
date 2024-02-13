@@ -347,6 +347,11 @@ public final class RowAccessiblesTestUtils {
             public void flush() throws IOException {
                 // noop
             }
+
+            @Override
+            public void finish() throws IOException {
+                // noop
+            }
         }
     }
 
