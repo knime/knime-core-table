@@ -48,7 +48,7 @@ package org.knime.core.table.virtual.graph.exec;
 import java.io.IOException;
 
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.cursor.WriteCursor;
 import org.knime.core.table.row.DefaultReadAccessRow;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowWriteAccessible;
@@ -87,7 +87,7 @@ class SequentialNodeImpMaterialize implements SequentialNodeImp {
         } else {
             throw new IllegalStateException("Forward can only be called once for materialize.");
         }
-        final Cursor<WriteAccessRow> writeCursor = accessible.getWriteCursor();
+        final WriteCursor<WriteAccessRow> writeCursor = accessible.getWriteCursor();
         final WriteAccessRow writeRow = writeCursor.access();
         final ReadAccessRow readRow = new DefaultReadAccessRow(inputs.length, i -> inputs[i].getReadAccess());
         while (predecessor.forward()) {
