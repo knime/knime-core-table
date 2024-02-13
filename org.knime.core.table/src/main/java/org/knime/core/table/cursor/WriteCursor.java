@@ -48,6 +48,7 @@
  */
 package org.knime.core.table.cursor;
 
+import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 
@@ -57,9 +58,11 @@ import java.io.IOException;
  * Provides a {@link #flush()} method that ensures that any data that hasn't been written out, yet, is written out.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Tobias Pietzsch
+ *
  * @param <A> the type of access forwarded by this forwarder
  */
-public interface WriteCursor<A> extends Cursor<A>, Flushable {
+public interface WriteCursor<A> extends Closeable, Flushable {
 
     /**
      * Flush data that hasn't been written out yet. Does not close the {@link WriteCursor}.
@@ -76,10 +79,27 @@ public interface WriteCursor<A> extends Cursor<A>, Flushable {
      *   What is the difference between "writing data" in flush() and finish()?
      *   In practice, for the arrow implementation:
      *     * finish() will serialize pending data, then close the current batch and close() the WriteCursor.
-     *     * flush() will serialize pending data, but will not close the current batch. Therefore, it is not safe to close() the WriteCursor after flush() without losing data.
+     *     * flush() will serialize pending data, but will not close the current batch. Therefore, it is not
+     *       safe to close() the WriteCursor after flush() without losing data.
      *
      * @throws IOException if writing fails
      */
     void finish() throws IOException;
 
+    // TODO: copied from Cursor
+    /**
+     * Always returns the same access instance.<br>
+     * This method can be called before the first call to {@link #forward()} e.g. to set up a decorator.<br>
+     * However, the access won't point to any values and it is only save to access values after the first
+     * {@link #forward()} call.
+     *
+     * @return the access that is forwarded by this cursor
+     */
+    A access();
+
+    // TODO: copied from Cursor
+    /**
+     * @return true if forwarding was successful, false otherwise (i.e. at the end)
+     */
+    boolean forward();
 }

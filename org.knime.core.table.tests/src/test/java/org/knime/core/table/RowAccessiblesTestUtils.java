@@ -382,7 +382,7 @@ public final class RowAccessiblesTestUtils {
 
     private static TestRowWriteAccessible writeTable(ColumnarSchema schema, Object[][] valuesPerRow) {
         final TestRowWriteAccessible table = createRowWriteAccessible(schema);
-        try (final Cursor<WriteAccessRow> cursor = table.getWriteCursor()) {
+        try (final WriteCursor<WriteAccessRow> cursor = table.getWriteCursor()) {
             final WriteAccessRow row = cursor.access();
             for (int r = 0; r < valuesPerRow.length; r++) {
                 cursor.forward();
