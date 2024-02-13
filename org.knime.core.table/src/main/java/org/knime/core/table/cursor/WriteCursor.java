@@ -48,6 +48,7 @@
  */
 package org.knime.core.table.cursor;
 
+import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 
@@ -59,7 +60,7 @@ import java.io.IOException;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @param <A> the type of access forwarded by this forwarder
  */
-public interface WriteCursor<A> extends Cursor<A>, Flushable {
+public interface WriteCursor<A> extends Closeable, Flushable {
 
     /**
      * Flush data that hasn't been written out yet. Does not close the {@link WriteCursor}.
@@ -82,4 +83,20 @@ public interface WriteCursor<A> extends Cursor<A>, Flushable {
      */
     void finish() throws IOException;
 
+    // TODO: copied from Cursor
+    /**
+     * Always returns the same access instance.<br>
+     * This method can be called before the first call to {@link #forward()} e.g. to set up a decorator.<br>
+     * However, the access won't point to any values and it is only save to access values after the first
+     * {@link #forward()} call.
+     *
+     * @return the access that is forwarded by this cursor
+     */
+    A access();
+
+    // TODO: copied from Cursor
+    /**
+     * @return true if forwarding was successful, false otherwise (i.e. at the end)
+     */
+    boolean forward();
 }
