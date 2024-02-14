@@ -334,6 +334,7 @@ public final class RowAccessiblesTestUtils {
                 return this;
             }
 
+            // TODO (TP): When forward is removed, m_index should be initialized m_index = 0
             @Override
             public boolean forward() {
                 m_index++;
@@ -341,6 +342,14 @@ public final class RowAccessiblesTestUtils {
                     access.setIndex(m_index);
                 }
                 return true;
+            }
+
+            @Override
+            public void commit() throws IOException {
+                for (TestAccess access : m_accesses) {
+                    access.setIndex(m_index);
+                }
+                m_index++;
             }
 
             @Override
