@@ -99,4 +99,6 @@ public interface WriteCursor<A> extends Closeable, Flushable {
      * @return true if forwarding was successful, false otherwise (i.e. at the end)
      */
     boolean forward();
+
+    void commit() throws IOException;
 }
