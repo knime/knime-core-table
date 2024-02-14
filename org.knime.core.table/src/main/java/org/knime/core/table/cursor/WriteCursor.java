@@ -94,11 +94,7 @@ public interface WriteCursor<A> extends Closeable, Flushable {
      */
     A access();
 
-    // TODO: copied from Cursor
-    /**
-     * @return true if forwarding was successful, false otherwise (i.e. at the end)
-     */
-    boolean forward();
+    boolean initialForward();
 
     void commit() throws IOException;
 }
