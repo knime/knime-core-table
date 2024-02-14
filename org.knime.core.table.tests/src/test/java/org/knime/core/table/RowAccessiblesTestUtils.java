@@ -268,7 +268,7 @@ public final class RowAccessiblesTestUtils {
 
         private final TestAccess[] m_accesses;
 
-        private int m_index = -1;
+        private int m_index = 0;
 
         private TestRowWriteAccessible(final ColumnarSchema schema, final TestAccess[] accesses) {
             m_schema = schema;
@@ -294,7 +294,7 @@ public final class RowAccessiblesTestUtils {
         }
 
         long length() {
-            return m_index + 1;
+            return m_index;
         }
 
         private final class TestWriteAccessCursor implements WriteCursor<WriteAccessRow>, WriteAccessRow {
@@ -335,12 +335,11 @@ public final class RowAccessiblesTestUtils {
             }
 
             @Override
-            public boolean forward() {
+            public void commit() throws IOException {
                 m_index++;
                 for (TestAccess access : m_accesses) {
                     access.setIndex(m_index);
                 }
-                return true;
             }
 
             @Override
@@ -385,10 +384,10 @@ public final class RowAccessiblesTestUtils {
         try (final WriteCursor<WriteAccessRow> cursor = table.getWriteCursor()) {
             final WriteAccessRow row = cursor.access();
             for (int r = 0; r < valuesPerRow.length; r++) {
-                cursor.forward();
                 for (int c = 0; c < schema.numColumns(); c++) {
                     WriteAccessValueSetter.setValue(schema.getSpec(c), row.getWriteAccess(c), valuesPerRow[r][c]);
                 }
+                cursor.commit();
             }
         } catch (IOException e) {
             // will not happen

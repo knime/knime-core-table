@@ -52,6 +52,8 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 
+import org.knime.core.table.row.WriteAccessRow;
+
 /**
  * A {@link Cursor} for writing data to a storage.
  * <p>
@@ -86,20 +88,19 @@ public interface WriteCursor<A> extends Closeable, Flushable {
      */
     void finish() throws IOException;
 
-    // TODO: copied from Cursor
     /**
-     * Always returns the same access instance.<br>
-     * This method can be called before the first call to {@link #forward()} e.g. to set up a decorator.<br>
-     * However, the access won't point to any values and it is only save to access values after the first
-     * {@link #forward()} call.
+     * Get an access ({@link WriteAccessRow}) that can be filled with data and then {@link #commit() committed}.
+     * <p>
+     * Always returns the same access instance.
      *
-     * @return the access that is forwarded by this cursor
+     * @return the access of this cursor
      */
     A access();
 
-    // TODO: copied from Cursor
     /**
-     * @return true if forwarding was successful, false otherwise (i.e. at the end)
+     * Commit the current values of the {@link #access() access} as a new row.
+     *
+     * @throws IOException if writing fails.
      */
-    boolean forward();
+    void commit() throws IOException;
 }
