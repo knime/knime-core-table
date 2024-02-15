@@ -65,6 +65,7 @@ import org.knime.core.expressions.antlr.KnimeExpressionBaseVisitor;
 import org.knime.core.expressions.antlr.KnimeExpressionLexer;
 import org.knime.core.expressions.antlr.KnimeExpressionParser;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.BinaryOpContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.FullExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FunctionCallContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ParenthesisedExprContext;
 
@@ -117,6 +118,11 @@ final class Parser {
     private static final class ExpressionToAstVisitor extends KnimeExpressionBaseVisitor<Ast> {
 
         @Override
+        public Ast visitFullExpr(final FullExprContext ctx) {
+            return ctx.expr().accept(this);
+        }
+
+        @Override
         public Ast visitBinaryOp(final BinaryOpContext ctx) {
             var arg1 = ctx.getChild(0).accept(this);
             var arg2 = ctx.getChild(2).accept(this);
@@ -162,19 +168,10 @@ final class Parser {
                     var value = Double.parseDouble(symbol.getText().replace("_", ""));
                     yield new Ast.FloatConstant(value, Map.of());
                 }
-                case Recognizer.EOF: {
-                    yield null;
-                }
                 default:
                     // TODO how to handle?
                     throw new IllegalArgumentException("Unexpected value: " + symbol);
             };
-        }
-
-        @Override
-        protected Ast aggregateResult(final Ast aggregate, final Ast nextResult) {
-            // next result is null for EOF
-            return nextResult == null ? aggregate : nextResult;
         }
 
         /** Maps a token for a binary operation to the Ast operator */
