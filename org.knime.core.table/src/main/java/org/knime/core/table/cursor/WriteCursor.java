@@ -94,7 +94,5 @@ public interface WriteCursor<A> extends Closeable, Flushable {
      */
     A access();
 
-    boolean initialForward();
-
     void commit() throws IOException;
 }
