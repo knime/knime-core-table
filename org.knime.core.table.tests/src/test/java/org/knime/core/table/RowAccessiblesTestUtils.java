@@ -335,12 +335,6 @@ public final class RowAccessiblesTestUtils {
             }
 
             @Override
-            public boolean initialForward() {
-                // noop
-                return true;
-            }
-
-            @Override
             public void commit() throws IOException {
                 m_index++;
                 for (TestAccess access : m_accesses) {

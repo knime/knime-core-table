@@ -89,7 +89,6 @@ class SequentialNodeImpMaterialize implements SequentialNodeImp {
         }
         final WriteCursor<WriteAccessRow> writeCursor = accessible.getWriteCursor();
         final WriteAccessRow writeRow = writeCursor.access();
-        writeCursor.initialForward();
         final ReadAccessRow readRow = new DefaultReadAccessRow(inputs.length, i -> inputs[i].getReadAccess());
         while (predecessor.forward()) {
             writeRow.setFrom(readRow);
