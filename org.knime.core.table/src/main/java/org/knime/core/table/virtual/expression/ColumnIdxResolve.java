@@ -48,11 +48,11 @@
  */
 package org.knime.core.table.virtual.expression;
 
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 
 import org.knime.core.table.virtual.expression.Ast.ColumnAccess;
-import org.knime.core.table.virtual.expression.Ast.RecursiveMappingAstVisitor;
 import org.knime.core.table.virtual.expression.Expressions.MissingColumnError;
 
 /**
@@ -74,16 +74,16 @@ final class ColumnIdxResolve {
      * @param columnNameToIdx map a column name to the index. Should return {@link OptionalInt#empty()} for column names
      *            that do not exist in the table.
      */
-    static Ast resolveColumnIndices(final Ast root, final Function<String, OptionalInt> columnNameToIdx)
+    static void resolveColumnIndices(final Ast root, final Function<String, OptionalInt> columnNameToIdx)
         throws MissingColumnError {
-        return root.accept(new ColumnIdxVisitor(columnNameToIdx));
+        Ast.putDataRecursive(root, COLUMN_IDX_DATA_KEY, new ColumnIdxVisitor(columnNameToIdx));
     }
 
     static int getColumnIdx(final ColumnAccess node) {
         return (Integer)node.data(COLUMN_IDX_DATA_KEY);
     }
 
-    private static final class ColumnIdxVisitor extends RecursiveMappingAstVisitor<MissingColumnError> {
+    private static final class ColumnIdxVisitor extends Ast.OptionalAstVisitor<Integer, MissingColumnError> {
 
         private final Function<String, OptionalInt> m_colIdx;
 
@@ -92,9 +92,8 @@ final class ColumnIdxResolve {
         }
 
         @Override
-        public Ast visit(final ColumnAccess node) throws MissingColumnError {
-            var colIdx = m_colIdx.apply(node.name()).orElseThrow(() -> new MissingColumnError(node.name()));
-            return Ast.columnAccess(node.name(), Ast.addData(node.data(), COLUMN_IDX_DATA_KEY, colIdx));
+        public Optional<Integer> visit(final ColumnAccess node) throws MissingColumnError {
+            return Optional.of(m_colIdx.apply(node.name()).orElseThrow(() -> new MissingColumnError(node.name())));
         }
     }
 }

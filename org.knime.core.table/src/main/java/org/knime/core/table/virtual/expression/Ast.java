@@ -56,6 +56,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.knime.core.table.virtual.expression.Ast.BinaryOp;
@@ -68,7 +69,8 @@ import org.knime.core.table.virtual.expression.Ast.StringConstant;
 import org.knime.core.table.virtual.expression.Ast.UnaryOp;
 
 /**
- * An abstract syntax tree of an Expression according to the KNIME Expression Language.
+ * An abstract syntax tree of an Expression according to the KNIME Expression Language. The syntax tree is not
+ * modifiable. However, each node has attached {@link #data()} that can be modified.
  *
  * @author Tobias Pietzsch
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
@@ -77,6 +79,8 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
     UnaryOp, BinaryOp, FunctionCall {
 
     /**
+     * Additional data that is attached to the node. Note, that, the data is modifiable.
+     *
      * @return a map of data that is attached to the node
      */
     Map<String, Object> data();
@@ -95,6 +99,16 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      */
     default Object data(final String key) {
         return data().get(key);
+    }
+
+    /**
+     * Add the given information to the {@link #data()}.
+     *
+     * @param key
+     * @param value
+     */
+    default void putData(final String key, final Object value) {
+        data().put(key, value);
     }
 
     /**
@@ -131,17 +145,85 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
     // ======================================================
 
     /**
-     * Create a new data {@link Map} with all newly added data object
+     * Utility to add the data computed by the given visitor to the AST node.
      *
-     * @param data the existing data
-     * @param key the key of the new object
-     * @param value the value of the new object
-     * @return a data {@link Map} containing the exiting data and the new object
+     * @param <O> the type of the data
+     * @param <E> the type of an exception that might be thrown
+     * @param node the AST
+     * @param key the key of the data
+     * @param visitor a visitor which returns the appropriate data for each type of node
+     * @return the data that was added to the node (same as calling <code>node.data(key)</code> afterwards)
+     * @throws E if the visitor throws
      */
-    static Map<String, Object> addData(final Map<String, Object> data, final String key, final Object value) {
-        var newData = new HashMap<>(data);
-        newData.put(key, value);
-        return newData;
+    static <O, E extends Exception> O putData(final Ast node, final String key, final AstVisitor<O, E> visitor)
+        throws E {
+        var value = node.accept(visitor);
+        node.putData(key, value);
+        return value;
+    }
+
+    /**
+     * Utility to add the data computed by the given visitor to the AST node if the data is present.
+     *
+     * @param <O> the type of the data
+     * @param <E> the type of an exception that might be thrown
+     * @param node the AST
+     * @param key the key of the data
+     * @param visitor a visitor which returns the appropriate data for each type of node
+     * @return the data that was added to the node (same as calling <code>node.data(key)</code> afterwards)
+     * @throws E if the visitor throws
+     */
+    static <O, E extends Exception> Optional<O> putData(final Ast node, final String key,
+        final OptionalAstVisitor<O, E> visitor) throws E {
+        var value = node.accept(visitor);
+        value.ifPresent(v -> node.putData(key, v));
+        return value;
+    }
+
+    /**
+     * Utility to call {@link #putData(Ast, String, AstVisitor)} after calling this method recursively for all children
+     * of the node.
+     *
+     * Note that the visitor does not need to handle recursion. The recursion is implemented in this utility. For each
+     * visit it is guaranteed that the children have been processed already.
+     *
+     * @param <O> the type of the data
+     * @param <E> the type of an exception that might be thrown
+     * @param node the AST
+     * @param key the key of the data
+     * @param visitor a visitor which returns the appropriate data for each type of node
+     * @return the data that was added to the node (same as calling <code>node.data(key)</code> afterwards)
+     * @throws E if the visitor throws
+     */
+    static <O, E extends Exception> O putDataRecursive(final Ast node, final String key, final AstVisitor<O, E> visitor)
+        throws E {
+        for (var child : node.children()) {
+            putDataRecursive(child, key, visitor);
+        }
+        return putData(node, key, visitor);
+    }
+
+    /**
+     * Utility to {@link #putData(Ast, String, OptionalAstVisitor)} after calling this method recursively for all
+     * children of the node.
+     *
+     * Note that the visitor does not need to handle recursion. The recursion is implemented in this utility. For each
+     * visit it is guaranteed that the children have been processed already.
+     *
+     * @param <O> the type of the data
+     * @param <E> the type of an exception that might be thrown
+     * @param node the AST
+     * @param key the key of the data
+     * @param visitor a visitor which returns the appropriate data for each type of node
+     * @return the data that was added to the node (same as calling <code>node.data(key)</code> afterwards)
+     * @throws E if the visitor throws
+     */
+    static <O, E extends Exception> Optional<O> putDataRecursive(final Ast node, final String key,
+        final OptionalAstVisitor<O, E> visitor) throws E {
+        for (var child : node.children()) {
+            putDataRecursive(child, key, visitor);
+        }
+        return putData(node, key, visitor);
     }
 
     /**
@@ -172,7 +254,7 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      * @return the node
      */
     static BooleanConstant booleanConstant(final boolean value) {
-        return booleanConstant(value, Map.of());
+        return booleanConstant(value, new HashMap<>());
     }
 
     /**
@@ -193,7 +275,7 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      * @return the node
      */
     static IntegerConstant integerConstant(final long value) {
-        return integerConstant(value, Map.of());
+        return integerConstant(value, new HashMap<>());
     }
 
     /**
@@ -214,7 +296,7 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      * @return the node
      */
     static FloatConstant floatConstant(final double value) {
-        return floatConstant(value, Map.of());
+        return floatConstant(value, new HashMap<>());
     }
 
     /**
@@ -235,7 +317,7 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      * @return the node
      */
     static StringConstant stringConstant(final String value) {
-        return stringConstant(value, Map.of());
+        return stringConstant(value, new HashMap<>());
     }
 
     /**
@@ -256,7 +338,7 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      * @return the node
      */
     static ColumnAccess columnAccess(final String name) {
-        return columnAccess(name, Map.of());
+        return columnAccess(name, new HashMap<>());
     }
 
     /**
@@ -280,7 +362,7 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      * @return the node
      */
     static BinaryOp binaryOp(final BinaryOperator op, final Ast arg1, final Ast arg2) {
-        return binaryOp(op, arg1, arg2, Map.of());
+        return binaryOp(op, arg1, arg2, new HashMap<>());
     }
 
     /**
@@ -305,7 +387,7 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      * @return the node
      */
     static UnaryOp unaryOp(final UnaryOperator op, final Ast arg) {
-        return unaryOp(op, arg, Map.of());
+        return unaryOp(op, arg, new HashMap<>());
     }
 
     /**
@@ -458,56 +540,52 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
     }
 
     /**
-     * Abstract implementation of an {@link AstVisitor} that just returns the input for all nodes without children and
-     * recursively calls itself for all nodes with children, replacing the children with the return values. Overwrite
-     * only the methods for the types of nodes that should be handled differently.
+     * Abstract implementation of an {@link AstVisitor} that just returns {@link Optional#empty()} for all visits.
+     * Subclasses can overwrite methods selectively to implement special handling for certain node types.
      *
+     * @param <O> the return type of a visit if present
      * @param <E> type of the exception that can be thrown when visiting a node
      */
-    class RecursiveMappingAstVisitor<E extends Exception> implements AstVisitor<Ast, E> {
+    class OptionalAstVisitor<O, E extends Exception> implements AstVisitor<Optional<O>, E> {
 
         @Override
-        public Ast visit(final BooleanConstant node) throws E {
-            return node;
+        public Optional<O> visit(final BooleanConstant node) throws E {
+            return Optional.empty();
         }
 
         @Override
-        public Ast visit(final IntegerConstant node) throws E {
-            return node;
+        public Optional<O> visit(final IntegerConstant node) throws E {
+            return Optional.empty();
         }
 
         @Override
-        public Ast visit(final FloatConstant node) throws E {
-            return node;
+        public Optional<O> visit(final FloatConstant node) throws E {
+            return Optional.empty();
         }
 
         @Override
-        public Ast visit(final StringConstant node) throws E {
-            return node;
+        public Optional<O> visit(final StringConstant node) throws E {
+            return Optional.empty();
         }
 
         @Override
-        public Ast visit(final ColumnAccess node) throws E {
-            return node;
+        public Optional<O> visit(final ColumnAccess node) throws E {
+            return Optional.empty();
         }
 
         @Override
-        public Ast visit(final BinaryOp node) throws E {
-            return Ast.binaryOp(node.op(), node.arg1().accept(this), node.arg2().accept(this), node.data());
+        public Optional<O> visit(final BinaryOp node) throws E {
+            return Optional.empty();
         }
 
         @Override
-        public Ast visit(final UnaryOp node) throws E {
-            return Ast.unaryOp(node.op(), node.arg().accept(this), node.data());
+        public Optional<O> visit(final UnaryOp node) throws E {
+            return Optional.empty();
         }
 
         @Override
-        public Ast visit(final FunctionCall node) throws E {
-            var visitedArgs = new ArrayList<Ast>();
-            for (var arg : node.children()) {
-                visitedArgs.add(arg.accept(this));
-            }
-            return Ast.functionCall(node.name(), visitedArgs, node.data());
+        public Optional<O> visit(final FunctionCall node) throws E {
+            return Optional.empty();
         }
     }
 

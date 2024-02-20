@@ -324,11 +324,11 @@ public final class VirtualTable {
                 };
 
             // Infer types
-            var ast = Expressions.inferTypes(expression, col -> {
+            Expressions.inferTypes(expression, col -> {
                 int colIdx = Expressions.getResolvedColumnIdx(col);
                 return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_AST_TYPE_MAPPER));
             });
-            var mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory, outputSpec);
+            var mapperFactory = Exec.createMapperFactory(expression, columnIndexToComputerFactory, outputSpec);
             return map(columns.columnIndices(), mapperFactory);
         } catch (ExpressionError ex) {
             throw new IllegalArgumentException(ex);
@@ -376,11 +376,11 @@ public final class VirtualTable {
                 };
 
             // Infer types
-            var ast = Expressions.inferTypes(expression, col -> {
+            Expressions.inferTypes(expression, col -> {
                 int colIdx = Expressions.getResolvedColumnIdx(col);
                 return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_AST_TYPE_MAPPER));
             });
-            var filterFactory = Exec.createRowFilterFactory(ast, columnIndexToComputerFactory);
+            var filterFactory = Exec.createRowFilterFactory(expression, columnIndexToComputerFactory);
             return filterRows(columns.columnIndices(), filterFactory);
         } catch (ExpressionError ex) {
             throw new IllegalArgumentException(ex);

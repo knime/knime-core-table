@@ -90,32 +90,30 @@ public final class Expressions {
     // caller could map directly from the name to the ReadAccess (maybe using another name to index mapper
     // that has to exist somewhere).
     /**
-     * Resolve column indices for the given expression.
+     * Resolve column indices for the given expression. Adds the column index as {@link Ast#data()} to
+     * {@link ColumnAccess} nodes.
      *
      * @param expression the expression
      * @param columnNameToIdx a function that returns the index of a column accessed by the expression. The function
      *            should return <code>Optional.empty()</code> if the column is not available.
-     * @return a new {@link Ast abstract syntax tree} that knows the indices for the columns that are accessed by the
-     *         expression
      * @throws MissingColumnError if the expression accesses a column that is not available
      */
-    public static Ast resolveColumnIndices(final Ast expression, final Function<String, OptionalInt> columnNameToIdx)
+    public static void resolveColumnIndices(final Ast expression, final Function<String, OptionalInt> columnNameToIdx)
         throws MissingColumnError {
-        return ColumnIdxResolve.resolveColumnIndices(expression, columnNameToIdx);
+        ColumnIdxResolve.resolveColumnIndices(expression, columnNameToIdx);
     }
 
     /**
-     * Infer the type of the given expression.
+     * Infer the type of the given expression. Adds the type as {@link Ast#data()} to each node of the syntax tree.
      *
      * @param expression the expression
      * @param columnToType a function that returns the type of a columns accessed by the expression. The function should
      *            return <code>Optional.empty()</code> if the column is not available.
-     * @return a new {@link Ast abstract syntax tree} that is guaranteed to be validly typed and knows the output type
-     *         for each node
+     * @return the output type of the full expression
      * @throws MissingColumnError if the expression accesses a column that is not available
      * @throws TypingError if type inference failed because operations are used for incompatible types
      */
-    public static Ast inferTypes(final Ast expression, final Function<ColumnAccess, Optional<AstType>> columnToType)
+    public static AstType inferTypes(final Ast expression, final Function<ColumnAccess, Optional<AstType>> columnToType)
         throws MissingColumnError, TypingError {
         return Typing.inferTypes(expression, columnToType);
     }

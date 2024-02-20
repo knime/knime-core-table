@@ -48,18 +48,11 @@
  */
 package org.knime.core.table.virtual.expression;
 
-import static org.knime.core.table.virtual.expression.Ast.binaryOp;
-import static org.knime.core.table.virtual.expression.Ast.booleanConstant;
-import static org.knime.core.table.virtual.expression.Ast.columnAccess;
-import static org.knime.core.table.virtual.expression.Ast.floatConstant;
-import static org.knime.core.table.virtual.expression.Ast.integerConstant;
-import static org.knime.core.table.virtual.expression.Ast.stringConstant;
 import static org.knime.core.table.virtual.expression.AstType.BOOLEAN;
 import static org.knime.core.table.virtual.expression.AstType.DOUBLE;
 import static org.knime.core.table.virtual.expression.AstType.LONG;
 import static org.knime.core.table.virtual.expression.AstType.STRING;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -90,10 +83,10 @@ final class Typing {
     private Typing() {
     }
 
-    static Ast inferTypes(final Ast root, final Function<ColumnAccess, Optional<AstType>> columnType)
+    static AstType inferTypes(final Ast root, final Function<ColumnAccess, Optional<AstType>> columnType)
         throws TypingError, MissingColumnError { // NOSONAR: Sonar is wrong
         try {
-            return root.accept(new TypingVisitor(columnType));
+            return Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType));
         } catch (TypingError | MissingColumnError ex) {
             throw ex;
         } catch (ExpressionError ex) {
@@ -111,7 +104,7 @@ final class Typing {
         }
     }
 
-    private static final class TypingVisitor implements Ast.AstVisitor<Ast, ExpressionError> {
+    private static final class TypingVisitor implements Ast.AstVisitor<AstType, ExpressionError> {
 
         private final Function<ColumnAccess, Optional<AstType>> m_columnType;
 
@@ -120,93 +113,74 @@ final class Typing {
         }
 
         @Override
-        public Ast visit(final FunctionCall functionCall) {
-            throw new UnsupportedOperationException("nyi");
-        }
-
-        private static Map<String, Object> putType(final Ast orig, final AstType type) {
-            return Ast.addData(orig.data(), TYPE_DATA_KEY, type);
+        public AstType visit(final BooleanConstant node) throws ExpressionError {
+            return BOOLEAN;
         }
 
         @Override
-        public Ast visit(final BooleanConstant booleanConstant) {
-            return booleanConstant(booleanConstant.value(), putType(booleanConstant, BOOLEAN));
+        public AstType visit(final IntegerConstant node) throws ExpressionError {
+            return LONG;
         }
 
         @Override
-        public Ast visit(final IntegerConstant intConstant) {
-            return integerConstant(intConstant.value(), putType(intConstant, LONG));
+        public AstType visit(final FloatConstant node) throws ExpressionError {
+            return DOUBLE;
         }
 
         @Override
-        public Ast visit(final FloatConstant floatConstant) {
-            return floatConstant(floatConstant.value(), putType(floatConstant, DOUBLE));
+        public AstType visit(final StringConstant node) throws ExpressionError {
+            return STRING;
         }
 
         @Override
-        public Ast visit(final StringConstant stringConstant) {
-            return stringConstant(stringConstant.value(), putType(stringConstant, STRING));
+        public AstType visit(final ColumnAccess node) throws ExpressionError {
+            return m_columnType.apply(node).orElseThrow(() -> new MissingColumnError(node.name()));
         }
 
         @Override
-        public Ast visit(final ColumnAccess columnAccess) throws MissingColumnError {
-            var colName = columnAccess.name();
-            var type = m_columnType.apply(columnAccess);
-            return type //
-                .map(t -> columnAccess(colName, putType(columnAccess, t))) //
-                .orElseThrow(() -> new MissingColumnError(colName));
-        }
+        public AstType visit(final BinaryOp node) throws ExpressionError {
+            var op = node.op();
+            var t1 = getType(node.arg1());
+            var t2 = getType(node.arg2());
 
-        @Override
-        public Ast visit(final BinaryOp binaryOp) throws ExpressionError {
-            var arg1 = binaryOp.arg1().accept(this);
-            var arg2 = binaryOp.arg2().accept(this);
-
-            var op = binaryOp.op();
-            var t1 = getType(arg1);
-            var t2 = getType(arg2);
-
-            final AstType outType;
             if (op == BinaryOperator.PLUS && (t1 == STRING || t2 == STRING)) {
-                outType = STRING;
+                return STRING;
             } else if (op.isArithmetic() && t1.isNumeric() && t2.isNumeric()) {
                 // Arithmetic operation
-                outType = arithmeticType(op, t1, t2);
+                return arithmeticType(op, t1, t2);
             } else if (op.isOrderingComparison() && t1.isNumeric() && t2.isNumeric()) {
                 // Ordering comparison
-                outType = BOOLEAN;
+                return BOOLEAN;
             } else if (op.isEqualityComparison()) {
                 // Equality comparison
-                outType = BOOLEAN;
+                return BOOLEAN;
             } else if (op.isLogical() && t1 == BOOLEAN && t2 == BOOLEAN) {
                 // Logical operation
                 // TODO(AP-22025) support optional types
-                outType = BOOLEAN;
+                return BOOLEAN;
             } else {
                 throw new TypingError(
                     "Operator '" + op.symbol() + "' is not applicable for " + t1 + " and " + t2 + ".");
             }
-
-            return binaryOp(op, arg1, arg2, putType(binaryOp, outType));
         }
 
         @Override
-        public Ast visit(final UnaryOp unaryOp) throws ExpressionError {
-            var arg = unaryOp.arg().accept(this);
+        public AstType visit(final UnaryOp node) throws ExpressionError {
+            var op = node.op();
+            var type = getType(node.arg());
 
-            var op = unaryOp.op();
-            var type = getType(arg);
-
-            final AstType outType;
             if (op == UnaryOperator.MINUS && type.isNumeric()) {
-                outType = type;
+                return type;
             } else if (op == UnaryOperator.NOT && type == BOOLEAN) {
-                outType = type;
+                return type;
             } else {
                 throw new TypingError("Operator '" + op.symbol() + "' is not applicable for " + type + ".");
             }
+        }
 
-            return Ast.unaryOp(op, arg, putType(unaryOp, outType));
+        @Override
+        public AstType visit(final FunctionCall node) throws ExpressionError {
+            throw new IllegalStateException("functions are not yet implemented");
         }
 
         private static AstType arithmeticType(final BinaryOperator op, final AstType typeA, final AstType typeB)

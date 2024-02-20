@@ -1445,8 +1445,9 @@ public class VirtualTableTests {
 
     private static Ast expr(final String input, final ToIntFunction<String> colIdx) {
         try {
-            return Expressions.resolveColumnIndices(Expressions.parse(input),
-                colName -> OptionalInt.of(colIdx.applyAsInt(colName)));
+            var ast = Expressions.parse(input);
+            Expressions.resolveColumnIndices(ast, colName -> OptionalInt.of(colIdx.applyAsInt(colName)));
+            return ast;
         } catch (ExpressionError ex) {
             throw new AssertionError(ex);
         }
