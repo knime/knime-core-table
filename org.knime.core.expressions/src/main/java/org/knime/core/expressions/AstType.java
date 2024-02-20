@@ -43,7 +43,7 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  */
-package org.knime.core.table.virtual.expression;
+package org.knime.core.expressions;
 
 // TODO(AP-22025) remove types that we do not support
 public enum AstType {
@@ -61,7 +61,7 @@ public enum AstType {
         this.m_isNumeric = isNumeric;
     }
 
-    boolean isNumeric() {
+    public boolean isNumeric() {
         return m_isNumeric;
     }
 }

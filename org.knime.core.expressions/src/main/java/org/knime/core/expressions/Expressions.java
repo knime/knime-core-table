@@ -46,14 +46,15 @@
  * History
  *   Created on Feb 5, 2024 by benjamin
  */
-package org.knime.core.table.virtual.expression;
+package org.knime.core.expressions;
 
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 
-import org.knime.core.table.virtual.expression.Ast.ColumnAccess;
-import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
+import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.parser.ExpressionGrammar;
+import org.knime.core.expressions.parser.ExpressionGrammar.Expr;
 import org.rekex.parser.ParseResult;
 import org.rekex.parser.PegParser;
 

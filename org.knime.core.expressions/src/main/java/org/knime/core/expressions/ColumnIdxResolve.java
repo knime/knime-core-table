@@ -46,14 +46,14 @@
  * History
  *   Feb 15, 2024 (benjamin): created
  */
-package org.knime.core.table.virtual.expression;
+package org.knime.core.expressions;
 
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 
-import org.knime.core.table.virtual.expression.Ast.ColumnAccess;
-import org.knime.core.table.virtual.expression.Expressions.MissingColumnError;
+import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Expressions.MissingColumnError;
 
 /**
  * Utilities for mapping column names to column indices in an Expression {@link Ast}.

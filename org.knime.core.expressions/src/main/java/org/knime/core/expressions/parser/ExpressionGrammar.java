@@ -43,21 +43,21 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  */
-package org.knime.core.table.virtual.expression;
+package org.knime.core.expressions.parser;
 
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.CONDITIONAL_AND;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.CONDITIONAL_OR;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.DIVIDE;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.EQUAL_TO;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.GREATER_THAN;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.GREATER_THAN_EQUAL;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.LESS_THAN;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.LESS_THAN_EQUAL;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.MINUS;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.MULTIPLY;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.NOT_EQUAL_TO;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.PLUS;
-import static org.knime.core.table.virtual.expression.Ast.BinaryOperator.REMAINDER;
+import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_AND;
+import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_OR;
+import static org.knime.core.expressions.Ast.BinaryOperator.DIVIDE;
+import static org.knime.core.expressions.Ast.BinaryOperator.EQUAL_TO;
+import static org.knime.core.expressions.Ast.BinaryOperator.GREATER_THAN;
+import static org.knime.core.expressions.Ast.BinaryOperator.GREATER_THAN_EQUAL;
+import static org.knime.core.expressions.Ast.BinaryOperator.LESS_THAN;
+import static org.knime.core.expressions.Ast.BinaryOperator.LESS_THAN_EQUAL;
+import static org.knime.core.expressions.Ast.BinaryOperator.MINUS;
+import static org.knime.core.expressions.Ast.BinaryOperator.MULTIPLY;
+import static org.knime.core.expressions.Ast.BinaryOperator.NOT_EQUAL_TO;
+import static org.knime.core.expressions.Ast.BinaryOperator.PLUS;
+import static org.knime.core.expressions.Ast.BinaryOperator.REMAINDER;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -67,6 +67,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
+import org.knime.core.expressions.Ast;
 import org.rekex.annomacro.AnnoMacro;
 import org.rekex.helper.anno.Ch;
 import org.rekex.helper.anno.Str;
@@ -80,7 +81,7 @@ import org.rekex.spec.Regex;
 
 public interface ExpressionGrammar {
 
-    static final String GEN_PACKAGE_NAME = "org.knime.core.table.virtual.expression";
+    static final String GEN_PACKAGE_NAME = "org.knime.core.expressions.parser";
 
     static final String GEN_CLASS_NAME = "ExpressionParser";
 

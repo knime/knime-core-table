@@ -45,7 +45,8 @@
  */
 package org.knime.core.table.virtual.expression;
 
-import static org.knime.core.table.virtual.expression.Typing.getType;
+import static org.knime.core.expressions.Expressions.getInferredType;
+import static org.knime.core.expressions.Expressions.getResolvedColumnIdx;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -61,6 +62,8 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.AstType;
 import org.knime.core.table.access.BooleanAccess;
 import org.knime.core.table.access.ByteAccess;
 import org.knime.core.table.access.DoubleAccess;
@@ -88,6 +91,8 @@ import org.knime.core.table.schema.VoidDataSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize.Typing;
 
 // Connects Expressions with virtual tables
 public interface Exec {
@@ -428,11 +433,11 @@ public interface Exec {
     static Computer binary(final Ast.BinaryOp n, final Function<Ast, Computer> computers) {
         var arg1 = computers.apply(n.arg1());
         var arg2 = computers.apply(n.arg2());
-        var t1 = getType(n.arg1());
-        var t2 = getType(n.arg2());
+        var t1 = getInferredType(n.arg1());
+        var t2 = getInferredType(n.arg2());
         final Ast.BinaryOp.BinaryOperator op = n.op();
         return switch (op.type()) {
-            case ARITHMETIC, LOGICAL -> binary(getType(n), op, arg1, arg2);
+            case ARITHMETIC, LOGICAL -> binary(getInferredType(n), op, arg1, arg2);
             case EQUALITY -> compare(equalityType(t1, t2), op, arg1, arg2);
             case ORDERING -> compare(orderingType(t1, t2), op, arg1, arg2);
         };
@@ -682,7 +687,7 @@ public interface Exec {
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory, //
         final DataSpecs.DataSpecWithTraits outputSpec //
     ) {
-        final AstType astType = getType(ast);
+        final AstType astType = getInferredType(ast);
         final AstType colType = outputSpec.spec().accept(DATA_SPEC_TO_AST_TYPE_MAPPER);
         if (!isAssignableTo(astType, colType)) {
             throw new IllegalArgumentException("Expression of type \"" + astType
@@ -731,7 +736,7 @@ public interface Exec {
             //       (For this, add an index field to Ast and set according to postorder.)
             final Map<Ast, Computer> computers = new HashMap<>();
             for (var node : postorder) {
-                var type = getType(node);
+                var type = getInferredType(node);
                 if (node instanceof Ast.IntegerConstant c) {
                     var computer = switch (type) {
                         case BYTE -> (ByteComputer)() -> (byte)c.value();
@@ -744,7 +749,7 @@ public interface Exec {
                 } else if (node instanceof Ast.StringConstant) {
                     throw new UnsupportedOperationException("TODO: not implemented"); // TODO
                 } else if (node instanceof Ast.ColumnAccess n) {
-                    int colIdx = ColumnIdxResolve.getColumnIdx(n); // TODO handle exception better?
+                    int colIdx = getResolvedColumnIdx(n); // TODO handle exception better?
                     var computer = columnIndexToComputerFactory.apply(colIdx).apply(readAccesses);
                     computers.put(node, computer);
                 } else if (node instanceof Ast.BinaryOp n) {
@@ -877,11 +882,11 @@ public interface Exec {
      * @param expression
      * @return mapping from column index to mapper input index, and vice versa
      */
-    static <D> RequiredColumns getRequiredColumns(final Ast expresssion) {
-        var nodes = Ast.postorder(expresssion);
+    static <D> RequiredColumns getRequiredColumns(final Ast expression) {
+        var nodes = Ast.postorder(expression);
         int[] columnIndices = nodes.stream().mapToInt(node -> {
             if (node instanceof Ast.ColumnAccess n) {
-                return ColumnIdxResolve.getColumnIdx(n);
+                return getResolvedColumnIdx(n);
             } else {
                 return -1;
             }

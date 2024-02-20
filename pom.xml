@@ -25,6 +25,7 @@
 	</properties>
 
 	<modules>
+		<module>org.knime.core.expressions</module>
 		<module>org.knime.core.table</module>
 		<module>org.knime.core.table.tests</module>
         <module>org.knime.update.core.table</module>

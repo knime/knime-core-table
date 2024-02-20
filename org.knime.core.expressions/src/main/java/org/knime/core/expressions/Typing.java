@@ -46,29 +46,29 @@
  * History
  *   Feb 6, 2024 (benjamin): created
  */
-package org.knime.core.table.virtual.expression;
+package org.knime.core.expressions;
 
-import static org.knime.core.table.virtual.expression.AstType.BOOLEAN;
-import static org.knime.core.table.virtual.expression.AstType.DOUBLE;
-import static org.knime.core.table.virtual.expression.AstType.LONG;
-import static org.knime.core.table.virtual.expression.AstType.STRING;
+import static org.knime.core.expressions.AstType.BOOLEAN;
+import static org.knime.core.expressions.AstType.DOUBLE;
+import static org.knime.core.expressions.AstType.LONG;
+import static org.knime.core.expressions.AstType.STRING;
 
 import java.util.Optional;
 import java.util.function.Function;
 
-import org.knime.core.table.virtual.expression.Ast.BinaryOp;
-import org.knime.core.table.virtual.expression.Ast.BinaryOperator;
-import org.knime.core.table.virtual.expression.Ast.BooleanConstant;
-import org.knime.core.table.virtual.expression.Ast.ColumnAccess;
-import org.knime.core.table.virtual.expression.Ast.FloatConstant;
-import org.knime.core.table.virtual.expression.Ast.FunctionCall;
-import org.knime.core.table.virtual.expression.Ast.IntegerConstant;
-import org.knime.core.table.virtual.expression.Ast.StringConstant;
-import org.knime.core.table.virtual.expression.Ast.UnaryOp;
-import org.knime.core.table.virtual.expression.Ast.UnaryOperator;
-import org.knime.core.table.virtual.expression.Expressions.ExpressionError;
-import org.knime.core.table.virtual.expression.Expressions.MissingColumnError;
-import org.knime.core.table.virtual.expression.Expressions.TypingError;
+import org.knime.core.expressions.Ast.BinaryOp;
+import org.knime.core.expressions.Ast.BinaryOperator;
+import org.knime.core.expressions.Ast.BooleanConstant;
+import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast.FloatConstant;
+import org.knime.core.expressions.Ast.FunctionCall;
+import org.knime.core.expressions.Ast.IntegerConstant;
+import org.knime.core.expressions.Ast.StringConstant;
+import org.knime.core.expressions.Ast.UnaryOp;
+import org.knime.core.expressions.Ast.UnaryOperator;
+import org.knime.core.expressions.Expressions.ExpressionError;
+import org.knime.core.expressions.Expressions.MissingColumnError;
+import org.knime.core.expressions.Expressions.TypingError;
 
 /**
  * Algorithm to infer types of an {@link Ast}.

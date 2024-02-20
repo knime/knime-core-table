@@ -43,12 +43,12 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  */
-package org.knime.core.table.virtual.expression;
+package org.knime.core.expressions;
 
-import static org.knime.core.table.virtual.expression.Ast.OperatorType.ARITHMETIC;
-import static org.knime.core.table.virtual.expression.Ast.OperatorType.EQUALITY;
-import static org.knime.core.table.virtual.expression.Ast.OperatorType.LOGICAL;
-import static org.knime.core.table.virtual.expression.Ast.OperatorType.ORDERING;
+import static org.knime.core.expressions.Ast.OperatorType.ARITHMETIC;
+import static org.knime.core.expressions.Ast.OperatorType.EQUALITY;
+import static org.knime.core.expressions.Ast.OperatorType.LOGICAL;
+import static org.knime.core.expressions.Ast.OperatorType.ORDERING;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -59,14 +59,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.knime.core.table.virtual.expression.Ast.BinaryOp;
-import org.knime.core.table.virtual.expression.Ast.BooleanConstant;
-import org.knime.core.table.virtual.expression.Ast.ColumnAccess;
-import org.knime.core.table.virtual.expression.Ast.FloatConstant;
-import org.knime.core.table.virtual.expression.Ast.FunctionCall;
-import org.knime.core.table.virtual.expression.Ast.IntegerConstant;
-import org.knime.core.table.virtual.expression.Ast.StringConstant;
-import org.knime.core.table.virtual.expression.Ast.UnaryOp;
+import org.knime.core.expressions.Ast.BinaryOp;
+import org.knime.core.expressions.Ast.BooleanConstant;
+import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast.FloatConstant;
+import org.knime.core.expressions.Ast.FunctionCall;
+import org.knime.core.expressions.Ast.IntegerConstant;
+import org.knime.core.expressions.Ast.StringConstant;
+import org.knime.core.expressions.Ast.UnaryOp;
 
 /**
  * An abstract syntax tree of an Expression according to the KNIME Expression Language. The syntax tree is not
