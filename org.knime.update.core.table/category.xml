@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <bundle id="org.knime.core.table"/>
-   <bundle id="org.knime.core.table.source"/>
+   <bundle id="org.knime.core.table" />
+   <bundle id="org.knime.core.table.source" />
+   <bundle id="org.knime.core.expressions" />
+   <bundle id="org.knime.core.expressions.source" />
    <category-def name="knime-core-table" label="Build artifacts from knime-core-table">
       <description>
          Build artifacts from knime-core-table
