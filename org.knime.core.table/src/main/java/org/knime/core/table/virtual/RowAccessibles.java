@@ -71,50 +71,6 @@ public final class RowAccessibles {
     private RowAccessibles() {
     }
 
-    public static RowAccessible append(final RowAccessible in, final RowAccessible... other) {
-        final ArrayList<RowAccessible> list = new ArrayList<>();
-        if (in instanceof AppendedRowAccessible) {
-            list.addAll(((AppendedRowAccessible)in).getAppendedTables());
-        } else {
-            list.add(in);
-        }
-        list.addAll(Arrays.asList(other));
-        return new AppendedRowAccessible(list);
-    }
-
-    public static RowAccessible appendMissing(final RowAccessible in, final ColumnarSchema appened) {
-        return new AppendedMissingRowAccessible(in, appened);
-    }
-
-    public static RowAccessible concatenate(final RowAccessible in, final RowAccessible... other) {
-        final ArrayList<RowAccessible> list = new ArrayList<>();
-        if (in instanceof ConcatenatedRowAccessible) {
-            list.addAll(((ConcatenatedRowAccessible)in).getConcatenatedRowAccessibles());
-        } else {
-            list.add(in);
-        }
-        list.addAll(Arrays.asList(other));
-        return new ConcatenatedRowAccessible(list);
-    }
-
-    // TODO rename to selectColumns()
-    public static RowAccessible filter(final RowAccessible in, final int[] selection) {
-        return new ColumnFilteredRowAccessible(in, selection);
-    }
-
-    public static RowAccessible slice(final RowAccessible in, final RowRangeSelection selection) {
-        return new SlicedRowAccessible(in, selection.fromIndex(), selection.toIndex());
-    }
-
-    public static RowAccessible map(final RowAccessible in, final int[] columnIndices, final MapperFactory mapperFactory) {
-        return new MappedRowAccessible(in, columnIndices, mapperFactory);
-    }
-
-    public static RowAccessible filterRows(final RowAccessible in, final int[] columnIndices, final RowFilterFactory filterFactory)
-    {
-        return new FilteredRowAccessible(in, columnIndices, filterFactory);
-    }
-
     public static LookaheadRowAccessible toLookahead(final RowAccessible rowAccessible) {
         if (rowAccessible instanceof LookaheadRowAccessible) {
             return (LookaheadRowAccessible)rowAccessible;
