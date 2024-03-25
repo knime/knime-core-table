@@ -63,7 +63,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.AstType;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.table.access.BooleanAccess;
 import org.knime.core.table.access.ByteAccess;
 import org.knime.core.table.access.DoubleAccess;
@@ -100,7 +100,7 @@ public interface Exec {
     /**
      * A visitor that maps {@code DataSpec} to the corresponding {@code AstType}.
      */
-    DataSpec.Mapper<AstType> DATA_SPEC_TO_AST_TYPE_MAPPER = new DataSpecToAstTypeMapper();
+    DataSpec.Mapper<ValueType> DATA_SPEC_TO_AST_TYPE_MAPPER = new DataSpecToAstTypeMapper();
 
     interface Computer {
     }
@@ -448,7 +448,7 @@ public interface Exec {
      *
      * @return the type that should be used for comparison, or {@code null} if the argument types are not comparable.
      */
-    private static AstType equalityType(final AstType t1, final AstType t2) {
+    private static ValueType equalityType(final ValueType t1, final ValueType t2) {
         if (t1 == t2) {
             return t1;
         } else {
@@ -461,7 +461,7 @@ public interface Exec {
      *
      * @return the type that should be used for comparison, or {@code null} if the argument types are not comparable.
      */
-    private static AstType orderingType(final AstType t1, final AstType t2) {
+    private static ValueType orderingType(final ValueType t1, final ValueType t2) {
         if (!t1.isNumeric() || !t2.isNumeric()) {
             return null;
         }
@@ -475,23 +475,23 @@ public interface Exec {
     //        - Otherwise, if either operand is of type float, the other is converted to float.
     //        - Otherwise, if either operand is of type long, the other is converted to long.
     //        - Otherwise, both operands are converted to type int.
-    private static AstType promotedNumericType(final AstType t1, final AstType t2) {
+    private static ValueType promotedNumericType(final ValueType t1, final ValueType t2) {
         if (!t1.isNumeric() || !t2.isNumeric()) {
             throw new IllegalArgumentException();
         }
-        if (t1 == AstType.DOUBLE || t2 == AstType.DOUBLE) {
-            return AstType.DOUBLE;
-        } else if (t1 == AstType.FLOAT || t2 == AstType.FLOAT) {
-            return AstType.FLOAT;
-        } else if (t1 == AstType.LONG || t2 == AstType.LONG) {
-            return AstType.LONG;
+        if (t1 == ValueType.DOUBLE || t2 == ValueType.DOUBLE) {
+            return ValueType.DOUBLE;
+        } else if (t1 == ValueType.FLOAT || t2 == ValueType.FLOAT) {
+            return ValueType.FLOAT;
+        } else if (t1 == ValueType.LONG || t2 == ValueType.LONG) {
+            return ValueType.LONG;
         } else {
-            return AstType.INTEGER;
+            return ValueType.INTEGER;
         }
     }
 
     // create Computer for arithmetic BinaryOp
-    static Computer binary(final AstType type, final Ast.BinaryOp.BinaryOperator op, final Computer arg1,
+    static Computer binary(final ValueType type, final Ast.BinaryOp.BinaryOperator op, final Computer arg1,
         final Computer arg2) {
         return switch (type) {
             case STRING -> throw new UnsupportedOperationException("TODO: not implemented"); // TODO
@@ -505,7 +505,7 @@ public interface Exec {
     }
 
     // create Computer for order-comparison BinaryOp
-    static BooleanComputer compare(final AstType type, final Ast.BinaryOp.BinaryOperator op, final Computer arg1,
+    static BooleanComputer compare(final ValueType type, final Ast.BinaryOp.BinaryOperator op, final Computer arg1,
         final Computer arg2) {
         return switch (type) {
             case STRING -> StringComputer.comparison(op, (StringComputer)arg1, (StringComputer)arg2);
@@ -519,7 +519,7 @@ public interface Exec {
     }
 
     // create Computer for UnaryOp
-    static Computer unary(final AstType type, final Ast.UnaryOp.UnaryOperator op, final Computer arg1) {
+    static Computer unary(final ValueType type, final Ast.UnaryOp.UnaryOperator op, final Computer arg1) {
         return switch (type) {
             case STRING -> throw new UnsupportedOperationException("TODO: not implemented"); // TODO
             case BYTE -> throw new IllegalStateException("no unary op should have BYTE as a result");
@@ -687,8 +687,8 @@ public interface Exec {
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory, //
         final DataSpecs.DataSpecWithTraits outputSpec //
     ) {
-        final AstType astType = getInferredType(ast);
-        final AstType colType = outputSpec.spec().accept(DATA_SPEC_TO_AST_TYPE_MAPPER);
+        final ValueType astType = getInferredType(ast);
+        final ValueType colType = outputSpec.spec().accept(DATA_SPEC_TO_AST_TYPE_MAPPER);
         if (!isAssignableTo(astType, colType)) {
             throw new IllegalArgumentException("Expression of type \"" + astType
                 + "\" cannot be assigned to column of type \"" + outputSpec.spec() + "\"");
@@ -764,7 +764,7 @@ public interface Exec {
         };
     }
 
-    static boolean isAssignableTo(final AstType src, final AstType dest) {
+    static boolean isAssignableTo(final ValueType src, final ValueType dest) {
         return switch (src) {
             case BYTE -> switch (dest) {
                 case BYTE, INTEGER, LONG, FLOAT, DOUBLE, STRING -> true;
@@ -797,61 +797,61 @@ public interface Exec {
         };
     }
 
-    final class DataSpecToAstTypeMapper implements DataSpec.Mapper<AstType> {
+    final class DataSpecToAstTypeMapper implements DataSpec.Mapper<ValueType> {
 
         @Override
-        public AstType visit(final BooleanDataSpec spec) {
-            return AstType.BOOLEAN;
+        public ValueType visit(final BooleanDataSpec spec) {
+            return ValueType.BOOLEAN;
         }
 
         @Override
-        public AstType visit(final ByteDataSpec spec) {
-            return AstType.BYTE;
+        public ValueType visit(final ByteDataSpec spec) {
+            return ValueType.BYTE;
         }
 
         @Override
-        public AstType visit(final DoubleDataSpec spec) {
-            return AstType.DOUBLE;
+        public ValueType visit(final DoubleDataSpec spec) {
+            return ValueType.DOUBLE;
         }
 
         @Override
-        public AstType visit(final FloatDataSpec spec) {
-            return AstType.FLOAT;
+        public ValueType visit(final FloatDataSpec spec) {
+            return ValueType.FLOAT;
         }
 
         @Override
-        public AstType visit(final IntDataSpec spec) {
-            return AstType.INTEGER;
+        public ValueType visit(final IntDataSpec spec) {
+            return ValueType.INTEGER;
         }
 
         @Override
-        public AstType visit(final LongDataSpec spec) {
-            return AstType.LONG;
+        public ValueType visit(final LongDataSpec spec) {
+            return ValueType.LONG;
         }
 
         @Override
-        public AstType visit(final VarBinaryDataSpec spec) {
+        public ValueType visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("Binary columns are not supported in expressions");
         }
 
         @Override
-        public AstType visit(final VoidDataSpec spec) {
+        public ValueType visit(final VoidDataSpec spec) {
             throw new IllegalArgumentException("Void columns are not supported in expressions");
         }
 
         @Override
-        public AstType visit(final StructDataSpec spec) {
+        public ValueType visit(final StructDataSpec spec) {
             throw new IllegalArgumentException("Struct columns are not supported in expressions?");
         }
 
         @Override
-        public AstType visit(final ListDataSpec listDataSpec) {
+        public ValueType visit(final ListDataSpec listDataSpec) {
             throw new IllegalArgumentException("List columns are not supported in expressions?");
         }
 
         @Override
-        public AstType visit(final StringDataSpec spec) {
-            return AstType.STRING;
+        public ValueType visit(final StringDataSpec spec) {
+            return ValueType.STRING;
         }
     }
 
@@ -861,7 +861,7 @@ public interface Exec {
      * @param astType
      * @return DataSpec
      */
-    static DataSpecWithTraits toDataSpec(final AstType astType) {
+    static DataSpecWithTraits toDataSpec(final ValueType astType) {
         return switch (astType) {
             case BOOLEAN -> DataSpecs.BOOLEAN;
             case BYTE -> DataSpecs.BYTE;
