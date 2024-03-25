@@ -60,6 +60,9 @@ public final class AstTestUtils {
     private AstTestUtils() {
     }
 
+    /** Singleton {@link Ast.MissingConstant} */
+    public static Ast.MissingConstant MIS = Ast.missingConstant();
+
     /**
      * @param value
      * @return a {@link Ast.BooleanConstant}
