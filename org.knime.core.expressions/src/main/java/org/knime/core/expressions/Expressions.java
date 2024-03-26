@@ -115,9 +115,15 @@ public final class Expressions {
      * @throws TypingError if type inference failed because operations are used for incompatible types
      */
     public static ValueType inferTypes(final Ast expression,
-        final Function<ColumnAccess, Optional<ValueType>> columnToType)
-        throws MissingColumnError, TypingError {
+        final Function<ColumnAccess, Optional<ValueType>> columnToType) throws MissingColumnError, TypingError {
         return Typing.inferTypes(expression, columnToType);
+    }
+
+    // TODO column to optional computer
+    // TODO exception types
+    public static Computer evaluate(final Ast expression, final Function<ColumnAccess, Computer> columnToComputer)
+        throws Exception {
+        return Evaluation.evaluate(expression, columnToComputer);
     }
 
     /**
