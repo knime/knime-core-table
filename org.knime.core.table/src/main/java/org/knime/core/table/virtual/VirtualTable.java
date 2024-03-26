@@ -63,6 +63,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionError;
 import org.knime.core.table.access.ReadAccess;
@@ -77,7 +78,6 @@ import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.virtual.expression.Exec;
-import org.knime.core.table.virtual.expression.Exec.Computer;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
