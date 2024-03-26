@@ -63,6 +63,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionError;
 import org.knime.core.table.access.ReadAccess;
@@ -77,7 +78,6 @@ import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.virtual.expression.Exec;
-import org.knime.core.table.virtual.expression.Exec.Computer;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
@@ -314,19 +314,19 @@ public final class VirtualTable {
     public VirtualTable map(final Ast expression, final DataSpecWithTraits outputSpec) {
         try {
             // Column resolver functions
-            var columns = Exec.getRequiredColumns(expression);
+            var columns = Exec.RequiredColumns.of(expression);
             final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
                 columnIndex -> {
                     int inputIndex = columns.getInputIndex(columnIndex);
                     Function<ReadAccess, ? extends Computer> createComputer =
-                        m_schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
+                        m_schema.getSpec(columnIndex).accept(Exec.DATA_SPEC_TO_READER_FACTORY);
                     return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
                 };
 
             // Infer types
             Expressions.inferTypes(expression, col -> {
                 int colIdx = Expressions.getResolvedColumnIdx(col);
-                return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_AST_TYPE_MAPPER));
+                return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
             });
             var mapperFactory = Exec.createMapperFactory(expression, columnIndexToComputerFactory, outputSpec);
             return map(columns.columnIndices(), mapperFactory);
@@ -365,12 +365,12 @@ public final class VirtualTable {
     public VirtualTable filterRows(final Ast expression) {
         try {
             // Column resolver functions
-            var columns = Exec.getRequiredColumns(expression);
+            var columns = Exec.RequiredColumns.of(expression);
             final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
                 columnIndex -> {
                     int inputIndex = columns.getInputIndex(columnIndex);
                     Function<ReadAccess, ? extends Computer> createComputer =
-                        m_schema.getSpec(columnIndex).accept(Exec.toReaderFactory);
+                        m_schema.getSpec(columnIndex).accept(Exec.DATA_SPEC_TO_READER_FACTORY);
                     return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
 
                 };
@@ -378,7 +378,7 @@ public final class VirtualTable {
             // Infer types
             Expressions.inferTypes(expression, col -> {
                 int colIdx = Expressions.getResolvedColumnIdx(col);
-                return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_AST_TYPE_MAPPER));
+                return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
             });
             var filterFactory = Exec.createRowFilterFactory(expression, columnIndexToComputerFactory);
             return filterRows(columns.columnIndices(), filterFactory);
