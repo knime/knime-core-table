@@ -19,9 +19,6 @@
 		<feature-branch-extension.branchListProperty>git.branch</feature-branch-extension.branchListProperty>
 		<feature-branch-extension.appendArtifactoryProperties>false</feature-branch-extension.appendArtifactoryProperties>
 		<knime.sonar-env>Sonarcloud</knime.sonar-env>
-		<sonar.coverage.exclusions>
-			org.knime.core.table.tests/**/*,org.knime.core.expressions.tests/**/*
-		</sonar.coverage.exclusions>
 	</properties>
 
 	<modules>
