@@ -1381,7 +1381,7 @@ public class VirtualTableTests {
 
     public static VirtualTable vtSimpleMapWithExpression(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
-        final VirtualTable mappedCols = table.map(expr("$[\"2\"] + $[\"3\"] * -1.1", Integer::parseInt), DOUBLE);
+        final VirtualTable mappedCols = table.map(expr("$[\"2\"] + $[\"3\"] * -1.1", Integer::parseInt));
 //        final VirtualTable mappedCols = table.map("$[2] + $[3] * (10 + 34 * 1.2f)", DOUBLE);
 //        final VirtualTable mappedCols = table.map("$[0] + 10", LONG);
 //        final VirtualTable mappedCols = table.map("$[0] + 10.2", INT);

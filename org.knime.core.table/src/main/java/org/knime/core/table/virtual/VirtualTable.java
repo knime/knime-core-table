@@ -72,11 +72,8 @@ import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.cursor.RandomAccessCursor;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DataSpecs;
-import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
-import org.knime.core.table.schema.traits.DefaultDataTraits;
 import org.knime.core.table.virtual.expression.Exec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
@@ -309,9 +306,8 @@ public final class VirtualTable {
 
     /**
      * @param expression expression that computes a new column (must have resolved column indices)
-     * @param outputSpec DataSpec of the computed column. Must be assignable from the result type of the expression
      */
-    public VirtualTable map(final Ast expression, final DataSpecWithTraits outputSpec) {
+    public VirtualTable map(final Ast expression) {
         try {
             // Column resolver functions
             var columns = Exec.RequiredColumns.of(expression);
@@ -328,15 +324,11 @@ public final class VirtualTable {
                 int colIdx = Expressions.getResolvedColumnIdx(col);
                 return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
             });
-            var mapperFactory = Exec.createMapperFactory(expression, columnIndexToComputerFactory, outputSpec);
+            var mapperFactory = Exec.createMapperFactory(expression, columnIndexToComputerFactory);
             return map(columns.columnIndices(), mapperFactory);
         } catch (ExpressionError ex) {
             throw new IllegalArgumentException(ex);
         }
-    }
-
-    public VirtualTable map(final Ast expression, final DataSpec outputSpec) {
-        return map(expression, new DataSpecs.DataSpecWithTraits(outputSpec, DefaultDataTraits.EMPTY));
     }
 
     /**

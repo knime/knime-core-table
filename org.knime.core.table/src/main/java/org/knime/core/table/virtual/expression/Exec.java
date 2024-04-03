@@ -96,8 +96,6 @@ import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize.Typing;
-
 /**
  * Utilities to evaluate {@link Expressions} on {@link VirtualTable virtual tables}.
  *
@@ -134,14 +132,11 @@ public final class Exec {
      * @param ast the expression
      * @param columnIndexToComputerFactory function that maps column index to a factory that produces {@code Computer}
      *            (of matching type) from the {@code ReadAccess[]} array given to the {@code MapperFactory}
-     * @param outputSpec spec of result column
      * @return a {@link MapperFactory} that implements the given expression
-     * @throws IllegalArgumentException TODO: Hrmm ... is there a better exception type? if the {@code DataSpec} of the
-     *             result column is incompatible with the {@link Typing#getType(Ast) inferred type} of the expression.
      */
     public static MapperFactory createMapperFactory(final Ast ast,
-        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
-        final DataSpecs.DataSpecWithTraits outputSpec) {
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) {
+        var outputSpec = valueTypeToDataSpec(Expressions.getInferredType(ast));
         final BiFunction<WriteAccess, Computer, Runnable> writerFactory =
             outputSpec.spec().accept(DATA_SPEC_TO_WRITER_FACTORY);
         final Function<ReadAccess[], Computer> computerFactory =
