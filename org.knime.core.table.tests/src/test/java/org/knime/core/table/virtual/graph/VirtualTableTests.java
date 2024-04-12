@@ -1371,4 +1371,44 @@ public class VirtualTableTests {
         testTransformedTableLookahead(true, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexToRowKeyMap);
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexToRowKeyMap);
     }
+
+
+
+    public static VirtualTable vtNoInputsMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperFactory constant = MapperFactory.of(ColumnarSchema.of(INT), (inputs, outputs) -> {
+            MapTransformUtils.verify(inputs, 0, outputs, 1);
+            final IntAccess.IntWriteAccess o = (IntAccess.IntWriteAccess)outputs[0];
+            return () -> o.setIntValue(12345);
+        });
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable mappedCols = table.map(new int[]{}, constant);
+        return table
+                .keepOnlyColumns(0,1)
+                .append(List.of(mappedCols));
+    }
+
+    public static VirtualTable vtNoInputsMap() {
+        return vtNoInputsMap(new UUID[]{randomUUID()}, dataNoInputsMap());
+    }
+
+    public static RowAccessible[] dataNoInputsMap() {
+        return dataSimpleMap();
+    }
+
+    @Test
+    public void testNoInputsMap() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, STRING, INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{1, "First", 12345}, //
+                new Object[]{2, "Second", 12345}, //
+                new Object[]{3, "Third", 12345}, //
+                new Object[]{4, "Fourth", 12345}, //
+                new Object[]{5, "Fifth", 12345}, //
+                new Object[]{6, "Sixth", 12345}, //
+                new Object[]{7, "Seventh", 12345} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataNoInputsMap, VirtualTableTests::vtNoInputsMap);
+        testTransformedTableLookahead(true, VirtualTableTests::dataNoInputsMap, VirtualTableTests::vtNoInputsMap);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataNoInputsMap, VirtualTableTests::vtNoInputsMap);
+    }
 }
