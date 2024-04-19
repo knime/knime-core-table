@@ -61,7 +61,7 @@ import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.Expressions.MissingColumnError;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.table.access.BooleanAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
@@ -180,7 +180,7 @@ public final class Exec {
                 .of(columnIndexToComputerFactory.apply(getResolvedColumnIdx(columnAccess)).apply(readAccesses));
             try {
                 return Expressions.evaluate(ast, columnToComputer);
-            } catch (MissingColumnError ex) {
+            } catch (ExpressionCompileException ex) {
                 // NB: We never use Optional.empty() for the column computer
                 throw new IllegalStateException(ex);
             }

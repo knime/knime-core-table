@@ -76,7 +76,7 @@ import java.util.function.ToIntFunction;
 import org.junit.Test;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.Expressions.ExpressionError;
+import org.knime.core.expressions.Expressions.ExpressionException;
 import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.access.DoubleAccess;
 import org.knime.core.table.access.IntAccess;
@@ -1448,7 +1448,7 @@ public class VirtualTableTests {
             var ast = Expressions.parse(input);
             Expressions.resolveColumnIndices(ast, colName -> OptionalInt.of(colIdx.applyAsInt(colName)));
             return ast;
-        } catch (ExpressionError ex) {
+        } catch (ExpressionException ex) {
             throw new AssertionError(ex);
         }
     }

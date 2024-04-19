@@ -65,7 +65,7 @@ import java.util.stream.Collectors;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.Expressions.ExpressionError;
+import org.knime.core.expressions.Expressions.ExpressionException;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.cursor.LookaheadCursor;
@@ -326,7 +326,7 @@ public final class VirtualTable {
             });
             var mapperFactory = Exec.createMapperFactory(expression, columnIndexToComputerFactory);
             return map(columns.columnIndices(), mapperFactory);
-        } catch (ExpressionError ex) {
+        } catch (ExpressionException ex) {
             throw new IllegalArgumentException(ex);
         }
     }
@@ -374,7 +374,7 @@ public final class VirtualTable {
             });
             var filterFactory = Exec.createRowFilterFactory(expression, columnIndexToComputerFactory);
             return filterRows(columns.columnIndices(), filterFactory);
-        } catch (ExpressionError ex) {
+        } catch (ExpressionException ex) {
             throw new IllegalArgumentException(ex);
         }
     }
