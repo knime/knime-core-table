@@ -63,6 +63,7 @@ import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.table.access.BooleanAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
@@ -123,8 +124,8 @@ public final class Exec {
      * {@link Computer} to a {@link WriteAccess}. The visitor throws an {@link IllegalArgumentException} if the
      * {@link DataSpec} cannot be used as an expression output.
      */
-    private static final DataSpec.Mapper<BiFunction<WriteAccess, Computer, Runnable>> DATA_SPEC_TO_WRITER_FACTORY =
-        new WriterFactoryMapper();
+    private static final DataSpec.Mapper<TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable>> //
+    /**/ DATA_SPEC_TO_WRITER_FACTORY = new WriterFactoryMapper();
 
     /**
      * Create a {@link MapperFactory}, that is, the final realization of the expression.
@@ -132,18 +133,21 @@ public final class Exec {
      * @param ast the expression
      * @param columnIndexToComputerFactory function that maps column index to a factory that produces {@code Computer}
      *            (of matching type) from the {@code ReadAccess[]} array given to the {@code MapperFactory}
+     * @param wml the warning message listener that functions can use to raise a warning
      * @return a {@link MapperFactory} that implements the given expression
      */
     public static MapperFactory createMapperFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
-        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer) {
+        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
+        final WarningMessageListener wml) {
+
         var outputSpec = valueTypeToDataSpec(Expressions.getInferredType(ast));
-        final BiFunction<WriteAccess, Computer, Runnable> writerFactory =
+        final TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> writerFactory =
             outputSpec.spec().accept(DATA_SPEC_TO_WRITER_FACTORY);
         final Function<ReadAccess[], Computer> computerFactory =
             createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer);
-        final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory =
-            (readAccesses, writeAccesses) -> writerFactory.apply(writeAccesses[0], computerFactory.apply(readAccesses));
+        final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory = (readAccesses, writeAccesses) -> writerFactory
+            .apply(writeAccesses[0], computerFactory.apply(readAccesses), wml);
 
         return MapperFactory.of(ColumnarSchema.of(outputSpec), factory);
     }
@@ -155,12 +159,14 @@ public final class Exec {
      * @param ast the expression
      * @param columnIndexToComputerFactory function that maps column index to a factory that produces {@code Computer}
      *            (of matching type) from the {@code ReadAccess[]} array given to the {@code MapperFactory}
+     * @param wml the warning message listener that functions can use to raise a warning
      * @return a {@link RowFilterFactory}
      * @throws IllegalArgumentException if the output type of the expression is not {@link ValueType#BOOLEAN}
      */
     public static RowFilterFactory createRowFilterFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
-        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer) {
+        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
+        final WarningMessageListener wml) {
         var outputType = Expressions.getInferredType(ast);
         if (!ValueType.BOOLEAN.equals(outputType)) {
             throw new IllegalArgumentException(
@@ -168,7 +174,7 @@ public final class Exec {
         }
         final Function<ReadAccess[], Computer> computerFactory =
             createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer);
-        return inputs -> ((BooleanComputer)computerFactory.apply(inputs))::compute;
+        return inputs -> () -> ((BooleanComputer)computerFactory.apply(inputs)).compute(wml);
     }
 
     /**
@@ -330,37 +336,37 @@ public final class Exec {
 
         @Override
         public Function<ReadAccess, BooleanComputer> visit(final BooleanDataSpec spec) {
-            return ra -> BooleanComputer.of(((BooleanReadAccess)ra)::getBooleanValue, ra::isMissing);
+            return ra -> BooleanComputer.of(wml -> ((BooleanReadAccess)ra).getBooleanValue(), wml -> ra.isMissing());
         }
 
         @Override
         public Function<ReadAccess, IntegerComputer> visit(final ByteDataSpec spec) {
-            return ra -> IntegerComputer.of(((ByteReadAccess)ra)::getByteValue, ra::isMissing);
+            return ra -> IntegerComputer.of(wml -> ((ByteReadAccess)ra).getByteValue(), wml -> ra.isMissing());
         }
 
         @Override
         public Function<ReadAccess, FloatComputer> visit(final DoubleDataSpec spec) {
-            return ra -> FloatComputer.of(((DoubleReadAccess)ra)::getDoubleValue, ra::isMissing);
+            return ra -> FloatComputer.of(wml -> ((DoubleReadAccess)ra).getDoubleValue(), wml -> ra.isMissing());
         }
 
         @Override
         public Function<ReadAccess, FloatComputer> visit(final FloatDataSpec spec) {
-            return ra -> FloatComputer.of(((FloatReadAccess)ra)::getFloatValue, ra::isMissing);
+            return ra -> FloatComputer.of(wml -> ((FloatReadAccess)ra).getFloatValue(), wml -> ra.isMissing());
         }
 
         @Override
         public Function<ReadAccess, IntegerComputer> visit(final IntDataSpec spec) {
-            return ra -> IntegerComputer.of(((IntReadAccess)ra)::getIntValue, ra::isMissing);
+            return ra -> IntegerComputer.of(wml -> ((IntReadAccess)ra).getIntValue(), wml -> ra.isMissing());
         }
 
         @Override
         public Function<ReadAccess, IntegerComputer> visit(final LongDataSpec spec) {
-            return ra -> IntegerComputer.of(((LongReadAccess)ra)::getLongValue, ra::isMissing);
+            return ra -> IntegerComputer.of(wml -> ((LongReadAccess)ra).getLongValue(), wml -> ra.isMissing());
         }
 
         @Override
         public Function<ReadAccess, StringComputer> visit(final StringDataSpec spec) {
-            return ra -> StringComputer.of(((StringReadAccess)ra)::getStringValue, ra::isMissing);
+            return ra -> StringComputer.of(wml -> ((StringReadAccess)ra).getStringValue(), wml -> ra.isMissing());
         }
 
         @Override
@@ -384,11 +390,13 @@ public final class Exec {
         }
     }
 
-    private static class WriterFactoryMapper implements DataSpec.Mapper<BiFunction<WriteAccess, Computer, Runnable>> {
+    private static class WriterFactoryMapper
+        implements DataSpec.Mapper<TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable>> {
 
-        private static Runnable setMissingOrSetValue(final Computer c, final WriteAccess a, final Runnable setValue) {
+        private static Runnable setMissingOrSetValue(final Computer c, final WriteAccess a, final Runnable setValue,
+            final WarningMessageListener wml) {
             return () -> {
-                if (c.isMissing()) {
+                if (c.isMissing(wml)) {
                     a.setMissing();
                 } else {
                     setValue.run();
@@ -397,74 +405,99 @@ public final class Exec {
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final BooleanDataSpec spec) {
-            return (access, computer) -> {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final BooleanDataSpec spec) {
+            return (access, computer, wml) -> {
                 var a = (BooleanAccess.BooleanWriteAccess)access;
                 var c = (BooleanComputer)computer;
-                return setMissingOrSetValue(c, a, () -> a.setBooleanValue(c.compute()));
+                return setMissingOrSetValue(c, a, () -> a.setBooleanValue(c.compute(wml)), wml);
             };
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final DoubleDataSpec spec) {
-            return (access, computer) -> {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final DoubleDataSpec spec) {
+            return (access, computer, wml) -> {
                 var a = (DoubleAccess.DoubleWriteAccess)access;
                 var c = (FloatComputer)computer;
-                return setMissingOrSetValue(c, a, () -> a.setDoubleValue(c.compute()));
+                return setMissingOrSetValue(c, a, () -> a.setDoubleValue(c.compute(wml)), wml);
             };
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final LongDataSpec spec) {
-            return (access, computer) -> {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final LongDataSpec spec) {
+            return (access, computer, wml) -> {
                 var a = (LongAccess.LongWriteAccess)access;
                 var c = (IntegerComputer)computer;
-                return setMissingOrSetValue(c, a, () -> a.setLongValue(c.compute()));
+                return setMissingOrSetValue(c, a, () -> a.setLongValue(c.compute(wml)), wml);
             };
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final StringDataSpec spec) {
-            return (access, computer) -> {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final StringDataSpec spec) {
+            return (access, computer, wml) -> {
                 var a = (StringAccess.StringWriteAccess)access;
                 var c = (StringComputer)computer;
-                return setMissingOrSetValue(c, a, () -> a.setStringValue(c.compute()));
+                return setMissingOrSetValue(c, a, () -> a.setStringValue(c.compute(wml)), wml);
             };
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final IntDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final IntDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce int data");
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final FloatDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final FloatDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce float data");
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final ByteDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final ByteDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce byte data");
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final VarBinaryDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable>
+            visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce var binary data");
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final VoidDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final VoidDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce void data");
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final StructDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final StructDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce struct data");
         }
 
         @Override
-        public BiFunction<WriteAccess, Computer, Runnable> visit(final ListDataSpec listDataSpec) {
+        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable>
+            visit(final ListDataSpec listDataSpec) {
             throw new IllegalArgumentException("Expressions cannot produce list data");
         }
+    }
+
+    /**
+     * Three-argument specialisation of a Function, like a BiFunction with one extra argument.
+     *
+     * @param <A> First argument type
+     * @param <B> Second argument type
+     * @param <C> Third argument type
+     * @param <R> Return type
+     */
+    @FunctionalInterface
+    public interface TriFunction<A, B, C, R> {
+
+        /**
+         * Run the function with the specified arguments.
+         *
+         * @param a
+         * @param b
+         * @param c
+         * @return
+         */
+        R apply(A a, B b, C c);
+
     }
 }
