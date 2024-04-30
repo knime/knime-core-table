@@ -135,12 +135,13 @@ public final class Exec {
      * @return a {@link MapperFactory} that implements the given expression
      */
     public static MapperFactory createMapperFactory(final Ast ast,
-        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) {
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
+        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer) {
         var outputSpec = valueTypeToDataSpec(Expressions.getInferredType(ast));
         final BiFunction<WriteAccess, Computer, Runnable> writerFactory =
             outputSpec.spec().accept(DATA_SPEC_TO_WRITER_FACTORY);
         final Function<ReadAccess[], Computer> computerFactory =
-            createComputerFactory(ast, columnIndexToComputerFactory);
+            createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer);
         final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory =
             (readAccesses, writeAccesses) -> writerFactory.apply(writeAccesses[0], computerFactory.apply(readAccesses));
 
@@ -158,14 +159,15 @@ public final class Exec {
      * @throws IllegalArgumentException if the output type of the expression is not {@link ValueType#BOOLEAN}
      */
     public static RowFilterFactory createRowFilterFactory(final Ast ast,
-        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) {
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
+        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer) {
         var outputType = Expressions.getInferredType(ast);
         if (!ValueType.BOOLEAN.equals(outputType)) {
             throw new IllegalArgumentException(
                 "The expression must evaluate to BOOLEAN. Got " + outputType.name() + ".");
         }
         final Function<ReadAccess[], Computer> computerFactory =
-            createComputerFactory(ast, columnIndexToComputerFactory);
+            createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer);
         return inputs -> ((BooleanComputer)computerFactory.apply(inputs))::compute;
     }
 
@@ -174,12 +176,14 @@ public final class Exec {
      *         {@link ReadAccess read accesses}
      */
     private static Function<ReadAccess[], Computer> createComputerFactory(final Ast ast,
-        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory) {
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
+        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer) {
         return readAccesses -> {
             Function<ColumnAccess, Optional<Computer>> columnToComputer = columnAccess -> Optional
                 .of(columnIndexToComputerFactory.apply(getResolvedColumnIdx(columnAccess)).apply(readAccesses));
+
             try {
-                return Expressions.evaluate(ast, columnToComputer);
+                return Expressions.evaluate(ast, columnToComputer, flowVariableToComputer);
             } catch (ExpressionCompileException ex) {
                 // NB: We never use Optional.empty() for the column computer
                 throw new IllegalStateException(ex);
