@@ -56,17 +56,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
-import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.Expressions.ExpressionException;
-import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.cursor.RandomAccessCursor;
@@ -74,7 +66,6 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.DataTraits;
-import org.knime.core.table.virtual.expression.Exec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
@@ -305,33 +296,6 @@ public final class VirtualTable {
     }
 
     /**
-     * @param expression expression that computes a new column (must have resolved column indices)
-     */
-    public VirtualTable map(final Ast expression) {
-        try {
-            // Column resolver functions
-            var columns = Exec.RequiredColumns.of(expression);
-            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
-                columnIndex -> {
-                    int inputIndex = columns.getInputIndex(columnIndex);
-                    Function<ReadAccess, ? extends Computer> createComputer =
-                        m_schema.getSpec(columnIndex).accept(Exec.DATA_SPEC_TO_READER_FACTORY);
-                    return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
-                };
-
-            // Infer types
-            Expressions.inferTypes(expression, col -> {
-                int colIdx = Expressions.getResolvedColumnIdx(col);
-                return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
-            });
-            var mapperFactory = Exec.createMapperFactory(expression, columnIndexToComputerFactory);
-            return map(columns.columnIndices(), mapperFactory);
-        } catch (ExpressionException ex) {
-            throw new IllegalArgumentException(ex);
-        }
-    }
-
-    /**
      * Create a {@code new VirtualTable} by including only rows from this {@code
      * VirtualTable} that match a given predicate. This is defined by an array of {@code n} column indices that form the
      * inputs of the ({@code n}-ary} filter predicate. The predicate is evaluated on the values of the respective
@@ -349,34 +313,6 @@ public final class VirtualTable {
     public VirtualTable filterRows(final int[] columnIndices, final RowFilterFactory filterFactory) {
         final TableTransformSpec transformSpec = new RowFilterTransformSpec(columnIndices, filterFactory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
-    }
-
-    /**
-     * @param expression expression for filter predicate
-     */
-    public VirtualTable filterRows(final Ast expression) {
-        try {
-            // Column resolver functions
-            var columns = Exec.RequiredColumns.of(expression);
-            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
-                columnIndex -> {
-                    int inputIndex = columns.getInputIndex(columnIndex);
-                    Function<ReadAccess, ? extends Computer> createComputer =
-                        m_schema.getSpec(columnIndex).accept(Exec.DATA_SPEC_TO_READER_FACTORY);
-                    return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
-
-                };
-
-            // Infer types
-            Expressions.inferTypes(expression, col -> {
-                int colIdx = Expressions.getResolvedColumnIdx(col);
-                return Optional.of(m_schema.getSpec(colIdx).accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
-            });
-            var filterFactory = Exec.createRowFilterFactory(expression, columnIndexToComputerFactory);
-            return filterRows(columns.columnIndices(), filterFactory);
-        } catch (ExpressionException ex) {
-            throw new IllegalArgumentException(ex);
-        }
     }
 
     // TODO: Should this take TargetTableProperties analogous to SourceTableProperties

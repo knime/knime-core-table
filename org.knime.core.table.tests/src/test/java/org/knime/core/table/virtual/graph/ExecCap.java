@@ -165,13 +165,9 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMinimal();
 //        final VirtualTable table = VirtualTableTests.vtRowIndexMapsSequential(sourceIdentifiers, sourceAccessibles);
 
-//        final UUID[] sourceIdentifiers = createSourceIds(2);
-//        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataObserve();
-//        final VirtualTable table = VirtualTableTests.vtObserve(sourceIdentifiers, sourceAccessibles);
-
-        final UUID[] sourceIdentifiers = createSourceIds(1);
-        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataSimpleMapWithExpression();
-        final VirtualTable table = VirtualTableTests.vtSimpleMapWithExpression(sourceIdentifiers, sourceAccessibles);
+        final UUID[] sourceIdentifiers = createSourceIds(2);
+        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataObserve();
+        final VirtualTable table = VirtualTableTests.vtObserve(sourceIdentifiers, sourceAccessibles);
 
 
         if ( doExecute ) {
@@ -202,8 +198,9 @@ public class ExecCap {
             try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
                 while (cursor.forward()) {
                     System.out.print("a = ");
-                    for (int i = 0; i < cursor.access().size(); i++)
+                    for (int i = 0; i < cursor.access().size(); i++) {
                         System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                    }
                     System.out.println();
                 }
             } catch (IOException e) {
@@ -230,8 +227,9 @@ public class ExecCap {
             try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
                 while (cursor.forward()) {
                     System.out.print("a = ");
-                    for (int i = 0; i < cursor.access().size(); i++)
+                    for (int i = 0; i < cursor.access().size(); i++) {
                         System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                    }
                     System.out.println();
                 }
             } catch (IOException e) {
@@ -241,8 +239,9 @@ public class ExecCap {
             try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(1))) {
                 while (cursor.forward()) {
                     System.out.print("a = ");
-                    for (int i = 0; i < cursor.access().size(); i++)
+                    for (int i = 0; i < cursor.access().size(); i++) {
                         System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                    }
                     System.out.println();
                 }
             } catch (IOException e) {
@@ -252,8 +251,9 @@ public class ExecCap {
             try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(0))) {
                 while (cursor.forward()) {
                     System.out.print("a = ");
-                    for (int i = 0; i < cursor.access().size(); i++)
+                    for (int i = 0; i < cursor.access().size(); i++) {
                         System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                    }
                     System.out.println();
                 }
             } catch (IOException e) {
