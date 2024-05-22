@@ -133,19 +133,24 @@ public final class Exec {
      * @param ast the expression
      * @param columnIndexToComputerFactory function that maps column index to a factory that produces {@code Computer}
      *            (of matching type) from the {@code ReadAccess[]} array given to the {@code MapperFactory}
+     * @param flowVariableToComputer a function that maps flow variable access to a Computer which evaluates to the
+     *            value of the variable
+     * @param aggregationToComputer a function that maps aggregation calls to a Computer which evaluates to the value of
+     *            the aggregation
      * @param wml the warning message listener that functions can use to raise a warning
      * @return a {@link MapperFactory} that implements the given expression
      */
     public static MapperFactory createMapperFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
         final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
+        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer,
         final WarningMessageListener wml) {
 
         var outputSpec = valueTypeToDataSpec(Expressions.getInferredType(ast));
         final TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> writerFactory =
             outputSpec.spec().accept(DATA_SPEC_TO_WRITER_FACTORY);
         final Function<ReadAccess[], Computer> computerFactory =
-            createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer);
+            createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer, aggregationToComputer);
         final BiFunction<ReadAccess[], WriteAccess[], Runnable> factory = (readAccesses, writeAccesses) -> writerFactory
             .apply(writeAccesses[0], computerFactory.apply(readAccesses), wml);
 
@@ -159,6 +164,10 @@ public final class Exec {
      * @param ast the expression
      * @param columnIndexToComputerFactory function that maps column index to a factory that produces {@code Computer}
      *            (of matching type) from the {@code ReadAccess[]} array given to the {@code MapperFactory}
+     * @param flowVariableToComputer a function that maps flow variable access to a Computer which evaluates to the
+     *            value of the variable
+     * @param aggregationToComputer a function that maps aggregation calls to a Computer which evaluates to the value of
+     *            the aggregation
      * @param wml the warning message listener that functions can use to raise a warning
      * @return a {@link RowFilterFactory}
      * @throws IllegalArgumentException if the output type of the expression is not {@link ValueType#BOOLEAN}
@@ -166,6 +175,7 @@ public final class Exec {
     public static RowFilterFactory createRowFilterFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
         final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
+        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer,
         final WarningMessageListener wml) {
         var outputType = Expressions.getInferredType(ast);
         if (!ValueType.BOOLEAN.equals(outputType)) {
@@ -173,7 +183,7 @@ public final class Exec {
                 "The expression must evaluate to BOOLEAN. Got " + outputType.name() + ".");
         }
         final Function<ReadAccess[], Computer> computerFactory =
-            createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer);
+            createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer, aggregationToComputer);
         return inputs -> () -> ((BooleanComputer)computerFactory.apply(inputs)).compute(wml);
     }
 
@@ -183,13 +193,14 @@ public final class Exec {
      */
     private static Function<ReadAccess[], Computer> createComputerFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
-        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer) {
+        final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
+        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer) {
         return readAccesses -> {
             Function<ColumnAccess, Optional<Computer>> columnToComputer = columnAccess -> Optional
                 .of(columnIndexToComputerFactory.apply(getResolvedColumnIdx(columnAccess)).apply(readAccesses));
 
             try {
-                return Expressions.evaluate(ast, columnToComputer, flowVariableToComputer);
+                return Expressions.evaluate(ast, columnToComputer, flowVariableToComputer, aggregationToComputer);
             } catch (ExpressionCompileException ex) {
                 // NB: We never use Optional.empty() for the column computer
                 throw new IllegalStateException(ex);
