@@ -51,6 +51,7 @@ package org.knime.core.expressions.functions;
 import static org.knime.core.expressions.Computer.toFloat;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.OPT_INTEGER;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.allBaseTypesMatch;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
@@ -65,6 +66,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalDouble;
+import java.util.function.Function;
+import java.util.function.IntBinaryOperator;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
@@ -91,6 +95,67 @@ public final class MathFunctions {
     /** The "Math" category */
     public static final FunctionCategory CATEGORY = new FunctionCategory("Math", "Math functions");
 
+    private static Predicate<WarningMessageListener> allArgsAreNan(final List<Computer> args) {
+        return wml -> args.stream().map(c -> toFloat(c)).allMatch(c -> Double.isNaN(c.compute(wml)));
+    }
+
+    /**
+     * Handy helper that implements min, max, nanmin, and nanmax, and returns a computer for them based on a couple of
+     * parameters. Dramatically reduces the amount of code duplication.
+     *
+     * @param args the arguments to the function
+     * @param max whether to compute the maximum (if true) or minimum (if false)
+     * @param ignoreNan whether to ignore NaN values (if true) or not (if false)
+     *
+     * @return the result computer
+     */
+    private static Computer extremumComputerFactory(final List<Computer> args, final ExtremumType extremum,
+        final boolean ignoreNan, final String functionName) {
+        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+
+        if (allArgsAreIntegers) {
+            return IntegerComputer.of( //
+                wml -> {
+                    var stream = args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml));
+
+                    // No such thing as integer NaN, so we can safely ignore it
+
+                    if (extremum == ExtremumType.MAXIMUM) {
+                        return stream.max().getAsLong();
+                    } else {
+                        return stream.min().getAsLong();
+                    }
+                }, //
+                anyMissing(args) //
+            );
+        } else {
+            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+            return FloatComputer.of( //
+                wml -> {
+                    @SuppressWarnings("resource") // this stream is closed, whatever Eclipse says
+                    var unfilteredStream = Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml));
+
+                    var filteredStream = ignoreNan //
+                        ? unfilteredStream.filter(d -> !Double.isNaN(d)) //
+                        : unfilteredStream;
+
+                    // If these streams are empty it means that all the arguments were NaN,
+                    // so we return NaN.
+
+                    OptionalDouble extremumValue = (extremum == ExtremumType.MAXIMUM) //
+                        ? filteredStream.max() //
+                        : filteredStream.min();
+
+                    return extremumValue.orElseGet(() -> {
+                        wml.addWarning("invalid arguments to %s: all arguments are NaN".formatted(functionName));
+                        return Float.NaN;
+                    });
+                }, //
+                anyMissing(args) //
+            );
+        }
+    }
+
     /** The maximum of multiple numbers */
     public static final ExpressionFunction MAX = functionBuilder() //
         .name("max") //
@@ -108,18 +173,44 @@ public final class MathFunctions {
         .build();
 
     private static Computer maxImpl(final List<Computer> args) {
-        if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
-            return IntegerComputer.of( //
-                wml -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml)).max().getAsLong(), //
-                anyMissing(args) //
-            );
-        } else {
-            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
-            return FloatComputer.of( //
-                wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).max().getAsDouble(), //
-                anyMissing(args) //
-            );
-        }
+        return extremumComputerFactory(args, ExtremumType.MAXIMUM, false, "max");
+    }
+
+    /** The maximum of multiple numbers, ignoring NaN values */
+    public static final ExpressionFunction NAN_MAX = functionBuilder() //
+        .name("nanmax") //
+        .description("""
+                The maximum value of a list of numbers, ignoring NaN values. If all
+                inputs are integers, the output will be an integer. If any of the
+                inputs is a float, the output will be a float. If any argument is
+                `MISSING`, the result is also `MISSING`. At least two arguments are
+                required, but beyond that you can supply as many as you like.
+
+                If _all_ arguments are NaN, the result is also NaN, and a warning
+                will be emitted.
+
+                Examples:
+                * `nanmax(1, 2, 3)` returns 3
+                * `nanmax(1.0, 2.0, 3.0)` returns 3.0
+                * `nanmax(1, 2.0, 3)` returns 3.0
+                * `nanmax(1, MISSING, 3)` returns MISSING
+                * `nanmax(NaN, -1, 3)` returns 3.0
+                * `nanmax(NaN, NaN, NaN)` returns NaN (with a warning)
+                """) //
+        .keywords("maximum", "nan") //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("input1", "first number", isNumericOrOpt()), //
+            arg("input2", "second number", isNumericOrOpt()), //
+            vararg("more", "additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("the largest number of the arguments, ignoring NaN values", "INTEGER? | FLOAT?",
+            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+        .impl(MathFunctions::nanMaxImpl) //
+        .build();
+
+    private static Computer nanMaxImpl(final List<Computer> args) {
+        return extremumComputerFactory(args, ExtremumType.MAXIMUM, true, "nanmax");
     }
 
     /** The minimum of multiple numbers */
@@ -139,18 +230,44 @@ public final class MathFunctions {
         .build();
 
     private static Computer minImpl(final List<Computer> args) {
-        if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
-            return IntegerComputer.of( //
-                wml -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml)).min().getAsLong(), //
-                anyMissing(args) //
-            );
-        } else {
-            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
-            return FloatComputer.of( //
-                wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).min().getAsDouble(), //
-                anyMissing(args) //
-            );
-        }
+        return extremumComputerFactory(args, ExtremumType.MINIMUM, false, "min");
+    }
+
+    /** The minimum of multiple numbers, ignoring NaN values */
+    public static final ExpressionFunction NAN_MIN = functionBuilder() //
+        .name("nanmin") //
+        .description("""
+                The minimum value of a list of numbers, ignoring NaN values. If all
+                inputs are integers, the output will be an integer. If any of the
+                inputs is a float, the output will be a float. If any argument is
+                `MISSING`, the result is also `MISSING`. At least two arguments are
+                required, but beyond that you can supply as many as you like.
+
+                If _all_ arguments are NaN, the result is also NaN, and a warning
+                will be emitted.
+
+                Examples:
+                * `nanmin(1, 2, 3)` returns 1
+                * `nanmin(1.0, 2.0, 3.0)` returns 1.0
+                * `nanmin(1, 2.0, 3)` returns 1.0
+                * `nanmin(1, MISSING, 3)` returns MISSING
+                * `nanmin(NaN, -1, 3)` returns -1.0
+                * `nanmin(NaN, NaN, NaN)` returns NaN (with a warning)
+                """) //
+        .keywords("minimum", "nan") //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("input1", "first number", isNumericOrOpt()), //
+            arg("input2", "second number", isNumericOrOpt()), //
+            vararg("more", "additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("the smallest number of the arguments, ignoring NaN values", "INTEGER? | FLOAT?",
+            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+        .impl(MathFunctions::nanMinImpl) //
+        .build();
+
+    private static Computer nanMinImpl(final List<Computer> args) {
+        return extremumComputerFactory(args, ExtremumType.MINIMUM, true, "nanmin");
     }
 
     /** The normal distribution */
@@ -246,6 +363,96 @@ public final class MathFunctions {
                     + 1.48851587 * tPow[7] - 0.82215223 * tPow[8] + 0.17087277 * tPow[9]);
     }
 
+    /**
+     * Helper that creates an IntBinaryOperator that can be passed to reduce to extract the index of the largest or
+     * smallest value in a stream of doubles. Notably, if the stream contains a NaN, the index of the first NaN will be
+     * returned. If there are multiple of the largest or smallest value, the index of the first one will be returned.
+     *
+     * @param largest if true, extract the index of the largest value, otherwise extract the index of the smallest value
+     * @param values
+     * @return
+     */
+    private static IntBinaryOperator nanPropagatingStreamExtremumReducer(final ExtremumType extremum,
+        final Double[] values) {
+        return (a, b) -> {
+            if (Double.isNaN(values[a])) {
+                return a;
+            } else if (Double.isNaN(values[b])) {
+                return b;
+            } else if (extremum == ExtremumType.MAXIMUM) {
+                return values[a] >= values[b] ? a : b;
+            } else {
+                return values[a] <= values[b] ? a : b;
+            }
+        };
+    }
+
+    /**
+     * Helper that creates an IntBinaryOperator that can be passed to reduce to extract the index of the largest or
+     * smallest value in a stream of longs. If there are multiple copies of the largest or smallest value, the index of
+     * the first one will be returned.
+     *
+     * @param largest if true, extract the index of the largest value, otherwise extract the index of the smallest value
+     * @param values
+     * @return
+     */
+    private static IntBinaryOperator streamExtremumReducer(final ExtremumType extremum, final Long[] values) {
+        return (a, b) -> {
+            if (extremum == ExtremumType.MAXIMUM) {
+                return values[a] >= values[b] ? a : b;
+            } else {
+                return values[a] <= values[b] ? a : b;
+            }
+        };
+    }
+
+    /**
+     * Handy helper that implements argmax, argmin, nanargmax and nanargmin.
+     *
+     * If NaNs aren't being ignored, the function will return the argument of the first NaN to match the behaviour of
+     * numpy.
+     *
+     * @param args the arguments to the function
+     * @param max whether to compute the maximum (if true) or minimum (if false)
+     * @param ignoreNan whether to ignore NaN values (if true) or not (if false)
+     * @return the result supplier
+     */
+    private static ToLongFunction<WarningMessageListener> argExtremaHelper(final List<Computer> args,
+        final ExtremumType extremum, final boolean ignoreNan) {
+        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+
+        if (allArgsAreIntegers) {
+            return wml -> {
+                var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
+
+                var intStream = IntStream.range(0, computedArgs.length);
+
+                // No such thing as integer NaN, so we can safely ignore it
+
+                // Add 1 here because we want to return 1-indexed values.
+                return 1 + intStream.reduce(streamExtremumReducer(extremum, computedArgs)) //
+                    .getAsInt(); //
+            };
+        } else {
+            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+            return wml -> {
+                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(wml)).toArray(Double[]::new);
+
+                @SuppressWarnings("resource") // this stream is closed, whatever Eclipse says
+                var unfilteredStream = IntStream.range(0, computedArgs.length);
+
+                var filteredStream = ignoreNan //
+                    ? unfilteredStream.filter(i -> !Double.isNaN(computedArgs[i])) //
+                    : unfilteredStream;
+
+                // Add 1 here because we want to return 1-indexed values.
+                return 1 + filteredStream // Custom reducer produces first NaN if there are NaNs
+                    .reduce(nanPropagatingStreamExtremumReducer(extremum, computedArgs)) //
+                    .orElseThrow(() -> new IllegalStateException("Stream was empty. This is an implementation bug"));
+            };
+        }
+    }
+
     /** Index of the maximum of multiple numbers */
     public static final ExpressionFunction ARGMAX = functionBuilder() //
         .name("argmax") //
@@ -266,33 +473,11 @@ public final class MathFunctions {
         .build();
 
     private static Computer argmaxImpl(final List<Computer> args) {
-        // are all the arguments integers?
-        boolean allInts = args.stream().allMatch(IntegerComputer.class::isInstance);
-
-        ToLongFunction<WarningMessageListener> value = wml -> {
-            if (allInts) {
-                var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
-
-                // One indexing
-                return 1 + IntStream.range(0, computedArgs.length) //
-                    .reduce((a, b) -> computedArgs[a] < computedArgs[b] ? b : a) //
-                    .getAsInt();
-            } else {
-                var computedArgs = args.stream().map(c -> toFloat(c).compute(wml)).toArray(Double[]::new);
-
-                // One indexing
-                return 1 + IntStream.range(0, computedArgs.length) //
-                    .reduce((a, b) -> computedArgs[a] < computedArgs[b] ? b : a) //
-                    .getAsInt();
-            }
-        };
-
         return IntegerComputer.of( //
-            value, //
+            argExtremaHelper(args, ExtremumType.MAXIMUM, false), //
             anyMissing(args) //
         );
     }
-
 
     /** Index of the minimum of multiple numbers */
     public static final ExpressionFunction ARGMIN = functionBuilder() //
@@ -314,30 +499,117 @@ public final class MathFunctions {
         .build();
 
     private static Computer argminImpl(final List<Computer> args) {
-        // are all the arguments integers?
-        boolean allInts = args.stream().allMatch(IntegerComputer.class::isInstance);
-
-        ToLongFunction<WarningMessageListener> value = wml -> {
-            if (allInts) {
-                var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
-
-                // One indexing
-                return 1 + IntStream.range(0, computedArgs.length) //
-                    .reduce((a, b) -> computedArgs[a] > computedArgs[b] ? b : a) //
-                    .getAsInt();
-            } else {
-                var computedArgs = args.stream().map(c -> toFloat(c).compute(wml)).toArray(Double[]::new);
-
-                // One indexing
-                return 1 + IntStream.range(0, computedArgs.length) //
-                    .reduce((a, b) -> computedArgs[a] > computedArgs[b] ? b : a) //
-                    .getAsInt();
-            }
-        };
-
         return IntegerComputer.of( //
-            value, //
+            argExtremaHelper(args, ExtremumType.MINIMUM, false), //
             anyMissing(args) //
+        );
+    }
+
+    /** Index of the maximum of multiple numbers, ignoring NaN values */
+    public static final ExpressionFunction NAN_ARGMAX = functionBuilder() //
+        .name("nanargmax") //
+        .description("""
+                The index of the maximum value of a list of numbers, starting at 1,
+                and ignoring NaN values.
+
+                If any argument is `MISSING`, the result is also `MISSING`. At least
+                two arguments are required, but beyond that you can supply as many
+                as you like.
+
+                If there are multiple copies of the max value, returns the index of
+                the first one.
+
+                If _all_ arguments are NaN, the result is `MISSING`, and a warning
+                will be emitted.
+
+                Examples:
+                * `nanargmax(2, 4, 6)` returns 3
+                * `nanargmax(2.0, 4.0, 6.0)` returns 3
+                * `nanargmax(2, 4.0, 6)` returns 3
+                * `nanargmax(1, 2, 2)` returns 2
+                * `nanargmax(1, MISSING, 3)` returns MISSING
+                * `nanargmax(NaN, -1, 42)` returns 3
+                * `nanargmax(NaN, NaN, NaN)` returns MISSING (with a warning)
+                """) //
+        .keywords() //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("input1", "first number", isNumericOrOpt()), //
+            arg("input2", "second number", isNumericOrOpt()), //
+            vararg("more", "additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("the index of the largest number in the arguments, ignoring NaN values", //
+            "INTEGER?", args -> OPT_INTEGER) //
+        .impl(MathFunctions::nanArgmaxImpl) //
+        .build();
+
+    private static Computer nanArgmaxImpl(final List<Computer> args) {
+        return IntegerComputer.of( //
+            argExtremaHelper(args, ExtremumType.MAXIMUM, true), //
+            wml -> {
+                if (anyMissing(args).test(wml)) {
+                    return true;
+                } else if (allArgsAreNan(args).test(wml)) {
+                    wml.addWarning("Invalid arguments to nanargmax: all arguments are NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
+        );
+    }
+
+    /** Index of the minimum of multiple numbers, ignoring NaN values */
+    public static final ExpressionFunction NAN_ARGMIN = functionBuilder() //
+        .name("nanargmin") //
+        .description("""
+                The index of the minimum value of a list of numbers, starting at 1,
+                and ignoring NaN values.
+
+                If any argument is `MISSING`, the result is also `MISSING`. At least
+                two arguments are required, but beyond that you can supply as many
+                as you like.
+
+                If there are multiple copies of the max value, returns the index of
+                the first one.
+
+                If _all_ arguments are NaN, the result is `MISSING`, and a warning
+                will be emitted.
+
+                Examples:
+                * `nanargmin(2, 4, 6)` returns 1
+                * `nanargmin(2.0, 4.0, 6.0)` returns 1
+                * `nanargmin(2, 4.0, 6)` returns 1
+                * `nanargmin(1, 1, 2)` returns 1
+                * `nanargmin(1, MISSING, 3)` returns MISSING
+                * `nanargmin(NaN, -1, 42)` returns 2
+                * `nanargmin(NaN, NaN, NaN)` returns MISSING (with warning)
+                """) //
+        .keywords() //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("input1", "first number", isNumericOrOpt()), //
+            arg("input2", "second number", isNumericOrOpt()), //
+            vararg("more", "additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("the index of the smallest number in the arguments, ignoring NaN values", //
+            "INTEGER?", args -> OPT_INTEGER) //
+        .impl(MathFunctions::nanArgminImpl) //
+        .build();
+
+    private static Computer nanArgminImpl(final List<Computer> args) {
+        return IntegerComputer.of( //
+            argExtremaHelper(args, ExtremumType.MINIMUM, true), //
+            wml -> {
+                if (anyMissing(args).test(wml)) {
+                    return true;
+                } else if (allArgsAreNan(args).test(wml)) {
+                    wml.addWarning("Invalid arguments to nanargmin: all arguments are NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
         );
     }
 
@@ -954,7 +1226,16 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             wml -> (long)Math.floor(c.compute(wml)), //
-            c::isMissing //
+            wml -> {
+                if (c.isMissing(wml)) {
+                    return true;
+                } else if (Double.isNaN(c.compute(wml))) {
+                    wml.addWarning("Invalid arguments to floor: arg is NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
         );
     }
 
@@ -973,7 +1254,16 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             wml -> (int)Math.ceil(c.compute(wml)), //
-            c::isMissing //
+            wml -> {
+                if (c.isMissing(wml)) {
+                    return true;
+                } else if (Double.isNaN(c.compute(wml))) {
+                    wml.addWarning("Invalid arguments to ceil: arg is NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
         );
     }
 
@@ -992,7 +1282,16 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.DOWN).longValue(), //
-            c::isMissing //
+            wml -> {
+                if (c.isMissing(wml)) {
+                    return true;
+                } else if (Double.isNaN(c.compute(wml))) {
+                    wml.addWarning("Invalid arguments to trunc: arg is NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
         );
     }
 
@@ -1008,25 +1307,8 @@ public final class MathFunctions {
         ) //
         .returnType("nearest integer to x", "INTEGER? | FLOAT?",
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::roundHalfDownImpl) //
+        .impl(roundImplFactory(RoundingMode.HALF_DOWN, "roundhalfdown")) //
         .build();
-
-    private static Computer roundHalfDownImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
-
-        if (args.size() == 1) {
-            // Return integer
-            return IntegerComputer.of( //
-                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_DOWN).longValue(), //
-                anyMissing(args) //
-            );
-        } else {
-            return FloatComputer.of(wml -> {
-                int scale = (int)toInteger(args.get(1)).compute(wml);
-                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_DOWN).doubleValue();
-            }, anyMissing(args));
-        }
-    }
 
     /** round towards nearest integer (n + 0.5 rounds to nearest further from zero) */
     public static final ExpressionFunction ROUNDHALFUP = functionBuilder() //
@@ -1040,25 +1322,8 @@ public final class MathFunctions {
         ) //
         .returnType("nearest integer to x", "INTEGER? | FLOAT?",
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::roundHalfUpImpl) //
+        .impl(roundImplFactory(RoundingMode.HALF_UP, "roundhalfup")) //
         .build();
-
-    private static Computer roundHalfUpImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
-
-        if (args.size() == 1) {
-            // Return integer
-            return IntegerComputer.of( //
-                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_UP).longValue(), //
-                anyMissing(args) //
-            );
-        } else {
-            return FloatComputer.of(wml -> {
-                int scale = (int)toInteger(args.get(1)).compute(wml);
-                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_UP).doubleValue();
-            }, anyMissing(args));
-        }
-    }
 
     /** round towards nearest integer (n + 0.5 rounds to nearest even) */
     public static final ExpressionFunction ROUNDHALFEVEN = functionBuilder() //
@@ -1072,24 +1337,47 @@ public final class MathFunctions {
         ) //
         .returnType("nearest integer to x", "INTEGER? | FLOAT?",
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::roundevenImpl) //
+        .impl(roundImplFactory(RoundingMode.HALF_EVEN, "round")) //
         .build();
 
-    private static Computer roundevenImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    /**
+     * Factory for round function implementations.
+     *
+     * @param mode the rounding mode
+     * @return the function implementation
+     */
+    private static Function<List<Computer>, Computer> roundImplFactory(final RoundingMode mode,
+        final String functionName) {
+        return args -> {
+            var c = toFloat(args.get(0));
 
-        if (args.size() == 1) {
-            // Return integer
-            return IntegerComputer.of( //
-                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_EVEN).longValue(), //
-                anyMissing(args) //
-            );
-        } else {
-            return FloatComputer.of(wml -> {
-                int scale = (int)toInteger(args.get(1)).compute(wml);
-                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
-            }, anyMissing(args));
-        }
+            if (args.size() == 1) {
+                // Return integer
+                return IntegerComputer.of( //
+                    wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, mode).longValue(), //
+                    wml -> {
+                        if (anyMissing(args).test(wml)) {
+                            return true;
+                        } else if (Double.isNaN(c.compute(wml))) {
+                            wml.addWarning("Invalid arguments to %s: arg is NaN".formatted(functionName));
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    });
+            } else {
+                return FloatComputer.of(wml -> {
+                    int scale = (int)toInteger(args.get(1)).compute(wml);
+                    double value = c.compute(wml);
+
+                    if (Double.isNaN(value)) {
+                        return Double.NaN;
+                    } else {
+                        return BigDecimal.valueOf(value).setScale(scale, mode).doubleValue();
+                    }
+                }, anyMissing(args));
+            }
+        };
     }
 
     /** The sign of one number */
@@ -1105,7 +1393,19 @@ public final class MathFunctions {
 
     private static Computer signImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return IntegerComputer.of(wml -> (int)Math.signum(c.compute(wml)), c::isMissing);
+        return IntegerComputer.of( //
+            wml -> (int)Math.signum(c.compute(wml)), //
+            wml -> {
+                if (c.isMissing(wml)) {
+                    return true;
+                } else if (Double.isNaN(c.compute(wml))) {
+                    wml.addWarning("Invalid arguments to sign: arg is NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
+        );
     }
 
     /** The mean of multiple numbers */
@@ -1120,16 +1420,59 @@ public final class MathFunctions {
             vararg("more", "additional numbers", isNumericOrOpt()) //
         ) //
         .returnType("the mean of the arguments", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::averageImpl) //
+        .impl(averageImplFactory(false)) //
         .build();
 
-    private static Computer averageImpl(final List<Computer> args) {
-        var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+    /** The mean of multiple numbers */
+    public static final ExpressionFunction NAN_AVERAGE = functionBuilder() //
+        .name("nanaverage") //
+        .description("""
+                The mean value of a list of numbers, ignoring NaNs. If any argument
+                is `MISSING`, the result is also `MISSING`. At least two arguments
+                are required, but beyond that you can supply as many as you like.
 
-        return FloatComputer.of( //
-            wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).average().getAsDouble(), //
-            anyMissing(args) //
-        );
+                If _all_ arguments are NaN, the result is also NaN, and a warning
+                will be emitted.
+
+                Examples:
+                * `nanaverage(2, 4, 6)` returns 4.0
+                * `nanaverage(1, 2, 3, 4, 5)` returns 3.0
+                * `nanaverage(1, 2, MISSING, 4, 5)` returns `MISSING`
+                * `nanaverage(1, 2, NaN, 4, 5)` returns 3.0
+                * `nanaverage(NaN, NaN, NaN, NaN)` returns NaN (with a warning)
+                """) //
+        .keywords("mean") //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("input1", "first number", isNumericOrOpt()), //
+            arg("input2", "second number", isNumericOrOpt()), //
+            vararg("more", "additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("the mean of the arguments", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .impl(averageImplFactory(true)) //
+        .build();
+
+    private static Function<List<Computer>, Computer> averageImplFactory(final boolean ignoreNan) {
+        return args -> {
+            ToDoubleFunction<WarningMessageListener> value = wml -> {
+                // Because we use ::compute we need to do this inside the DoubleSupplier
+                @SuppressWarnings("resource")
+                var unfilteredFloatStream = args.stream().map(c -> toFloat(c).compute(wml)); //
+                var filteredFloatStream = ignoreNan //
+                    ? unfilteredFloatStream.filter(d -> !Double.isNaN(d)) //
+                    : unfilteredFloatStream;
+
+                return filteredFloatStream.mapToDouble(Double::valueOf).average().orElseGet(() -> {
+                    // This can only run if we have an empty stream, i.e. if all values were NaN
+                    // and got filtered out.
+                    wml.addWarning("All arguments to nanaverage are NaN");
+
+                    return Double.NaN;
+                });
+            };
+
+            return FloatComputer.of(value, anyMissing(args));
+        };
     }
 
     /** The median of multiple numbers */
@@ -1144,24 +1487,75 @@ public final class MathFunctions {
             vararg("more", "additional numbers", isNumericOrOpt()) //
         ) //
         .returnType("the median of the arguments", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::medianImpl) //
+        .impl(medianImplFactory(false)) //
         .build();
 
-    private static Computer medianImpl(final List<Computer> args) {
-        ToDoubleFunction<WarningMessageListener> value = wml -> {
-            // Because we use ::compute we need to do this inside the DoubleSupplier
-            var sortedFloatArgs = args.stream().map(c -> toFloat(c).compute(wml)) //
-                .sorted().toArray(Double[]::new);
+    /** The median of multiple numbers, ignoring NaNs */
+    public static final ExpressionFunction NAN_MEDIAN = functionBuilder() //
+        .name("nanmedian") //
+        .description("""
+                The median value of a list of numbers, ignoring NaN values.
+                If any argument is `MISSING`, the result is also `MISSING`.
+                At least two arguments are required, but beyond that you can
+                supply as many as you like.
 
-            if (sortedFloatArgs.length % 2 == 0) {
-                return 0.5
-                    * (sortedFloatArgs[sortedFloatArgs.length / 2] + sortedFloatArgs[sortedFloatArgs.length / 2 - 1]);
-            } else {
-                return sortedFloatArgs[sortedFloatArgs.length / 2];
-            }
+                If _all_ arguments are NaN, the result is also NaN, and a warning
+                will be emitted.
+
+                Examples:
+                * `nanmedian(2, 4, 6)` returns 4.0
+                * `nanmedian(2, 4, 6, 1000)` returns 5.0
+                * `nanmedian(1, 2, MISSING, 4, 5)` returns `MISSING`
+                * `nanmedian(1, 2, NaN, 4, 5)` returns 3.0
+                * `nanmedian(NaN, NaN, NaN, NaN)` returns NaN (with a warning)
+                """) //
+        .keywords() //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("input1", "first number", isNumericOrOpt()), //
+            arg("input2", "second number", isNumericOrOpt()), //
+            vararg("more", "additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("the median of the arguments", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .impl(medianImplFactory(true)) //
+        .build();
+
+    private static Function<List<Computer>, Computer> medianImplFactory(final boolean ignoreNan) {
+        return args -> {
+            ToDoubleFunction<WarningMessageListener> value = wml -> {
+                // Because we use ::compute we need to do this inside the DoubleSupplier
+                @SuppressWarnings("resource")
+                var unfilteredFloatStream = args.stream().map(c -> toFloat(c).compute(wml)); //
+                var filteredFloatStream = ignoreNan //
+                    ? unfilteredFloatStream.filter(d -> !Double.isNaN(d)) //
+                    : unfilteredFloatStream;
+                var sortedFloatArgs = filteredFloatStream.sorted().toArray(Double[]::new);
+
+                if (sortedFloatArgs.length == 0) {
+                    // This can only run if we have an empty array, i.e. if all values were NaN
+                    // and got filtered out.
+
+                    wml.addWarning("All arguments to nanmedian are NaN");
+                    return Double.NaN;
+                } else if (Double.isNaN(sortedFloatArgs[sortedFloatArgs.length - 1])) {
+                    // This can only run if we have an array with at least one NaN value and
+                    // we are not ignoring NaNs.
+                    //
+                    // (works because 'sorted' considers NaN to be > any other element so it
+                    // will always be last in the array)
+                    return Double.NaN;
+                } else if (sortedFloatArgs.length % 2 == 0) {
+                    // Median is average of two middle elements if we have an even number of them
+                    return 0.5 * (sortedFloatArgs[sortedFloatArgs.length / 2]
+                        + sortedFloatArgs[sortedFloatArgs.length / 2 - 1]);
+                } else {
+                    // Median is middle element if we have an odd number of them
+                    return sortedFloatArgs[sortedFloatArgs.length / 2];
+                }
+            };
+
+            return FloatComputer.of(value, anyMissing(args));
         };
-
-        return FloatComputer.of(value, anyMissing(args));
     }
 
     /** Binomial coefficient nCr of two numbers */
@@ -1241,5 +1635,9 @@ public final class MathFunctions {
 
     private static boolean isNearZero(final double d) {
         return Math.abs(d) < 2 * Double.MIN_VALUE;
+    }
+
+    private enum ExtremumType {
+            MAXIMUM, MINIMUM
     }
 }

@@ -101,13 +101,24 @@ public final class ExpressionFunctionBuilder {
 
     /**
      * Factory for isMissing argument to computers. Returns an Predicate<WarningMessageListener> that returns true iff
-     * at least one if the arguments is missing.
+     * at least one of the arguments is missing.
      *
      * @param values
      * @return the predicate
      */
     public static Predicate<WarningMessageListener> anyMissing(final Collection<Computer> values) {
         return wml -> values.stream().anyMatch(c -> c.isMissing(wml));
+    }
+
+    /**
+     * Factory for isMissing argument to computers. Returns an Predicate<WarningMessageListener> that returns true iff
+     * all the arguments are missing.
+     *
+     * @param values
+     * @return the predicate
+     */
+    public static Predicate<WarningMessageListener> allMissing(final Collection<Computer> values) {
+        return wml -> values.stream().allMatch(c -> c.isMissing(wml));
     }
 
     /**

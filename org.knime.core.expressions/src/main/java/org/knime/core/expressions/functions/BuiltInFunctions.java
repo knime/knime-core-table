@@ -74,9 +74,13 @@ public final class BuiltInFunctions {
     /** Built-in functions */
     public static final List<ExpressionFunction> BUILT_IN_FUNCTIONS = List.of( //
         MathFunctions.MAX, //
+        MathFunctions.NAN_MAX, //
         MathFunctions.MIN, //
+        MathFunctions.NAN_MIN,
         MathFunctions.ARGMAX, //
+        MathFunctions.NAN_ARGMAX, //
         MathFunctions.ARGMIN, //
+        MathFunctions.NAN_ARGMIN, //
         MathFunctions.ABS, //
         MathFunctions.SIN, //
         MathFunctions.COS, //
@@ -110,7 +114,9 @@ public final class BuiltInFunctions {
         MathFunctions.ROUNDHALFEVEN, //
         MathFunctions.SIGN, //
         MathFunctions.AVERAGE, //
+        MathFunctions.NAN_AVERAGE, //
         MathFunctions.MEDIAN, //
+        MathFunctions.NAN_MEDIAN, //
         MathFunctions.BINOMIAL, //
         MathFunctions.NORMAL, //
         MathFunctions.ERROR_FUNCTION, //
