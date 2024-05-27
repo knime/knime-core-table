@@ -28,6 +28,7 @@
 	<modules>
 		<module>org.knime.core.expressions/libs/fetch_jars</module>
 		<module>org.knime.core.expressions</module>
+		<module>org.knime.core.expressions.testing</module>
 		<module>org.knime.core.expressions.tests</module>
 		<module>org.knime.core.table</module>
 		<module>org.knime.core.table.tests</module>
