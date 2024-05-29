@@ -508,7 +508,6 @@ public class RagBuilder {
             case COLFILTER:
             case MISSING:
             case APPENDMISSING:
-            case MAP:
             case IDENTITY:
                 // do nothing
                 break;
@@ -521,8 +520,8 @@ public class RagBuilder {
             case WRAPPER:
             case ROWINDEX:
             case OBSERVER:
+            case MAP:
                 traceExecConsumer(node, node, false);
-//                traceExecConsumer(node, node);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + node.type());
