@@ -1413,4 +1413,51 @@ public class VirtualTableTests {
         testTransformedTableLookahead(true, VirtualTableTests::dataNoInputsMap, VirtualTableTests::vtNoInputsMap);
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataNoInputsMap, VirtualTableTests::vtNoInputsMap);
     }
+
+
+
+    public static VirtualTable vtAppendTwice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable t1 = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable t2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]));
+        return t1.append(t2).append(t2);
+    }
+
+    public static VirtualTable vtAppendTwice() {
+        return vtAppendTwice(new UUID[]{randomUUID(), randomUUID()}, dataAppendTwice());
+    }
+
+    public static RowAccessible[] dataAppendTwice() {
+        final ColumnarSchema schema1 = ColumnarSchema.of(INT);
+        final Object[][] values1 = new Object[][]{ //
+                new Object[]{1}, //
+                new Object[]{2}, //
+                new Object[]{3}, //
+                new Object[]{4}, //
+                new Object[]{5} //
+        };
+        final ColumnarSchema schema2 = ColumnarSchema.of(INT);
+        final Object[][] values2 = new Object[][]{ //
+                new Object[]{11}, //
+                new Object[]{12} //
+        };
+        return new RowAccessible[] {
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema1, values1),
+                RowAccessiblesTestUtils.createRowAccessibleFromRowWiseValues(schema2, values2),
+        };
+    }
+
+    @Test
+    public void testAppendTwice() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, INT, INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{1, 11,   11}, //
+                new Object[]{2, 12,   12}, //
+                new Object[]{3, null, null}, //
+                new Object[]{4, null, null}, //
+                new Object[]{5, null, null}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataAppendTwice, VirtualTableTests::vtAppendTwice);
+        testTransformedTableLookahead(true, VirtualTableTests::dataAppendTwice, VirtualTableTests::vtAppendTwice);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataAppendTwice, VirtualTableTests::vtAppendTwice);
+    }
 }
