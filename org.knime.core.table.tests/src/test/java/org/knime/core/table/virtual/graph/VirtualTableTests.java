@@ -1380,7 +1380,8 @@ public class VirtualTableTests {
             final IntAccess.IntWriteAccess o = (IntAccess.IntWriteAccess)outputs[0];
             return () -> o.setIntValue(12345);
         });
-        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable table =
+                new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).slice(0, 7);
         final VirtualTable mappedCols = table.map(new int[]{}, constant);
         return table
                 .keepOnlyColumns(0,1)

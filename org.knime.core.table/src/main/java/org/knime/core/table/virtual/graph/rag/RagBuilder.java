@@ -1120,21 +1120,21 @@ public class RagBuilder {
         final TableTransform mergedTableTransform = new TableTransform(Collections.emptyList(), new SliceTransformSpec(mergedRange));
         final RagNode merged = graph.addNode(mergedTableTransform);
 
-        // link all predecessors of predecessor to merged
-        graph.relinkPredecessorsToNewTarget(predecessor, merged, EXEC);
-
         // link merged to all EXEC successors of slice
         graph.relinkSuccessorsToNewSource(slice, merged, EXEC);
 
-        // remove all EXEC edges from slice and predecessor
-        final List<RagEdge> edgesToRemove = new ArrayList<>(slice.incomingEdges(EXEC));
-        edgesToRemove.addAll(slice.outgoingEdges(EXEC));
-        edgesToRemove.addAll(predecessor.incomingEdges(EXEC));
-        // this would only be the one outgoing edge to slice, which we have already added:
-        // edgesToRemove.addAll(predecessor.outgoingEdges(EXEC));
-        for (final RagEdge edge : edgesToRemove) {
-            graph.remove(edge);
-        }
+        // remove slice (and associated edges)
+        graph.remove(slice);
+
+        // link all successors of predecessors to merged
+        // (except slice, which has been removed already)
+        graph.relinkSuccessorsToNewSource(predecessor, merged, EXEC);
+
+        // link all predecessors of predecessor to merged
+        graph.relinkPredecessorsToNewTarget(predecessor, merged, EXEC);
+
+        // remove source (and associated edges)
+        graph.remove(predecessor);
     }
 
 
