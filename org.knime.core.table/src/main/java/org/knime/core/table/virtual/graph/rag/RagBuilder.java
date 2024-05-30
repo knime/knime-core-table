@@ -1093,9 +1093,15 @@ public class RagBuilder {
         // link merged to all EXEC successors of slice
         graph.relinkSuccessorsToNewSource(slice, merged, EXEC);
 
-        // remove source and slice (and associated edges)
-        graph.remove(source);
+        // remove slice (and associated edges)
         graph.remove(slice);
+
+        // re-link EXEC edges of source to merged
+        // (link merged to all EXEC successors of source -- except slice, which has been removed already)
+        graph.relinkSuccessorsToNewSource(source, merged, EXEC);
+
+        // remove source (and associated edges)
+        graph.remove(source);
 
         return true;
     }

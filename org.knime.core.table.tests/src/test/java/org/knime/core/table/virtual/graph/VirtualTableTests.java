@@ -1384,7 +1384,8 @@ public class VirtualTableTests {
         final VirtualTable mappedCols = table.map(new int[]{}, constant);
         return table
                 .keepOnlyColumns(0,1)
-                .append(List.of(mappedCols));
+                .append(List.of(mappedCols))
+                .slice(0,7);
     }
 
     public static VirtualTable vtNoInputsMap() {
