@@ -63,7 +63,7 @@ import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.WarningMessageListener;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.table.access.BooleanAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
@@ -124,7 +124,7 @@ public final class Exec {
      * {@link Computer} to a {@link WriteAccess}. The visitor throws an {@link IllegalArgumentException} if the
      * {@link DataSpec} cannot be used as an expression output.
      */
-    private static final DataSpec.Mapper<TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable>> //
+    private static final DataSpec.Mapper<TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>> //
     /**/ DATA_SPEC_TO_WRITER_FACTORY = new WriterFactoryMapper();
 
     /**
@@ -144,10 +144,10 @@ public final class Exec {
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
         final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
         final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer,
-        final WarningMessageListener wml) {
+        final EvaluationContext wml) {
 
         var outputSpec = valueTypeToDataSpec(Expressions.getInferredType(ast));
-        final TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> writerFactory =
+        final TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> writerFactory =
             outputSpec.spec().accept(DATA_SPEC_TO_WRITER_FACTORY);
         final Function<ReadAccess[], Computer> computerFactory =
             createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer, aggregationToComputer);
@@ -176,7 +176,7 @@ public final class Exec {
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
         final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
         final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer,
-        final WarningMessageListener wml) {
+        final EvaluationContext wml) {
         var outputType = Expressions.getInferredType(ast);
         if (!ValueType.BOOLEAN.equals(outputType)) {
             throw new IllegalArgumentException(
@@ -402,10 +402,10 @@ public final class Exec {
     }
 
     private static class WriterFactoryMapper
-        implements DataSpec.Mapper<TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable>> {
+        implements DataSpec.Mapper<TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>> {
 
         private static Runnable setMissingOrSetValue(final Computer c, final WriteAccess a, final Runnable setValue,
-            final WarningMessageListener wml) {
+            final EvaluationContext wml) {
             return () -> {
                 if (c.isMissing(wml)) {
                     a.setMissing();
@@ -416,7 +416,7 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final BooleanDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final BooleanDataSpec spec) {
             return (access, computer, wml) -> {
                 var a = (BooleanAccess.BooleanWriteAccess)access;
                 var c = (BooleanComputer)computer;
@@ -425,7 +425,7 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final DoubleDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final DoubleDataSpec spec) {
             return (access, computer, wml) -> {
                 var a = (DoubleAccess.DoubleWriteAccess)access;
                 var c = (FloatComputer)computer;
@@ -434,7 +434,7 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final LongDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final LongDataSpec spec) {
             return (access, computer, wml) -> {
                 var a = (LongAccess.LongWriteAccess)access;
                 var c = (IntegerComputer)computer;
@@ -443,7 +443,7 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final StringDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final StringDataSpec spec) {
             return (access, computer, wml) -> {
                 var a = (StringAccess.StringWriteAccess)access;
                 var c = (StringComputer)computer;
@@ -452,38 +452,38 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final IntDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final IntDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce int data");
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final FloatDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final FloatDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce float data");
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final ByteDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final ByteDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce byte data");
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable>
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>
             visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce var binary data");
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final VoidDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final VoidDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce void data");
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable> visit(final StructDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final StructDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce struct data");
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, WarningMessageListener, Runnable>
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>
             visit(final ListDataSpec listDataSpec) {
             throw new IllegalArgumentException("Expressions cannot produce list data");
         }
