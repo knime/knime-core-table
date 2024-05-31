@@ -81,15 +81,11 @@ import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RandomRowAccessible;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
-import org.knime.core.table.virtual.graph.rag.RagBuilder;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
-import org.knime.core.table.virtual.graph.rag.RagNode;
-import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformUtils;
 import org.knime.core.table.virtual.spec.MapTransformUtils.MapperWithRowIndexFactory;
@@ -142,21 +138,19 @@ public class VirtualTableTests {
             final RowAccessible[] sources,
             final boolean useRandomAccess) {
 
-        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
-        final List<RagNode> rag = RagBuilder.createOrderedRag(graph);
-        final CursorType supportedCursorType = RagGraphProperties.supportedCursorType(rag);
-        final CursorType cursorType = switch (supportedCursorType ) {
+        final TableTransformGraph graph = new TableTransformGraph(table.getProducingTransform());
+        TableTransformUtil.optimize(graph);
+        final CursorType cursorType = switch (graph.supportedCursorType()) {
             case BASIC -> BASIC;
             case LOOKAHEAD -> LOOKAHEAD;
             case RANDOMACCESS -> useRandomAccess ? RANDOMACCESS : LOOKAHEAD;
         };
-        final ColumnarSchema schema = RagBuilder.createSchema(rag);
-
+        final ColumnarSchema schema = graph.createSchema();
         final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        return CapExecutor.createRowAccessible(graph, schema, cursorType, sourceMap);
+        return CapExecutor.createRowAccessible(graph, sourceMap);
     }
 
     @FunctionalInterface
@@ -856,6 +850,41 @@ public class VirtualTableTests {
 
 
 
+
+    public static VirtualTable vtSimpleAppendMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperFactory add = MapTransformUtils.doublesToDouble((a, b) -> a + b);
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        return table.appendMap(new int[]{2, 3}, add).selectColumns(0, 1, 4);
+    }
+
+    public static VirtualTable vtSimpleAppendMap() {
+        return vtSimpleAppendMap(new UUID[]{randomUUID()}, dataSimpleAppendMap());
+    }
+
+    public static RowAccessible[] dataSimpleAppendMap() {
+        return dataSimpleMap();
+    }
+
+    @Test
+    public void testSimpleAppendMap() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, STRING, DOUBLE);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{1, "First", 1.1}, //
+                new Object[]{2, "Second", 2.2}, //
+                new Object[]{3, "Third", 3.3}, //
+                new Object[]{4, "Fourth", 4.4}, //
+                new Object[]{5, "Fifth", 5.5}, //
+                new Object[]{6, "Sixth", 6.6}, //
+                new Object[]{7, "Seventh", 7.7} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataSimpleAppendMap, VirtualTableTests::vtSimpleAppendMap);
+        testTransformedTableLookahead(true, VirtualTableTests::dataSimpleAppendMap, VirtualTableTests::vtSimpleAppendMap);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataSimpleAppendMap, VirtualTableTests::vtSimpleAppendMap);
+    }
+
+
+
+
     public static VirtualTable vtSimpleRowFilter(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final RowFilterFactory isNonNegative = RowFilterFactory.doublePredicate(d -> d >= 0);
         final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
@@ -1037,21 +1066,6 @@ public class VirtualTableTests {
         testTransformedTable(expectedSchema, expectedValues, -1, VirtualTableTests::dataFiltersMapAndConcatenate, VirtualTableTests::vtFiltersMapAndConcatenate);
         testTransformedTableLookahead(false, VirtualTableTests::dataFiltersMapAndConcatenate, VirtualTableTests::vtFiltersMapAndConcatenate);
         testTransformedTableRandomAccess(false, expectedSchema, expectedValues, -1, VirtualTableTests::dataFiltersMapAndConcatenate, VirtualTableTests::vtFiltersMapAndConcatenate);
-    }
-
-
-    public static VirtualTable vtMaterializeMinimal() {
-        return vtMaterializeMinimal(new UUID[]{randomUUID()}, dataMinimal(), new UUID[]{randomUUID()}, null);
-    }
-
-    public static VirtualTable vtMaterializeMinimal(
-            final UUID[] sourceIdentifiers, final RowAccessible[] sources,
-            final UUID[] sinkIdentifiers, final RowWriteAccessible[] sinks) { // sinks argument is unused because we don't have SinkProperties yet
-        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
-        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
-                .permute(0, 2, 1)
-                .filterColumns(1)
-                .materialize(sinkIdentifiers[0]);
     }
 
 

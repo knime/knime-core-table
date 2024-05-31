@@ -56,5 +56,4 @@ public enum CapNodeType {
     APPEND, //
     CONCATENATE, //
     CONSUMER, //
-    MATERIALIZE
 }

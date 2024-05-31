@@ -54,16 +54,16 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 
 class CapLookaheadRowAccessible extends CapRowAccessible implements LookaheadRowAccessible {
 
     CapLookaheadRowAccessible( //
-            final RagGraph specGraph, //
+            final TableTransformGraph tableTransformGraph, //
             final ColumnarSchema schema, //
             final Map<UUID, RowAccessible> availableSources) {
 
-        super(specGraph, schema, availableSources);
+        super(tableTransformGraph, schema, availableSources);
     }
 
     @Override

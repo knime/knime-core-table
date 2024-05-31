@@ -48,7 +48,10 @@
  */
 package org.knime.core.table.virtual.spec;
 
+import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
 public final class AppendMissingValuesTransformSpec implements TableTransformSpec {
 
@@ -83,4 +86,44 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
         return "Append all-missing " + m_columns.toString();
     }
 
+    public MapTransformSpec toMap() {
+        return new MapTransformSpec(new int[0], new MissingValueMapperFactory(m_columns));
+    }
+
+    static class MissingValueMapperFactory implements MapperFactory {
+
+        private final ColumnarSchema schema;
+
+        MissingValueMapperFactory(ColumnarSchema schema) {
+            this.schema = schema;
+        }
+
+        @Override
+        public ColumnarSchema getOutputSchema() {
+            return schema;
+        }
+
+        @Override
+        public Runnable createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+            for (WriteAccess output : outputs) {
+                output.setMissing();
+            }
+            return () -> {};
+        }
+
+        @Override
+        public final boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof MissingValueMapperFactory that))
+                return false;
+
+            return schema.equals(that.schema);
+        }
+
+        @Override
+        public int hashCode() {
+            return schema.hashCode();
+        }
+    }
 }

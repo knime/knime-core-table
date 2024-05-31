@@ -66,13 +66,13 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformUtils;
-import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverFactory;
 import org.knime.core.table.virtual.spec.ObserverTransformUtils;
@@ -288,6 +288,19 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema.append(LONG));
     }
 
+    public VirtualTable appendMap(final int[] columnIndices, final MapperFactory mapperFactory) {
+        final TableTransformSpec transformSpec = new AppendMapTransformSpec(columnIndices, mapperFactory);
+        final ColumnarSchema schema = ColumnarSchemas.append(List.of(m_schema, mapperFactory.getOutputSchema()));
+        return new VirtualTable(new TableTransform(m_transform, transformSpec), schema);
+    }
+
+    public VirtualTable appendMap(final int[] columnIndices, final MapTransformUtils.MapperWithRowIndexFactory mapperFactory) {
+        final int[] columns = Arrays.copyOf(columnIndices, columnIndices.length + 1);
+        columns[columns.length - 1] = m_schema.numColumns();
+        final MapperFactory factory = new MapTransformUtils.WrappedMapperWithRowIndexFactory(mapperFactory);
+        return appendRowIndex().appendMap(columns, factory);
+    }
+
     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory) {
         final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
         // TODO (TP) It would be nice to verify here that the MapperFactory
@@ -324,16 +337,8 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 
-    // TODO: Should this take TargetTableProperties analogous to SourceTableProperties
-    public VirtualTable materialize(final UUID sinkIdentifier) {
-        final MaterializeTransformSpec transformSpec = new MaterializeTransformSpec(sinkIdentifier);
-        return new VirtualTable(new TableTransform(m_transform, transformSpec), ColumnarSchema.of());
-    }
-
-    public VirtualTable resolveSources(final Map<UUID, VirtualTable> sourceMap) {
-        var reSourcedTransform = m_transform.reSource(sourceMap.entrySet().stream()//
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getProducingTransform())));
-        return new VirtualTable(reSourcedTransform, m_schema);
+    public VirtualTable materialize(final UUID sinkIdentifier) { // TODO (TP): remove
+        throw new UnsupportedOperationException("TODO (TP): remove");
     }
 
     public VirtualTable observe(final int[] columnIndices, final ObserverFactory observerFactory) {

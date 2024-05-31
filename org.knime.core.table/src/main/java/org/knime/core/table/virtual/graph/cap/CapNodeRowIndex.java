@@ -49,7 +49,6 @@ package org.knime.core.table.virtual.graph.cap;
  * Represents a row index operation in the CAP.
  * <p>
  * A {@code CapNodeRowIndex} knows the index of the predecessor {@code CapNode}.
- * TODO: will probably evolve to have starting index
  */
 public class CapNodeRowIndex extends CapNode {
 

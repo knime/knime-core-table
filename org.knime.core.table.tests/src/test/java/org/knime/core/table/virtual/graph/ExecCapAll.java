@@ -45,28 +45,24 @@
  */
 package org.knime.core.table.virtual.graph;
 
-import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
-import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
-import org.knime.core.table.virtual.graph.rag.RagBuilder;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
-import org.knime.core.table.virtual.graph.rag.RagNode;
-import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
+import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
 
 public class ExecCapAll {
 
@@ -216,11 +212,9 @@ public class ExecCapAll {
             uuidRowAccessibleMap.put(sourceIdentifiers[i], accessibles[i]);
         }
 
-        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
-        final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-        final CursorType cursorType = RagGraphProperties.supportedCursorType(orderedRag);
-        final RowAccessible rows = createRowAccessible(graph, schema, cursorType, uuidRowAccessibleMap);
+        final TableTransformGraph graph = new TableTransformGraph(table.getProducingTransform());
+        TableTransformUtil.optimize(graph);
+        final RowAccessible rows = createRowAccessible(graph, uuidRowAccessibleMap);
 
         System.out.println(exampleName);
         System.out.println("------------------------");

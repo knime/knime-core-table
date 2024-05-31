@@ -49,7 +49,7 @@ import java.io.IOException;
 
 import org.knime.core.table.access.ReadAccess;
 
-class SequentialNodeImpConsumer implements SequentialNodeImp {
+public class SequentialNodeImpConsumer implements SequentialNodeImp {
 
     private final AccessImp[] inputs;
 
