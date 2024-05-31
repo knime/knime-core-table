@@ -51,7 +51,7 @@ import java.util.List;
 
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
-import org.knime.core.table.virtual.graph.util.Mermaid;
+import org.knime.core.table.virtual.graph.debug.Mermaid;
 
 public class RagPlayground {
 
@@ -85,6 +85,7 @@ public class RagPlayground {
         var spec =  new SpecGraphBuilder();
 
         spec.buildSpec(table.getProducingTransform());
+        mermaid.append("<pre>" + spec.graph + "</pre>");
         mermaid.append("buildSpec(table)", "SPEC edges", spec.graph);
 
         var rag = new RagBuilder(spec.graph);

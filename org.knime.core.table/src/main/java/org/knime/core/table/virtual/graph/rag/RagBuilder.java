@@ -83,6 +83,7 @@ import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
+import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
@@ -193,25 +194,41 @@ public class RagBuilder {
             final Function<List<RagNode>, RagNode> policy,
             final boolean copySpecGraph) {
 
-        final RagBuilder specs = new RagBuilder(copySpecGraph ? specGraph.copy() : specGraph);
-        specs.traceAccesses();
-        specs.traceExec();
-        specs.optimize();
-        specs.createExecutionOrderingEdges();
-        specs.removeWrapperNodes();
+        try( var logger = VirtualTableDebugging.createLogger() ) {
 
-        final List<RagNode> order = specs.getFlattenedExecutionOrder(policy);
+            final RagBuilder specs = new RagBuilder(copySpecGraph ? specGraph.copy() : specGraph);
+            logger.appendRagGraph("buildSpecGraph()", "SPEC edges", specs.graph);
 
-        // If we need missing value columns, prepend the MISSING source to the execution order
-        // (it should not be connected by ORDER edges)
-        // TODO: Avoid this special case logic?
-        final RagNode missingValuesSource = specs.graph.getMissingValuesSource();
-        if ( !missingValuesSource.getOutputs().isEmpty() ) {
-            order.add(0, missingValuesSource);
+            specs.traceAccesses();
+            logger.appendRagGraph("traceAccesses()", "adds DATA edges", specs.graph);
+
+            specs.traceExec();
+            logger.appendRagGraph("traceExec()", "adds EXEC edges", specs.graph);
+
+            specs.optimize( logger );
+
+            specs.createExecutionOrderingEdges();
+            logger.appendRagGraph("after createExecutionOrderingEdges()", "adds ORDER edges", specs.graph);
+
+            specs.removeWrapperNodes();
+            logger.appendRagGraph("after removeWrapperNodes()", "short-circuit wrappers before concatenate",
+                    specs.graph);
+
+            final List<RagNode> order = specs.getFlattenedExecutionOrder(policy);
+            // If we need missing value columns, prepend the MISSING source to the execution order
+            // (it should not be connected by ORDER edges)
+            // TODO: Avoid this special case logic?
+            final RagNode missingValuesSource = specs.graph.getMissingValuesSource();
+            if (!missingValuesSource.getOutputs().isEmpty()) {
+                order.add(0, missingValuesSource);
+            }
+            logger.appendOrderedRagGraph("flattened execution order", "adds FLATTENED_ORDER edges (just for visualization)", specs.graph, order);
+
+            return order;
         }
-
-        return order;
     }
+
+
 
     public static ColumnarSchema createSchema(final List<RagNode> orderedRag) {
         final RagNode node = orderedRag.get(orderedRag.size() - 1);
@@ -597,21 +614,56 @@ public class RagBuilder {
     // optimize()
 
     void optimize() {
+        optimize(new VirtualTableDebugging.NullLogger());
+    }
+
+    void optimize(VirtualTableDebugging.Logger logger) {
         graph.trim();
         graph.transitiveReduction(EXEC);
+        logger.appendRagGraph("optimize()", "trim unused nodes and edges", graph);
         boolean changed = true;
         while (changed) {
             changed = false;
-            changed |= eliminateRowIndexes();
-            changed |= eliminateAppends();
-            changed |= mergeSlices();
-            changed |= mergeRowIndexSiblings();
-            changed |= mergeRowIndexSequence();
-            changed |= moveSlicesBeforeObserves();
-            changed |= moveSlicesBeforeAppends();
-            changed |= moveSlicesBeforeRowIndexes();
-            changed |= moveSlicesBeforeConcatenates();
-            changed |= eliminateSingletonConcatenates();
+            if ( eliminateRowIndexes() ) {
+                logger.appendRagGraph("eliminateRowIndexes", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( eliminateAppends() ) {
+                logger.appendRagGraph("eliminateAppends", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( mergeSlices() ) {
+                logger.appendRagGraph("mergeSlices", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( mergeRowIndexSiblings() ) {
+                logger.appendRagGraph("mergeRowIndexSiblings", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( mergeRowIndexSequence() ) {
+                logger.appendRagGraph("mergeRowIndexSequence", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( moveSlicesBeforeObserves() ) {
+                logger.appendRagGraph("moveSlicesBeforeObserves", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( moveSlicesBeforeAppends() ) {
+                logger.appendRagGraph("moveSlicesBeforeAppends", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( moveSlicesBeforeRowIndexes() ) {
+                logger.appendRagGraph("moveSlicesBeforeRowIndexes", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( moveSlicesBeforeConcatenates() ) {
+                logger.appendRagGraph("moveSlicesBeforeConcatenates", "(optimize step)", graph);
+                changed = true;
+            }
+            if ( eliminateSingletonConcatenates() ) {
+                logger.appendRagGraph("eliminateSingletonConcatenates", "(optimize step)", graph);
+                changed = true;
+            }
             // TODO other optimizations
         }
     }
