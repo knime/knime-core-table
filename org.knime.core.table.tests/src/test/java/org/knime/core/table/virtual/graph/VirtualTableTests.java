@@ -317,7 +317,7 @@ public class VirtualTableTests {
 
     public static VirtualTable vtForkJoin(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable transformedTable = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).slice(1, 6);
-        final VirtualTable forkedTable1 = transformedTable.filterColumns(1).appendMissingValueColumns(List.of(DOUBLE.spec()), List.of(DOUBLE.traits()));
+        final VirtualTable forkedTable1 = transformedTable.filterColumns(1).appendMissingValueColumns(DOUBLE);
         final VirtualTable forkedTable2 = transformedTable.permute(2, 1, 0);
         final VirtualTable joinedTransformedTable = forkedTable1.append(Arrays.asList(forkedTable2));
         return joinedTransformedTable;
@@ -360,7 +360,7 @@ public class VirtualTableTests {
 
     public static VirtualTable vtForkJoinLookALike(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable transformedTable = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).slice(1, 6);
-        final VirtualTable forkedTable1 = transformedTable.filterColumns(1).appendMissingValueColumns(List.of(DOUBLE.spec()), List.of(DOUBLE.traits()));
+        final VirtualTable forkedTable1 = transformedTable.filterColumns(1).appendMissingValueColumns(DOUBLE);
         final VirtualTable forkedTable2 = transformedTable.slice(2,3).permute(2, 1, 0);
         final VirtualTable joinedTransformedTable = forkedTable1.append(Arrays.asList(forkedTable2));
         return joinedTransformedTable;
@@ -521,7 +521,7 @@ public class VirtualTableTests {
     public static VirtualTable vtAppendAndAppendMissing(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]))
                 .permute(1, 0)
-                .appendMissingValueColumns(List.of(DOUBLE.spec()), List.of(DOUBLE.traits()));
+                .appendMissingValueColumns(DOUBLE);
         return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
                 .filterColumns(1, 2)
                 .append(List.of(transformedTable2))
@@ -763,7 +763,7 @@ public class VirtualTableTests {
         final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]));
         return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
                 .filterColumns(0)
-                .appendMissingValueColumns(List.of(DOUBLE.spec()), List.of(DOUBLE.traits()))
+                .appendMissingValueColumns(DOUBLE)
                 .concatenate(List.of(transformedTable2));
     }
 

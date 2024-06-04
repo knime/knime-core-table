@@ -64,7 +64,7 @@ import org.knime.core.table.cursor.LookaheadCursor;
 import org.knime.core.table.cursor.RandomAccessCursor;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DefaultColumnarSchema;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
@@ -199,12 +199,21 @@ public final class VirtualTable {
         return transforms;
     }
 
-    public VirtualTable appendMissingValueColumns(final List<DataSpec> columns, final List<DataTraits> traits) {
-        var appendSchema =
-            new DefaultColumnarSchema(columns.toArray(DataSpec[]::new), traits.toArray(DataTraits[]::new));
+    public VirtualTable appendMissingValueColumns(final List<DataSpec> specs, final List<DataTraits> traits) {
+        var specsWithTraits = new DataSpecWithTraits[specs.size()];
+        Arrays.setAll(specsWithTraits, i -> new DataSpecWithTraits(specs.get(i), traits.get(i)));
+        return appendMissingValueColumns(specsWithTraits);
+    }
+
+    public VirtualTable appendMissingValueColumns(DataSpecWithTraits... specs) {
+        var appendSchema = ColumnarSchema.of(specs);
         final AppendMissingValuesTransformSpec transformSpec = new AppendMissingValuesTransformSpec(appendSchema);
         final ColumnarSchema schema = ColumnarSchemas.append(List.of(m_schema, appendSchema));
         return new VirtualTable(new TableTransform(m_transform, transformSpec), schema);
+    }
+
+    public VirtualTable appendMissingValueColumns(final List<DataSpecWithTraits> specs) {
+        return appendMissingValueColumns(specs.toArray(DataSpecWithTraits[]::new));
     }
 
     public VirtualTable concatenate(final List<VirtualTable> tables) {
