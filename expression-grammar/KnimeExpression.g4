@@ -8,8 +8,8 @@ fullExpr: expr EOF;
 // atoms
 atom:
     BOOLEAN
-    | INTEGER
-    | FLOAT
+    | POSITIVE_INTEGER
+    | POSITIVE_FLOAT
     | STRING
     | MISSING
     | MATH_CONSTANT
@@ -21,7 +21,7 @@ atom:
 // Any valid expression
 expr:
     (shortName = FLOW_VAR_IDENTIFIER | '$$['+ longName = STRING ']')                                              # flowVarAccess
-    | (shortName = COLUMN_IDENTIFIER | '$['+ longName = STRING (',' + (minus = MINUS)? offset = INTEGER )? ']')   # colAccess
+    | (shortName = COLUMN_IDENTIFIER | '$['+ longName = STRING (',' + (minus = MINUS)? offset = POSITIVE_INTEGER )? ']')   # colAccess
     | name = FUNCTION_IDENTIFIER '(' functionArgs? ')'                                                            # functionCall
     | name = AGGREGATION_IDENTIFIER '(' aggregationArgs ')'                                                       # aggregationCall
     | expr op = MISSING_FALLBACK expr                                                                             # binaryOp
@@ -48,10 +48,12 @@ functionArgs: expr (',' expr)* ','?;
 aggregationArgs:
     (positionalAggregationArgs (',' namedAggregationArgs)? ','?)
     | (namedAggregationArgs ','?);
-positionalAggregationArgs: atom (',' atom)*;
+positionalAggregationArgs: positionalAggregationArg (',' positionalAggregationArg)*;
+positionalAggregationArg: (atom | negativeFloat | negativeInteger);
 namedAggregationArgs: namedAggregationArg (',' namedAggregationArg)*;
-namedAggregationArg: argName=NAMED_ARGUMENT_IDENTIFIER atom;
-
+namedAggregationArg: argName=NAMED_ARGUMENT_IDENTIFIER (atom | negativeFloat | negativeInteger);
+negativeInteger: MINUS POSITIVE_INTEGER;
+negativeFloat: MINUS POSITIVE_FLOAT;
 
 // Single-line comment
 LINE_COMMENT: '#' ~[\r\n]* -> skip;
@@ -63,12 +65,12 @@ WHITESPACE: [ \r\n\t]+ -> skip;
 BOOLEAN: 'true' | 'false';
 
 // INTEGER literal
-INTEGER: '0' | NON_ZERO_DIGIT ('_'? DIGIT)*;
+POSITIVE_INTEGER: '0' | NON_ZERO_DIGIT ('_'? DIGIT)*;
 fragment NON_ZERO_DIGIT: [1-9];
 fragment DIGIT: [0-9];
 
 // FLOAT literal
-FLOAT: POINT_FLOAT | EXPONENT_FLOAT;
+POSITIVE_FLOAT: POINT_FLOAT | EXPONENT_FLOAT;
 fragment POINT_FLOAT: DIGIT_PART? FRACTION | DIGIT_PART '.';
 fragment EXPONENT_FLOAT: (DIGIT_PART | POINT_FLOAT) EXPONENT;
 fragment DIGIT_PART: DIGIT ('_'? DIGIT)*;

@@ -97,6 +97,12 @@ public interface KnimeExpressionVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPositionalAggregationArgs(KnimeExpressionParser.PositionalAggregationArgsContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link KnimeExpressionParser#positionalAggregationArg}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPositionalAggregationArg(KnimeExpressionParser.PositionalAggregationArgContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link KnimeExpressionParser#namedAggregationArgs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -108,4 +114,16 @@ public interface KnimeExpressionVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link KnimeExpressionParser#negativeInteger}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNegativeInteger(KnimeExpressionParser.NegativeIntegerContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link KnimeExpressionParser#negativeFloat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNegativeFloat(KnimeExpressionParser.NegativeFloatContext ctx);
 }

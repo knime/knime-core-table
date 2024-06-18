@@ -429,7 +429,7 @@ public final class BuiltInAggregations {
         var matchedArgs = Argument.matchSignature(STD_DEV.description().arguments(), arguments); //
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
-            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(hasNtoMArguments(1, 3), "Should have 1-3 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
             .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //

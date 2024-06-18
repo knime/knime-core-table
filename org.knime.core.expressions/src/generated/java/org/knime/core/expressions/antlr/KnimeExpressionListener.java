@@ -154,6 +154,16 @@ public interface KnimeExpressionListener extends ParseTreeListener {
 	 */
 	void exitPositionalAggregationArgs(KnimeExpressionParser.PositionalAggregationArgsContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link KnimeExpressionParser#positionalAggregationArg}.
+	 * @param ctx the parse tree
+	 */
+	void enterPositionalAggregationArg(KnimeExpressionParser.PositionalAggregationArgContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link KnimeExpressionParser#positionalAggregationArg}.
+	 * @param ctx the parse tree
+	 */
+	void exitPositionalAggregationArg(KnimeExpressionParser.PositionalAggregationArgContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link KnimeExpressionParser#namedAggregationArgs}.
 	 * @param ctx the parse tree
 	 */
@@ -173,4 +183,24 @@ public interface KnimeExpressionListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link KnimeExpressionParser#negativeInteger}.
+	 * @param ctx the parse tree
+	 */
+	void enterNegativeInteger(KnimeExpressionParser.NegativeIntegerContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link KnimeExpressionParser#negativeInteger}.
+	 * @param ctx the parse tree
+	 */
+	void exitNegativeInteger(KnimeExpressionParser.NegativeIntegerContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link KnimeExpressionParser#negativeFloat}.
+	 * @param ctx the parse tree
+	 */
+	void enterNegativeFloat(KnimeExpressionParser.NegativeFloatContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link KnimeExpressionParser#negativeFloat}.
+	 * @param ctx the parse tree
+	 */
+	void exitNegativeFloat(KnimeExpressionParser.NegativeFloatContext ctx);
 }

@@ -173,6 +173,18 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterPositionalAggregationArg(KnimeExpressionParser.PositionalAggregationArgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPositionalAggregationArg(KnimeExpressionParser.PositionalAggregationArgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterNamedAggregationArgs(KnimeExpressionParser.NamedAggregationArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -192,6 +204,30 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterNegativeInteger(KnimeExpressionParser.NegativeIntegerContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNegativeInteger(KnimeExpressionParser.NegativeIntegerContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterNegativeFloat(KnimeExpressionParser.NegativeFloatContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNegativeFloat(KnimeExpressionParser.NegativeFloatContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

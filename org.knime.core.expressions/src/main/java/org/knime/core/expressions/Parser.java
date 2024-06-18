@@ -96,6 +96,7 @@ import org.knime.core.expressions.antlr.KnimeExpressionParser.ColAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FlowVarAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FullExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FunctionCallContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.NamedAggregationArgContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ParenthesisedExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.UnaryOpContext;
 
@@ -241,10 +242,7 @@ final class Parser {
         @Override
         public Ast visitColAccess(final ColAccessContext ctx) {
             var col = ctx.shortName != null ? ctx.shortName.getText().substring(1) : parseStringLiteral(ctx.longName);
-
-            var offsetSign = ctx.minus == null ? 1 : -1;
-            var offsetValue = ctx.offset != null ? Long.parseLong(ctx.offset.getText()) : 0;
-            var offset = offsetSign * offsetValue;
+            var offset = ctx.offset != null ? Long.parseLong(ctx.offset.getText()) : 0;
 
             return columnAccess(col, offset, createData(getLocation(ctx)));
         }
@@ -268,13 +266,24 @@ final class Parser {
 
         @Override
         public Ast visitAggregationCall(final AggregationCallContext ctx) {
-            // NB: The cast to ConstantAst is safe because the grammar ensures that the arguments are constant
 
             var positionalArgs = //
                 Optional.ofNullable(ctx.aggregationArgs().positionalAggregationArgs()) //
-                    .map(paa -> paa.atom().stream()) //
+                    .map(paa -> paa.positionalAggregationArg().stream()) //
                     .orElseGet(Stream::empty) //
-                    .map(a -> (ConstantAst)a.accept(this)) //
+                    .map(arg -> {
+                        if (arg.atom() != null) {
+                            return (ConstantAst)arg.atom().accept(this);
+                        } else if (arg.negativeInteger() != null) {
+                            return integerConstant(Long.parseLong(arg.negativeInteger().getText()),
+                                createData(getLocation(arg.negativeInteger())));
+                        } else if (arg.negativeFloat() != null) {
+                            return floatConstant(Double.parseDouble(arg.negativeFloat().getText()),
+                                createData(getLocation(arg.negativeFloat())));
+                        } else {
+                            throw new IllegalStateException("Unexpected positional argument type: " + arg.getClass());
+                        }
+                    }) //
                     .toList(); //
 
             var namedArgs = //
@@ -285,7 +294,20 @@ final class Parser {
                         Collectors.toMap( //
                             // NB: The "=" is part of the text but we need to remove it
                             arg -> removeLastChar(arg.argName.getText()), // identifier
-                            arg -> (ConstantAst)arg.atom().accept(this) // value
+                            (final NamedAggregationArgContext arg) -> { // value
+                                if (arg.atom() != null) {
+                                    return (ConstantAst)arg.atom().accept(this);
+                                } else if (arg.negativeInteger() != null) {
+                                    return integerConstant(Long.parseLong(arg.negativeInteger().getText()),
+                                        createData(getLocation(arg.negativeInteger())));
+                                } else if (arg.negativeFloat() != null) {
+                                    return floatConstant(Double.parseDouble(arg.negativeFloat().getText()),
+                                        createData(getLocation(arg.negativeFloat())));
+                                } else {
+                                    throw new IllegalStateException(
+                                        "Unexpected named argument type: " + arg.getClass());
+                                }
+                            } //
                         ) //
                     );
 
@@ -316,9 +338,9 @@ final class Parser {
             return switch (symbol.getType()) {
                 case KnimeExpressionParser.BOOLEAN -> //
                         booleanConstant(Boolean.parseBoolean(symbol.getText()), data);
-                case KnimeExpressionParser.INTEGER -> //
+                case KnimeExpressionParser.POSITIVE_INTEGER -> //
                         integerConstant(Long.parseLong(symbol.getText().replace("_", "")), data);
-                case KnimeExpressionParser.FLOAT -> //
+                case KnimeExpressionParser.POSITIVE_FLOAT -> //
                         floatConstant(Double.parseDouble(symbol.getText().replace("_", "")), data);
                 case KnimeExpressionParser.STRING -> //
                         stringConstant(parseStringLiteral(symbol), data);

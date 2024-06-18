@@ -132,8 +132,8 @@ final class ParserTest {
             COL_SHORTHAND_2("$col_name12_", COL("col_name12_")), //
             COL_LONG_1("$[\"col\"]", COL("col")), //
             COL_LONG_2("$[\"my 'very\\\" special column\"]", COL("my 'very\" special column")), //
-            COL_ROW_INDEX( "$[ROW_INDEX]", ROW_INDEX()), //
-            COL_ROW_ID( "$[ROW_ID]", ROW_ID()), //
+            COL_ROW_INDEX("$[ROW_INDEX]", ROW_INDEX()), //
+            COL_ROW_ID("$[ROW_ID]", ROW_ID()), //
 
             // Flow Variable Access
             FLOW_SHORTHAND_1("$$varname", FLOW("varname")), //
@@ -268,6 +268,10 @@ final class ParserTest {
                 AGG("COLUMN_MEAN", List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
             COL_AGG_ONLY_NAMED_ARGS("COLUMN_MEAN(column=\"column name\", ignore_missing=true)",
                 AGG("COLUMN_MEAN", List.of(), Map.of("column", STR("column name"), "ignore_missing", BOOL(true)))), //
+            COL_AGG_NEG_INT_POS_ARG("COLUMN_STDDEV('column name', true, -1)", //
+                AGG("COLUMN_STDDEV", List.of(STR("column name"), BOOL(true), INT(-1)), Map.of())), //
+            COL_AGG_NEG_INT_NAMED_ARG("COLUMN_STDDEV(column='column name', ddof=-1)", //
+                AGG("COLUMN_STDDEV", List.of(), Map.of("column", STR("column name"), "ddof", INT(-1)))), //
 
             // Special stuff
 
@@ -412,11 +416,7 @@ final class ParserTest {
         assertTextLocation(19, 23, binOp.children().get(1));
 
         // -10
-        var unaryOp = functionCall.children().get(1);
-        assertTextLocation(25, 28, unaryOp);
-        // 10
-        assertTextLocation(26, 28, unaryOp.children().get(0));
-
+        assertTextLocation(25, 28, functionCall.children().get(1));
         // 1.0
         assertTextLocation(30, 33, functionCall.children().get(2));
         // 'bar'
