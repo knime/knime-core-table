@@ -109,9 +109,6 @@ public final class Exec {
     private Exec() {
     }
 
-    /** A visitor that maps {@link DataSpec} to the corresponding {@link ValueType}. */
-    public static final DataSpec.Mapper<ValueType> DATA_SPEC_TO_EXPRESSION_TYPE = new DataSpecToAstTypeMapper();
-
     /**
      * A visitor that maps {@link DataSpec} to a function that creates a {@link Computer} for a {@link ReadAccess}. The
      * visitor throws an {@link IllegalArgumentException} if the {@link DataSpec} cannot be used as expression inputs.
@@ -282,64 +279,6 @@ public final class Exec {
         @Override
         public int hashCode() {
             return Arrays.hashCode(columnIndices);
-        }
-    }
-
-    private static final class DataSpecToAstTypeMapper implements DataSpec.Mapper<ValueType> {
-
-        @Override
-        public ValueType visit(final BooleanDataSpec spec) {
-            return ValueType.BOOLEAN;
-        }
-
-        @Override
-        public ValueType visit(final ByteDataSpec spec) {
-            return ValueType.INTEGER;
-        }
-
-        @Override
-        public ValueType visit(final DoubleDataSpec spec) {
-            return ValueType.FLOAT;
-        }
-
-        @Override
-        public ValueType visit(final FloatDataSpec spec) {
-            return ValueType.FLOAT;
-        }
-
-        @Override
-        public ValueType visit(final IntDataSpec spec) {
-            return ValueType.INTEGER;
-        }
-
-        @Override
-        public ValueType visit(final LongDataSpec spec) {
-            return ValueType.INTEGER;
-        }
-
-        @Override
-        public ValueType visit(final VarBinaryDataSpec spec) {
-            throw new IllegalArgumentException("Binary columns are not supported in expressions");
-        }
-
-        @Override
-        public ValueType visit(final VoidDataSpec spec) {
-            throw new IllegalArgumentException("Void columns are not supported in expressions");
-        }
-
-        @Override
-        public ValueType visit(final StructDataSpec spec) {
-            throw new IllegalArgumentException("Struct columns are not supported in expressions?");
-        }
-
-        @Override
-        public ValueType visit(final ListDataSpec listDataSpec) {
-            throw new IllegalArgumentException("List columns are not supported in expressions?");
-        }
-
-        @Override
-        public ValueType visit(final StringDataSpec spec) {
-            return ValueType.STRING;
         }
     }
 
