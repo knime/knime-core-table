@@ -69,4 +69,8 @@ public interface ReadAccess {
      * @return <source>true</source> if value is missing.
      */
     boolean isMissing();
+
+    default ReadAccess unwrap() {
+        return this;
+    }
 }

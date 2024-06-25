@@ -491,5 +491,10 @@ public final class DelegatingReadAccesses {
         public String toString() {
             return m_delegateAccess.toString();
         }
+
+        @Override
+        public ReadAccess unwrap() {
+            return m_delegateAccess.unwrap();
+        }
     }
 }
