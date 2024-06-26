@@ -79,7 +79,7 @@ class AssembleRandomAccessibleNodeImps {
             switch (node.type()) {
                 case SOURCE: {
                     final CapNodeSource source = (CapNodeSource)node;
-                    imps.add(new RandomAccessNodeImpSource(sourceIter.next(), source.cols(), source.fromRow(), source.toRow()));
+                    imps.add(new RandomAccessNodeImpPaddedSource(sourceIter.next(), source.cols(), source.fromRow(), source.toRow()));
                     break;
                 }
                 case MISSING: {
