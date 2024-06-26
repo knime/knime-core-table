@@ -165,9 +165,13 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMinimal();
 //        final VirtualTable table = VirtualTableTests.vtRowIndexMapsSequential(sourceIdentifiers, sourceAccessibles);
 
+//        final UUID[] sourceIdentifiers = createSourceIds(2);
+//        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataObserve();
+//        final VirtualTable table = VirtualTableTests.vtObserve(sourceIdentifiers, sourceAccessibles);
+
         final UUID[] sourceIdentifiers = createSourceIds(2);
-        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataObserve();
-        final VirtualTable table = VirtualTableTests.vtObserve(sourceIdentifiers, sourceAccessibles);
+        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppendTwice();
+        final VirtualTable table = VirtualTableTests.vtAppendTwice(sourceIdentifiers, sourceAccessibles);
 
 
         if ( doExecute ) {
@@ -236,29 +240,29 @@ public class ExecCap {
                 e.printStackTrace();
             }
 
-            try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(1))) {
-                while (cursor.forward()) {
-                    System.out.print("a = ");
-                    for (int i = 0; i < cursor.access().size(); i++) {
-                        System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
-                    }
-                    System.out.println();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(0))) {
-                while (cursor.forward()) {
-                    System.out.print("a = ");
-                    for (int i = 0; i < cursor.access().size(); i++) {
-                        System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
-                    }
-                    System.out.println();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+//            try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(1))) {
+//                while (cursor.forward()) {
+//                    System.out.print("a = ");
+//                    for (int i = 0; i < cursor.access().size(); i++) {
+//                        System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+//                    }
+//                    System.out.println();
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//
+//            try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(0))) {
+//                while (cursor.forward()) {
+//                    System.out.print("a = ");
+//                    for (int i = 0; i < cursor.access().size(); i++) {
+//                        System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+//                    }
+//                    System.out.println();
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
         }
     }
 
