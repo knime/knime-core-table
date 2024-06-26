@@ -202,6 +202,13 @@ public final class DelegatingReadAccesses {
          * @param access to delegate to
          */
         void setDelegateAccess(ReadAccess access);
+
+        /**
+         * TODO javadoc
+         */
+        default void setMissing() {
+            setDelegateAccess(MissingAccesses.getMissingAccess(getDataSpec()));
+        }
     }
 
     private static final class DataSpecToDelegatingReadAccessMapper implements DataSpec.Mapper<DelegatingReadAccess> {
