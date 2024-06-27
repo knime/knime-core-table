@@ -90,7 +90,7 @@ class AssembleNodeImps {
             switch (node.type()) {
                 case SOURCE: {
                     final CapNodeSource source = (CapNodeSource)node;
-                    imps.add(new SequentialNodeImpSource(sourceIter.next(), source.cols(), source.fromRow(), source.toRow()));
+                    imps.add(new SequentialNodeImpPaddedSource(sourceIter.next(), source.cols(), source.fromRow(), source.toRow()));
                     break;
                 }
                 case MISSING: {
