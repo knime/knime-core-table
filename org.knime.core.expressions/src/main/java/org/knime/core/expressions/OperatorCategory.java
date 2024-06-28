@@ -51,9 +51,39 @@ package org.knime.core.expressions;
 /**
  * A category of functions or aggregations.
  *
- * @param name
- * @param description
+ * @param fullName the full name of the category, e.g. "Math – Trigonomety"
+ * @param description a description of the category
+ * @param metaCategory the category of the category, e.g. "Math" for "Trigonometry"
+ * @param shortName a short name for the category, e.g. "Trigonometry"
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public record OperatorCategory(String name, String description) {
+public record OperatorCategory(String fullName, String description, String metaCategory, String shortName) {
+
+    /**
+     * Get a category with full name inferred from the meta category and short name.
+     *
+     * @param description a description of the category
+     * @param metaCategory the category of the category, e.g. "Math" for "Trigonometry"
+     * @param shortName a short name for the category, e.g. "Trigonometry"
+     * @return the new category
+     */
+    public static OperatorCategory inferFullName(final String description, final String metaCategory,
+        final String shortName) {
+        if (metaCategory == null) {
+            return new OperatorCategory(shortName, description, metaCategory, shortName);
+        } else {
+            return new OperatorCategory(metaCategory + " – " + shortName, description, metaCategory, shortName);
+        }
+    }
+
+    /**
+     * Get a category with full name equal to the short name and no meta category.
+     *
+     * @param description a description of the category
+     * @param shortName a short name for the category, e.g. "Trigonometry"
+     * @return the new category
+     */
+    public static OperatorCategory inferFullName(final String description, final String shortName) {
+        return OperatorCategory.inferFullName(description, null, shortName);
+    }
 }

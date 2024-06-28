@@ -97,39 +97,39 @@ public final class MathFunctions {
     }
 
     /** The "Math – General" category */
-    public static final OperatorCategory CATEGORY_GENERAL = new OperatorCategory("Math – General", """
+    public static final OperatorCategory CATEGORY_GENERAL = OperatorCategory.inferFullName("""
             The "Math – General" category in KNIME Expression language includes essential mathematical functions for
             common calculations and operations, such as exponentiation, logarithms, modulus, and handling NaN values.
             These functions support basic mathematical computations and data transformations within expressions.
-            """);
+            """, "Math", "General");
 
     /** The "Math – Round" category */
-    public static final OperatorCategory CATEGORY_ROUND = new OperatorCategory("Math – Round", """
+    public static final OperatorCategory CATEGORY_ROUND = OperatorCategory.inferFullName("""
             The "Math – Round" category in KNIME Expression language includes functions for rounding numerical values.
             These functions provide various rounding methods, such as rounding half up, half down, and half even, as
             well as truncating values, and rounding up or down to the nearest integer.
-            """);
+            """, "Math", "Round");
 
     /** The "Math – Aggregate" category */
-    public static final OperatorCategory CATEGORY_AGGREGATE = new OperatorCategory("Math – Aggregate", """
+    public static final OperatorCategory CATEGORY_AGGREGATE = OperatorCategory.inferFullName("""
             The "Math – Aggregate" category in KNIME Expression language includes functions for aggregating numerical
             data. These functions calculate averages, medians, minimums, maximums, and identify the positions of
             minimum and maximum values.
-            """);
+            """, "Math", "Aggregate");
 
     /** The "Math – Trigonometry" category */
-    public static final OperatorCategory CATEGORY_TRIGONOMETRY = new OperatorCategory("Math – Trigonometry", """
+    public static final OperatorCategory CATEGORY_TRIGONOMETRY = OperatorCategory.inferFullName("""
             The "Math – Trigonometry" category in KNIME Expression language includes functions for performing
             trigonometric calculations. These functions convert between degrees and radians, and calculate sine, cosine,
             tangent, and their respective inverse and hyperbolic functions.
-            """);
+            """, "Math", "Trigonometry");
 
     /** The "Math – Distributions" category */
-    public static final OperatorCategory CATEGORY_DISTRIBUTIONS = new OperatorCategory("Math – Distributions", """
+    public static final OperatorCategory CATEGORY_DISTRIBUTIONS = OperatorCategory.inferFullName("""
             The "Math – Distributions" category in KNIME Expression language includes functions for working with
             statistical distributions. These functions handle binomial and normal distributions, as well as the error
             function.
-            """);
+            """, "Math", "Distributions");
 
     /** The maximum of multiple numbers */
     public static final ExpressionFunction MAX = functionBuilder() //
@@ -153,7 +153,7 @@ public final class MathFunctions {
                 * `max(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("maximum") //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -202,7 +202,7 @@ public final class MathFunctions {
                 * `min(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("minimum") //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -251,7 +251,7 @@ public final class MathFunctions {
                     * `argmax(1, 2, NaN)` returns `3`
                     """) //
         .keywords() //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -316,7 +316,7 @@ public final class MathFunctions {
                     * `argmin(1, 2, NaN)` returns `3`
                     """) //
         .keywords() //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -377,7 +377,7 @@ public final class MathFunctions {
                 * `abs(NaN)` returns `NaN`
                 """) //
         .keywords("absolute") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Absolute value of x", RETURN_FLOAT_INTEGER_MISSING, args -> args[0]) //
         .impl(MathFunctions::absImpl) //
@@ -410,7 +410,7 @@ public final class MathFunctions {
                 * `sin(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "An angle in radians", isNumericOrOpt())) //
         .returnType("Sine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::sinImpl) //
@@ -438,7 +438,7 @@ public final class MathFunctions {
                 * `cos(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "Angle in radians", isNumericOrOpt())) //
         .returnType("Cosine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::cosImpl) //
@@ -466,7 +466,7 @@ public final class MathFunctions {
                 * `tan(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "Angle in radians", isNumericOrOpt())) //
         .returnType("Tangent of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::tanImpl) //
@@ -494,7 +494,7 @@ public final class MathFunctions {
                 * `asin(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Arcsine of x in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::asinImpl) //
@@ -531,7 +531,7 @@ public final class MathFunctions {
                 * `asin(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Arccosine of x in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::acosImpl) //
@@ -567,7 +567,7 @@ public final class MathFunctions {
                 * `atan(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Arctangent of x in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::atanImpl) //
@@ -600,7 +600,7 @@ public final class MathFunctions {
                 * `atan2(NaN, …)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args( //
             arg("y", "Coordinate on the y axis", isNumericOrOpt()), //
             arg("x", "Coordinate on the x axis", isNumericOrOpt()) //
@@ -644,7 +644,7 @@ public final class MathFunctions {
                 * `sinh(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Hyerbolic sine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::sinhImpl) //
@@ -671,7 +671,7 @@ public final class MathFunctions {
                 * `cosh(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Hyerbolic cosine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::coshImpl) //
@@ -698,7 +698,7 @@ public final class MathFunctions {
                 * `tanh(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Hyerbolic tangent of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::tanhImpl) //
@@ -725,7 +725,7 @@ public final class MathFunctions {
                 * `asinh(NaN)` returns `NaN`
                 """) //
         .keywords("arcsinh", "arsinh") //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Hyerbolic arcsine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::asinhImpl) //
@@ -762,7 +762,7 @@ public final class MathFunctions {
                 * `acosh(NaN)` returns `NaN`
                 """) //
         .keywords("arccosh", "arcosh") //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Hyerbolic arccosine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::acoshImpl) //
@@ -804,7 +804,7 @@ public final class MathFunctions {
                 * `atanh(NaN)` returns `NaN`
                 """) //
         .keywords("arctanh", "artanh") //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Hyerbolic arctangent of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::atanhImpl) //
@@ -849,7 +849,7 @@ public final class MathFunctions {
                 * `ln(NaN)` returns `NaN`
                 """) //
         .keywords("natural log") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Natural logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::lnImpl) //
@@ -891,7 +891,7 @@ public final class MathFunctions {
                 * `log10(NaN)` returns `NaN`
                 """) //
         .keywords("common log", "decimal log") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Base-10 logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))
         .impl(MathFunctions::log10Impl) //
@@ -933,7 +933,7 @@ public final class MathFunctions {
                 * `log2(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Base-2 logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))
         .impl(MathFunctions::log2Impl) //
@@ -979,7 +979,7 @@ public final class MathFunctions {
                     * `log(NaN, …)` returns `NaN`
                     """)
         .keywords() //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("x", "A number", isNumericOrOpt()), //
             arg("base", "The base number", isNumericOrOpt()) //
@@ -1044,7 +1044,7 @@ public final class MathFunctions {
                 * `log1p(NaN)` returns `NaN`
                 """) //
         .keywords() //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Natural logarithm of (1+x)", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::log1pImpl) //
@@ -1084,7 +1084,7 @@ public final class MathFunctions {
                 * `exp(-1)` returns `0.367879…` (approx. `1/E`)
                 """) //
         .keywords("exponent") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Eulers contant to the power of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::expImpl) //
@@ -1122,7 +1122,7 @@ public final class MathFunctions {
                 * `pow(16, 0.5)` returns 4.0
                 """) //
         .keywords("power") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("x", "The base", isNumericOrOpt()), //
             arg("y", "The exponent", isNumericOrOpt()) //
@@ -1185,7 +1185,7 @@ public final class MathFunctions {
                 * `sqrt(9)` returns 3.0
                 """) //
         .keywords("squareroot") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Square root of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::sqrtImpl) //
@@ -1230,7 +1230,7 @@ public final class MathFunctions {
                 * `mod(-5, 3)` returns -2
                 """) //
         .keywords("modulo", "remainder") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("x", "The numerator", isNumericOrOpt()), //
             arg("y", "The divisor", isNumericOrOpt()) //
@@ -1285,7 +1285,7 @@ public final class MathFunctions {
                 * `degrees(PI)` returns 180.0
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("x in degrees", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::degreesImpl) //
@@ -1314,7 +1314,7 @@ public final class MathFunctions {
                 * `radians(180)` returns 3.141592... (approx. PI)
                 """) //
         .keywords() //
-        .category(CATEGORY_TRIGONOMETRY.name()) //
+        .category(CATEGORY_TRIGONOMETRY.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("x in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::radiansImpl) //
@@ -1344,7 +1344,7 @@ public final class MathFunctions {
                 * `floor(1.0)` returns 1
                 """) //
         .keywords() //
-        .category(CATEGORY_ROUND.name()) //
+        .category(CATEGORY_ROUND.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Nearest integer less than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::floorImpl) //
@@ -1383,7 +1383,7 @@ public final class MathFunctions {
                 * `ceil(1.0)` returns 1
                 """) //
         .keywords() //
-        .category(CATEGORY_ROUND.name()) //
+        .category(CATEGORY_ROUND.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Nearest integer greater than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::ceilImpl) //
@@ -1422,7 +1422,7 @@ public final class MathFunctions {
                 * `truncate(1.0)` returns 1
                 """) //
         .keywords("round down") //
-        .category(CATEGORY_ROUND.name()) //
+        .category(CATEGORY_ROUND.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Nearest integer closer to zero than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::truncImpl) //
@@ -1475,7 +1475,7 @@ public final class MathFunctions {
                     * `roundhalfdown(1.65, 1)` returns 1.6
                 """) //
         .keywords() //
-        .category(CATEGORY_ROUND.name()) //
+        .category(CATEGORY_ROUND.fullName()) //
         .args( //
             arg("x", "A number", isNumericOrOpt()), //
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
@@ -1515,7 +1515,7 @@ public final class MathFunctions {
                     * `roundhalfup(1.65, 1)` returns 1.7
                 """) //
         .keywords() //
-        .category(CATEGORY_ROUND.name()) //
+        .category(CATEGORY_ROUND.fullName()) //
         .args( //
             arg("x", "A number", isNumericOrOpt()), //
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
@@ -1558,7 +1558,7 @@ public final class MathFunctions {
                     * `round(1.65, 1)` returns 1.6
                 """) //
         .keywords("roundhalfeven") //
-        .category(CATEGORY_ROUND.name()) //
+        .category(CATEGORY_ROUND.fullName()) //
         .args( //
             arg("x", "A number", isNumericOrOpt()), //
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
@@ -1623,7 +1623,7 @@ public final class MathFunctions {
                 * `sign(-0.3)` returns -1
                 """) //
         .keywords() //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Sign of x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::signImpl) //
@@ -1665,7 +1665,7 @@ public final class MathFunctions {
                 * `average(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords("mean") //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -1707,7 +1707,7 @@ public final class MathFunctions {
                 * `median(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords() //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -1763,7 +1763,7 @@ public final class MathFunctions {
                 * `sum(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords("total") //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -1816,7 +1816,7 @@ public final class MathFunctions {
                 * `variance(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords() //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -1853,7 +1853,7 @@ public final class MathFunctions {
                 * `stddev(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords() //
-        .category(CATEGORY_AGGREGATE.name()) //
+        .category(CATEGORY_AGGREGATE.fullName()) //
         .args( //
             arg("input_1", "First number", isNumericOrOpt()), //
             arg("input_2", "Second number", isNumericOrOpt()), //
@@ -1903,7 +1903,7 @@ public final class MathFunctions {
                 * `binomial(10, 0)` returns 1
                 """) //
         .keywords("choose", "permutations") //
-        .category(CATEGORY_DISTRIBUTIONS.name()) //
+        .category(CATEGORY_DISTRIBUTIONS.fullName()) //
         .args( //
             arg("n", "n", isIntegerOrOpt()), //
             arg("r", "r", isIntegerOrOpt()) //
@@ -1983,7 +1983,7 @@ public final class MathFunctions {
                 * `normal(0, 0, 1)` returns 0.398942...
                 """) //
         .keywords("gaussian", "distribution", "probability") //
-        .category(CATEGORY_DISTRIBUTIONS.name()) //
+        .category(CATEGORY_DISTRIBUTIONS.fullName()) //
         .args( //
             arg("x", "Random variable", isNumericOrOpt()), //
             arg("mean", "Mean value of the normal distribution", isNumericOrOpt()), //
@@ -2043,7 +2043,7 @@ public final class MathFunctions {
                 * `error_function(1, 0, 1)` returns 0.682689...
                 """) //
         .keywords("gaussian", "distribution", "probability") //
-        .category(CATEGORY_DISTRIBUTIONS.name()) //
+        .category(CATEGORY_DISTRIBUTIONS.fullName()) //
         .args( //
             arg("x", "Value at which to evaluate the error function", isNumericOrOpt()), //
             arg("mean", "Mean of the underlying normal distribution", isNumericOrOpt()), //
@@ -2109,7 +2109,7 @@ public final class MathFunctions {
                 * `is_nan($["Missing Column"])` returns `FALSE`
                 """) //
         .keywords("NaN") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isFloatOrOpt())) //
         .returnType("`TRUE` if x is `NaN`, `FALSE` otherwise", RETURN_BOOLEAN, args -> BOOLEAN) //
         .impl(MathFunctions::isNanImpl) //
@@ -2133,7 +2133,7 @@ public final class MathFunctions {
                 * `nan_to_missing($["Missing Column"])` returns `MISSING`
                 """) //
         .keywords("NaN") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args(arg("x", "A number", isFloatOrOpt())) //
         .returnType("x if x is not `NaN`, `MISSING` otherwise", RETURN_FLOAT_INTEGER_MISSING,
             args -> FLOAT(anyOptional(args))) //

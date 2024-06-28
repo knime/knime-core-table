@@ -103,40 +103,39 @@ public final class StringFunctions {
     }
 
     /** The "String – General" category */
-    public static final OperatorCategory CATEGORY_GENERAL = new OperatorCategory("String – General", """
+    public static final OperatorCategory CATEGORY_GENERAL = OperatorCategory.inferFullName("""
             The "String – General" category in KNIME Expression language includes functions for manipulating and
             converting string data. These functions cover changing case, padding, joining, reversing, handling empty
             or missing values, and parsing strings into boolean, float, or integer types.
-            """);
+            """, "String", "General");
 
     /** The "String – Match & Compare" category */
-    public static final OperatorCategory CATEGORY_MATCH_COMPARE = new OperatorCategory("String – Match & Compare", """
+    public static final OperatorCategory CATEGORY_MATCH_COMPARE = OperatorCategory.inferFullName("""
             The "String – Match & Compare" category in KNIME Expression language includes functions for evaluating and
             comparing string data. These functions check if strings start with, end with, or contain specific
             substrings, match patterns using regular expressions, and perform general string comparisons.
-            """);
+            """, "String", "Match & Compare");
 
     /** The "String – Extract & Replace" category */
-    public static final OperatorCategory CATEGORY_EXTRACT_REPLACE =
-        new OperatorCategory("String – Extract & Replace", """
-                The "String – Extract & Replace" category in KNIME Expression language includes functions for extracting
-                and replacing parts of strings. These functions handle operations such as retrieving first or last
-                characters, extracting substrings, performing regex-based extraction and replacement, finding
-                substrings, and counting characters or occurrences.
-                """);
+    public static final OperatorCategory CATEGORY_EXTRACT_REPLACE = OperatorCategory.inferFullName("""
+            The "String – Extract & Replace" category in KNIME Expression language includes functions for extracting
+            and replacing parts of strings. These functions handle operations such as retrieving first or last
+            characters, extracting substrings, performing regex-based extraction and replacement, finding
+            substrings, and counting characters or occurrences.
+            """, "String", "Extract & Replace");
 
     /** The "String – Clean" category */
-    public static final OperatorCategory CATEGORY_CLEAN = new OperatorCategory("String – Clean", """
+    public static final OperatorCategory CATEGORY_CLEAN = OperatorCategory.inferFullName("""
             The "String – Clean" category in KNIME Expression language includes functions for cleaning and sanitizing
             string data. These functions handle character replacement, diacritics and umlauts removal, eliminating
             duplicate spaces, and stripping characters from the start, end, or both ends of a string.
-            """);
+            """, "String", "Clean");
 
     /** The "String – Encode" category */
-    public static final OperatorCategory CATEGORY_ENCODE = new OperatorCategory("String – Encode", """
+    public static final OperatorCategory CATEGORY_ENCODE = OperatorCategory.inferFullName("""
             The "String – Encode" category in KNIME Expression language includes functions for encoding and decoding
             string data. These functions handle XML encoding, URL encoding, and URL decoding.
-            """);
+            """, "String", "Encode");
 
     public static final ExpressionFunction COMPARE = functionBuilder() //
         .name("compare") //
@@ -157,7 +156,7 @@ public final class StringFunctions {
                  * `compare("ABC", "")` returns 3
                 """) //
         .keywords("match", "equals") //
-        .category(CATEGORY_MATCH_COMPARE.name()) //
+        .category(CATEGORY_MATCH_COMPARE.fullName()) //
         .args( //
             arg("string_1", "First string", isStringOrOpt()), //
             arg("string_2", "Second string", isStringOrOpt()) //
@@ -193,7 +192,7 @@ public final class StringFunctions {
                 * `contains("OpenAI", "AI")` returns `TRUE`
                 """) //
         .keywords("match", "pattern", "includes") //
-        .category(CATEGORY_MATCH_COMPARE.name()) //
+        .category(CATEGORY_MATCH_COMPARE.fullName()) //
         .args( //
             arg("string", "String to check", isStringOrOpt()), //
             arg("search", "Term to search for", isStringOrOpt()), //
@@ -240,7 +239,7 @@ public final class StringFunctions {
                 * `starts_with("Hello world", "abc")` returns `FALSE`
                 """) //
         .keywords("match", "pattern") //
-        .category(CATEGORY_MATCH_COMPARE.name()) //
+        .category(CATEGORY_MATCH_COMPARE.fullName()) //
         .args( //
             arg("string", "String to check", isStringOrOpt()), //
             arg("prefix", "Prefix to check", isStringOrOpt()), //
@@ -286,7 +285,7 @@ public final class StringFunctions {
                 * `ends_with("Hello world", "abs")` returns `FALSE`
                 """) //
         .keywords("match", "pattern") //
-        .category(CATEGORY_MATCH_COMPARE.name()) //
+        .category(CATEGORY_MATCH_COMPARE.fullName()) //
         .args( //
             arg("string", "String to check", isStringOrOpt()), //
             arg("suffix", "Suffix to check", isStringOrOpt()), //
@@ -344,7 +343,7 @@ public final class StringFunctions {
                   case-insensitive match, matches "A_C" with "a_c"
                  """) //
         .keywords("match", "pattern", "wildcard", "SQL") //
-        .category(CATEGORY_MATCH_COMPARE.name()) //
+        .category(CATEGORY_MATCH_COMPARE.fullName()) //
         .args( //
             arg("string", "String to check", isStringOrOpt()), //
             arg("pattern", "Matching rule", isStringOrOpt()), //
@@ -417,7 +416,7 @@ public final class StringFunctions {
                   * `regex_match("123-456-7890", "\\d{3}-\\d{3}-\\d{4}")` returns `TRUE`
                 """) //
         .keywords("pattern") //
-        .category(CATEGORY_MATCH_COMPARE.name()) //
+        .category(CATEGORY_MATCH_COMPARE.fullName()) //
         .args( //
             arg("string", "String to check against the regex pattern", isStringOrOpt()), //
             arg("pattern", "Regular expression pattern to match", isStringOrOpt()), //
@@ -468,7 +467,7 @@ public final class StringFunctions {
                 * `regex_extract("abc", "(a)(b)(c)", 2)` returns "b"
                 """) //
         .keywords("pattern", "match", "capture group") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "String to check against the regex pattern", isStringOrOpt()), //
             arg("pattern", "Regular expression pattern to match", isStringOrOpt()), //
@@ -536,7 +535,7 @@ public final class StringFunctions {
                   Uses regex groups to swap the two numbers in the string.
                 """) //
         .keywords("pattern", "match", "substitute") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "Input string to perform replacements on", isStringOrOpt()), //
             arg("pattern", "Regular expression pattern to search for", isStringOrOpt()), //
@@ -587,7 +586,7 @@ public final class StringFunctions {
                 * `replace("ab abAB AB", "ab", "z", "w")` returns "z abAB AB"
                 """) //
         .keywords() //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "Input string to perform replacements on", isStringOrOpt()), //
             arg("pattern", "Pattern to search for", isStringOrOpt()), //
@@ -647,7 +646,7 @@ public final class StringFunctions {
                   Replaces "a" with "x" and "c" with "y", ignoring the extra "z".
                 """) //
         .keywords("translate", "substitute", "match") //
-        .category(CATEGORY_CLEAN.name()) //
+        .category(CATEGORY_CLEAN.fullName()) //
         .args( //
             arg("string", "Input string to perform replacements on", isStringOrOpt()), //
             arg("old_chars", "Characters to be replaced", isStringOrOpt()), //
@@ -719,7 +718,7 @@ public final class StringFunctions {
                   Replaces ü with u and keeps ß unchanged.
                 """) //
         .keywords("translate", "special characters", "conversion", "normalize") //
-        .category(CATEGORY_CLEAN.name()) //
+        .category(CATEGORY_CLEAN.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()), //
             arg("no_e", "If `TRUE`, e.g. ö->o. If `FALSE`, o->oe", isBooleanOrOpt()), //
@@ -781,7 +780,7 @@ public final class StringFunctions {
                 * `replace_diacritics("français")` returns "francais"
                 """) //
         .keywords("conversion", "special characters", "translate", "normalize") //
-        .category(CATEGORY_CLEAN.name()) //
+        .category(CATEGORY_CLEAN.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -818,7 +817,7 @@ public final class StringFunctions {
                   Numbers are not affected.
                 """) //
         .keywords("conversion") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -847,7 +846,7 @@ public final class StringFunctions {
                   Numbers are not affected.
                 """) //
         .keywords("conversion") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -878,7 +877,7 @@ public final class StringFunctions {
                   Numbers are not affected.
                 """) //
         .keywords("capitalise", "title_case") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -939,7 +938,7 @@ public final class StringFunctions {
                   Pads the string "abc" with "x". The extra "y" is ignored.
                 """) //
         .keywords("right-pad") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to pad", isStringOrOpt()), //
             arg("length", "Desired length", isIntegerOrOpt()), //
@@ -999,7 +998,7 @@ public final class StringFunctions {
                   Pads the string "abc" with "x". The extra "y" is ignored.
                 """) //
         .keywords("left-pad") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to pad", isStringOrOpt()), //
             arg("length", "Desired length", isIntegerOrOpt()), //
@@ -1045,7 +1044,7 @@ public final class StringFunctions {
                 * `join("-", "one")` returns "one"
                 """) //
         .keywords("concatenation") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("seperator", "Separator with which to join the strings", isStringOrOpt()), //
             arg("string_1", "First string", isStringOrOpt()), //
@@ -1092,7 +1091,7 @@ public final class StringFunctions {
                   No length provided, so returns everything after the 5th character
                 """) //
         .keywords("extract") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "Original string", isStringOrOpt()), //
             arg("start", "Start index (inclusive, 1-indexed)", isIntegerOrOpt()), //
@@ -1143,7 +1142,7 @@ public final class StringFunctions {
                   Returns an empty string since the input string is empty.
                 """) //
         .keywords("substring", "start", "extract") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "Input string", isStringOrOpt()), //
             arg("n", "Number of characters to get from start", isIntegerOrOpt()) //
@@ -1187,7 +1186,7 @@ public final class StringFunctions {
                   Returns an empty string since the input string is empty.
                 """) //
         .keywords("substring", "end", "extract") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "Input string", isStringOrOpt()), //
             arg("n", "Number of characters to get from end", isIntegerOrOpt()) //
@@ -1230,7 +1229,7 @@ public final class StringFunctions {
                 * `remove_chars("Mississippi", "s")` returns "Miippi"
                 """) //
         .keywords("substring", "delete") //
-        .category(CATEGORY_CLEAN.name()) //
+        .category(CATEGORY_CLEAN.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()), //
             arg("chars", "Characters to delete", isStringOrOpt()), //
@@ -1283,7 +1282,7 @@ public final class StringFunctions {
                   Converts a string of only spaces to an empty string.
                 """) //
         .keywords("trim", "whitespace", "clean") //
-        .category(CATEGORY_CLEAN.name()) //
+        .category(CATEGORY_CLEAN.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -1314,7 +1313,7 @@ public final class StringFunctions {
                   Converts a string of only spaces to an empty string.
                 """) //
         .keywords("trim", "whitespace", "clean") //
-        .category(CATEGORY_CLEAN.name()) //
+        .category(CATEGORY_CLEAN.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -1345,7 +1344,7 @@ public final class StringFunctions {
                   Converts a string of only spaces to an empty string.
                 """) //
         .keywords("trim", "whitespace", "clean") //
-        .category(CATEGORY_CLEAN.name()) //
+        .category(CATEGORY_CLEAN.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -1379,7 +1378,7 @@ public final class StringFunctions {
                   Also reduces multiple leading/trailing spaces to one.
                 """) //
         .keywords("trim", "spaces", "whitespace", "clean") //
-        .category(CATEGORY_CLEAN.name()) //
+        .category(CATEGORY_CLEAN.fullName()) //
         .args( //
             arg("string", "String to clean up", isStringOrOpt()) //
         ) //
@@ -1411,7 +1410,7 @@ public final class StringFunctions {
                   Any non-missing string is unchanged.
                 """) //
         .keywords("default", "null") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to check for `MISSING`", isStringOrOpt()) //
         ) //
@@ -1440,7 +1439,7 @@ public final class StringFunctions {
                   Leaves `MISSING` unchanged.
                 """) //
         .keywords("default", "null") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -1468,7 +1467,7 @@ public final class StringFunctions {
                 * `reverse("")` returns ""
                 """) //
         .keywords("invert", "mirror", "backward", "flip") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to reverse", isStringOrOpt()) //
         ) //
@@ -1495,7 +1494,7 @@ public final class StringFunctions {
                 * `length("")` returns 0
                 """) //
         .keywords("count", "size", "number of characters") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "String to count chars for", isStringOrOpt()) //
         ) //
@@ -1539,7 +1538,7 @@ public final class StringFunctions {
                 """) //
         .keywords("occurrences", "matching") //
 
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "String to search within", isStringOrOpt()), //
             arg("search", "Search term to count", isStringOrOpt()), //
@@ -1608,7 +1607,7 @@ public final class StringFunctions {
                   Returns 0 when both the input string and search characters are empty.
                 """) //
         .keywords("occurrences") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "String to count chars for", isStringOrOpt()), //
             arg("search", "Characters to search for", isStringOrOpt()), //
@@ -1670,7 +1669,7 @@ public final class StringFunctions {
                 * `find("hello world", "universe")` returns `MISSING`
                 """) //
         .keywords("index", "position", "search") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "String to search within", isStringOrOpt()), //
             arg("search", "String to search for", isStringOrOpt()), //
@@ -1753,7 +1752,7 @@ public final class StringFunctions {
                   Returns `MISSING` as no search characters are provided.
                 """) //
         .keywords("index", "position", "search") //
-        .category(CATEGORY_EXTRACT_REPLACE.name()) //
+        .category(CATEGORY_EXTRACT_REPLACE.fullName()) //
         .args( //
             arg("string", "String to search within", isStringOrOpt()), //
             arg("chars", "Characters to search for", isStringOrOpt()), //
@@ -1818,7 +1817,7 @@ public final class StringFunctions {
                 * `xml_encode("&")` returns "&amp;"
                 """) //
         .keywords("escape", "special characters", "markup") //
-        .category(CATEGORY_ENCODE.name()) //
+        .category(CATEGORY_ENCODE.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -1859,7 +1858,7 @@ public final class StringFunctions {
                 * `urlEncode("1 + 1 = 2")` returns "1+%2B+1+%3D+2"
                 """) //
         .keywords("escape", "special characters") //
-        .category(CATEGORY_ENCODE.name()) //
+        .category(CATEGORY_ENCODE.fullName()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
@@ -1888,7 +1887,7 @@ public final class StringFunctions {
                 * `url_decode("1+%2B+1+%3D+2")` returns "1 + 1 = 2"
                 """) //
         .keywords("escape", "special characters") //
-        .category(CATEGORY_ENCODE.name()) //
+        .category(CATEGORY_ENCODE.fullName()) //
         .args( //
             arg("string", "String with escaped URL-specific chars", isStringOrOpt()) //
         ) //
@@ -1926,7 +1925,7 @@ public final class StringFunctions {
                   Converts the `MISSING` value to the string "MISSING".
                 """) //
         .keywords("cast", "types") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("input", "Input to convert to a string", isAnything()) //
         ) //
@@ -1972,7 +1971,7 @@ public final class StringFunctions {
                 * `parse_float("hello")` returns `MISSING`
                 """) //
         .keywords("cast", "types") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to parse as float", isStringOrOpt()) //
         ) //
@@ -2015,7 +2014,7 @@ public final class StringFunctions {
                 * `parse_int("hello")` returns `MISSING`
                 """) //
         .keywords("cast", "types") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to parse as integer", isStringOrOpt()) //
         ) //
@@ -2060,7 +2059,7 @@ public final class StringFunctions {
                 * `parse_bool("abc")` returns `MISSING`
                 """) //
         .keywords("parse", "types") //
-        .category(CATEGORY_GENERAL.name()) //
+        .category(CATEGORY_GENERAL.fullName()) //
         .args( //
             arg("string", "String to parse as boolean", isStringOrOpt()) //
         ) //
