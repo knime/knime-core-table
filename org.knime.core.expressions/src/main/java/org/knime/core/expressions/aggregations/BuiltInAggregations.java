@@ -82,14 +82,14 @@ public final class BuiltInAggregations {
     }
 
     /** The category for all built-in aggregations */
-    public static final OperatorCategory AGGREGATION_CATEGORY = new OperatorCategory("Math – Aggregate columns", """
+    public static final OperatorCategory AGGREGATION_CATEGORY = OperatorCategory.inferFullName("""
             The "Math – Aggregate Columns" category in KNIME Expression language includes functions that perform
             aggregations over all rows of a column. These functions are distinct from other aggregations as they
             operate across the entire column rather than individual values or subsets. They are essential for
-            summarizing and analyzing data at the column level within expressions. Note that aggregation functions 
-            utilize the entire column as provided in the input. They do not use the output of the expression 
+            summarizing and analyzing data at the column level within expressions. Note that aggregation functions
+            utilize the entire column as provided in the input. They do not use the output of the expression
             if applied on a column configured to be replaced.
-            """);
+            """, "Math", "Aggregate Columns");
 
     /** The list of all built-in aggregation categories */
     public static final List<OperatorCategory> BUILT_IN_CATEGORIES = List.of(AGGREGATION_CATEGORY);
@@ -128,7 +128,7 @@ public final class BuiltInAggregations {
                   column `col`, including `NaN` values
                 """) //
         .keywords("maximum") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY.fullName()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
@@ -174,7 +174,7 @@ public final class BuiltInAggregations {
                   column `col`, including `NaN` values
                 """) //
         .keywords("minimum") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY.fullName()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
@@ -219,7 +219,7 @@ public final class BuiltInAggregations {
                   including `NaN` values
                 """) //
         .keywords("mean", "avg") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY.fullName()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
@@ -265,7 +265,7 @@ public final class BuiltInAggregations {
                   including `NaN` values
                 """) //
         .keywords("average", "avg") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY.fullName()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
@@ -312,7 +312,7 @@ public final class BuiltInAggregations {
                   including `NaN` values
                 """) //
         .keywords("sum", "total") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY.fullName()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
@@ -357,7 +357,7 @@ public final class BuiltInAggregations {
                   including `NaN` values
                 """) //
         .keywords("var", "variation") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY.fullName()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
@@ -411,7 +411,7 @@ public final class BuiltInAggregations {
                   column `col`, including `NaN` values
                 """) //
         .keywords("standard deviation", "std") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY.fullName()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)"), //
@@ -457,7 +457,7 @@ public final class BuiltInAggregations {
                   number of `MISSING`values in column `col`
                 """) //
         .keywords("number", "rows") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY.fullName()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_missing", "BOOLEAN", "Whether to skip `MISSING` values (defaults to `FALSE`)") //

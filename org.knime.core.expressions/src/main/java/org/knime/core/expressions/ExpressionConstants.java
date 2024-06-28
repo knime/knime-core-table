@@ -171,12 +171,12 @@ public enum ExpressionConstants {
      */
     public OperatorDescription toOperatorDescription() {
         return new OperatorDescription(name(), documentation(), null, type().name(), null, List.of("constant"),
-            CONSTANTS_CATEGORY.name(), OperatorDescription.CONSTANT_ENTRY_TYPE);
+            CONSTANTS_CATEGORY.fullName(), OperatorDescription.CONSTANT_ENTRY_TYPE);
     }
 
     /** Category for all constants */
-    public static final OperatorCategory CONSTANTS_CATEGORY = new OperatorCategory("Constants", """
+    public static final OperatorCategory CONSTANTS_CATEGORY = OperatorCategory.inferFullName("""
             The "Constants" category in KNIME Expression language includes
             predefined constants such as PI, Infinity, and NaN.
-            """);
+            """, "Constants");
 }
