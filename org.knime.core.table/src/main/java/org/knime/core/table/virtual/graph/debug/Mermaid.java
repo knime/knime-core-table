@@ -50,6 +50,10 @@ public class Mermaid {
         sb.append("}}}%%\n");
         sb.append(mermaid(graph));
         sb.append("</div><br/>\n");
+
+        sb.append("<pre>");
+        graph.nodes().forEach(node -> sb.append(node).append("\n"));
+        sb.append("</pre>\n");
     }
 
     public void append(final String html) {
