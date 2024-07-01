@@ -1264,36 +1264,6 @@ public class RagBuilder {
         return sources;
     }
 
-    /**
-     * Get the set of effective producers for a given {@code access}.
-     * <p>
-     * The set of effective producers for an {@code access} is the singleton set
-     * containing the producer of the access, except when the producer is a MISSING or
-     * a MAP node.
-     * <p>
-     * Missing values don't really count, because there is nothing to forward or wrap
-     * there. So if the producer is a MISSING node, the set of effective producers is
-     * empty.
-     * <p>
-     * We can "skip over" MAP nodes, because they just pass through forward behaviour
-     * to their predecessor Node. The set of effective producers of {@code access} is
-     * then the union over the effective producers of all the MAP's inputs.
-     */
-    private Set<RagNode> getEffectiveProducers(final AccessId access) {
-        final RagNode producer = access.getProducer();
-        if (producer.type() == MISSING) {
-            return Collections.emptySet();
-        } else if (producer.type() == MAP) {
-            final Set<RagNode> producers = new HashSet<>();
-            for (AccessId input : producer.getInputs()) {
-                producers.addAll(getEffectiveProducers(input));
-            }
-            return producers;
-        } else {
-            return Collections.singleton(producer);
-        }
-    }
-
     private void eliminateAppend(final RagNode append) {
         // Short-circuit EXEC edges from predecessors to successors
         for (RagNode predecessor : append.predecessors(EXEC)) {
