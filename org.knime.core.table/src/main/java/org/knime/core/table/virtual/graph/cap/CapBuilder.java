@@ -88,9 +88,9 @@ public class CapBuilder {
 
     private CapBuilder(final List<RagNode> orderedRag) {
         this.orderedRag = orderedRag;
-        final int cap = orderedRag.size() * 4 / 3;
-        branches = new Branches(cap);
-        capNodes = new HashMap<>(cap);
+        final int capacity = orderedRag.size() * 4 / 3;
+        branches = new Branches(capacity);
+        capNodes = new HashMap<>(capacity);
         capAccessIds = new HashMap<>();
         cursorAssemblyPlan = new ArrayList<>(orderedRag.size());
     }
@@ -342,6 +342,13 @@ public class CapBuilder {
         final CapAccessId[] imps = new CapAccessId[ids.size()];
         int i = 0;
         for (AccessId id : ids) {
+            final RagNode producer = id.getValidity().getProducer();
+            if (producer == null) {
+                throw new NullPointerException();
+            }
+            if (capNodes.get(producer) == null) {
+                throw new NullPointerException( "producer missing " + producer);
+            }
             imps[i++] = capAccessIds.get(id);
         }
         return imps;
