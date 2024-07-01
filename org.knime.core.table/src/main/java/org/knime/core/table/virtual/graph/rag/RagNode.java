@@ -81,7 +81,7 @@ public final class RagNode implements Typed<RagNodeType> {
      * Accesses required by this node.
      * <p>
      * An access is only "required" if its value is used. That is, column permutation
-     * nodes, etc., neither require or produce any accesses.
+     * nodes, etc., neither require nor produce any accesses.
      */
     private AccessIds[] inputs;
 
