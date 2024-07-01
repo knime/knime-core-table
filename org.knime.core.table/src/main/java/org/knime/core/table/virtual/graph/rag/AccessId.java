@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.virtual.graph.rag.RagNode.AccessValidity;
 
 /**
  * {@code AccessId} represents a particular {@link ReadAccess}, identified by a
@@ -67,9 +68,13 @@ public final class AccessId {
 
     private final int columnIndex;
 
-    public AccessId(final RagNode producer, final int columnIndex) {
+    private final AccessValidity validity;
+
+    public AccessId(final RagNode producer, final int columnIndex, final AccessValidity validity) {
         this.producer = producer;
         this.columnIndex = columnIndex;
+        this.validity = validity;
+        validity.addConsumer(this);
     }
 
     public RagNode getProducer() {
@@ -134,5 +139,4 @@ public final class AccessId {
         sb.append('}');
         return sb.toString();
     }
-
 }

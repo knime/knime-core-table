@@ -485,7 +485,8 @@ public class RagBuilder {
                     final DataTraits traits = appendedSchema.getTraits(i - numPredecessorColumns);
                     // get/add the index of the missing AccessId for that DataSpec
                     // and get/add missingValuesSource output AccessId for that index
-                    return graph.getMissingValuesAccessId(dataSpec, traits);
+                    final AccessId id = graph.getMissingValuesAccessId(dataSpec, traits);
+                    return new AccessId(id.getProducer(), id.getColumnIndex(), node.validity());
                 }
             case COLFILTER:
                 final SelectColumnsTransformSpec spec = node.getTransformSpec();

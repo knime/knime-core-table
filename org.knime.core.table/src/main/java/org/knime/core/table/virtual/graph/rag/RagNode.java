@@ -45,11 +45,19 @@
  */
 package org.knime.core.table.virtual.graph.rag;
 
+import static org.knime.core.table.virtual.graph.rag.RagEdgeType.EXEC;
+import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.APPEND;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.CONCATENATE;
 import static org.knime.core.table.virtual.graph.rag.RagNodeType.MISSING;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.SLICE;
+import static org.knime.core.table.virtual.graph.rag.RagNodeType.SOURCE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.knime.core.table.virtual.TableTransform;
@@ -86,6 +94,49 @@ public final class RagNode implements Typed<RagNodeType> {
     private AccessIds[] inputs;
 
     /**
+     * TODO (TP) javadoc
+     */
+    public static class AccessValidity {// TODO (TP) move to separate file
+
+        private final RagNode producer;
+
+        // set of accesses with this validity (no duplicates)
+        private final List<AccessId> consumers = new ArrayList<>();
+
+        private final List<AccessId> unmodifiableConsumers = Collections.unmodifiableList(consumers);
+
+        public AccessValidity(final RagNode producer) {
+            this.producer = producer;
+        }
+
+        public RagNode getProducer() {
+            return producer;
+        }
+
+        public List<AccessId> getConsumers() {
+            return unmodifiableConsumers;
+        }
+
+        public void addConsumer(AccessId accessId) {
+            if (!consumers.contains(accessId))
+                consumers.add(accessId);
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("AccessValidity{");
+            sb.append("producer=").append(producer);
+            sb.append(", consumers=").append(consumers);
+            sb.append('}');
+            return sb.toString();
+        }
+    }
+
+    private static final EnumSet<RagNodeType> validityProvidingNodeTypes = EnumSet.of(SOURCE, APPEND, CONCATENATE, MISSING);
+
+    private final AccessValidity validity;
+
+    /**
      * Create a node corresponding to a transform with the given {@code spec}.
      * <p>
      * For CONCATENATE nodes, {@code numInputsArrays} gives the number of SPEC
@@ -96,6 +147,7 @@ public final class RagNode implements Typed<RagNodeType> {
     RagNode(final TableTransformSpec spec, final int numInputsArrays) {
         transformSpec = spec;
         type = RagNodeType.forSpec(transformSpec);
+        validity = validityProvidingNodeTypes.contains(type) ? new AccessValidity(this) : null;
         outputs = new AccessIds();
 
         inputs = new AccessIds[numInputsArrays];
@@ -222,6 +274,21 @@ public final class RagNode implements Typed<RagNodeType> {
     }
 
     /**
+     * TODO (TP) javadoc
+     */
+    public AccessValidity validity() {// TODO (TP) rename?
+        if (validity != null) {
+            return validity;
+        } else {
+            List<RagEdge> predecessorEdges = incoming.unmodifiable(EXEC);
+            if (predecessorEdges.isEmpty())
+                predecessorEdges = incoming.unmodifiable(SPEC);
+            return predecessorEdges.get(0).getSource().validity();
+
+        }
+    }
+
+    /**
      * Get all output {@code AccessId} produced by this node.
      * The returned collection is sorted by {@code columnIndex}.
      * <p>
@@ -254,7 +321,7 @@ public final class RagNode implements Typed<RagNodeType> {
         }
         AccessId id = outputs.getAtColumnIndex( columnIndex );
         if (id == null) {
-            id = new AccessId(this, columnIndex);
+            id = new AccessId(this, columnIndex, validity());
             outputs.putAtColumnIndex(id, columnIndex);
         }
         return id;
