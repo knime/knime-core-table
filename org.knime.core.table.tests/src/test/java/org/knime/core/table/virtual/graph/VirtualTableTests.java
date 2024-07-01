@@ -638,9 +638,13 @@ public class VirtualTableTests {
 
 
     public static VirtualTable vtConcatenateAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources, final long sliceFrom, final long sliceTo) {
-        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).permute(1, 0);
-        final VirtualTable transformedTable3 = new VirtualTable(sourceIdentifiers[2], new SourceTableProperties(sources[2])).permute(1, 0);
-        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).filterColumns(0,1).concatenate(List.of(transformedTable2, transformedTable3)).filterColumns(1).slice(sliceFrom, sliceTo);
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).selectColumns(1, 0);
+        final VirtualTable transformedTable3 = new VirtualTable(sourceIdentifiers[2], new SourceTableProperties(sources[2])).selectColumns(1, 0);
+        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
+                .keepOnlyColumns(0,1)
+                .concatenate(List.of(transformedTable2, transformedTable3))
+                .keepOnlyColumns(1)
+                .slice(sliceFrom, sliceTo);
     }
 
     public static VirtualTable vtConcatenateAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
@@ -757,6 +761,94 @@ public class VirtualTableTests {
         testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateAndSliceFullTable);
         testTransformedTableLookahead(true, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateAndSliceFullTable);
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateAndSliceFullTable);
+    }
+
+
+
+    public static VirtualTable vtConcatenateMapAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources, final long sliceFrom, final long sliceTo) {
+        final VirtualTable transformedTable1 = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0])).selectColumns(0, 1);
+        final VirtualTable transformedTable2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1])).selectColumns(1, 0);
+        final VirtualTable transformedTable3 = new VirtualTable(sourceIdentifiers[2], new SourceTableProperties(sources[2])).selectColumns(1, 0);
+//        final VirtualTable concatenatedTable = transformedTable1.concatenate(List.of(transformedTable2, transformedTable3)).keepOnlyColumns(1);
+        final VirtualTable concatenatedTable = transformedTable1.concatenate(transformedTable2).concatenate(transformedTable3).keepOnlyColumns(1);
+        final MapperFactory factory = MapperFactory.of(ColumnarSchema.of(INT), (inputs, outputs) -> {
+            MapTransformUtils.verify(inputs, 1, outputs, 1);
+            final IntAccess.IntReadAccess i = (IntAccess.IntReadAccess)inputs[0];
+            final IntAccess.IntWriteAccess o = (IntAccess.IntWriteAccess)outputs[0];
+            return () -> o.setIntValue( i.getIntValue() + 1);
+        });
+        return concatenatedTable.append(concatenatedTable.map(new int[] {0}, factory)).slice(sliceFrom, sliceTo);
+    }
+
+    public static VirtualTable vtConcatenateMapAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        return vtConcatenateMapAndSlice(sourceIdentifiers, sources, 6, 10);
+    }
+
+    public static VirtualTable vtConcatenateMapAndSliceSingleTable(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        return vtConcatenateMapAndSlice(sourceIdentifiers, sources, 6, 8);
+    }
+
+    public static VirtualTable vtConcatenateMapAndSliceFullSingleTable(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        return vtConcatenateMapAndSlice(sourceIdentifiers, sources, 5, 9);
+    }
+
+    public static VirtualTable vtConcatenateMapAndSliceFullTable(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        return vtConcatenateMapAndSlice(sourceIdentifiers, sources, 5, 10);
+    }
+
+    @Test
+    public void testConcatenateMapAndSlice() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{12, 13}, //
+                new Object[]{13, 14}, //
+                new Object[]{14, 15}, //
+                new Object[]{16, 17}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSlice);
+        testTransformedTableLookahead(true, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSlice);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSlice);
+    }
+
+    @Test
+    public void testConcatenateMapAndSliceSingleTable() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{12, 13}, //
+                new Object[]{13, 14}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceSingleTable);
+        testTransformedTableLookahead(true, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceSingleTable);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceSingleTable);
+    }
+
+    @Test
+    public void testConcatenateMapAndSliceFullSingleTable() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{11, 12}, //
+                new Object[]{12, 13}, //
+                new Object[]{13, 14}, //
+                new Object[]{14, 15}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceFullSingleTable);
+        testTransformedTableLookahead(true, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceFullSingleTable);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceFullSingleTable);
+    }
+
+    @Test
+    public void testConcatenateMapAndSliceFullTable() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(INT, INT);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{11, 12}, //
+                new Object[]{12, 13}, //
+                new Object[]{13, 14}, //
+                new Object[]{14, 15}, //
+                new Object[]{16, 17}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceFullTable);
+        testTransformedTableLookahead(true, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceFullTable);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataConcatenateAndSlice, VirtualTableTests::vtConcatenateMapAndSliceFullTable);
     }
 
 

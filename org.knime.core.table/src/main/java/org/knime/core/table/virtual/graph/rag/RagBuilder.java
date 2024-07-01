@@ -724,6 +724,8 @@ public class RagBuilder {
                 }
             }
 
+            concatenate.validity().replaceInConsumersWith(wrapper.validity());
+
             graph.remove(wrapper);
             graph.remove(concatenate);
 
