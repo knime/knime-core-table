@@ -77,13 +77,12 @@ import java.util.function.Function;
 
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
-import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
+import org.knime.core.table.virtual.graph.rag.RagNode.AccessValidity;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
@@ -102,12 +101,12 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
  * <li>{@link SpecGraphBuilder#buildSpecGraph(TableTransform)}:
  *      Build RagGraph nodes for each TableTransform in the given VirtualTable, and SPEC
  *      edges between them. Set numColumns for each node.</li>
- * <li>{@link #traceAccesses()}:
- *      Trace each access from its consumer to its producer, starting with accesses
- *      consumed by the root node, and walking along SPEC edges.</li>
  * <li>{@link #traceExec()}:
  *      Recursively trace along reverse SPEC edges to insert EXEC edges between
  *      executable nodes, starting in turn from each node of the graph.</li>
+ * <li>{@link #traceAccesses()}:
+ *      Trace each access from its consumer to its producer, starting with accesses
+ *      consumed by the root node, and walking along SPEC edges.</li>
  * <li>{@link #optimize()}:
  *      Apply local optimizations to the graph. (At the moment: merging consecutive
  *      SLICE nodes, and eliminating certain APPEND nodes).</li>
@@ -622,6 +621,10 @@ public class RagBuilder {
         boolean changed = true;
         while (changed) {
             changed = false;
+            if ( pushMapExecs() ) {
+                logger.appendRagGraph("pushMapExecs", "(optimize step)", graph);
+                changed = true;
+            }
             if ( eliminateRowIndexes() ) {
                 logger.appendRagGraph("eliminateRowIndexes", "(optimize step)", graph);
                 changed = true;
@@ -666,6 +669,33 @@ public class RagBuilder {
         }
     }
 
+
+
+    // --------------------------------------------------------------------
+    // pushMapExecs()
+
+    boolean pushMapExecs() {
+        boolean changed = false;
+        for (final RagNode node : graph.nodes(MAP)) {
+            if (tryPushMapExec(node)) {
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private boolean tryPushMapExec(final RagNode map) {
+        boolean changed = false;
+        var incoming = new ArrayList<>(map.incomingEdges(EXEC));
+        for (RagEdge edge : incoming) {
+            final RagNode predecessor = edge.getSource();
+            if ( predecessor.validity().getProducer() != predecessor ) {
+                graph.replaceEdgeSource(edge, predecessor.validity().getProducer());
+                changed = true;
+            }
+        }
+        return changed;
+    }
 
 
     // --------------------------------------------------------------------
@@ -1135,6 +1165,7 @@ public class RagBuilder {
         for (AccessId oldId : source.getOutputs()) {
             AccessId newId = merged.getOrCreateOutput(oldId.getColumnIndex());
             oldId.replaceInConsumersWith(newId);
+            oldId.getValidity().replaceInConsumersWith(newId.getValidity());
         }
         // re-link DATA edges of source to merged
         // (link merged to all DATA successors of source)
@@ -1233,7 +1264,7 @@ public class RagBuilder {
     }
 
     private boolean tryEliminateAppend(final RagNode append) {
-        if (getAncestorSources(append).size() == 1) {
+        if (getAncestorValidities(append).size() == 1 && getAncestorSources(append).size() == 1) {
             eliminateAppend(append);
             return true;
         } else {
@@ -1262,6 +1293,15 @@ public class RagBuilder {
         return sources;
     }
 
+    private Set<AccessValidity> getAncestorValidities(final RagNode node) {
+        Set<AccessValidity> validities = new HashSet<>();
+        List<RagNode> predecessors = node.predecessors(EXEC);
+        for (RagNode predecessor : predecessors) {
+            validities.add(predecessor.validity());
+        }
+        return validities;
+    }
+
     private void eliminateAppend(final RagNode append) {
         // Short-circuit EXEC edges from predecessors to successors
         for (RagNode predecessor : append.predecessors(EXEC)) {
@@ -1269,6 +1309,9 @@ public class RagBuilder {
                 graph.getOrAddEdge(predecessor, successor, EXEC);
             }
         }
+
+        final AccessValidity predecessorValidity = append.predecessors(EXEC).get(0).validity();
+        append.validity().replaceInConsumersWith(predecessorValidity);
 
         graph.remove(append);
 

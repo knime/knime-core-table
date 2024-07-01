@@ -122,6 +122,11 @@ public final class RagNode implements Typed<RagNodeType> {
                 consumers.add(accessId);
         }
 
+        public void replaceInConsumersWith(AccessValidity validity) {
+            consumers.forEach(id -> id.setValidity(validity));
+            consumers.clear();
+        }
+
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("AccessValidity{");
@@ -132,6 +137,7 @@ public final class RagNode implements Typed<RagNodeType> {
         }
     }
 
+    // TODO: move to RagNodeType ?
     private static final EnumSet<RagNodeType> validityProvidingNodeTypes = EnumSet.of(SOURCE, APPEND, CONCATENATE, MISSING);
 
     private final AccessValidity validity;
