@@ -90,9 +90,9 @@ public class RagPlayground {
 
         var rag = new RagBuilder(spec.graph);
 
-        rag.traceAccesses();
         rag.traceExec();
-        mermaid.append("traceAccesses(); traceExec()", "adds DATA, EXEC edges",  rag.graph);
+        rag.traceAccesses();
+        mermaid.append("traceExec(); traceAccesses()", "adds DATA, EXEC edges",  rag.graph);
 
         rag.optimize();
         mermaid.append("optimize()", rag.graph);
@@ -138,11 +138,11 @@ public class RagPlayground {
 
         var rag = new RagBuilder(spec.graph);
 
+        rag.traceExec();
+        mermaid.append("traceExec()", "adds EXEC edges",  rag.graph);
+
         rag.traceAccesses();
         mermaid.append("traceAccesses()", "adds DATA edges",  rag.graph);
-
-        rag.traceExec();
-        mermaid.append("traceAccesses(); traceExec()", "adds DATA, EXEC edges",  rag.graph);
 
         rag.optimize();
         mermaid.append("optimize()", rag.graph);

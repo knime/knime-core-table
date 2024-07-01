@@ -199,11 +199,11 @@ public class RagBuilder {
             final RagBuilder specs = new RagBuilder(copySpecGraph ? specGraph.copy() : specGraph);
             logger.appendRagGraph("buildSpecGraph()", "SPEC edges", specs.graph);
 
-            specs.traceAccesses();
-            logger.appendRagGraph("traceAccesses()", "adds DATA edges", specs.graph);
-
             specs.traceExec();
             logger.appendRagGraph("traceExec()", "adds EXEC edges", specs.graph);
+
+            specs.traceAccesses();
+            logger.appendRagGraph("traceAccesses()", "adds DATA edges", specs.graph);
 
             specs.optimize( logger );
 
