@@ -15,7 +15,7 @@ import org.knime.core.table.virtual.graph.rag.RagNodeType;
  */
 public class Mermaid {
 
-    private static final boolean darkMode = false;
+    private static final boolean darkMode = true;
 
     private static final boolean hideMissingValuesSource = false;
 

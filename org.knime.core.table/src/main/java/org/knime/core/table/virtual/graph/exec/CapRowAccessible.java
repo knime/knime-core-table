@@ -152,7 +152,15 @@ class CapRowAccessible implements RowAccessible {
 
         final RagGraph graph = SpecGraphBuilder.appendSelection(specGraph, selection);
         final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph, false);
+
+        System.out.println("orderedRag = ");
+        orderedRag.forEach(System.out::println);
+        System.out.println();
         final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(orderedRag);
+        System.out.println("cap = ");
+        cap.nodes().forEach(System.out::println);
+        System.out.println();
+
         final int numColumns = schema.numColumns();
         final int[] selected = selection.columns().allSelected(0, numColumns) //
                 ? null //

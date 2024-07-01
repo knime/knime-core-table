@@ -75,7 +75,9 @@ import org.junit.Test;
 import org.knime.core.table.RowAccessiblesTestUtils;
 import org.knime.core.table.access.DoubleAccess;
 import org.knime.core.table.access.IntAccess;
+import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.StringAccess;
+import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RandomRowAccessible;
@@ -1460,4 +1462,22 @@ public class VirtualTableTests {
         testTransformedTableLookahead(true, VirtualTableTests::dataAppendTwice, VirtualTableTests::vtAppendTwice);
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataAppendTwice, VirtualTableTests::vtAppendTwice);
     }
+
+
+
+    public static VirtualTable vtAppendExperiments(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final VirtualTable t1 = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        final VirtualTable t2 = new VirtualTable(sourceIdentifiers[1], new SourceTableProperties(sources[1]));
+        final MapperFactory factory = MapperFactory.of(ColumnarSchema.of(INT), (inputs, outputs) -> {
+            MapTransformUtils.verify(inputs, 1, outputs, 1);
+            final IntAccess.IntReadAccess i = (IntAccess.IntReadAccess)inputs[0];
+            final IntAccess.IntWriteAccess o = (IntAccess.IntWriteAccess)outputs[0];
+            return () -> o.setIntValue( i.isMissing() ? 1 : 0);
+        });
+        var t3 = t2.appendMissingValueColumns(INT);
+        var t4 = t3.map(new int[]{1}, factory);
+        return t1.append(t2.append(t4));
+//        return t1.append(t2).append(t4);
+    }
+
 }
