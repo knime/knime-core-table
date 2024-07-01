@@ -321,7 +321,7 @@ public final class RagNode implements Typed<RagNodeType> {
         }
         AccessId id = outputs.getAtColumnIndex( columnIndex );
         if (id == null) {
-            id = new AccessId(this, columnIndex, validity());
+            id = new AccessId(this, columnIndex);
             outputs.putAtColumnIndex(id, columnIndex);
         }
         return id;

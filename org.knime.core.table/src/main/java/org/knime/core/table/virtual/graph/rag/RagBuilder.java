@@ -481,12 +481,9 @@ public class RagBuilder {
                     // get the DataSpec of output i
                     final AppendMissingValuesTransformSpec spec = node.getTransformSpec();
                     final ColumnarSchema appendedSchema = spec.getAppendedSchema();
-                    final DataSpec dataSpec = appendedSchema.getSpec(i - numPredecessorColumns);
-                    final DataTraits traits = appendedSchema.getTraits(i - numPredecessorColumns);
-                    // get/add the index of the missing AccessId for that DataSpec
-                    // and get/add missingValuesSource output AccessId for that index
-                    final AccessId id = graph.getMissingValuesAccessId(dataSpec, traits);
-                    return new AccessId(id.getProducer(), id.getColumnIndex(), node.validity());
+                    final DataSpecWithTraits dataSpec = appendedSchema.getSpecWithTraits(i - numPredecessorColumns);
+                    // add missingValuesSource output AccessId for dataSpec
+                    return graph.getMissingValuesAccessId(dataSpec, node.validity());
                 }
             case COLFILTER:
                 final SelectColumnsTransformSpec spec = node.getTransformSpec();

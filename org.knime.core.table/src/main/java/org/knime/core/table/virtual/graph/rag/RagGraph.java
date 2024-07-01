@@ -56,8 +56,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.TableTransform;
+import org.knime.core.table.virtual.graph.rag.RagNode.AccessValidity;
 
 /**
  * The "RowAccessible Graph" (or "ReadAccess Graph", or something like that... ;-)
@@ -310,21 +312,21 @@ public class RagGraph {
             node.incoming.unmodifiable().forEach(edge -> nodeCopy.incoming.add(edgeMap.get(edge)));
             node.outgoing.unmodifiable().forEach(edge -> nodeCopy.outgoing.add(edgeMap.get(edge)));
         });
-        missingValueColumns.unmodifiable.forEach(s -> copy.missingValueColumns.getOrAdd(s.spec(), s.traits()));
+        missingValueColumns.unmodifiable.forEach(copy.missingValueColumns::add);
         copy.root = nodeMap.get(root);
         return copy;
     }
 
     /**
-     * Get or create an {@code AccessId} from {@code missingValuesSource},
-     * matching the given DataSpec. {@code missingValuesSource} columns are
-     * reused for all missing-value columns with the same DataSpec so a new one
-     * is created if no missing-value column matching ({@code dataspec}, {@code
-     * traits}) exists yet.
+     * Create an {@code AccessId} for a missing-value column with the given {@code spec}.
+     * The producer of the {@code AccessId} is {@code missingValuesSource}, and
+     * validity is tied to the given {@link AccessValidity}.
      */
-    AccessId getMissingValuesAccessId(final DataSpec dataSpec, final DataTraits traits) {
-        final int columnIndex = missingValueColumns.getOrAdd(dataSpec, traits);
-        return missingValuesSource.getOrCreateOutput(columnIndex);
+    AccessId getMissingValuesAccessId(final DataSpecs.DataSpecWithTraits spec, final AccessValidity validity) {
+        final int columnIndex = missingValueColumns.add(spec);
+        final AccessId accessId = missingValuesSource.getOrCreateOutput(columnIndex);
+        accessId.setValidity(validity);
+        return accessId;
     }
 
     /**

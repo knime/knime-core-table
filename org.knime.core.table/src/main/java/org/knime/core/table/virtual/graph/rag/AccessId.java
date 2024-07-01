@@ -68,13 +68,21 @@ public final class AccessId {
 
     private final int columnIndex;
 
-    private final AccessValidity validity;
+    private AccessValidity validity;
 
-    public AccessId(final RagNode producer, final int columnIndex, final AccessValidity validity) {
+    public AccessId(final RagNode producer, final int columnIndex) {
         this.producer = producer;
         this.columnIndex = columnIndex;
+        setValidity(producer.validity());
+    }
+
+    public void setValidity(final AccessValidity validity) {
         this.validity = validity;
         validity.addConsumer(this);
+    }
+
+    public AccessValidity getValidity() {
+        return validity;
     }
 
     public RagNode getProducer() {
@@ -134,7 +142,13 @@ public final class AccessId {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("{");
-        sb.append("<").append(producer.id()).append(">:");
+        sb.append("<").append(producer.id());
+        if (validity == null) {
+            sb.append("| NULL ! ");
+        } else if (validity.getProducer() != producer) {
+            sb.append("|").append(validity.getProducer().id());
+        }
+        sb.append(">:");
         sb.append(columnIndex);
         sb.append('}');
         return sb.toString();
