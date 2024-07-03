@@ -48,9 +48,9 @@ functionArgs: expr (',' expr)* ','?;
 aggregationArgs:
     (positionalAggregationArgs (',' namedAggregationArgs)? ','?)
     | (namedAggregationArgs ','?);
-positionalAggregationArgs: atom (',' atom)*;
+positionalAggregationArgs: expr (',' expr)*;
 namedAggregationArgs: namedAggregationArg (',' namedAggregationArg)*;
-namedAggregationArg: argName=NAMED_ARGUMENT_IDENTIFIER atom;
+namedAggregationArg: argName=NAMED_ARGUMENT_IDENTIFIER expr;
 
 
 // Single-line comment

@@ -910,6 +910,9 @@ public class KnimeExpressionParser extends Parser {
 			setState(124);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
+			case T__0:
+			case T__2:
+			case T__4:
 			case BOOLEAN:
 			case INTEGER:
 			case FLOAT:
@@ -919,6 +922,12 @@ public class KnimeExpressionParser extends Parser {
 			case ROW_INDEX:
 			case ROW_NUMBER:
 			case ROW_ID:
+			case MINUS:
+			case NOT:
+			case AGGREGATION_IDENTIFIER:
+			case FUNCTION_IDENTIFIER:
+			case COLUMN_IDENTIFIER:
+			case FLOW_VAR_IDENTIFIER:
 				enterOuterAlt(_localctx, 1);
 				{
 				{
@@ -985,11 +994,11 @@ public class KnimeExpressionParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class PositionalAggregationArgsContext extends ParserRuleContext {
-		public List<AtomContext> atom() {
-			return getRuleContexts(AtomContext.class);
+		public List<ExprContext> expr() {
+			return getRuleContexts(ExprContext.class);
 		}
-		public AtomContext atom(int i) {
-			return getRuleContext(AtomContext.class,i);
+		public ExprContext expr(int i) {
+			return getRuleContext(ExprContext.class,i);
 		}
 		public PositionalAggregationArgsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1018,7 +1027,7 @@ public class KnimeExpressionParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(126);
-			atom();
+			expr(0);
 			setState(131);
 			_errHandler.sync(this);
 			_alt = getInterpreter().adaptivePredict(_input,17,_ctx);
@@ -1029,7 +1038,7 @@ public class KnimeExpressionParser extends Parser {
 					setState(127);
 					match(T__3);
 					setState(128);
-					atom();
+					expr(0);
 					}
 					} 
 				}
@@ -1120,8 +1129,8 @@ public class KnimeExpressionParser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class NamedAggregationArgContext extends ParserRuleContext {
 		public Token argName;
-		public AtomContext atom() {
-			return getRuleContext(AtomContext.class,0);
+		public ExprContext expr() {
+			return getRuleContext(ExprContext.class,0);
 		}
 		public TerminalNode NAMED_ARGUMENT_IDENTIFIER() { return getToken(KnimeExpressionParser.NAMED_ARGUMENT_IDENTIFIER, 0); }
 		public NamedAggregationArgContext(ParserRuleContext parent, int invokingState) {
@@ -1152,7 +1161,7 @@ public class KnimeExpressionParser extends Parser {
 			setState(142);
 			((NamedAggregationArgContext)_localctx).argName = match(NAMED_ARGUMENT_IDENTIFIER);
 			setState(143);
-			atom();
+			expr(0);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1275,8 +1284,8 @@ public class KnimeExpressionParser extends Parser {
 		"\u0000\u0000xz\u0003\f\u0006\u0000y{\u0005\u0004\u0000\u0000zy\u0001\u0000"+
 		"\u0000\u0000z{\u0001\u0000\u0000\u0000{}\u0001\u0000\u0000\u0000|p\u0001"+
 		"\u0000\u0000\u0000|x\u0001\u0000\u0000\u0000}\t\u0001\u0000\u0000\u0000"+
-		"~\u0083\u0003\u0002\u0001\u0000\u007f\u0080\u0005\u0004\u0000\u0000\u0080"+
-		"\u0082\u0003\u0002\u0001\u0000\u0081\u007f\u0001\u0000\u0000\u0000\u0082"+
+		"~\u0083\u0003\u0004\u0002\u0000\u007f\u0080\u0005\u0004\u0000\u0000\u0080"+
+		"\u0082\u0003\u0004\u0002\u0000\u0081\u007f\u0001\u0000\u0000\u0000\u0082"+
 		"\u0085\u0001\u0000\u0000\u0000\u0083\u0081\u0001\u0000\u0000\u0000\u0083"+
 		"\u0084\u0001\u0000\u0000\u0000\u0084\u000b\u0001\u0000\u0000\u0000\u0085"+
 		"\u0083\u0001\u0000\u0000\u0000\u0086\u008b\u0003\u000e\u0007\u0000\u0087"+
@@ -1284,7 +1293,7 @@ public class KnimeExpressionParser extends Parser {
 		"\u0087\u0001\u0000\u0000\u0000\u008a\u008d\u0001\u0000\u0000\u0000\u008b"+
 		"\u0089\u0001\u0000\u0000\u0000\u008b\u008c\u0001\u0000\u0000\u0000\u008c"+
 		"\r\u0001\u0000\u0000\u0000\u008d\u008b\u0001\u0000\u0000\u0000\u008e\u008f"+
-		"\u0005\'\u0000\u0000\u008f\u0090\u0003\u0002\u0001\u0000\u0090\u000f\u0001"+
+		"\u0005\'\u0000\u0000\u008f\u0090\u0003\u0004\u0002\u0000\u0090\u000f\u0001"+
 		"\u0000\u0000\u0000\u0013\u001a\u001e$*-038I`bjnsvz|\u0083\u008b";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
