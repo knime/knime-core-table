@@ -83,10 +83,9 @@ public final class CapAccessId {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof CapAccessId))
+        if (!(o instanceof CapAccessId other))
             return false;
 
-        final CapAccessId other = (CapAccessId)o;
         return slot == other.slot && producer.equals(other.producer);
     }
 

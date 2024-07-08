@@ -205,22 +205,7 @@ public class CapBuilder {
                     final int[] slotPredecessorIndices = new int[numSlots];
                     Arrays.setAll(slotPredecessorIndices,
                             i -> predecessorBranches.indexOf(branches.getBranch(ragInputs[i].getProducer())));
-                    class Slot {
-                        final AccessId ragInput;
-
-                        final AccessId ragOutput;
-
-                        final int predecessorIndex;
-
-                        Slot(final AccessId ragInput, final AccessId ragOutput, final int predecessorIndex) {
-                            this.ragInput = ragInput;
-                            this.ragOutput = ragOutput;
-                            this.predecessorIndex = predecessorIndex;
-                        }
-
-                        int predecessorIndex() {
-                            return predecessorIndex;
-                        }
+                    record Slot(AccessId ragInput, AccessId ragOutput, int predecessorIndex) {
                     }
                     final Slot[] slots = new Slot[numSlots];
                     Arrays.setAll(slots, i -> new Slot(ragInputs[i], ragOutputs[i], slotPredecessorIndices[i]));
