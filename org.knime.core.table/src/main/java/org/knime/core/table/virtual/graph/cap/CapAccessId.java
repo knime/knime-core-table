@@ -66,9 +66,20 @@ public final class CapAccessId {
 
     private final int slot;
 
+    private final CapNode validity;
+
     public CapAccessId(final CapNode producer, final int slot) {
+        this(producer, slot, producer);
+    }
+
+    public CapAccessId(final CapNode producer, final int slot, final CapNode validity) {
         this.producer = producer;
         this.slot = slot;
+        this.validity = validity;
+    }
+
+    public CapAccessId withValidity(final CapNode validity) {
+        return new CapAccessId(producer, slot, validity);
     }
 
     public CapNode producer() {
@@ -77,6 +88,10 @@ public final class CapAccessId {
 
     public int slot() {
         return slot;
+    }
+
+    public CapNode validity() {
+        return validity;
     }
 
     @Override
@@ -99,6 +114,9 @@ public final class CapAccessId {
         final StringBuilder sb = new StringBuilder("(");
         sb.append(producer.index());
         sb.append("::").append(slot);
+        if ( validity != null ) {
+            sb.append("|").append(validity.index());
+        }
         sb.append(')');
         return sb.toString();
     }

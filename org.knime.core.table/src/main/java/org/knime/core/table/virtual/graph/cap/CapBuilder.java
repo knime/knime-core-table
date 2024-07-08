@@ -327,14 +327,15 @@ public class CapBuilder {
         final CapAccessId[] imps = new CapAccessId[ids.size()];
         int i = 0;
         for (AccessId id : ids) {
-            final RagNode producer = id.getValidity().getProducer();
-            if (producer == null) {
-                throw new NullPointerException();
+            final RagNode validityRagNode = id.getValidity().getProducer();
+            if (validityRagNode == null) {
+                throw new NullPointerException("Validity provider missing for " + id);
             }
-            if (capNodes.get(producer) == null) {
-                throw new NullPointerException( "producer missing " + producer);
+            final CapNode validity = capNodes.get(validityRagNode);
+            if (validity == null) {
+                throw new NullPointerException("CapNode missing for producer missing for " + validityRagNode);
             }
-            imps[i++] = capAccessIds.get(id);
+            imps[i++] = capAccessIds.get(id).withValidity(validity);
         }
         return imps;
     }
