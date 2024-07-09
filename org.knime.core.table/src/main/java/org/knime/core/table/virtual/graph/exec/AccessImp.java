@@ -67,10 +67,9 @@ final class AccessImp {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof AccessImp))
+        if (!(o instanceof AccessImp other))
             return false;
 
-        final AccessImp other = (AccessImp)o;
         return i == other.i && node.equals(other.node);
     }
 
