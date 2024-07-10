@@ -65,6 +65,8 @@ class SequentialNodeImpRowIndex implements SequentialNodeImp {
      */
     private long m_nextRowIndex;
 
+    private boolean valid;
+
     SequentialNodeImpRowIndex(final SequentialNodeImp predecessor, final long offset) {
         this.predecessor = predecessor;
         access = (LongWriteAccess)BufferedAccesses.createBufferedAccess(LONG);
@@ -77,13 +79,18 @@ class SequentialNodeImpRowIndex implements SequentialNodeImp {
     }
 
     @Override
+    public boolean isValid() {
+        return valid;
+    }
+
+    @Override
     public void create() {
         predecessor.create();
     }
 
     @Override
     public boolean forward() {
-        if (predecessor.forward()) {
+        if (valid = predecessor.forward()) {
             access.setLongValue(m_nextRowIndex++);
             return true;
         } else {

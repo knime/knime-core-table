@@ -80,6 +80,11 @@ class SequentialNodeImpAppend implements SequentialNodeImp {
         return outputs[i];
     }
 
+    @Override
+    public boolean isValid() {
+        return true; // TODO (TP) !!!
+    }
+
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
             final ReadAccess access = inputs[i].getReadAccess();

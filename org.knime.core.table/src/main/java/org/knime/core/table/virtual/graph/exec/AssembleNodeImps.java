@@ -182,7 +182,9 @@ class AssembleNodeImps {
         final AccessImp[] accessImps = new AccessImp[capAccessIds.length];
         Arrays.setAll(accessImps, i -> {
             final CapAccessId a = capAccessIds[i];
-            return new AccessImp(imps.get(a.producer().index()), a.slot());
+            final var node = imps.get(a.producer().index());
+            final var validity = imps.get(a.validity().index());
+            return new AccessImp(node, a.slot(), validity);
         });
         return accessImps;
     }

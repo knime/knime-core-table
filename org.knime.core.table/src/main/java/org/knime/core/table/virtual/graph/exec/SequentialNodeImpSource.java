@@ -67,6 +67,8 @@ class SequentialNodeImpSource implements SequentialNodeImp {
 
     private LookaheadCursor<ReadAccessRow> lookahead;
 
+    private boolean valid;
+
     SequentialNodeImpSource(final RowAccessible accessible, final int[] cols, final long fromRow, final long toRow) {
         this.accessible = accessible;
         this.cols = cols;
@@ -77,6 +79,11 @@ class SequentialNodeImpSource implements SequentialNodeImp {
     @Override
     public ReadAccess getOutput(final int i) {
         return outputs[i];
+    }
+
+    @Override
+    public boolean isValid() {
+        return valid;
     }
 
     @Override
@@ -92,7 +99,7 @@ class SequentialNodeImpSource implements SequentialNodeImp {
 
     @Override
     public boolean forward() {
-        return cursor.forward();
+        return valid = cursor.forward();
     }
 
     @Override

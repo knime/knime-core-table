@@ -53,13 +53,24 @@ final class AccessImp {
 
     public final int i;
 
+    public final NodeImp validity;
+
     public AccessImp(NodeImp node, int i) {
+        this(node, i, null);
+    }
+
+    public AccessImp(NodeImp node, int i, NodeImp validity) {
         this.node = node;
         this.i = i;
+        this.validity = validity;
     }
 
     public ReadAccess getReadAccess() {
         return node.getOutput(i);
+    }
+
+    public NodeImp getValidity() {
+        return validity;
     }
 
     @Override

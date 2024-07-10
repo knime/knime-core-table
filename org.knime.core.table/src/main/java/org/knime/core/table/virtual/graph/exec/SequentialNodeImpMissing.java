@@ -73,6 +73,12 @@ class SequentialNodeImpMissing implements SequentialNodeImp {
     }
 
     @Override
+    public boolean isValid() {
+        // should never be called
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean forward() {
         // should never be called
         throw new UnsupportedOperationException();

@@ -76,6 +76,12 @@ class SequentialNodeImpMaterialize implements SequentialNodeImp {
     }
 
     @Override
+    public boolean isValid() {
+        // should never be called
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void create() {
         predecessor.create();
     }

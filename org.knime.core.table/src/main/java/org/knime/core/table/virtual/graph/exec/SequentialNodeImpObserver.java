@@ -79,6 +79,12 @@ class SequentialNodeImpObserver implements SequentialNodeImp {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public boolean isValid() {
+        // Observer doesn't have outputs
+        throw new UnsupportedOperationException();
+    }
+
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
             observerInputs[i] = inputs[i].getReadAccess();

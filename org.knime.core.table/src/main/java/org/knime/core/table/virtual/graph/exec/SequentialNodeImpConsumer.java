@@ -68,6 +68,12 @@ class SequentialNodeImpConsumer implements SequentialNodeImp {
         return outputs[i];
     }
 
+    @Override
+    public boolean isValid() {
+        // should never be called
+        throw new UnsupportedOperationException();
+    }
+
     public int numOutputs() {
         return outputs.length;
     }

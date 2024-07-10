@@ -89,6 +89,12 @@ class SequentialNodeImpSlice implements SequentialNodeImp {
     }
 
     @Override
+    public boolean isValid() {
+        // SLICE doesn't have inputs or outputs
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void create() {
         predecessor.create();
     }

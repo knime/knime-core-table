@@ -61,6 +61,14 @@ interface NodeImp {
     ReadAccess getOutput(int i);
 
     /**
+     * Whether the {@link #getOutput output} {@code ReadAccess}es of this {@code
+     * NodeImp} are currently valid.
+     *
+     * @return
+     */
+    boolean isValid();
+
+    /**
      * Recursively call {@link #create} on all predecessors. Then do any setup
      * that this {@code NodeImp} itself requires. After {@link #create}, the
      * output {@code ReadAccess}es of this {@code NodeImp} must be available via

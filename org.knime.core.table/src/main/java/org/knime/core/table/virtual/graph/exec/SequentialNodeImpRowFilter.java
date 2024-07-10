@@ -75,6 +75,12 @@ class SequentialNodeImpRowFilter implements SequentialNodeImp {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public boolean isValid() {
+        // RowFilter doesn't have outputs
+        throw new UnsupportedOperationException();
+    }
+
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
             filterInputs[i] = inputs[i].getReadAccess();

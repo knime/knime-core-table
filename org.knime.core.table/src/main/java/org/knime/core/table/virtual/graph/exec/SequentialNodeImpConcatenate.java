@@ -67,6 +67,8 @@ class SequentialNodeImpConcatenate implements SequentialNodeImp {
 
     private SequentialNodeImp linkedPredecessor;
 
+    private boolean valid;
+
     SequentialNodeImpConcatenate(final AccessImp[][] inputs, final SequentialNodeImp[] predecessors) {
         if (inputs.length != predecessors.length) {
             throw new IllegalArgumentException();
@@ -144,6 +146,11 @@ class SequentialNodeImpConcatenate implements SequentialNodeImp {
     }
 
     @Override
+    public boolean isValid() {
+        return valid;
+    }
+
+    @Override
     public void create() {
         predecessorIndex = -1;
         nextPredecessor();
@@ -159,7 +166,7 @@ class SequentialNodeImpConcatenate implements SequentialNodeImp {
                 closeLinkedPredecessor();
                 link();
             } else {
-                if (predecessor.forward()) {
+                if (valid = predecessor.forward()) {
                     return true;
                 } else {
                     nextPredecessor();

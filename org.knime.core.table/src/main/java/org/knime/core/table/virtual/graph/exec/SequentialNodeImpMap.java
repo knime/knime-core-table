@@ -95,6 +95,12 @@ class SequentialNodeImpMap implements SequentialNodeImp {
         return outputs[i];
     }
 
+    @Override
+    public boolean isValid() {
+        // should never be called
+        throw new UnsupportedOperationException();
+    }
+
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
             mapInputs[i] = inputs[i].getReadAccess();
