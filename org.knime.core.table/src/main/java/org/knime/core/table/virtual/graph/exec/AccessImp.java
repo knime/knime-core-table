@@ -58,8 +58,7 @@ final class AccessImp {
         this.i = i;
     }
 
-    public ReadAccess getReadAccess()
-    {
+    public ReadAccess getReadAccess() {
         return node.getOutput(i);
     }
 
