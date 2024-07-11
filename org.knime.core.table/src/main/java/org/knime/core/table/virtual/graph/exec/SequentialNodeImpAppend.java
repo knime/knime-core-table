@@ -48,10 +48,10 @@ package org.knime.core.table.virtual.graph.exec;
 import java.io.IOException;
 
 import org.knime.core.table.access.DelegatingReadAccesses;
-import org.knime.core.table.access.MissingAccesses;
 import org.knime.core.table.access.ReadAccess;
 
 class SequentialNodeImpAppend implements SequentialNodeImp {
+
     private final AccessImp[] inputs;
 
     private final DelegatingReadAccesses.DelegatingReadAccess[] outputs;
@@ -62,6 +62,13 @@ class SequentialNodeImpAppend implements SequentialNodeImp {
 
     private final boolean[] exhausted;
 
+
+
+
+    private final NodeImp[] input_validities;
+
+    private boolean valid;
+
     /**
      * @param predecessorOutputIndices {@code predecessorOutputIndices[i]} is the list
      *                                 of output indices to switch to missing when the i-th predecessor is exhausted.
@@ -69,6 +76,7 @@ class SequentialNodeImpAppend implements SequentialNodeImp {
     SequentialNodeImpAppend(final AccessImp[] inputs, final SequentialNodeImp[] predecessors, final int[][] predecessorOutputIndices) {
         this.inputs = inputs;
         outputs = new DelegatingReadAccesses.DelegatingReadAccess[inputs.length];
+        input_validities = new NodeImp[inputs.length];
 
         this.predecessors = predecessors;
         this.predecessorOutputIndices = predecessorOutputIndices;
@@ -82,11 +90,12 @@ class SequentialNodeImpAppend implements SequentialNodeImp {
 
     @Override
     public boolean isValid() {
-        return true; // TODO (TP) !!!
+        return valid;
     }
 
     private void link() {
         for (int i = 0; i < inputs.length; i++) {
+            input_validities[i] = inputs[i].getValidity();
             final ReadAccess access = inputs[i].getReadAccess();
             final DelegatingReadAccesses.DelegatingReadAccess delegated =
                     DelegatingReadAccesses.createDelegatingAccess(access.getDataSpec());
@@ -105,22 +114,31 @@ class SequentialNodeImpAppend implements SequentialNodeImp {
 
     @Override
     public boolean forward() {
+
+        // TODO (TP): Revise.
+        //  [+] Naive solution for now is to for each access check validity
+        //  [ ] After that, the next step is to group accesses by validity
+        //  (*) Follow up: If all accesses come from the same validity, is it
+        //      safe to assume that we can tie validity to
+        //      predecessor.forward(), that is, not check validity at all???
+
         boolean anyForwarded = false;
+
         for (int i = 0; i < predecessors.length; i++) {
             final SequentialNodeImp predecessor = predecessors[i];
             if (predecessor.forward()) {
                 anyForwarded = true;
-            } else {
-                if (!exhausted[i]) {
-                    exhausted[i] = true;
-                    for (int o : predecessorOutputIndices[i]) {
-                        final DelegatingReadAccesses.DelegatingReadAccess output = outputs[o];
-                        output.setDelegateAccess(MissingAccesses.getMissingAccess(output.getDataSpec()));
-                    }
-                }
             }
         }
-        return anyForwarded;
+
+        if ( anyForwarded ) {
+            for (int i = 0; i < outputs.length; i++) {
+                if (!input_validities[i].isValid())
+                    outputs[i].setMissing();
+            }
+        }
+
+        return valid = anyForwarded;
     }
 
     @Override

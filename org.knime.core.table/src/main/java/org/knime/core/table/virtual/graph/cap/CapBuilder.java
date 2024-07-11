@@ -212,7 +212,7 @@ public class CapBuilder {
                     Arrays.sort(slots, Comparator.comparing(Slot::predecessorIndex));
 
                     final CapAccessId[] inputs = new CapAccessId[numSlots];
-                    Arrays.setAll(inputs, i -> capAccessIds.get(slots[i].ragInput));
+                    Arrays.setAll(inputs, i -> capAccessIdFor(slots[i].ragInput));
 
                     final int[] predecessorColRange = new int[predecessors.length + 1];
                     int j = 0;
@@ -327,17 +327,24 @@ public class CapBuilder {
         final CapAccessId[] imps = new CapAccessId[ids.size()];
         int i = 0;
         for (AccessId id : ids) {
-            final RagNode validityRagNode = id.getValidity().getProducer();
-            if (validityRagNode == null) {
-                throw new NullPointerException("Validity provider missing for " + id);
-            }
-            final CapNode validity = capNodes.get(validityRagNode);
-            if (validity == null) {
-                throw new NullPointerException("CapNode missing for producer missing for " + validityRagNode);
-            }
-            imps[i++] = capAccessIds.get(id).withValidity(validity);
+            imps[i++] = capAccessIdFor(id);
         }
         return imps;
+    }
+
+    /**
+     * Get CapAccessId corresponding to (Rag)AccessId
+     */
+    private CapAccessId capAccessIdFor(final AccessId id) {
+        final RagNode validityRagNode = id.getValidity().getProducer();
+        if (validityRagNode == null) {
+            throw new NullPointerException("Validity provider missing for " + id);
+        }
+        final CapNode validity = capNodes.get(validityRagNode);
+        if (validity == null) {
+            throw new NullPointerException("CapNode missing for producer missing for " + validityRagNode);
+        }
+        return capAccessIds.get(id).withValidity(validity);
     }
 
     /**
