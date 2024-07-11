@@ -117,7 +117,7 @@ public class CapNodeMap extends CapNode {
 
     /**
      * A map function might produce multiple outputs, some of which might not be
-     * consumed downstream. {@code cols()} selects among the of the columns produced by
+     * consumed downstream. {@code cols()} selects among the columns produced by
      * the map function those that are required downstream. {@code cols()[i]} is the
      * index of a column produced by the map function. {@code i} is the output slot
      * index of this node which holds the column.
