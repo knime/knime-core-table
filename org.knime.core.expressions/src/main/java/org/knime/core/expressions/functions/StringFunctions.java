@@ -167,7 +167,7 @@ public final class StringFunctions {
         .impl(StringFunctions::compareImpl) //
         .build();
 
-    private static Computer compareImpl(final List<Computer> args) {
+    private static Computer compareImpl(final List<Computer> args, final ValueType returnType) {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
@@ -204,7 +204,7 @@ public final class StringFunctions {
         .impl(StringFunctions::containsImpl) //
         .build();
 
-    private static Computer containsImpl(final List<Computer> args) {
+    private static Computer containsImpl(final List<Computer> args, final ValueType returnType) {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
@@ -250,7 +250,7 @@ public final class StringFunctions {
         .impl(StringFunctions::startsWithImpl) //
         .build();
 
-    private static Computer startsWithImpl(final List<Computer> args) {
+    private static Computer startsWithImpl(final List<Computer> args, final ValueType returnType) {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
@@ -297,7 +297,7 @@ public final class StringFunctions {
         .impl(StringFunctions::endsWithImpl) //
         .build();
 
-    private static Computer endsWithImpl(final List<Computer> args) {
+    private static Computer endsWithImpl(final List<Computer> args, final ValueType returnType) {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
@@ -361,7 +361,7 @@ public final class StringFunctions {
 
     private static final Pattern regexCharsExceptSquareBracketsPattern = Pattern.compile("[{}().+*?^$\\\\|]");
 
-    private static Computer likeImpl(final List<Computer> args) {
+    private static Computer likeImpl(final List<Computer> args, final ValueType returnType) {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
@@ -429,7 +429,7 @@ public final class StringFunctions {
         .build();
 
     // TODO(AP-22345) emit a warning on potentially slow regexes
-    private static Computer regexMatchImpl(final List<Computer> args) {
+    private static Computer regexMatchImpl(final List<Computer> args, final ValueType returnType) {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
@@ -495,7 +495,7 @@ public final class StringFunctions {
     }
 
     // TODO(AP-22345) emit a warning on potentially slow regexes
-    private static Computer regexExtractImpl(final List<Computer> args) {
+    private static Computer regexExtractImpl(final List<Computer> args, final ValueType returnType) {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
         var c3 = toInteger(args.get(2));
@@ -548,7 +548,7 @@ public final class StringFunctions {
         .impl(StringFunctions::regexReplaceImpl) //
         .build();
 
-    private static Computer regexReplaceImpl(final List<Computer> args) {
+    private static Computer regexReplaceImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             String search = toString(args.get(1)).compute(ctx);
@@ -600,7 +600,7 @@ public final class StringFunctions {
         .impl(StringFunctions::replaceImpl) //
         .build();
 
-    private static Computer replaceImpl(final List<Computer> args) {
+    private static Computer replaceImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             String search = toString(args.get(1)).compute(ctx);
@@ -660,7 +660,7 @@ public final class StringFunctions {
         .impl(StringFunctions::replaceCharsImpl) //
         .build();
 
-    private static Computer replaceCharsImpl(final List<Computer> args) {
+    private static Computer replaceCharsImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             char[] oldChars = toString(args.get(1)).compute(ctx).toCharArray();
@@ -730,7 +730,7 @@ public final class StringFunctions {
         .impl(StringFunctions::replaceUmlautsImpl) //
         .build();
 
-    private static Computer replaceUmlautsImpl(final List<Computer> args) {
+    private static Computer replaceUmlautsImpl(final List<Computer> args, final ValueType returnType) {
         var umlauts = "äüö";
         var umlautReplacements = "auo";
 
@@ -791,7 +791,7 @@ public final class StringFunctions {
         .impl(StringFunctions::replaceDiacriticsImpl) //
         .build();
 
-    private static Computer replaceDiacriticsImpl(final List<Computer> args) {
+    private static Computer replaceDiacriticsImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             str = Normalizer.normalize(str, Normalizer.Form.NFKD);
@@ -827,7 +827,7 @@ public final class StringFunctions {
         .impl(StringFunctions::lowerCaseImpl) //
         .build();
 
-    private static Computer lowerCaseImpl(final List<Computer> args) {
+    private static Computer lowerCaseImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx).toLowerCase(Locale.ROOT), //
             anyMissing(args));
@@ -856,7 +856,7 @@ public final class StringFunctions {
         .impl(StringFunctions::upperCaseImpl) //
         .build();
 
-    private static Computer upperCaseImpl(final List<Computer> args) {
+    private static Computer upperCaseImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx).toUpperCase(Locale.ROOT), //
             anyMissing(args));
@@ -887,7 +887,7 @@ public final class StringFunctions {
         .impl(StringFunctions::titleCaseImpl) //
         .build();
 
-    private static Computer titleCaseImpl(final List<Computer> args) {
+    private static Computer titleCaseImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             var output = new StringBuilder(str.length());
@@ -951,7 +951,7 @@ public final class StringFunctions {
         .impl(StringFunctions::padEndImpl) //
         .build();
 
-    private static Computer padEndImpl(final List<Computer> args) {
+    private static Computer padEndImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             int targetLength = (int)toInteger(args.get(1)).compute(ctx);
@@ -1011,7 +1011,7 @@ public final class StringFunctions {
         .impl(StringFunctions::padStartImpl) //
         .build();
 
-    private static Computer padStartImpl(final List<Computer> args) {
+    private static Computer padStartImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             int targetLength = (int)toInteger(args.get(1)).compute(ctx);
@@ -1057,7 +1057,7 @@ public final class StringFunctions {
         .impl(StringFunctions::joinImpl) //
         .build();
 
-    private static Computer joinImpl(final List<Computer> args) {
+    private static Computer joinImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String sep = toString(args.get(0)).compute(ctx);
             String[] toJoin = args.stream() //
@@ -1105,7 +1105,7 @@ public final class StringFunctions {
         .impl(StringFunctions::substrImpl) //
         .build();
 
-    private static Computer substrImpl(final List<Computer> args) {
+    private static Computer substrImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             int start = (int)toInteger(args.get(1)).compute(ctx);
@@ -1154,7 +1154,7 @@ public final class StringFunctions {
         .impl(StringFunctions::firstCharsImpl) //
         .build();
 
-    private static Computer firstCharsImpl(final List<Computer> args) {
+    private static Computer firstCharsImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             int numChars = (int)toInteger(args.get(1)).compute(ctx);
@@ -1198,7 +1198,7 @@ public final class StringFunctions {
         .impl(StringFunctions::lastCharsImpl) //
         .build();
 
-    private static Computer lastCharsImpl(final List<Computer> args) {
+    private static Computer lastCharsImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             int numChars = (int)toInteger(args.get(1)).compute(ctx);
@@ -1242,7 +1242,7 @@ public final class StringFunctions {
         .impl(StringFunctions::removeCharsImpl) //
         .build();
 
-    private static Computer removeCharsImpl(final List<Computer> args) {
+    private static Computer removeCharsImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             String toRemove = toString(args.get(1)).compute(ctx);
@@ -1293,7 +1293,7 @@ public final class StringFunctions {
         .impl(StringFunctions::stripImpl) //
         .build();
 
-    private static Computer stripImpl(final List<Computer> args) {
+    private static Computer stripImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx).strip(), //
             anyMissing(args) //
@@ -1324,7 +1324,7 @@ public final class StringFunctions {
         .impl(StringFunctions::stripstartImpl) //
         .build();
 
-    private static Computer stripstartImpl(final List<Computer> args) {
+    private static Computer stripstartImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx).stripLeading(), //
             anyMissing(args) //
@@ -1355,7 +1355,7 @@ public final class StringFunctions {
         .impl(StringFunctions::stripEndImpl) //
         .build();
 
-    private static Computer stripEndImpl(final List<Computer> args) {
+    private static Computer stripEndImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx).stripTrailing(), //
             anyMissing(args) //
@@ -1389,7 +1389,7 @@ public final class StringFunctions {
         .impl(StringFunctions::removeDuplicateSpacesImpl) //
         .build();
 
-    private static Computer removeDuplicateSpacesImpl(final List<Computer> args) {
+    private static Computer removeDuplicateSpacesImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> multiSpacePattern.matcher(toString(args.get(0)).compute(ctx)).replaceAll(" "), //
             anyMissing(args) //
@@ -1421,7 +1421,7 @@ public final class StringFunctions {
         .impl(StringFunctions::nullToEmptyImpl) //
         .build();
 
-    private static Computer nullToEmptyImpl(final List<Computer> args) {
+    private static Computer nullToEmptyImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> args.get(0).isMissing(ctx) ? "" : toString(args.get(0)).compute(ctx), //
             ctx -> false //
@@ -1447,10 +1447,10 @@ public final class StringFunctions {
         ) //
         .returnType("Input string or `MISSING` when string was empty", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
-        .impl(StringFunctions::emptyToNull) //
+        .impl(StringFunctions::emptyToNullImpl) //
         .build();
 
-    private static Computer emptyToNull(final List<Computer> args) {
+    private static Computer emptyToNullImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx), //
             ctx -> args.get(0).isMissing(ctx) || toString(args.get(0)).compute(ctx).isEmpty() //
@@ -1478,7 +1478,7 @@ public final class StringFunctions {
         .impl(StringFunctions::reverseImpl) //
         .build();
 
-    private static Computer reverseImpl(final List<Computer> args) {
+    private static Computer reverseImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> new StringBuilder(toString(args.get(0)).compute(ctx)).reverse().toString(), //
             anyMissing(args) //
@@ -1505,7 +1505,7 @@ public final class StringFunctions {
         .impl(StringFunctions::lengthImpl) //
         .build();
 
-    private static Computer lengthImpl(final List<Computer> args) {
+    private static Computer lengthImpl(final List<Computer> args, final ValueType returnType) {
         return IntegerComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx).length(), //
             anyMissing(args) //
@@ -1552,7 +1552,7 @@ public final class StringFunctions {
         .impl(StringFunctions::countImpl) //
         .build();
 
-    private static Computer countImpl(final List<Computer> args) {
+    private static Computer countImpl(final List<Computer> args, final ValueType returnType) {
         ToLongFunction<EvaluationContext> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             String search = toString(args.get(1)).compute(ctx);
@@ -1621,7 +1621,7 @@ public final class StringFunctions {
         .impl(StringFunctions::countCharsImpl) //
         .build();
 
-    private static Computer countCharsImpl(final List<Computer> args) {
+    private static Computer countCharsImpl(final List<Computer> args, final ValueType returnType) {
         ToLongFunction<EvaluationContext> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             String searchChars = toString(args.get(1)).compute(ctx);
@@ -1684,7 +1684,7 @@ public final class StringFunctions {
         .impl(StringFunctions::findImpl) //
         .build();
 
-    private static Computer findImpl(final List<Computer> args) {
+    private static Computer findImpl(final List<Computer> args, final ValueType returnType) {
         ToLongFunction<EvaluationContext> indexSupplier = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             String search = toString(args.get(1)).compute(ctx);
@@ -1767,7 +1767,7 @@ public final class StringFunctions {
         .impl(StringFunctions::findCharsImpl) //
         .build();
 
-    private static Computer findCharsImpl(final List<Computer> args) {
+    private static Computer findCharsImpl(final List<Computer> args, final ValueType returnType) {
         ToLongFunction<EvaluationContext> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             String search = toString(args.get(1)).compute(ctx);
@@ -1828,7 +1828,7 @@ public final class StringFunctions {
         .impl(StringFunctions::xmlEncodeImpl) //
         .build();
 
-    private static Computer xmlEncodeImpl(final List<Computer> args) {
+    private static Computer xmlEncodeImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> toString(args.get(0)).compute(ctx) //
             .replace("&", "&amp;") //
             .replace("<", "&lt;") //
@@ -1869,7 +1869,7 @@ public final class StringFunctions {
         .impl(StringFunctions::urlEncodeImpl) //
         .build();
 
-    private static Computer urlEncodeImpl(final List<Computer> args) {
+    private static Computer urlEncodeImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> URLEncoder.encode(toString(args.get(0)).compute(ctx), StandardCharsets.UTF_8), //
             anyMissing(args) //
@@ -1898,7 +1898,7 @@ public final class StringFunctions {
         .impl(StringFunctions::urlDecodeImpl) //
         .build();
 
-    private static Computer urlDecodeImpl(final List<Computer> args) {
+    private static Computer urlDecodeImpl(final List<Computer> args, final ValueType returnType) {
         return StringComputer.of( //
             ctx -> URLDecoder.decode(toString(args.get(0)).compute(ctx), StandardCharsets.UTF_8), //
             anyMissing(args) //
@@ -1935,7 +1935,7 @@ public final class StringFunctions {
         .impl(StringFunctions::toStringImpl) //
         .build();
 
-    private static Computer toStringImpl(final List<Computer> args) {
+    private static Computer toStringImpl(final List<Computer> args, final ValueType returnType) {
         Function<EvaluationContext, String> value = ctx -> {
             var c = args.get(0);
 
@@ -1982,7 +1982,7 @@ public final class StringFunctions {
         .impl(StringFunctions::parseFloatImpl) //
         .build();
 
-    private static Computer parseFloatImpl(final List<Computer> args) {
+    private static Computer parseFloatImpl(final List<Computer> args, final ValueType returnType) {
         return FloatComputer.of( //
             ctx -> Float.parseFloat(toString(args.get(0)).compute(ctx)), //
             ctx -> {
@@ -2025,7 +2025,7 @@ public final class StringFunctions {
         .impl(StringFunctions::parseIntImpl) //
         .build();
 
-    private static Computer parseIntImpl(final List<Computer> args) {
+    private static Computer parseIntImpl(final List<Computer> args, final ValueType returnType) {
         return IntegerComputer.of( //
             ctx -> Integer.parseInt(toString(args.get(0)).compute(ctx)), //
             ctx -> {
@@ -2070,7 +2070,7 @@ public final class StringFunctions {
         .impl(StringFunctions::parseBoolImpl) //
         .build();
 
-    private static Computer parseBoolImpl(final List<Computer> args) {
+    private static Computer parseBoolImpl(final List<Computer> args, final ValueType returnType) {
         return BooleanComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx).equalsIgnoreCase("true"), //
             ctx -> {

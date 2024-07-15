@@ -72,7 +72,7 @@ import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
@@ -84,6 +84,7 @@ import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.expressions.ValueType;
 
 /**
  * Implementation of built-in functions that do math.
@@ -164,7 +165,7 @@ public final class MathFunctions {
         .impl(MathFunctions::maxImpl) //
         .build();
 
-    private static Computer maxImpl(final List<Computer> args) {
+    private static Computer maxImpl(final List<Computer> args, final ValueType returnType) {
         boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
@@ -213,7 +214,7 @@ public final class MathFunctions {
         .impl(MathFunctions::minImpl) //
         .build();
 
-    private static Computer minImpl(final List<Computer> args) {
+    private static Computer minImpl(final List<Computer> args, final ValueType returnType) {
         boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
@@ -262,7 +263,7 @@ public final class MathFunctions {
         .impl(MathFunctions::argmaxImpl) //
         .build();
 
-    private static Computer argmaxImpl(final List<Computer> args) {
+    private static Computer argmaxImpl(final List<Computer> args, final ValueType returnType) {
         boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
         ToLongFunction<EvaluationContext> supplier;
@@ -327,7 +328,7 @@ public final class MathFunctions {
         .impl(MathFunctions::argminImpl) //
         .build();
 
-    private static Computer argminImpl(final List<Computer> args) {
+    private static Computer argminImpl(final List<Computer> args, final ValueType returnType) {
         boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
         ToLongFunction<EvaluationContext> supplier;
@@ -383,7 +384,7 @@ public final class MathFunctions {
         .impl(MathFunctions::absImpl) //
         .build();
 
-    private static Computer absImpl(final List<Computer> args) {
+    private static Computer absImpl(final List<Computer> args, final ValueType returnType) {
         if (args.get(0) instanceof IntegerComputer c) {
             return IntegerComputer.of(ctx -> Math.abs(c.compute(ctx)), c::isMissing);
         } else if (args.get(0) instanceof FloatComputer c) {
@@ -416,7 +417,7 @@ public final class MathFunctions {
         .impl(MathFunctions::sinImpl) //
         .build();
 
-    private static Computer sinImpl(final List<Computer> args) {
+    private static Computer sinImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> Math.sin(c.compute(ctx)), c::isMissing);
     }
@@ -444,7 +445,7 @@ public final class MathFunctions {
         .impl(MathFunctions::cosImpl) //
         .build();
 
-    private static Computer cosImpl(final List<Computer> args) {
+    private static Computer cosImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> Math.cos(c.compute(ctx)), c::isMissing);
     }
@@ -472,7 +473,7 @@ public final class MathFunctions {
         .impl(MathFunctions::tanImpl) //
         .build();
 
-    private static Computer tanImpl(final List<Computer> args) {
+    private static Computer tanImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> Math.tan(c.compute(ctx)), c::isMissing);
     }
@@ -500,7 +501,7 @@ public final class MathFunctions {
         .impl(MathFunctions::asinImpl) //
         .build();
 
-    private static Computer asinImpl(final List<Computer> args) {
+    private static Computer asinImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
@@ -538,7 +539,7 @@ public final class MathFunctions {
         .impl(MathFunctions::acosImpl) //
         .build();
 
-    private static Computer acosImpl(final List<Computer> args) {
+    private static Computer acosImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
@@ -575,7 +576,7 @@ public final class MathFunctions {
         .impl(MathFunctions::atanImpl) //
         .build();
 
-    private static Computer atanImpl(final List<Computer> args) {
+    private static Computer atanImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> Math.atan(c.compute(ctx)), c::isMissing);
     }
@@ -611,7 +612,7 @@ public final class MathFunctions {
         .impl(MathFunctions::atan2Impl) //
         .build();
 
-    private static Computer atan2Impl(final List<Computer> args) {
+    private static Computer atan2Impl(final List<Computer> args, final ValueType returnType) {
         var y = toFloat(args.get(0));
         var x = toFloat(args.get(1));
         return FloatComputer.of( //
@@ -652,7 +653,7 @@ public final class MathFunctions {
         .impl(MathFunctions::sinhImpl) //
         .build();
 
-    private static Computer sinhImpl(final List<Computer> args) {
+    private static Computer sinhImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> Math.sinh(c.compute(ctx)), c::isMissing);
     }
@@ -679,7 +680,7 @@ public final class MathFunctions {
         .impl(MathFunctions::coshImpl) //
         .build();
 
-    private static Computer coshImpl(final List<Computer> args) {
+    private static Computer coshImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> Math.cosh(c.compute(ctx)), c::isMissing);
     }
@@ -706,7 +707,7 @@ public final class MathFunctions {
         .impl(MathFunctions::tanhImpl) //
         .build();
 
-    private static Computer tanhImpl(final List<Computer> args) {
+    private static Computer tanhImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> Math.tanh(c.compute(ctx)), c::isMissing);
     }
@@ -733,7 +734,7 @@ public final class MathFunctions {
         .impl(MathFunctions::asinhImpl) //
         .build();
 
-    private static Computer asinhImpl(final List<Computer> args) {
+    private static Computer asinhImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
 
         ToDoubleFunction<EvaluationContext> value = ctx -> {
@@ -770,7 +771,7 @@ public final class MathFunctions {
         .impl(MathFunctions::acoshImpl) //
         .build();
 
-    private static Computer acoshImpl(final List<Computer> args) {
+    private static Computer acoshImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
 
         ToDoubleFunction<EvaluationContext> value = ctx -> {
@@ -812,7 +813,7 @@ public final class MathFunctions {
         .impl(MathFunctions::atanhImpl) //
         .build();
 
-    private static Computer atanhImpl(final List<Computer> args) {
+    private static Computer atanhImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
 
         ToDoubleFunction<EvaluationContext> value = ctx -> {
@@ -860,7 +861,7 @@ public final class MathFunctions {
         .impl(MathFunctions::lnImpl) //
         .build();
 
-    private static Computer lnImpl(final List<Computer> args) {
+    private static Computer lnImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
@@ -904,7 +905,7 @@ public final class MathFunctions {
         .impl(MathFunctions::log10Impl) //
         .build();
 
-    private static Computer log10Impl(final List<Computer> args) {
+    private static Computer log10Impl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
@@ -948,7 +949,7 @@ public final class MathFunctions {
         .impl(MathFunctions::log2Impl) //
         .build();
 
-    private static Computer log2Impl(final List<Computer> args) {
+    private static Computer log2Impl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
@@ -999,7 +1000,7 @@ public final class MathFunctions {
         .impl(MathFunctions::logBaseImpl) //
         .build();
 
-    private static Computer logBaseImpl(final List<Computer> args) {
+    private static Computer logBaseImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         var b = toFloat(args.get(1));
 
@@ -1064,7 +1065,7 @@ public final class MathFunctions {
         .impl(MathFunctions::log1pImpl) //
         .build();
 
-    private static Computer log1pImpl(final List<Computer> args) {
+    private static Computer log1pImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
             ctx -> {
@@ -1106,7 +1107,7 @@ public final class MathFunctions {
         .impl(MathFunctions::expImpl) //
         .build();
 
-    private static Computer expImpl(final List<Computer> args) {
+    private static Computer expImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
             ctx -> Math.exp(c.compute(ctx)), //
@@ -1148,7 +1149,7 @@ public final class MathFunctions {
         .impl(MathFunctions::powImpl) //
         .build();
 
-    private static Computer powImpl(final List<Computer> args) {
+    private static Computer powImpl(final List<Computer> args, final ValueType returnType) {
         if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
             var x = toInteger(args.get(0));
             var y = toInteger(args.get(1));
@@ -1207,7 +1208,7 @@ public final class MathFunctions {
         .impl(MathFunctions::sqrtImpl) //
         .build();
 
-    private static Computer sqrtImpl(final List<Computer> args) {
+    private static Computer sqrtImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
             ctx -> {
@@ -1257,7 +1258,7 @@ public final class MathFunctions {
         .impl(MathFunctions::modImpl) //
         .build();
 
-    private static Computer modImpl(final List<Computer> args) {
+    private static Computer modImpl(final List<Computer> args, final ValueType returnType) {
         if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
             return IntegerComputer.of(ctx -> {
                 var x = toInteger(args.get(0)).compute(ctx);
@@ -1308,7 +1309,7 @@ public final class MathFunctions {
         .impl(MathFunctions::degreesImpl) //
         .build();
 
-    private static Computer degreesImpl(final List<Computer> args) {
+    private static Computer degreesImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
             ctx -> Math.toDegrees(c.compute(ctx)), //
@@ -1337,7 +1338,7 @@ public final class MathFunctions {
         .impl(MathFunctions::radiansImpl) //
         .build();
 
-    private static Computer radiansImpl(final List<Computer> args) {
+    private static Computer radiansImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
             ctx -> Math.toRadians(c.compute(ctx)), //
@@ -1367,7 +1368,7 @@ public final class MathFunctions {
         .impl(MathFunctions::floorImpl) //
         .build();
 
-    private static Computer floorImpl(final List<Computer> args) {
+    private static Computer floorImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             ctx -> (long)Math.floor(c.compute(ctx)), //
@@ -1406,7 +1407,7 @@ public final class MathFunctions {
         .impl(MathFunctions::ceilImpl) //
         .build();
 
-    private static Computer ceilImpl(final List<Computer> args) {
+    private static Computer ceilImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             ctx -> (int)Math.ceil(c.compute(ctx)), //
@@ -1445,7 +1446,7 @@ public final class MathFunctions {
         .impl(MathFunctions::truncImpl) //
         .build();
 
-    private static Computer truncImpl(final List<Computer> args) {
+    private static Computer truncImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             ctx -> BigDecimal.valueOf(c.compute(ctx)).setScale(0, RoundingMode.DOWN).longValue(), //
@@ -1591,9 +1592,10 @@ public final class MathFunctions {
      * @param mode the rounding mode
      * @return the function implementation
      */
-    private static Function<List<Computer>, Computer> roundImplFactory(final RoundingMode mode,
+    private static BiFunction<List<Computer>, ValueType, Computer> roundImplFactory(final RoundingMode mode,
         final String functionName) {
-        return args -> {
+
+        return (args, returnType) -> {
             var c = toFloat(args.get(0));
 
             if (args.size() == 1) {
@@ -1646,7 +1648,7 @@ public final class MathFunctions {
         .impl(MathFunctions::signImpl) //
         .build();
 
-    private static Computer signImpl(final List<Computer> args) {
+    private static Computer signImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             ctx -> (int)Math.signum(c.compute(ctx)), //
@@ -1692,7 +1694,7 @@ public final class MathFunctions {
         .impl(MathFunctions::averageImpl) //
         .build();
 
-    private static Computer averageImpl(final List<Computer> args) {
+    private static Computer averageImpl(final List<Computer> args, final ValueType returnType) {
         ToDoubleFunction<EvaluationContext> value = ctx -> args.stream() //
             .map(c -> toFloat(c).compute(ctx)) //
             .mapToDouble(Double::valueOf) //
@@ -1734,7 +1736,7 @@ public final class MathFunctions {
         .impl(MathFunctions::medianImpl) //
         .build();
 
-    private static Computer medianImpl(final List<Computer> args) {
+    private static Computer medianImpl(final List<Computer> args, final ValueType returnType) {
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             // Because we use ::compute we need to do this inside the DoubleSupplier
             var sortedFloatArgs = args.stream() //
@@ -1791,7 +1793,7 @@ public final class MathFunctions {
         .impl(MathFunctions::sumImpl) //
         .build();
 
-    private static Computer sumImpl(final List<Computer> args) {
+    private static Computer sumImpl(final List<Computer> args, final ValueType returnType) {
         boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
@@ -1843,7 +1845,7 @@ public final class MathFunctions {
         .impl(MathFunctions::varianceImpl) //
         .build();
 
-    private static Computer varianceImpl(final List<Computer> args) {
+    private static Computer varianceImpl(final List<Computer> args, final ValueType returnType) {
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var floatArgs = args.stream() //
                 .map(c -> toFloat(c).compute(ctx)) //
@@ -1880,7 +1882,7 @@ public final class MathFunctions {
         .impl(MathFunctions::stddevImpl) //
         .build();
 
-    private static Computer stddevImpl(final List<Computer> args) {
+    private static Computer stddevImpl(final List<Computer> args, final ValueType returnType) {
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var floatArgs = args.stream() //
                 .map(c -> toFloat(c).compute(ctx)) //
@@ -1929,7 +1931,7 @@ public final class MathFunctions {
         .impl(MathFunctions::binomialImpl) //
         .build();
 
-    private static Computer binomialImpl(final List<Computer> args) {
+    private static Computer binomialImpl(final List<Computer> args, final ValueType returnType) {
         ToLongFunction<EvaluationContext> value = ctx -> {
             long n = toInteger(args.get(0)).compute(ctx);
             long r = toInteger(args.get(1)).compute(ctx);
@@ -2011,7 +2013,7 @@ public final class MathFunctions {
         .impl(MathFunctions::normalImpl) //
         .build();
 
-    private static Computer normalImpl(final List<Computer> args) {
+    private static Computer normalImpl(final List<Computer> args, final ValueType returnType) {
         return FloatComputer.of(ctx -> {
             var value = toFloat(args.get(0)).compute(ctx);
             var mean = toFloat(args.get(1)).compute(ctx);
@@ -2072,7 +2074,7 @@ public final class MathFunctions {
         .impl(MathFunctions::errorFunctionImpl) //
         .build();
 
-    private static Computer errorFunctionImpl(final List<Computer> args) {
+    private static Computer errorFunctionImpl(final List<Computer> args, final ValueType returnType) {
         return FloatComputer.of(ctx -> {
             var value = toFloat(args.get(0)).compute(ctx);
             var mean = toFloat(args.get(1)).compute(ctx);
@@ -2132,7 +2134,7 @@ public final class MathFunctions {
         .impl(MathFunctions::isNanImpl) //
         .build();
 
-    private static Computer isNanImpl(final List<Computer> args) {
+    private static Computer isNanImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return BooleanComputer.of(ctx -> !c.isMissing(ctx) && Double.isNaN(c.compute(ctx)), ctx -> false);
     }
@@ -2157,7 +2159,7 @@ public final class MathFunctions {
         .impl(MathFunctions::nanToMissingImpl) //
         .build();
 
-    private static Computer nanToMissingImpl(final List<Computer> args) {
+    private static Computer nanToMissingImpl(final List<Computer> args, final ValueType returnType) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
             c::compute, //

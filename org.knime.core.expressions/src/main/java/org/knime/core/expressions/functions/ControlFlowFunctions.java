@@ -62,9 +62,11 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.var
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
@@ -158,10 +160,6 @@ public final class ControlFlowFunctions {
 
     }
 
-    private static ValueType ifReturnType(final List<Computer> arguments) {
-        return ifReturnType(arguments.stream().map(Computer::getReturnTypeFromComputer).toArray(ValueType[]::new));
-    }
-
     private static Computer computeMatchingBranchIf(final List<Computer> arguments, final EvaluationContext ctx) {
         for (int i = 0; i < arguments.size() - 1; i += 2) {
             if (((BooleanComputer)arguments.get(i)).compute(ctx)) {
@@ -171,9 +169,8 @@ public final class ControlFlowFunctions {
         return arguments.get(arguments.size() - 1);
     }
 
-    private static Computer ifImpl(final List<Computer> arguments) {
-        return Computer.createTypedResultComputer(ctx -> computeMatchingBranchIf(arguments, ctx),
-            ifReturnType(arguments));
+    private static Computer ifImpl(final List<Computer> arguments, final ValueType returnType) {
+        return Computer.createTypedResultComputer(ctx -> computeMatchingBranchIf(arguments, ctx), returnType);
     }
 
     /** The "switch" function: switch(value, A, exprInCaseA, B, exprInCaseB, ...) */
@@ -259,12 +256,7 @@ public final class ControlFlowFunctions {
         return hasDefaultCase ? returnType : returnType.optionalType();
     }
 
-    private static ValueType switchReturnType(final List<Computer> arguments) {
-        return switchReturnType(arguments.stream().map(Computer::getReturnTypeFromComputer).toArray(ValueType[]::new));
-    }
-
-    private static Computer switchImpl(final List<Computer> arguments) {
-        var returnType = switchReturnType(arguments);
+    private static Computer switchImpl(final List<Computer> arguments, final ValueType returnType) {
         if (returnType == null) {
             return ctx -> true;
         }
@@ -278,32 +270,24 @@ public final class ControlFlowFunctions {
         final boolean hasDefaultCase = arguments.size() % 2 == 0;
 
         if (computerToSwitchOn.isMissing(ctx)) {
-            for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(ctx)) {
-                    return arguments.get(i + 1);
-                }
+            var firstMissingCaseIndex = IntStream.range(1, arguments.size() - 1) //
+                .filter(i -> i % 2 == 1) //
+                .filter(i -> arguments.get(i).isMissing(ctx)) //
+                .findFirst();
+
+            if (firstMissingCaseIndex.isPresent()) {
+                return arguments.get(firstMissingCaseIndex.getAsInt() + 1);
             }
-        } else if (computerToSwitchOn instanceof StringComputer stringComputer) {
-            String evaluatedSwitchValue = stringComputer.compute(ctx);
-            for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(ctx)) {
-                    continue;
-                }
-                if (arguments.get(i) instanceof StringComputer stringComputerToCompare
-                    && evaluatedSwitchValue.equals(stringComputerToCompare.compute(ctx))) {
-                    return arguments.get(i + 1);
-                }
-            }
-        } else if (computerToSwitchOn instanceof IntegerComputer integerComputer) {
-            long evaluatedSwitchValue = integerComputer.compute(ctx);
-            for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(ctx)) {
-                    continue;
-                }
-                if (arguments.get(i) instanceof IntegerComputer integerComputerToCompare
-                    && integerComputerToCompare.compute(ctx) == evaluatedSwitchValue) {
-                    return arguments.get(i + 1);
-                }
+        } else {
+            Object evaluatedSwitchValue = computeGenericComputer(computerToSwitchOn, ctx);
+            var firstMatchingCaseIndex = IntStream.range(1, arguments.size() - 1) //
+                .filter(i -> i % 2 == 1) //
+                .filter(i -> !arguments.get(i).isMissing(ctx)) //
+                .filter(i -> evaluatedSwitchValue.equals(computeGenericComputer(arguments.get(i), ctx))) //
+                .findFirst();
+
+            if (firstMatchingCaseIndex.isPresent()) {
+                return arguments.get(firstMatchingCaseIndex.getAsInt() + 1);
             }
         }
 
@@ -340,4 +324,17 @@ public final class ControlFlowFunctions {
             || typeToCheck == MISSING || typeToCompare == MISSING;
     }
 
+    private static Object computeGenericComputer(final Computer c, final EvaluationContext ctx) {
+        if (c instanceof IntegerComputer ic) {
+            return ic.compute(ctx);
+        } else if (c instanceof StringComputer sc) {
+            return sc.compute(ctx);
+        } else if (c instanceof BooleanComputer bc) {
+            return bc.compute(ctx);
+        } else if (c instanceof FloatComputer fc) {
+            return fc.compute(ctx);
+        } else {
+            throw new IllegalArgumentException("Unsupported computer type");
+        }
+    }
 }

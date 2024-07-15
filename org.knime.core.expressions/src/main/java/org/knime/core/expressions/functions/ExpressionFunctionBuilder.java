@@ -57,6 +57,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
@@ -104,8 +105,8 @@ public final class ExpressionFunctionBuilder {
     }
 
     /**
-     * Factory for isMissing argument to computers. Returns an Predicate<EvaluationContext> that returns true iff
-     * at least one if the arguments is missing.
+     * Factory for isMissing argument to computers. Returns an Predicate<EvaluationContext> that returns true iff at
+     * least one if the arguments is missing.
      *
      * @param values
      * @return the predicate
@@ -299,13 +300,13 @@ public final class ExpressionFunctionBuilder {
          * @param impl the implementation of the function ({@link ExpressionFunction#apply(List)}
          * @return the next stage of the builder
          */
-        FinalStage impl(Function<List<Computer>, Computer> impl);
+        FinalStage impl(BiFunction<List<Computer>, ValueType, Computer> impl);
     }
 
     record FinalStage( // NOSONAR - equals and hashCode are not important for this record
         String name, String description, String[] keywords, String category, Arg[] args, String returnDesc,
         String returnType, Function<ValueType[], ValueType> returnTypeMapping,
-        Function<List<Computer>, Computer> impl) {
+        BiFunction<List<Computer>, ValueType, Computer> impl) {
 
         public ExpressionFunction build() {
             // Check that the name is snake_case
@@ -360,11 +361,11 @@ public final class ExpressionFunctionBuilder {
 
         private Function<List<ValueType>, Optional<ValueType>> m_typeMapping;
 
-        private Function<List<Computer>, Computer> m_impl;
+        private BiFunction<List<Computer>, ValueType, Computer> m_impl;
 
         FunctionImpl(final String name, final OperatorDescription description,
             final Function<List<ValueType>, Optional<ValueType>> typeMapping,
-            final Function<List<Computer>, Computer> impl) {
+            final BiFunction<List<Computer>, ValueType, Computer> impl) {
             m_name = name;
             m_description = description;
             m_typeMapping = typeMapping;
@@ -388,7 +389,11 @@ public final class ExpressionFunctionBuilder {
 
         @Override
         public Computer apply(final List<Computer> args) {
-            return m_impl.apply(args);
+            var inferredReturnType = returnType(args.stream().map(Computer::getReturnTypeFromComputer).toList()) //
+                .orElseThrow(() -> new IllegalArgumentException("Function apply called with illegal types - "
+                    + "this is an implementation error, because the return type check should've "
+                    + "prevented us getting here"));
+            return m_impl.apply(args, inferredReturnType);
         }
     }
 
