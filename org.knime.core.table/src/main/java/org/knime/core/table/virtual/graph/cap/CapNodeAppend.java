@@ -56,14 +56,21 @@ public class CapNodeAppend extends CapNode {
     private final int[] predecessors;
     private final int[][] predecessorOutputIndices;
     private final long[] predecessorSizes;
+    private final int[] validityProviders;
+    private final int[][] validityOutputIndices;
+    private final long[] validitySizes;
 
     public CapNodeAppend(final int index, final CapAccessId[] inputs, final int[] predecessors,
-            final int[][] predecessorOutputIndices, final long[] predecessorSizes) {
+            final int[][] predecessorOutputIndices, final long[] predecessorSizes,
+            final int[] validityProviders, final int[][] validityOutputIndices, final long[] validitySizes ) {
         super(index, CapNodeType.APPEND);
         this.inputs = inputs;
         this.predecessors = predecessors;
         this.predecessorOutputIndices = predecessorOutputIndices;
         this.predecessorSizes = predecessorSizes;
+        this.validityProviders = validityProviders;
+        this.validityOutputIndices = validityOutputIndices;
+        this.validitySizes = validitySizes;
     }
 
     @Override
@@ -73,6 +80,9 @@ public class CapNodeAppend extends CapNode {
         sb.append(", predecessors=").append(Arrays.toString(predecessors));
         sb.append(", predecessorSizes=").append(Arrays.toString(predecessorSizes));
         sb.append(", predecessorOutputIndices=").append(Arrays.deepToString(predecessorOutputIndices));
+        sb.append(", validityProviders=").append(Arrays.toString(validityProviders));
+        sb.append(", validitySizes=").append(Arrays.toString(validitySizes));
+        sb.append(", validityOutputIndices=").append(Arrays.deepToString(validityOutputIndices));
         sb.append(')');
         return sb.toString();
     }
@@ -106,5 +116,26 @@ public class CapNodeAppend extends CapNode {
      */
     public long[] predecessorSizes() {
         return predecessorSizes;
+    }
+
+
+
+
+
+
+
+    // TODO (TP) experimental
+    public int[] validityProviders() { // TODO (TP) rename to validities() ???
+        return validityProviders;
+    }
+
+    // TODO (TP) experimental
+    public int[][] validityOutputIndices() {
+        return validityOutputIndices;
+    }
+
+    // TODO (TP) experimental
+    public long[] validitySizes() {
+        return validitySizes;
     }
 }

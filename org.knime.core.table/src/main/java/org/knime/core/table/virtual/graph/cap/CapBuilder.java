@@ -53,11 +53,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
+import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.virtual.graph.cap.Branches.Branch;
 import org.knime.core.table.virtual.graph.rag.AccessId;
 import org.knime.core.table.virtual.graph.rag.AccessIds;
@@ -65,6 +67,7 @@ import org.knime.core.table.virtual.graph.rag.MissingValuesSourceTransformSpec;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
+import org.knime.core.table.virtual.graph.rag.RagNode.AccessValidity;
 import org.knime.core.table.virtual.spec.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
@@ -181,6 +184,8 @@ public class CapBuilder {
                     break;
                 }
                 case APPEND: {
+                    System.out.println("RagNode = " + node);
+
                     // Each predecessor is the head of an incoming branch.
                     final List<Branch> predecessorBranches = branches.getPredecessorBranches(node);
                     final int[] predecessors = headIndices(predecessorBranches);
@@ -202,6 +207,47 @@ public class CapBuilder {
                     final AccessId[] ragInputs = node.getInputs().toArray(AccessId[]::new);
                     final AccessId[] ragOutputs = node.getOutputs().toArray(AccessId[]::new);
                     final int numSlots = ragInputs.length;
+
+                    final AccessValidity[] validities = Arrays.stream(ragInputs).map(AccessId::getValidity).distinct()
+                            .toArray(AccessValidity[]::new);
+
+                    // CapNode index of each distinct Validity provider
+                    final int[] validityProviders = new int[validities.length];
+                    Arrays.setAll(validityProviders, i -> capNodes.get(validities[i].getProducer()).index());
+
+                    // which outputs are associated with each distinct Validity
+                    final int[][] validityOutputIndices = new int[validities.length][];
+                    Arrays.setAll(validityOutputIndices, i -> IntStream.range(0, numSlots) //
+                            .filter(k -> ragInputs[k].getValidity() == validities[i]) //
+                            .toArray());
+
+                    // number of rows (if known) in each Validity provider
+                    final long[] validitySizes = new long[validities.length];
+                    Arrays.setAll(validitySizes, i -> validities[i].getProducer().numRows());
+
+                    System.out.println("validityProviders = " + Arrays.toString(validityProviders));
+                    System.out.println("validityOutputIndices = " + Arrays.deepToString(validityOutputIndices));
+                    System.out.println("validitySizes = " + Arrays.toString(validitySizes));
+
+                    // TODO NEXT:
+                    //   find unique validityProducers
+                    //   analogous to
+                    //      final int[] predecessors;
+                    //      final int[][] predecessorOutputIndices;
+                    //      final long[] predecessorSizes;
+                    //   assemble
+                    //      final int[] validities; // CapNode index of each validity producer
+                    //      final int[][] validityOutputIndices; // which outputs come from each validity producer
+                    //      final long[] validitySizes; // number of rows (if known) in each validity producer
+                    //   Store these in CapNodeAppend
+                    //   Revise RandomAccessNodeAppend to include this in the sections
+
+                    // CapNode index of each validity producer
+//                    final int[] validities = Arrays.stream(slotValidityProducers).distinct().toArray();
+//                    final int[][] validityOutputIndices = new int[validities.length][]; // which outputs come from each validity producer
+
+
+
                     final int[] slotPredecessorIndices = new int[numSlots];
                     Arrays.setAll(slotPredecessorIndices,
                             i -> predecessorBranches.indexOf(branches.getBranch(ragInputs[i].getProducer())));
@@ -236,7 +282,9 @@ public class CapBuilder {
                     });
 
                     final CapNodeAppend capNode =
-                            new CapNodeAppend(index, inputs, predecessors, predecessorOutputIndices, predecessorSizes);
+                            new CapNodeAppend(index, inputs, predecessors, predecessorOutputIndices, predecessorSizes,
+                                    validityProviders, validityOutputIndices, validitySizes
+                                    );
                     append(node, capNode);
 
                     // TODO: Set capAccessIds to point to the CapNodeAppend outputs only if new delegating accesses are created
@@ -249,6 +297,8 @@ public class CapBuilder {
                     }
 
                     merge(predecessorBranches).append(node);
+
+                    System.out.println("RagNode = " + capNode);
                     break;
                 }
                 case CONCATENATE: {

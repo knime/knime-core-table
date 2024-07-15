@@ -51,7 +51,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.virtual.graph.cap.CapAccessId;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CapNodeAppend;
@@ -61,7 +60,6 @@ import org.knime.core.table.virtual.graph.cap.CapNodeMap;
 import org.knime.core.table.virtual.graph.cap.CapNodeMaterialize;
 import org.knime.core.table.virtual.graph.cap.CapNodeMissing;
 import org.knime.core.table.virtual.graph.cap.CapNodeObserver;
-import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
@@ -122,7 +120,11 @@ class AssembleRandomAccessibleNodeImps {
                     final RandomAccessNodeImp[] predecessors = nodeImps(append.predecessors());
                     final int[][] predecessorOutputIndices = append.predecessorOutputIndices();
                     final long[] predecessorSizes = append.predecessorSizes();
-                    imps.add(new RandomAccessNodeImpAppend(inputs, predecessors, predecessorOutputIndices, predecessorSizes));
+                    final RandomAccessNodeImp[] validities = nodeImps(append.validityProviders());
+                    final int[][] validityOutputIndices = append.validityOutputIndices();
+                    final long[] validitySizes = append.validitySizes();
+                    imps.add(new RandomAccessNodeImpAppend(inputs, predecessors, predecessorOutputIndices,
+                            predecessorSizes, validities, validityOutputIndices, validitySizes));
                     break;
                 }
                 case CONCATENATE: {
