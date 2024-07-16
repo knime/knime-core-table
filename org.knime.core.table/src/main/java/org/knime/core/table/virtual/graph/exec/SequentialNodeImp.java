@@ -71,4 +71,12 @@ interface SequentialNodeImp extends NodeImp {
      */
     boolean canForward();
 
+    /**
+     * Whether the {@link #getOutput output} {@code ReadAccess}es of this {@code
+     * SequentialNodeImp} are currently valid. Equivalently: whether the
+     * previous {@link #forward()} was successful.
+     *
+     * @return {@code true} if the outputs of this node are currently valid.
+     */
+    boolean isValid();
 }
