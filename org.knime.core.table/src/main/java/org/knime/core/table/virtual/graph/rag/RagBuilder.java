@@ -1130,8 +1130,8 @@ public class RagBuilder {
         final List<RagNode> predecessors = slice.predecessors(EXEC);
         if (predecessors.size() == 1) {
             switch(predecessors.get(0).type()) {
-                case SOURCE:
-                    return mergeSliceToSource(slice);
+//                case SOURCE:
+//                    return mergeSliceToSource(slice);
                 case SLICE:
                     mergeSliceToSlice(slice);
                     return true;
