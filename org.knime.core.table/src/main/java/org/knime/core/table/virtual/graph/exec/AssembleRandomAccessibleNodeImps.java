@@ -118,13 +118,11 @@ class AssembleRandomAccessibleNodeImps {
                     final CapNodeAppend append = (CapNodeAppend)node;
                     final AccessImp[] inputs = accessImps(append.inputs());
                     final RandomAccessNodeImp[] predecessors = nodeImps(append.predecessors());
-                    final int[][] predecessorOutputIndices = append.predecessorOutputIndices();
                     final long[] predecessorSizes = append.predecessorSizes();
-                    final RandomAccessNodeImp[] validities = nodeImps(append.validityProviders());
                     final int[][] validityOutputIndices = append.validityOutputIndices();
                     final long[] validitySizes = append.validitySizes();
-                    imps.add(new RandomAccessNodeImpAppend(inputs, predecessors, predecessorOutputIndices,
-                            predecessorSizes, validities, validityOutputIndices, validitySizes));
+                    imps.add(new RandomAccessNodeImpAppend(inputs, predecessors, predecessorSizes, validitySizes,
+                            validityOutputIndices));
                     break;
                 }
                 case CONCATENATE: {

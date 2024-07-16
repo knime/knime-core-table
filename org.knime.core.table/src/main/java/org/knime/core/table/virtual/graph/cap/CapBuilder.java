@@ -184,8 +184,6 @@ public class CapBuilder {
                     break;
                 }
                 case APPEND: {
-                    System.out.println("RagNode = " + node);
-
                     // Each predecessor is the head of an incoming branch.
                     final List<Branch> predecessorBranches = branches.getPredecessorBranches(node);
                     final int[] predecessors = headIndices(predecessorBranches);
@@ -225,66 +223,11 @@ public class CapBuilder {
                     final long[] validitySizes = new long[validities.length];
                     Arrays.setAll(validitySizes, i -> validities[i].getProducer().numRows());
 
-                    System.out.println("validityProviders = " + Arrays.toString(validityProviders));
-                    System.out.println("validityOutputIndices = " + Arrays.deepToString(validityOutputIndices));
-                    System.out.println("validitySizes = " + Arrays.toString(validitySizes));
+                    CapAccessId[] inputs = new CapAccessId[numSlots];
+                    Arrays.setAll(inputs, i -> capAccessIdFor(ragInputs[i]));
 
-                    // TODO NEXT:
-                    //   find unique validityProducers
-                    //   analogous to
-                    //      final int[] predecessors;
-                    //      final int[][] predecessorOutputIndices;
-                    //      final long[] predecessorSizes;
-                    //   assemble
-                    //      final int[] validities; // CapNode index of each validity producer
-                    //      final int[][] validityOutputIndices; // which outputs come from each validity producer
-                    //      final long[] validitySizes; // number of rows (if known) in each validity producer
-                    //   Store these in CapNodeAppend
-                    //   Revise RandomAccessNodeAppend to include this in the sections
-
-                    // CapNode index of each validity producer
-//                    final int[] validities = Arrays.stream(slotValidityProducers).distinct().toArray();
-//                    final int[][] validityOutputIndices = new int[validities.length][]; // which outputs come from each validity producer
-
-
-
-                    final int[] slotPredecessorIndices = new int[numSlots];
-                    Arrays.setAll(slotPredecessorIndices,
-                            i -> predecessorBranches.indexOf(branches.getBranch(ragInputs[i].getProducer())));
-                    record Slot(AccessId ragInput, AccessId ragOutput, int predecessorIndex) {
-                    }
-                    final Slot[] slots = new Slot[numSlots];
-                    Arrays.setAll(slots, i -> new Slot(ragInputs[i], ragOutputs[i], slotPredecessorIndices[i]));
-                    Arrays.sort(slots, Comparator.comparing(Slot::predecessorIndex));
-
-                    final CapAccessId[] inputs = new CapAccessId[numSlots];
-                    Arrays.setAll(inputs, i -> capAccessIdFor(slots[i].ragInput));
-
-                    final int[] predecessorColRange = new int[predecessors.length + 1];
-                    int j = 0;
-                    for (int i = 0; i < slots.length; i++) {
-                        final int p = slots[i].predecessorIndex;
-                        while (j <= p) {
-                            predecessorColRange[j++] = i;
-                        }
-                    }
-                    while (j <= predecessors.length) {
-                        predecessorColRange[j++] = slots.length;
-                    }
-
-                    final int[][] predecessorOutputIndices = new int[predecessors.length][];
-                    Arrays.setAll(predecessorOutputIndices, p -> {
-                        final int from = predecessorColRange[p];
-                        final int to = predecessorColRange[p + 1];
-                        final int[] indices = new int[to - from];
-                        Arrays.setAll(indices, i -> from + i);
-                        return indices;
-                    });
-
-                    final CapNodeAppend capNode =
-                            new CapNodeAppend(index, inputs, predecessors, predecessorOutputIndices, predecessorSizes,
-                                    validityProviders, validityOutputIndices, validitySizes
-                                    );
+                    final CapNodeAppend capNode = new CapNodeAppend(index, inputs, predecessors, predecessorSizes,
+                                    validityProviders, validitySizes, validityOutputIndices );
                     append(node, capNode);
 
                     // TODO: Set capAccessIds to point to the CapNodeAppend outputs only if new delegating accesses are created
@@ -292,13 +235,11 @@ public class CapBuilder {
                     //  Later this can be refined:
                     //  1.) by not wrapping again accesses that come from a wrapping APPEND already.
                     //      In this case, just put input CapAccessId from the corresponding index. (?)
-                    for (int i = 0; i < slots.length; i++) {
-                        capAccessIds.put(slots[i].ragOutput, new CapAccessId(capNode, i));
+                    for (int i = 0; i < numSlots; i++) {
+                        capAccessIds.put(ragOutputs[i], new CapAccessId(capNode, i));
                     }
 
                     merge(predecessorBranches).append(node);
-
-                    System.out.println("RagNode = " + capNode);
                     break;
                 }
                 case CONCATENATE: {

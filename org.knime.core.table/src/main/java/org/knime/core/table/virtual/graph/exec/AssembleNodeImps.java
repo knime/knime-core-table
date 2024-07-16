@@ -133,7 +133,9 @@ class AssembleNodeImps {
                     final CapNodeAppend append = (CapNodeAppend)node;
                     final AccessImp[] inputs = accessImps(append.inputs());
                     final SequentialNodeImp[] predecessors = nodeImps(append.predecessors());
-                    imps.add(new SequentialNodeImpAppend(inputs, predecessors, append.predecessorOutputIndices()));
+                    final SequentialNodeImp[] validities = nodeImps(append.validityProviders());
+                    final int[][] validityOutputIndices = append.validityOutputIndices();
+                    imps.add(new SequentialNodeImpAppend(inputs, predecessors, validities, validityOutputIndices));
                     break;
                 }
                 case CONCATENATE: {

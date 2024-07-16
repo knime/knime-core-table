@@ -61,16 +61,14 @@ class RandomAccessNodeImpAppend implements RandomAccessNodeImp {
 
     private final RandomAccessNodeImp[] predecessors;
 
-    private final int[][] predecessorOutputIndices;
-
     private final long[] predecessorSizes;
 
     /*
-     * TODO (TP) revise ?!
-     * We split the input row range into sections, such that in each section the
-     * same predecessors are active (can provide rows). When moving between
-     * sections some predecessor accesses have to be switched to missing or
-     * re-linked.
+     * We split the input row range into sections, such that in each section:
+     * 1.) the same predecessors are active (can provide rows), and
+     * 2.) all accesses stay linked or missing.
+     * When moving between sections predecessors may be de-/activated and/or
+     * accesses may have to be switched to missing or re-linked.
      */
 
     /**
@@ -98,11 +96,6 @@ class RandomAccessNodeImpAppend implements RandomAccessNodeImp {
     /**
      * TODO (TP) javadoc
      */
-    private final RandomAccessNodeImp[] validities;
-
-    /**
-     * TODO (TP) javadoc
-     */
     private final int[][] validityOutputIndices;
 
     /**
@@ -116,31 +109,27 @@ class RandomAccessNodeImpAppend implements RandomAccessNodeImp {
     private final boolean[] validityLinked;
 
     /**
-     * @param predecessorOutputIndices {@code predecessorOutputIndices[i]} is the list of output indices to switch to
-     *            missing when the i-th predecessor is exhausted.
+     * @param validityOutputIndices {@code validityOutputIndices[i]} is the list of output indices to switch to
+     *            missing when {@code validitySizes[i]} is exhausted.
      */
     RandomAccessNodeImpAppend(//
             final AccessImp[] inputs, //
             final RandomAccessNodeImp[] predecessors, //
-            final int[][] predecessorOutputIndices, //
             final long[] predecessorSizes, //
-            final RandomAccessNodeImp[] validities, //
-            final int[][] validityOutputIndices, //
-            final long[] validitySizes //
+            final long[] validitySizes, //
+            final int[][] validityOutputIndices //
     ) {
 
         this.inputs = inputs;
         outputs = new DelegatingReadAccesses.DelegatingReadAccess[inputs.length];
 
         this.predecessors = predecessors;
-        this.predecessorOutputIndices = predecessorOutputIndices;
         this.predecessorSizes = predecessorSizes;
         predecessorActive = new boolean[predecessors.length];
 
-        this.validities = validities;
-        this.validityOutputIndices = validityOutputIndices;
         this.validitySizes = validitySizes;
-        validityLinked = new boolean[validities.length];
+        this.validityOutputIndices = validityOutputIndices;
+        validityLinked = new boolean[validitySizes.length];
 
         sectionStarts = LongStream.concat( //
                 LongStream.concat( //
@@ -170,7 +159,7 @@ class RandomAccessNodeImpAppend implements RandomAccessNodeImp {
             predecessorActive[p] = predecessorSizes[p] >= sectionToRow;
         }
 
-        for (int v = 0; v < validities.length; v++) {
+        for (int v = 0; v < validitySizes.length; v++) {
             final boolean currentlyLinked = validityLinked[v];
             final boolean shouldBeLinked = validitySizes[v] >= sectionToRow;
             if (currentlyLinked && !shouldBeLinked) {
