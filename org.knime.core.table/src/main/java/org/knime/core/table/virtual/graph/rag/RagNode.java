@@ -138,7 +138,7 @@ public final class RagNode implements Typed<RagNodeType> {
     }
 
     // TODO: move to RagNodeType ?
-    private static final EnumSet<RagNodeType> validityProvidingNodeTypes = EnumSet.of(SOURCE, APPEND, CONCATENATE, MISSING);
+    private static final EnumSet<RagNodeType> validityProvidingNodeTypes = EnumSet.of(SOURCE, APPEND, CONCATENATE, MISSING, SLICE);
 
     private final AccessValidity validity;
 

@@ -271,7 +271,7 @@ public class RagBuilder {
                 final MissingValuesSourceTransformSpec spec = producer.getTransformSpec();
                 yield spec.getMissingValueSpecs().get(accessId.getColumnIndex());
             }
-            case APPEND, CONCATENATE -> {
+            case APPEND, CONCATENATE, SLICE -> {
                 final int slot = producer.getOutputs().slotIndexOf(accessId);
                 yield getSpecWithTraits(producer.getInputs(0).getAtSlot(slot));
             }
@@ -280,7 +280,7 @@ public class RagBuilder {
                 yield spec.getMapperFactory().getOutputSchema().getSpecWithTraits(accessId.getColumnIndex());
             }
             case ROWINDEX -> DataSpecs.LONG;
-            case SLICE, APPENDMISSING, COLFILTER, ROWFILTER, CONSUMER, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
+            case APPENDMISSING, COLFILTER, ROWFILTER, CONSUMER, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
                     throw new IllegalArgumentException("unexpected node type " + producer.type());
         };
     }
@@ -398,12 +398,12 @@ public class RagBuilder {
             }
             case WRAPPER:
             case CONSUMER:
-            case MATERIALIZE: {
+            case MATERIALIZE:
+            case SLICE: {
                 accessIds[0] = traceAccess(i, node.predecessor(SPEC));
                 break;
             }
             case SOURCE:
-            case SLICE:
             case APPENDMISSING:
             case COLFILTER:
             case MISSING:
@@ -463,13 +463,13 @@ public class RagBuilder {
                 }
             }
             case ROWFILTER:
-            case SLICE:
             case IDENTITY:
             case OBSERVER:
                 return traceAccess(i, node.predecessor(SPEC));
             case APPEND:
             case CONCATENATE:
             case WRAPPER:
+            case SLICE:
                 traceAndLinkAccess(i, node);
                 return node.getOrCreateOutput(i);
             case APPENDMISSING:
@@ -1397,3 +1397,4 @@ public class RagBuilder {
     }
 
 }
+
