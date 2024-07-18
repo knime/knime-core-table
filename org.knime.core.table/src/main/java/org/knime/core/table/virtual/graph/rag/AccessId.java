@@ -50,7 +50,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.virtual.graph.rag.RagNode.AccessValidity;
 
 /**
  * {@code AccessId} represents a particular {@link ReadAccess}, identified by a

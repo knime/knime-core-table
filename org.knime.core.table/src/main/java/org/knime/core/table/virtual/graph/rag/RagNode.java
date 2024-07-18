@@ -56,7 +56,6 @@ import static org.knime.core.table.virtual.graph.rag.RagNodeType.SOURCE;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -92,50 +91,6 @@ public final class RagNode implements Typed<RagNodeType> {
      * nodes, etc., neither require nor produce any accesses.
      */
     private AccessIds[] inputs;
-
-    /**
-     * TODO (TP) javadoc
-     */
-    public static class AccessValidity {// TODO (TP) move to separate file
-
-        private final RagNode producer;
-
-        // set of accesses with this validity (no duplicates)
-        private final List<AccessId> consumers = new ArrayList<>();
-
-        private final List<AccessId> unmodifiableConsumers = Collections.unmodifiableList(consumers);
-
-        public AccessValidity(final RagNode producer) {
-            this.producer = producer;
-        }
-
-        public RagNode getProducer() {
-            return producer;
-        }
-
-        public List<AccessId> getConsumers() {
-            return unmodifiableConsumers;
-        }
-
-        public void addConsumer(AccessId accessId) {
-            if (!consumers.contains(accessId))
-                consumers.add(accessId);
-        }
-
-        public void replaceInConsumersWith(AccessValidity validity) {
-            consumers.forEach(id -> id.setValidity(validity));
-            consumers.clear();
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("AccessValidity{");
-            sb.append("producer=").append(producer);
-            sb.append(", consumers=").append(consumers);
-            sb.append('}');
-            return sb.toString();
-        }
-    }
 
     // TODO: move to RagNodeType ?
     private static final EnumSet<RagNodeType> validityProvidingNodeTypes = EnumSet.of(SOURCE, APPEND, CONCATENATE, MISSING, SLICE);

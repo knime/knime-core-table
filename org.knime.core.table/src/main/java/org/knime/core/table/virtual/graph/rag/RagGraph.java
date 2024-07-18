@@ -55,11 +55,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs;
-import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.TableTransform;
-import org.knime.core.table.virtual.graph.rag.RagNode.AccessValidity;
 
 /**
  * The "RowAccessible Graph" (or "ReadAccess Graph", or something like that... ;-)

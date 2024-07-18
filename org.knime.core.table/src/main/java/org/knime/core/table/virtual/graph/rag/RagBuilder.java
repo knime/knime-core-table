@@ -82,7 +82,6 @@ import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
-import org.knime.core.table.virtual.graph.rag.RagNode.AccessValidity;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
@@ -1118,11 +1117,11 @@ public class RagBuilder {
     // mergeSlices()
 
     boolean mergeSlices() {
-        for (final RagNode node : graph.nodes(SLICE)) {
-            if (tryMergeSlice(node)) {
-                return true;
-            }
-        }
+//        for (final RagNode node : graph.nodes(SLICE)) {
+//            if (tryMergeSlice(node)) {
+//                return true;
+//            }
+//        }
         return false;
     }
 
