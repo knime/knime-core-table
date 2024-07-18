@@ -333,7 +333,7 @@ public class CapBuilder {
         }
         final CapNode validity = capNodes.get(validityRagNode);
         if (validity == null) {
-            throw new NullPointerException("CapNode missing for producer missing for " + validityRagNode);
+            throw new NullPointerException("CapNode missing for producer of " + id + " (" + validityRagNode + ")");
         }
         return capAccessIds.get(id).withValidity(validity);
     }
