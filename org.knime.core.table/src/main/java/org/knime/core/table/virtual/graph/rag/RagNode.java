@@ -315,17 +315,17 @@ public final class RagNode implements Typed<RagNodeType> {
      * accesses.
      */
     AccessId getOrCreateOutput(final int columnIndex) {
-        if (columnIndex < 0 )
+        if (columnIndex < 0)
             throw new IndexOutOfBoundsException(columnIndex);
         else if (columnIndex > numColumns)
             throw new IndexOutOfBoundsException(columnIndex);
-        else if (columnIndex == numColumns ) {
+        else if (columnIndex == numColumns) {
             if (type == MISSING)
                 numColumns++;
             else
                 throw new IndexOutOfBoundsException(columnIndex);
         }
-        AccessId id = outputs.getAtColumnIndex( columnIndex );
+        AccessId id = outputs.getAtColumnIndex(columnIndex);
         if (id == null) {
             id = new AccessId(this, columnIndex);
             outputs.putAtColumnIndex(id, columnIndex);
@@ -377,7 +377,7 @@ public final class RagNode implements Typed<RagNodeType> {
         return inputs;
     }
 
-    void setInputssArray( final AccessIds[] inputs ) {
+    void setInputssArray(final AccessIds[] inputs) {
         this.inputs = inputs;
     }
 
@@ -411,9 +411,9 @@ public final class RagNode implements Typed<RagNodeType> {
     // ------------------------------------------------------------------------
     //   debugging stuff
 
-
     // ids are just for printing ...
     private static int nextNodeId = 0;
+
     private final int id;
 
     /**
