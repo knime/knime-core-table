@@ -95,9 +95,9 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppendAndSlice();
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice(sourceIdentifiers, sourceAccessibles);
 
-//        final UUID[] sourceIdentifiers = createSourceIds(1);
-//        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataForkJoin();
-//        final VirtualTable table = VirtualTableTests.vtForkJoin(sourceIdentifiers, sourceAccessibles);
+        final UUID[] sourceIdentifiers = createSourceIds(1);
+        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataForkJoin();
+        final VirtualTable table = VirtualTableTests.vtForkJoin(sourceIdentifiers, sourceAccessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final RowAccessible[] sourceAccessibles = toLookahead(VirtualTableTests.dataForkJoinLookALike());
@@ -169,10 +169,10 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataObserve();
 //        final VirtualTable table = VirtualTableTests.vtObserve(sourceIdentifiers, sourceAccessibles);
 
-        final UUID[] sourceIdentifiers = createSourceIds(2);
-        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppendTwice();
+//        final UUID[] sourceIdentifiers = createSourceIds(2);
+//        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppendTwice();
 //        final VirtualTable table = VirtualTableTests.vtAppendTwice(sourceIdentifiers, sourceAccessibles);
-        final VirtualTable table = VirtualTableTests.vtAppendExperiments(sourceIdentifiers, sourceAccessibles);
+//        final VirtualTable table = VirtualTableTests.vtAppendExperiments(sourceIdentifiers, sourceAccessibles);
 
         if ( doExecute ) {
 
@@ -223,7 +223,8 @@ public class ExecCap {
             final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
             final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
             final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-            final CursorType cursorType = RagGraphProperties.supportedCursorType(orderedRag);
+//            final CursorType cursorType = CursorType.LOOKAHEAD; //RagGraphProperties.supportedCursorType(orderedRag);
+            final CursorType cursorType = CursorType.RANDOMACCESS; //RagGraphProperties.supportedCursorType(orderedRag);
             final RowAccessible rows = createRowAccessible(graph, schema, cursorType, uuidRowAccessibleMap);
 
             System.out.println("supported CursorType = " + RagGraphProperties.supportedCursorType(orderedRag));
