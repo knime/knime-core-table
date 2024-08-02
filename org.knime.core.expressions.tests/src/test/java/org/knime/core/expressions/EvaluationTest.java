@@ -78,13 +78,17 @@ import static org.knime.core.expressions.TestUtils.COLUMN_ID;
 import static org.knime.core.expressions.TestUtils.COLUMN_NAME;
 import static org.knime.core.expressions.TestUtils.computerResultChecker;
 
+import java.util.AbstractMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -93,6 +97,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -114,10 +119,9 @@ final class EvaluationTest {
                 .andThen(c -> ReturnResult.fromOptional(c, "var missing").map(TestFlowVariable::type)));
         var result = Evaluation.evaluate( //
             ast, //
-            COLUMN_ID
-            .andThen(COLUMN_NAME) //
-            .andThen(FIND_TEST_COLUMN) //
-            .andThen(c -> c.map(TestColumn::computer)), //
+            COLUMN_ID.andThen(COLUMN_NAME) //
+                .andThen(FIND_TEST_COLUMN) //
+                .andThen(c -> c.map(TestColumn::computer)), //
             TestUtils.FLOW_VAR_NAME.andThen(FIND_TEST_FLOW_VARIABLE).andThen(c -> c.map(TestFlowVariable::computer)), //
             TestAggregations.TEST_AGGREGATIONS_COMPUTER);
         assertNotNull(result, "should output result");
@@ -483,38 +487,58 @@ final class EvaluationTest {
     }
 
     private static enum TestFunctions implements ExpressionFunction {
-            plus_100_fn(List.of(ValueType.INTEGER), ValueType.INTEGER,
-                c -> IntegerComputer.of(ctx -> ((IntegerComputer)c.get(0)).compute(ctx) + 100, ctx -> false)), //
+            plus_100_fn(List.of(ValueType.INTEGER), ValueType.INTEGER, c -> IntegerComputer
+                .of(ctx -> ((IntegerComputer)c.getArgument("arg0").getValue()).compute(ctx) + 100, ctx -> false)), //
         ;
 
-        private final Map<List<ValueType>, ValueType> m_argsToOutputs;
+        private final Map<Arguments<ValueType>, ReturnResult<ValueType>> m_argsToOutputs;
 
-        private final Function<List<Computer>, Computer> m_apply;
+        private final Function<Arguments<Computer>, Computer> m_apply;
+
+        private final List<Argument> m_args;
+
+        private boolean m_descriptionCalled = false;
 
         private TestFunctions(final List<ValueType> args, final ValueType output,
-            final Function<List<Computer>, Computer> apply) {
-            this(Map.of(args, output), apply);
-        }
+            final Function<Arguments<Computer>, Computer> apply) {
 
-        private TestFunctions(final Map<List<ValueType>, ValueType> argsToOutput,
-            final Function<List<Computer>, Computer> apply) {
-            m_argsToOutputs = argsToOutput;
             m_apply = apply;
+
+            AtomicInteger index = new AtomicInteger(0);
+
+            m_args = args.stream().map(arg -> new Argument("arg" + index.getAndIncrement(), "INTEGER", ""))
+                .collect(Collectors.toList());
+
+            index.set(0);
+            var namedArguments = new Arguments<ValueType>(
+                args.stream().map(arg -> new AbstractMap.SimpleEntry<>("arg" + index.getAndIncrement(), arg))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a,
+                        LinkedHashMap<String, ValueType>::new)));
+
+            m_argsToOutputs = Map.of(namedArguments, ReturnResult.success(output));
         }
 
         @Override
-        public Optional<ValueType> returnType(final List<ValueType> argTypes) {
-            return Optional.ofNullable(m_argsToOutputs.get(argTypes));
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
+            var correctArgs = m_argsToOutputs.get(argTypes);
+            return correctArgs == null
+                ? ReturnResult.failure("Arg (" + argTypes + ") not found in (" + m_argsToOutputs.keySet() + ").")
+                : correctArgs;
         }
 
         @Override
-        public Computer apply(final List<Computer> args) {
+        public Computer apply(final Arguments<Computer> args) {
             return m_apply.apply(args);
         }
 
         @Override
         public OperatorDescription description() {
-            throw new IllegalStateException("Should not be called during function evaluation");
+            if (m_descriptionCalled) {
+                throw new IllegalStateException("Should not be called during function evaluation");
+            }
+            m_descriptionCalled = true;
+            return new OperatorDescription(this.name(), "Test function", m_args, "Some return type",
+                "Some return description", List.of(), "Test category", OperatorDescription.FUNCTION_ENTRY_TYPE);
         }
     }
 }

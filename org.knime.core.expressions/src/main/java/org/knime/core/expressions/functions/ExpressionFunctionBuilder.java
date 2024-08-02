@@ -54,18 +54,16 @@ import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorDescription;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ToBooleanFunction;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
@@ -100,8 +98,8 @@ public final class ExpressionFunctionBuilder {
      * @param types the argument types
      * @return <code>true</code> if at least one type is optional
      */
-    public static boolean anyOptional(final ValueType... types) {
-        return Arrays.stream(types).anyMatch(ValueType::isOptional);
+    public static boolean anyOptional(final Arguments<ValueType> types) {
+        return types.anyMatch(ValueType::isOptional);
     }
 
     /**
@@ -111,8 +109,8 @@ public final class ExpressionFunctionBuilder {
      * @param values
      * @return the predicate
      */
-    public static ToBooleanFunction<EvaluationContext> anyMissing(final Collection<Computer> values) {
-        return ctx -> values.stream().anyMatch(c -> c.isMissing(ctx));
+    public static ToBooleanFunction<EvaluationContext> anyMissing(final Arguments<Computer> values) {
+        return ctx -> values.anyMatch(c -> c.isMissing(ctx));
     }
 
     /**
@@ -122,8 +120,8 @@ public final class ExpressionFunctionBuilder {
      * @param types the argument types
      * @return <code>true</code> if the {@link ValueType#baseType()} of all arguments match the predicate
      */
-    public static boolean allBaseTypesMatch(final Predicate<ValueType> matcher, final ValueType... types) {
-        return Arrays.stream(types).map(ValueType::baseType).allMatch(matcher);
+    public static boolean allBaseTypesMatch(final Predicate<ValueType> matcher, final Arguments<ValueType> types) {
+        return types.map(ValueType::baseType).allMatch(matcher);
     }
 
     /**
@@ -146,6 +144,8 @@ public final class ExpressionFunctionBuilder {
      * @param matcher
      * @return the argument
      */
+    // TODO(AP-23050): we should define the default in the function definition.
+    // Right now the defaults are all over the place.
     public static Arg optarg(final String name, final String description, final ArgMatcher matcher) {
         return new Arg(name, description, matcher, ArgKind.OPTIONAL);
     }
@@ -292,21 +292,21 @@ public final class ExpressionFunctionBuilder {
          * @return the next stage of the builder
          */
         RequiresImpl returnType(String returnDesc, String returnType,
-            Function<ValueType[], ValueType> returnTypeMapping);
+            Function<Arguments<ValueType>, ?> returnTypeMapping);
     }
 
     interface RequiresImpl {
         /**
-         * @param impl the implementation of the function ({@link ExpressionFunction#apply(List)}
+         * @param impl the implementation of the function ({@link ExpressionFunction#apply(Arguments)}
          * @return the next stage of the builder
          */
-        FinalStage impl(Function<List<Computer>, Computer> impl);
+        FinalStage impl(Function<Arguments<Computer>, Computer> impl);
     }
 
     record FinalStage( // NOSONAR - equals and hashCode are not important for this record
         String name, String description, String[] keywords, String category, Arg[] args, String returnDesc,
-        String returnType, Function<ValueType[], ValueType> returnTypeMapping,
-        Function<List<Computer>, Computer> impl) {
+        String returnType, Function<Arguments<ValueType>, ?> returnTypeMapping,
+        Function<Arguments<Computer>, Computer> impl) {
 
         public ExpressionFunction build() {
             // Check that the name is snake_case
@@ -319,35 +319,42 @@ public final class ExpressionFunctionBuilder {
             }
 
             var argsDesc = Arrays.stream(args) //
-                .map(a -> new OperatorDescription.Argument(a.name, a.matcher.allowed(), a.description)) //
+                .map(OperatorDescription.Argument::fromArg) //
                 .toList();
             var desc = new OperatorDescription(name, description, argsDesc, returnType, returnDesc, List.of(keywords),
                 category, OperatorDescription.FUNCTION_ENTRY_TYPE);
 
-            return new FunctionImpl(name, desc, argTypes -> {
-                // Check if the args match the definition
-                if (!argsMatch(argTypes.toArray(ValueType[]::new))) {
-                    return Optional.empty();
-                }
+            Function<Arguments<ValueType>, ReturnResult<ValueType>> typeMappingAndCheck =
+                (final Arguments<ValueType> argTypes) -> {
 
-                // Compute the return type
-                return Optional.ofNullable(returnTypeMapping.apply(argTypes.toArray(ValueType[]::new)));
-            }, impl);
+                    var typeCheck = Arguments.matchTypes(argsDesc, argTypes);
+
+                    if (typeCheck.isError()) {
+                        return ReturnResult.failure(typeCheck.getErrorMessage());
+                    }
+
+                    return resolveReturnType(argTypes);
+                };
+
+            return new FunctionImpl(name, desc, typeMappingAndCheck, impl);
         }
 
-        private boolean argsMatch(final ValueType[] argTypes) {
-            // Check if the number or args is correct
-            var numDefined = args.length;
-            var numArgs = argTypes.length;
-            var correctArgCount = switch (args[numDefined - 1].kind) {
-                case REQUIRED -> numArgs == numDefined;
-                case OPTIONAL -> numArgs == numDefined || numArgs == numDefined - 1;
-                case VAR -> numArgs >= numDefined - 1; // note: count of vararg could be 0
-            };
-
-            // Checks if arg at location i matches definition at i or the last definition
-            IntPredicate argMatches = i -> args[Math.min(i, args.length - 1)].matcher.matches(argTypes[i]);
-            return correctArgCount && IntStream.range(0, numArgs).allMatch(argMatches);
+        ReturnResult<ValueType> resolveReturnType(final Arguments<ValueType> argTypes) {
+            var result = returnTypeMapping.apply(argTypes);
+            if (result instanceof ValueType valueType) {
+                return ReturnResult.success(valueType);
+            } else if (result instanceof ReturnResult<?> returnResult) {
+                if (returnResult.isError()) {
+                    // This is a workaround to avoid an unchecked cast
+                    return ReturnResult.fromNullable((ValueType)null, returnResult.getErrorMessage());
+                } else {
+                    if (returnResult.getValue() instanceof ValueType valueType) {
+                        return ReturnResult.success(valueType);
+                    }
+                    throw new IllegalStateException("ReturnResult must encapsulate a ValueType");
+                }
+            }
+            throw new IllegalStateException("Return type mapping must return a ValueType or a ReturnResult<ValueType>");
         }
     }
 
@@ -359,13 +366,13 @@ public final class ExpressionFunctionBuilder {
 
         private OperatorDescription m_description;
 
-        private Function<List<ValueType>, Optional<ValueType>> m_typeMapping;
+        private Function<Arguments<ValueType>, ReturnResult<ValueType>> m_typeMapping;
 
-        private Function<List<Computer>, Computer> m_impl;
+        private Function<Arguments<Computer>, Computer> m_impl;
 
         FunctionImpl(final String name, final OperatorDescription description,
-            final Function<List<ValueType>, Optional<ValueType>> typeMapping,
-            final Function<List<Computer>, Computer> impl) {
+            final Function<Arguments<ValueType>, ReturnResult<ValueType>> typeMapping,
+            final Function<Arguments<Computer>, Computer> impl) {
             m_name = name;
             m_description = description;
             m_typeMapping = typeMapping;
@@ -383,18 +390,19 @@ public final class ExpressionFunctionBuilder {
         }
 
         @Override
-        public Optional<ValueType> returnType(final List<ValueType> argTypes) {
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
             return m_typeMapping.apply(argTypes);
         }
 
         @Override
-        public Computer apply(final List<Computer> args) {
+        public Computer apply(final Arguments<Computer> args) {
             return m_impl.apply(args);
         }
     }
 
     // ====================== TYPES FOR ARGUMENTS ===========================
 
+    // TODO(AP-23050): unify with OperatorDescription.Argument
     /**
      * Declaration of a function argument
      *

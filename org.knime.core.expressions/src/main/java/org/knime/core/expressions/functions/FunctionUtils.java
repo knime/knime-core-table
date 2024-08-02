@@ -59,7 +59,12 @@ public final class FunctionUtils {
     }
 
     /** @return an {@link IllegalStateException} that indicates an implementation error */
+    static IllegalStateException calledWithIllegalArgs(final String cause) {
+        return new IllegalStateException(
+            "Implementation error: called function with unsupported arguments. Details: " + cause);
+    }
+
     static IllegalStateException calledWithIllegalArgs() {
-        return new IllegalStateException("Implementation error: called function with unsupported arguments");
+        return new IllegalStateException("Implementation error: called function with unsupported arguments.");
     }
 }

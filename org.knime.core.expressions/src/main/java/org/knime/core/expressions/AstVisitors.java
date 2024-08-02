@@ -46,9 +46,7 @@
 package org.knime.core.expressions;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BinaryOperator;
 
 /**
@@ -73,7 +71,7 @@ class AstVisitors {
 
         O applyFunctionCall(Ast.FunctionCall node, List<O> argResults) throws E;
 
-        O applyAggregationCall(Ast.AggregationCall node, List<O> positionalArgResults, Map<String, O> namedArgResults)
+        O applyAggregationCall(Ast.AggregationCall node, Arguments<O> arguments)
             throws E;
 
         @Override
@@ -133,17 +131,10 @@ class AstVisitors {
             return applyFunctionCall(node, argResults);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         default O visit(final Ast.AggregationCall node) throws E {
-            final List<O> positionalArgResults = new ArrayList<>();
-            for (Ast arg : node.args().positionalArguments()) {
-                positionalArgResults.add(arg.accept(this));
-            }
-            final Map<String, O> namedArgResults = new LinkedHashMap<>();
-            for (var entry : node.args().namedArguments().entrySet()) {
-                namedArgResults.put(entry.getKey(), entry.getValue().accept(this));
-            }
-            return applyAggregationCall(node, positionalArgResults, namedArgResults);
+            return applyAggregationCall(node, (Arguments<O>)(node.args()));
         }
     }
 
@@ -182,12 +173,9 @@ class AstVisitors {
         }
 
         @Override
-        public O applyAggregationCall(final Ast.AggregationCall node, final List<O> positionalArgResults,
-            final Map<String, O> namedArgResults) {
+        public O applyAggregationCall(final Ast.AggregationCall node, final Arguments<O> arguments) {
 
-            List<O> argResults = new ArrayList<>(positionalArgResults);
-            argResults.addAll(namedArgResults.values());
-            return reduce(argResults);
+            return reduce(arguments.toList());
         }
 
         private O reduce(final List<O> argResults) {

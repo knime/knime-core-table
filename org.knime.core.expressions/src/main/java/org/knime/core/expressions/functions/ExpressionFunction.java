@@ -48,12 +48,11 @@
  */
 package org.knime.core.expressions.functions;
 
-import java.util.List;
-import java.util.Optional;
-
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.NamedExpressionOperator;
 import org.knime.core.expressions.OperatorDescription;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -82,16 +81,16 @@ public interface ExpressionFunction extends NamedExpressionOperator {
      * @param argTypes the types of the input arguments
      * @return the return type or <code>Optional.empty()</code> if the function is not applicable to the arguments
      */
-    Optional<ValueType> returnType(List<ValueType> argTypes);
+    ReturnResult<ValueType> returnType(Arguments<ValueType> argTypes);
 
     /**
      * Apply the function on the given arguments. Note that the arguments are guaranteed to be the appropriate computers
-     * for one of the allowed argument types. Must return a computer that fits the {@link #returnType(List)} for these
+     * for one of the allowed argument types. Must return a computer that fits the {@link #returnType(Arguments)} for these
      * arguments. The <code>compute</code> and <code>isMissing</code> methods of the arguments must only be called from
      * the resulting computer and must not be called more than once.
      *
      * @param args the arguments
      * @return a computer that applies the function to the input arguments
      */
-    Computer apply(List<Computer> args);
+    Computer apply(Arguments<Computer> args);
 }

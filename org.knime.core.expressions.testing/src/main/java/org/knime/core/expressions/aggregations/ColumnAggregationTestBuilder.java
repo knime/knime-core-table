@@ -2,7 +2,6 @@ package org.knime.core.expressions.aggregations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,15 +54,27 @@ public final class ColumnAggregationTestBuilder {
      * Adds a test to verify the correct inference of the aggregation's return type based on the given arguments.
      *
      * @param name A descriptive name for the test.
-     * @param arguments The arguments to be passed to the aggregation.
+     * @param positionalArguments
+     * @param namedArguments
      * @param expectedReturn The expected return type of the aggregation.
      * @return This builder instance for method chaining.
      */
-    public ColumnAggregationTestBuilder typing(final String name, final Arguments<Ast.ConstantAst> arguments,
-        final ValueType expectedReturn) {
+    public ColumnAggregationTestBuilder typing(final String name, final List<Ast.ConstantAst> positionalArguments,
+        final Map<String, Ast.ConstantAst> namedArguments, final ValueType expectedReturn) {
+
         m_typingTests.add(DynamicTest.dynamicTest(name, () -> {
-            var returnType = m_aggregation.returnType(arguments, this::columnType);
-            assertTrue(returnType.isOk(), "should fit arguments");
+
+            var arguments =
+                Arguments.matchSignature(m_aggregation.description().arguments(), positionalArguments, namedArguments);
+            if (arguments.isError()) {
+                throw new AssertionError("should match signature: "+arguments.getErrorMessage());
+            }
+
+            var returnType = m_aggregation.returnType(arguments.getValue(), this::columnType);
+            if (returnType.isError()) {
+                throw new AssertionError("should fit arguments: " + returnType.getErrorMessage());
+            }
+
             assertEquals(expectedReturn, returnType.getValue(), "should return correct type for " + arguments);
         }));
         return this;
@@ -74,13 +85,20 @@ public final class ColumnAggregationTestBuilder {
      * constraints.
      *
      * @param name A descriptive name for the test.
-     * @param arguments The arguments that should be rejected by the aggregation.
+     * @param positionalArguments
+     * @param namedArguments
      * @return This builder instance for method chaining.
      */
-    public ColumnAggregationTestBuilder illegalArgs(final String name, final Arguments<Ast.ConstantAst> arguments) {
+    public ColumnAggregationTestBuilder illegalArgs(final String name, final List<Ast.ConstantAst> positionalArguments,
+        final Map<String, Ast.ConstantAst> namedArguments) {
         m_illegalArgsTests.add(DynamicTest.dynamicTest(name, () -> {
-            var returnType = m_aggregation.returnType(arguments, this::columnType);
-            assertFalse(returnType.isOk(), "should not fit arguments");
+
+            var arguments =
+                Arguments.matchSignature(m_aggregation.description().arguments(), positionalArguments, namedArguments);
+            if (arguments.isOk()) {
+                var returnType = m_aggregation.returnType(arguments.getValue(), this::columnType);
+                assertFalse(returnType.isOk(), "should not fit arguments");
+            }
         }));
         return this;
     }

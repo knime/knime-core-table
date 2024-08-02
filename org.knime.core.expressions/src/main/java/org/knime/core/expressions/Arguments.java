@@ -48,32 +48,296 @@
  */
 package org.knime.core.expressions;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A container for the arguments of a function or aggregation. Supports both positional and named arguments.
+ * A container for the arguments of a function or aggregation. Supports named and variable arguments. For getting
+ * Arguments that follows the function signature, use the static method {@link #matchSignature(List, List, Map)}. This
+ * will return an error message if the arguments do not match the signature. If the generic type is {@link ValueType},
+ * the method {@link #matchTypes(List, Arguments)} can be used to check if the arguments are of the expected type.
  *
  * @param <T> the type of the arguments
- * @param positionalArguments a list of positional arguments
- * @param namedArguments a map of named arguments
+ * @param m_namedArguments a map of named arguments
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public record Arguments<T>(List<T> positionalArguments, Map<String, T> namedArguments) {
+public class Arguments<T> {
+
+    private static final String MISSING_REQUIRED_ARGUMENT = "Missing required argument: ";
+
+    // A LinkedHasmap is used to preserve the order of the arguments from the input order.
+    // This will be used to allow for a conversion to a list of arguments in the same order as
+    // they were input which match the order of the function signature when Arguments are created
+    // by matchSignature.
+    private final LinkedHashMap<String, T> m_namedArguments;
+
+    private final List<T> m_varArgument;
+
+    private final String m_varArgumentName;
 
     /**
-     * @return all arguments as a list. The named arguments are positioned after the positional arguments but the order
-     *         of the named arguments is not guaranteed.
+     * @param namedArguments
+     * @param varArgument
+     * @param varArgumentName
      */
-    public List<T> asList() {
-        var l = new ArrayList<>(positionalArguments);
-        l.addAll(namedArguments.values());
-        return l;
+    public Arguments(final LinkedHashMap<String, T> namedArguments, final List<T> varArgument,
+        final String varArgumentName) {
+
+        this.m_namedArguments = namedArguments;
+        this.m_varArgument = varArgument;
+        this.m_varArgumentName = varArgumentName;
+
+    }
+
+    /**
+     * @param namedArguments
+     * @param varArgument
+     */
+    public Arguments(final LinkedHashMap<String, T> namedArguments, final List<T> varArgument) {
+
+        this(namedArguments, varArgument, "defaultVarArgumentName");
+
+    }
+
+    /**
+     * @param namedArguments
+     */
+    public Arguments(final LinkedHashMap<String, T> namedArguments) {
+        this(namedArguments, List.of());
+    }
+
+    /**
+     * Create an empty Arguments object.
+     *
+     * @param <T>
+     * @return an empty Arguments
+     */
+    public static <T> Arguments<T> empty() {
+        var emptyMap = new LinkedHashMap<String, T>();
+        return new Arguments<>(emptyMap);
+    }
+
+    /**
+     * Match the positional and named arguments to the signature. Canonical way to create proper Arguments from input
+     * parameters. If the arguments do not match the signature, return an error message.
+     *
+     * @param <T> the type of the arguments
+     * @param signature the signature of the function
+     * @param positionalArguments the positional arguments to match against the signature (in order)
+     * @param namedArguments the named arguments to match against the signature (by name)
+     * @return the matched arguments or an error message if the arguments do not match the signature
+     */
+    public static <T> ReturnResult<Arguments<T>> matchSignature(final List<OperatorDescription.Argument> signature,
+        final List<T> positionalArguments, final Map<String, T> namedArguments) {
+
+        var isLastArgumentVariable = !signature.isEmpty() ? signature.get(signature.size() - 1).isVariable() : false;
+
+        var argumentsMap = new LinkedHashMap<String, T>();
+
+        // resolving the positional arguments
+        for (var i = 0; i < positionalArguments.size(); i++) {
+
+            if (i >= signature.size() - 1 && isLastArgumentVariable) {
+                break;
+            }
+            if (i >= signature.size()) {
+                return ReturnResult.failure("Too many arguments. Expected at most " + signature.size() + " arguments.");
+            }
+            argumentsMap.put(signature.get(i).name(), positionalArguments.get(i));
+        }
+
+        // resolving the named arguments
+        var validArgumentIds = signature.stream().map(OperatorDescription.Argument::name).collect(Collectors.toSet());
+        for (final var entry : namedArguments.entrySet()) {
+            var name = entry.getKey();
+            if (argumentsMap.containsKey(name)) {
+                return ReturnResult.failure("Argument '" + name + "' is already set.");
+            }
+            if (!validArgumentIds.contains(name)) {
+                return ReturnResult
+                    .failure("No argument with identifier '" + name + "' found in the function signature.");
+            }
+            argumentsMap.put(name, entry.getValue());
+        }
+
+        // resolving the variable arguments
+        var varargs = new ArrayList<T>();
+        String varargName = null;
+        if (!positionalArguments.isEmpty() && isLastArgumentVariable) {
+            varargName = signature.get(signature.size() - 1).name();
+
+            for (var i = signature.size() - 1; i < positionalArguments.size(); i++) {
+                varargs.add(positionalArguments.get(i));
+            }
+        }
+
+        // check if all required arguments are present
+        for (var arg : signature) {
+            if (!arg.isOptional() && !arg.isVariable() && !argumentsMap.containsKey(arg.name())) {
+                return ReturnResult.failure(MISSING_REQUIRED_ARGUMENT + arg.name() + "." + argumentsMap);
+            }
+        }
+
+        return ReturnResult.success(
+            varargName == null ? new Arguments<>(argumentsMap) : new Arguments<>(argumentsMap, varargs, varargName));
+    }
+
+    /**
+     * convenience function to match the signature without named arguments.
+     *
+     * @param <T>
+     * @param signature
+     * @param positionalArguments
+     * @return the matched arguments or an error message if the arguments do not match the signature
+     */
+    public static <T> ReturnResult<Arguments<T>> matchSignature(final List<OperatorDescription.Argument> signature,
+        final List<T> positionalArguments) {
+        return matchSignature(signature, positionalArguments, Map.of());
+    }
+
+    /**
+     * Check if the arguments match the types of the signature.
+     *
+     * @param signature the signature of the function
+     * @param arguments the arguments to check
+     * @return true if the arguments match the signature, false otherwise
+     */
+    public static ReturnResult<Boolean> matchTypes(final List<OperatorDescription.Argument> signature,
+        final Arguments<ValueType> arguments) {
+        var test = arguments.getNamedArguments();
+
+        for (var arg : test.entrySet()) {
+
+            OperatorDescription.Argument argFunc = null;
+            for (var a : signature) {
+                if (a.name().equals(arg.getKey())) {
+                    argFunc = a;
+                    break;
+                }
+            }
+
+            if (argFunc == null) {
+                return ReturnResult.failure("Argument not found: " + arg.getKey());
+            }
+
+            if (!argFunc.matcher().matches(arg.getValue())) {
+
+                return ReturnResult.failure("Argument '" + arg.getKey() + "' is not of the expected type: "
+                    + argFunc.type() + " but got " + arg.getValue() + ".");
+            }
+        }
+
+        return ReturnResult.success(true);
+    }
+
+    /**
+     * Get an argument by name. If the argument is missing, return an error.
+     *
+     * @param name
+     * @return the argument or an error message if the argument is missing
+     */
+    public ReturnResult<T> getArgument(final String name) {
+        var argument = m_namedArguments.get(name);
+        if (argument == null) {
+            return ReturnResult.failure("Argument not found: " + name);
+        }
+        return ReturnResult.success(argument);
+    }
+
+    /**
+     * Get the variable argument. If the variable argument is missing, return an error. There is at most one variable
+     * argument.
+     *
+     * @return the variable argument or an error message if the variable argument is missing
+     */
+    public ReturnResult<List<T>> getVariableArgument() {
+        if (m_varArgument.isEmpty()) {
+            return ReturnResult.failure("No variable argument present");
+        }
+
+        return ReturnResult.success(m_varArgument);
+    }
+
+    /**
+     * @return all named arguments
+     */
+    public Map<String, T> getNamedArguments() {
+        return m_namedArguments;
+    }
+
+    /**
+     * create a list of all arguments in the order they were input which should match the order of the function
+     * signature.
+     *
+     * @return a list of arguments
+     */
+    public List<T> toList() {
+        List<T> list = new ArrayList<>(m_namedArguments.values());
+        list.addAll(m_varArgument);
+        return list;
+    }
+
+    /**
+     * Allow to conveniently stream over all arguments.
+     *
+     * @return a stream of all arguments
+     */
+    public Stream<T> stream() {
+        return this.toList().stream();
+    }
+
+    /**
+     * @return the number of arguments stored in this object
+     */
+    public Integer size() {
+        return m_namedArguments.size() + m_varArgument.size();
+    }
+
+    /**
+     * Check if any argument matches the predicate.
+     *
+     * @param predicate the predicate to test
+     * @return true if any argument matches, false otherwise
+     */
+    public boolean anyMatch(final Predicate<? super T> predicate) {
+        for (T value : m_namedArguments.values()) {
+            if (predicate.test(value)) {
+                return true;
+            }
+        }
+        for (T value : m_varArgument) {
+            if (predicate.test(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if all arguments match the predicate
+     *
+     * @param predicate
+     * @return true if all arguments match the predicate, false otherwise
+     */
+    public boolean allMatch(final Predicate<? super T> predicate) {
+        for (T value : m_namedArguments.values()) {
+            if (!predicate.test(value)) {
+                return false;
+            }
+        }
+        for (T value : m_varArgument) {
+            if (!predicate.test(value)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -84,12 +348,14 @@ public record Arguments<T>(List<T> positionalArguments, Map<String, T> namedArgu
      * @return a new {@link Arguments} object with the mapped arguments
      */
     public <O> Arguments<O> map(final Function<T, O> mapper) {
-        return new Arguments<>( //
-            positionalArguments.stream().map(mapper).toList(), //
-            namedArguments.entrySet().stream().collect( //
-                Collectors.toMap(Entry::getKey, e -> mapper.apply(e.getValue())) //
-            ) //
-        );
+
+        LinkedHashMap<String, O> mappedNamedArguments = this.m_namedArguments.entrySet().stream()
+            .map(entry -> new SimpleEntry<>(entry.getKey(), mapper.apply(entry.getValue())))
+            .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+
+        List<O> mappedVarArgument = m_varArgument.stream().map(mapper).collect(Collectors.toList());
+
+        return new Arguments<>(mappedNamedArguments, mappedVarArgument);
     }
 
     /**
@@ -99,16 +365,40 @@ public record Arguments<T>(List<T> positionalArguments, Map<String, T> namedArgu
      * @return a string representation of the arguments
      */
     public String renderArgumentList(final Function<T, String> argRenderer) {
-        return "(" //
-            + Stream.concat( //
-                positionalArguments.stream().map(argRenderer), //
-                namedArguments.entrySet().stream().map(e -> e.getKey() + "=" + argRenderer.apply(e.getValue())) //
-            ).collect(Collectors.joining(", ")) //
-            + ")";
+        var renderedNamedArguments = m_namedArguments.entrySet().stream()
+            .map(entry -> entry.getKey() + "=" + argRenderer.apply(entry.getValue())).collect(Collectors.joining(", "));
+
+        var renderedVariableArguments =
+            m_varArgumentName + "=[" + m_varArgument.stream().map(argRenderer).collect(Collectors.joining(", ")) + "]";
+
+        return "(" + renderedNamedArguments + (m_varArgument.isEmpty() ? "" : (", " + renderedVariableArguments)) + ")";
+
     }
 
     @Override
     public String toString() {
         return renderArgumentList(Object::toString);
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        Arguments<?> arguments = (Arguments<?>)obj;
+        return m_namedArguments.equals(arguments.m_namedArguments) && m_varArgument.equals(arguments.m_varArgument)
+            && m_varArgumentName.equals(arguments.m_varArgumentName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
 }

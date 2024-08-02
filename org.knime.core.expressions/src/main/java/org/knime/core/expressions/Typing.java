@@ -208,22 +208,25 @@ final class Typing {
 
         @Override
         public ValueType visit(final FunctionCall node) {
-            var argTypes = node.args().asList().stream().map(Typing::getType).toList();
+            var argTypes = node.args().map(Typing::getType);
 
-            if (argTypes.stream().anyMatch(ErrorValueType.class::isInstance)) {
-                return ErrorValueType.combined(argTypes);
+            if (argTypes.anyMatch(ErrorValueType.class::isInstance)) {
+                return ErrorValueType.combined(argTypes.toList());
             }
 
-            // TODO(AP-22303) show better error if the function is not applicable
-            return node.function().returnType(argTypes)
-                .orElseGet(() -> ErrorValueType.functionNotApplicable(node, argTypes));
+            var returnType = node.function().returnType(argTypes);
+
+            if (returnType.isOk()) {
+                return returnType.getValue();
+            } else {
+                return ErrorValueType.functionNotApplicable(node, argTypes);
+            }
+
         }
 
         @Override
         public ValueType visit(final AggregationCall node) throws RuntimeException {
-            var resolvedAggregation = node.aggregation();
-
-            var ret = resolvedAggregation.returnType(node.args(), m_columnType);
+            var ret = node.aggregation().returnType(node.args(), m_columnType);
 
             if (ret.isOk()) {
                 return ret.getValue();
@@ -362,7 +365,7 @@ final class Typing {
             return typingError("Operator '" + node.op().symbol() + "' is not applicable for " + t.name() + ".", node);
         }
 
-        static ErrorValueType functionNotApplicable(final FunctionCall node, final List<ValueType> args) {
+        static ErrorValueType functionNotApplicable(final FunctionCall node, final Arguments<ValueType> args) {
             return typingError("The function " + node.function().name() + " is not applicable to the arguments " + args,
                 node);
         }

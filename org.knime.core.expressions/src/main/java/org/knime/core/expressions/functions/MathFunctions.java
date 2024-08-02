@@ -78,6 +78,7 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
@@ -164,8 +165,8 @@ public final class MathFunctions {
         .impl(MathFunctions::maxImpl) //
         .build();
 
-    private static Computer maxImpl(final List<Computer> args) {
-        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+    private static Computer maxImpl(final Arguments<Computer> args) {
+        boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
             return IntegerComputer.of( //
@@ -173,9 +174,9 @@ public final class MathFunctions {
                 anyMissing(args) //
             );
         } else {
-            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+            var floatArgs = args.map(c -> toFloat(c));
             return FloatComputer.of( //
-                ctx -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(ctx)).max().getAsDouble(), //
+                ctx -> floatArgs.stream().mapToDouble(c -> c.compute(ctx)).max().getAsDouble(), //
                 anyMissing(args) //
             );
         }
@@ -213,8 +214,8 @@ public final class MathFunctions {
         .impl(MathFunctions::minImpl) //
         .build();
 
-    private static Computer minImpl(final List<Computer> args) {
-        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+    private static Computer minImpl(final Arguments<Computer> args) {
+        boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
             return IntegerComputer.of( //
@@ -222,9 +223,9 @@ public final class MathFunctions {
                 anyMissing(args) //
             );
         } else {
-            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+            var floatArgs = args.map(c -> toFloat(c));
             return FloatComputer.of( //
-                ctx -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(ctx)).min().getAsDouble(), //
+                ctx -> floatArgs.stream().mapToDouble(c -> c.compute(ctx)).min().getAsDouble(), //
                 anyMissing(args) //
             );
         }
@@ -262,32 +263,32 @@ public final class MathFunctions {
         .impl(MathFunctions::argmaxImpl) //
         .build();
 
-    private static Computer argmaxImpl(final List<Computer> args) {
-        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+    private static Computer argmaxImpl(final Arguments<Computer> args) {
+        boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
         ToLongFunction<EvaluationContext> supplier;
 
         if (allArgsAreIntegers) {
             supplier = ctx -> {
-                var computedArgs = args.stream().map(c -> toInteger(c).compute(ctx)).toArray(Long[]::new);
+                var computedArgs = args.map(c -> toInteger(c).compute(ctx));
 
-                var intStream = IntStream.range(0, computedArgs.length);
+                var intStream = IntStream.range(0, computedArgs.size());
 
                 // Add 1 here because we want to return 1-indexed values.
-                return 1 + intStream.reduce(streamExtremumReducer(ExtremumType.MAXIMUM, computedArgs)) //
+                return 1 + intStream.reduce(streamExtremumReducer(ExtremumType.MAXIMUM, computedArgs.toList())) //
                     .getAsInt(); //
             };
         } else {
-            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+            var floatArgs = args.map(c -> toFloat(c));
 
             supplier = ctx -> {
-                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(ctx)).toArray(Double[]::new);
+                var computedArgs = floatArgs.map(c -> c.compute(ctx));
 
-                var intStream = IntStream.range(0, computedArgs.length);
+                var intStream = IntStream.range(0, computedArgs.size());
 
                 // Add 1 here because we want to return 1-indexed values.
                 return 1 + intStream // Custom reducer produces first NaN if there are NaNs
-                    .reduce(nanPropagatingStreamExtremumReducer(ExtremumType.MAXIMUM, computedArgs)) //
+                    .reduce(nanPropagatingStreamExtremumReducer(ExtremumType.MAXIMUM, computedArgs.toList())) //
                     .orElseThrow(() -> new IllegalStateException("Stream was empty. This is an implementation bug"));
             };
         }
@@ -327,32 +328,32 @@ public final class MathFunctions {
         .impl(MathFunctions::argminImpl) //
         .build();
 
-    private static Computer argminImpl(final List<Computer> args) {
-        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+    private static Computer argminImpl(final Arguments<Computer> args) {
+        boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
         ToLongFunction<EvaluationContext> supplier;
 
         if (allArgsAreIntegers) {
             supplier = ctx -> {
-                var computedArgs = args.stream().map(c -> toInteger(c).compute(ctx)).toArray(Long[]::new);
+                var computedArgs = args.map(c -> toInteger(c).compute(ctx));
 
-                var intStream = IntStream.range(0, computedArgs.length);
+                var intStream = IntStream.range(0, computedArgs.size());
 
                 // Add 1 here because we want to return 1-indexed values.
-                return 1 + intStream.reduce(streamExtremumReducer(ExtremumType.MINIMUM, computedArgs)) //
+                return 1 + intStream.reduce(streamExtremumReducer(ExtremumType.MINIMUM, computedArgs.toList())) //
                     .getAsInt(); //
             };
         } else {
-            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+            var floatArgs = args.map(c -> toFloat(c));
 
             supplier = ctx -> {
-                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(ctx)).toArray(Double[]::new);
+                var computedArgs = floatArgs.map(c -> c.compute(ctx));
 
-                var intStream = IntStream.range(0, computedArgs.length);
+                var intStream = IntStream.range(0, computedArgs.size());
 
                 // Add 1 here because we want to return 1-indexed values.
                 return 1 + intStream // Custom reducer produces first NaN if there are NaNs
-                    .reduce(nanPropagatingStreamExtremumReducer(ExtremumType.MINIMUM, computedArgs)) //
+                    .reduce(nanPropagatingStreamExtremumReducer(ExtremumType.MINIMUM, computedArgs.toList())) //
                     .orElseThrow(() -> new IllegalStateException("Stream was empty. This is an implementation bug"));
             };
         }
@@ -379,17 +380,22 @@ public final class MathFunctions {
         .keywords("absolute") //
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Absolute value of x", RETURN_INTEGER_FLOAT_MISSING, args -> args[0]) //
+        .returnType("Absolute value of x", RETURN_INTEGER_FLOAT_MISSING, args -> args.getArgument("x").getValue()) //
         .impl(MathFunctions::absImpl) //
         .build();
 
-    private static Computer absImpl(final List<Computer> args) {
-        if (args.get(0) instanceof IntegerComputer c) {
-            return IntegerComputer.of(ctx -> Math.abs(c.compute(ctx)), c::isMissing);
-        } else if (args.get(0) instanceof FloatComputer c) {
-            return FloatComputer.of(ctx -> Math.abs(c.compute(ctx)), c::isMissing);
-        }
-        throw FunctionUtils.calledWithIllegalArgs();
+    private static Computer absImpl(final Arguments<Computer> args) {
+        return args.getArgument("x").map(x -> {
+            if (x instanceof IntegerComputer) {
+                return IntegerComputer.of(ctx -> Math.abs(((IntegerComputer)x).compute(ctx)),
+                    ((IntegerComputer)x)::isMissing);
+            } else if (x instanceof FloatComputer) {
+                return FloatComputer.of(ctx -> Math.abs(((FloatComputer)x).compute(ctx)),
+                    ((FloatComputer)x)::isMissing);
+            } else {
+                throw FunctionUtils.calledWithIllegalArgs();
+            }
+        }).orElseThrow(FunctionUtils::calledWithIllegalArgs);
     }
 
     /** The sine of one number */
@@ -416,8 +422,8 @@ public final class MathFunctions {
         .impl(MathFunctions::sinImpl) //
         .build();
 
-    private static Computer sinImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer sinImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> Math.sin(c.compute(ctx)), c::isMissing);
     }
 
@@ -444,8 +450,8 @@ public final class MathFunctions {
         .impl(MathFunctions::cosImpl) //
         .build();
 
-    private static Computer cosImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer cosImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> Math.cos(c.compute(ctx)), c::isMissing);
     }
 
@@ -472,8 +478,8 @@ public final class MathFunctions {
         .impl(MathFunctions::tanImpl) //
         .build();
 
-    private static Computer tanImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer tanImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> Math.tan(c.compute(ctx)), c::isMissing);
     }
 
@@ -500,8 +506,8 @@ public final class MathFunctions {
         .impl(MathFunctions::asinImpl) //
         .build();
 
-    private static Computer asinImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer asinImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
             var ret = Math.asin(cC);
@@ -538,8 +544,8 @@ public final class MathFunctions {
         .impl(MathFunctions::acosImpl) //
         .build();
 
-    private static Computer acosImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer acosImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
             var ret = Math.acos(cC);
@@ -575,8 +581,8 @@ public final class MathFunctions {
         .impl(MathFunctions::atanImpl) //
         .build();
 
-    private static Computer atanImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer atanImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> Math.atan(c.compute(ctx)), c::isMissing);
     }
 
@@ -611,9 +617,9 @@ public final class MathFunctions {
         .impl(MathFunctions::atan2Impl) //
         .build();
 
-    private static Computer atan2Impl(final List<Computer> args) {
-        var y = toFloat(args.get(0));
-        var x = toFloat(args.get(1));
+    private static Computer atan2Impl(final Arguments<Computer> args) {
+        var y = toFloat(args.getArgument("y").getValue());
+        var x = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of( //
             ctx -> {
                 var xC = x.compute(ctx);
@@ -652,8 +658,8 @@ public final class MathFunctions {
         .impl(MathFunctions::sinhImpl) //
         .build();
 
-    private static Computer sinhImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer sinhImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> Math.sinh(c.compute(ctx)), c::isMissing);
     }
 
@@ -679,8 +685,8 @@ public final class MathFunctions {
         .impl(MathFunctions::coshImpl) //
         .build();
 
-    private static Computer coshImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer coshImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> Math.cosh(c.compute(ctx)), c::isMissing);
     }
 
@@ -706,8 +712,8 @@ public final class MathFunctions {
         .impl(MathFunctions::tanhImpl) //
         .build();
 
-    private static Computer tanhImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer tanhImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> Math.tanh(c.compute(ctx)), c::isMissing);
     }
 
@@ -733,8 +739,8 @@ public final class MathFunctions {
         .impl(MathFunctions::asinhImpl) //
         .build();
 
-    private static Computer asinhImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer asinhImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
 
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var cC = c.compute(ctx);
@@ -770,8 +776,8 @@ public final class MathFunctions {
         .impl(MathFunctions::acoshImpl) //
         .build();
 
-    private static Computer acoshImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer acoshImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
 
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var cC = c.compute(ctx);
@@ -812,8 +818,8 @@ public final class MathFunctions {
         .impl(MathFunctions::atanhImpl) //
         .build();
 
-    private static Computer atanhImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer atanhImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
 
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var cC = c.compute(ctx);
@@ -856,12 +862,12 @@ public final class MathFunctions {
         .keywords("natural log") //
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Natural logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .returnType("Natural logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))//
         .impl(MathFunctions::lnImpl) //
         .build();
 
-    private static Computer lnImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer lnImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
 
@@ -900,12 +906,12 @@ public final class MathFunctions {
         .keywords("common log", "decimal log") //
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Base-10 logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))
+        .returnType("Base-10 logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::log10Impl) //
         .build();
 
-    private static Computer log10Impl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer log10Impl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
 
@@ -944,12 +950,12 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Base-2 logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))
+        .returnType("Base-2 logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::log2Impl) //
         .build();
 
-    private static Computer log2Impl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer log2Impl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
 
@@ -999,9 +1005,9 @@ public final class MathFunctions {
         .impl(MathFunctions::logBaseImpl) //
         .build();
 
-    private static Computer logBaseImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
-        var b = toFloat(args.get(1));
+    private static Computer logBaseImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
+        var b = toFloat(args.getArgument("base").getValue());
 
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var base = b.compute(ctx);
@@ -1060,12 +1066,12 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Natural logarithm of (1+x)", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .returnType("Natural logarithm of (1+x)", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))//
         .impl(MathFunctions::log1pImpl) //
         .build();
 
-    private static Computer log1pImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer log1pImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of( //
             ctx -> {
                 var cC = c.compute(ctx);
@@ -1106,8 +1112,8 @@ public final class MathFunctions {
         .impl(MathFunctions::expImpl) //
         .build();
 
-    private static Computer expImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer expImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of( //
             ctx -> Math.exp(c.compute(ctx)), //
             c::isMissing //
@@ -1144,14 +1150,14 @@ public final class MathFunctions {
             arg("y", "The exponent", isNumericOrOpt()) //
         ) //
         .returnType("x to the power of y", RETURN_INTEGER_FLOAT_MISSING,
-            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args)))//
         .impl(MathFunctions::powImpl) //
         .build();
 
-    private static Computer powImpl(final List<Computer> args) {
-        if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
-            var x = toInteger(args.get(0));
-            var y = toInteger(args.get(1));
+    private static Computer powImpl(final Arguments<Computer> args) {
+        if (args.allMatch(IntegerComputer.class::isInstance)) {
+            var x = toInteger(args.getArgument("x").getValue());
+            var y = toInteger(args.getArgument("y").getValue());
             return IntegerComputer.of( //
                 ctx -> {
                     var xC = x.compute(ctx);
@@ -1166,8 +1172,8 @@ public final class MathFunctions {
                 }, anyMissing(args) //
             );
         } else {
-            var x = toFloat(args.get(0));
-            var y = toFloat(args.get(1));
+            var x = toFloat(args.getArgument("x").getValue());
+            var y = toFloat(args.getArgument("y").getValue());
             return FloatComputer.of( //
                 ctx -> {
                     var xC = x.compute(ctx);
@@ -1207,8 +1213,8 @@ public final class MathFunctions {
         .impl(MathFunctions::sqrtImpl) //
         .build();
 
-    private static Computer sqrtImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer sqrtImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of( //
             ctx -> {
                 var cC = c.compute(ctx);
@@ -1253,33 +1259,35 @@ public final class MathFunctions {
             arg("y", "The divisor", isNumericOrOpt()) //
         ) //
         .returnType("x modulo y", RETURN_INTEGER_FLOAT_MISSING,
-            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args)))//
         .impl(MathFunctions::modImpl) //
         .build();
 
-    private static Computer modImpl(final List<Computer> args) {
-        if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
+    private static Computer modImpl(final Arguments<Computer> args) {
+        if (args.allMatch(IntegerComputer.class::isInstance)) {
             return IntegerComputer.of(ctx -> {
-                var x = toInteger(args.get(0)).compute(ctx);
-                var y = toInteger(args.get(1)).compute(ctx);
+                var y = toInteger(args.getArgument("y").getValue()).compute(ctx);
 
                 if (y == 0) {
                     ctx.addWarning("INTEGER mod returned 0 because divisor is zero.");
                     return 0;
                 }
 
+                var x = toInteger(args.getArgument("x").getValue()).compute(ctx);
+
                 return x % y;
             }, anyMissing(args));
         } else {
             return FloatComputer.of( //
                 ctx -> {
-                    var x = toFloat(args.get(0)).compute(ctx);
-                    var y = toFloat(args.get(1)).compute(ctx);
+                    var y = toFloat(args.getArgument("y").getValue()).compute(ctx);
 
                     if (isNearZero(y)) {
                         ctx.addWarning("FLOAT mod returned NaN because divisor is zero.");
                         return Float.NaN;
                     }
+
+                    var x = toFloat(args.getArgument("x").getValue()).compute(ctx);
 
                     return x % y;
                 }, anyMissing(args) //
@@ -1304,12 +1312,12 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY_TRIGONOMETRY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("x in degrees", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .returnType("x in degrees", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))//
         .impl(MathFunctions::degreesImpl) //
         .build();
 
-    private static Computer degreesImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer degreesImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of( //
             ctx -> Math.toDegrees(c.compute(ctx)), //
             c::isMissing //
@@ -1337,8 +1345,8 @@ public final class MathFunctions {
         .impl(MathFunctions::radiansImpl) //
         .build();
 
-    private static Computer radiansImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer radiansImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of( //
             ctx -> Math.toRadians(c.compute(ctx)), //
             c::isMissing //
@@ -1367,8 +1375,8 @@ public final class MathFunctions {
         .impl(MathFunctions::floorImpl) //
         .build();
 
-    private static Computer floorImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer floorImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return IntegerComputer.of( //
             ctx -> (long)Math.floor(c.compute(ctx)), //
             ctx -> {
@@ -1402,12 +1410,12 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY_ROUND.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Nearest integer greater than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
+        .returnType("Nearest integer greater than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args)))//
         .impl(MathFunctions::ceilImpl) //
         .build();
 
-    private static Computer ceilImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer ceilImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return IntegerComputer.of( //
             ctx -> (int)Math.ceil(c.compute(ctx)), //
             ctx -> {
@@ -1441,12 +1449,12 @@ public final class MathFunctions {
         .keywords("round down") //
         .category(CATEGORY_ROUND.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Nearest integer closer to zero than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
+        .returnType("Nearest integer closer to zero than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args)))//
         .impl(MathFunctions::truncImpl) //
         .build();
 
-    private static Computer truncImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer truncImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return IntegerComputer.of( //
             ctx -> BigDecimal.valueOf(c.compute(ctx)).setScale(0, RoundingMode.DOWN).longValue(), //
             ctx -> {
@@ -1498,7 +1506,7 @@ public final class MathFunctions {
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
         .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
-            args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> (args.getArgument("precision").isOk()) ? FLOAT(anyOptional(args)) : INTEGER(anyOptional(args))) //
         .impl(roundImplFactory(RoundingMode.HALF_DOWN, "roundhalfdown")) //
         .build();
 
@@ -1538,7 +1546,7 @@ public final class MathFunctions {
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
         .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
-            args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> (args.getArgument("precision").isOk()) ? FLOAT(anyOptional(args)) : INTEGER(anyOptional(args)))//
         .impl(roundImplFactory(RoundingMode.HALF_UP, "roundhalfup")) //
         .build();
 
@@ -1581,7 +1589,7 @@ public final class MathFunctions {
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
         .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
-            args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> (args.getArgument("precision").isOk()) ? FLOAT(anyOptional(args)) : INTEGER(anyOptional(args)))//
         .impl(roundImplFactory(RoundingMode.HALF_EVEN, "round")) //
         .build();
 
@@ -1591,10 +1599,10 @@ public final class MathFunctions {
      * @param mode the rounding mode
      * @return the function implementation
      */
-    private static Function<List<Computer>, Computer> roundImplFactory(final RoundingMode mode,
+    private static Function<Arguments<Computer>, Computer> roundImplFactory(final RoundingMode mode,
         final String functionName) {
         return args -> {
-            var c = toFloat(args.get(0));
+            var c = toFloat(args.getArgument("x").getValue());
 
             if (args.size() == 1) {
                 // Return integer
@@ -1612,7 +1620,7 @@ public final class MathFunctions {
                     });
             } else {
                 return FloatComputer.of(ctx -> {
-                    int scale = (int)toInteger(args.get(1)).compute(ctx);
+                    int scale = (int)toInteger(args.getArgument("precision").getValue()).compute(ctx);
                     double value = c.compute(ctx);
 
                     if (Double.isNaN(value)) {
@@ -1642,12 +1650,12 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Sign of x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
+        .returnType("Sign of x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args)))//
         .impl(MathFunctions::signImpl) //
         .build();
 
-    private static Computer signImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer signImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return IntegerComputer.of( //
             ctx -> (int)Math.signum(c.compute(ctx)), //
             ctx -> {
@@ -1688,11 +1696,11 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Mean of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .returnType("Mean of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))//
         .impl(MathFunctions::averageImpl) //
         .build();
 
-    private static Computer averageImpl(final List<Computer> args) {
+    private static Computer averageImpl(final Arguments<Computer> args) {
         ToDoubleFunction<EvaluationContext> value = ctx -> args.stream() //
             .map(c -> toFloat(c).compute(ctx)) //
             .mapToDouble(Double::valueOf) //
@@ -1730,11 +1738,11 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Median of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .returnType("Median of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))//
         .impl(MathFunctions::medianImpl) //
         .build();
 
-    private static Computer medianImpl(final List<Computer> args) {
+    private static Computer medianImpl(final Arguments<Computer> args) {
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             // Because we use ::compute we need to do this inside the DoubleSupplier
             var sortedFloatArgs = args.stream() //
@@ -1787,12 +1795,12 @@ public final class MathFunctions {
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
         .returnType("Sum of the arguments", RETURN_INTEGER_FLOAT_MISSING,
-            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args)))//
         .impl(MathFunctions::sumImpl) //
         .build();
 
-    private static Computer sumImpl(final List<Computer> args) {
-        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+    private static Computer sumImpl(final Arguments<Computer> args) {
+        boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
             return IntegerComputer.of( //
@@ -1839,11 +1847,11 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Variance of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .returnType("Variance of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))//
         .impl(MathFunctions::varianceImpl) //
         .build();
 
-    private static Computer varianceImpl(final List<Computer> args) {
+    private static Computer varianceImpl(final Arguments<Computer> args) {
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var floatArgs = args.stream() //
                 .map(c -> toFloat(c).compute(ctx)) //
@@ -1880,7 +1888,7 @@ public final class MathFunctions {
         .impl(MathFunctions::stddevImpl) //
         .build();
 
-    private static Computer stddevImpl(final List<Computer> args) {
+    private static Computer stddevImpl(final Arguments<Computer> args) {
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var floatArgs = args.stream() //
                 .map(c -> toFloat(c).compute(ctx)) //
@@ -1929,10 +1937,10 @@ public final class MathFunctions {
         .impl(MathFunctions::binomialImpl) //
         .build();
 
-    private static Computer binomialImpl(final List<Computer> args) {
+    private static Computer binomialImpl(final Arguments<Computer> args) {
         ToLongFunction<EvaluationContext> value = ctx -> {
-            long n = toInteger(args.get(0)).compute(ctx);
-            long r = toInteger(args.get(1)).compute(ctx);
+            long n = toInteger(args.getArgument("n").getValue()).compute(ctx);
+            long r = toInteger(args.getArgument("r").getValue()).compute(ctx);
 
             // 0c0 needs special handling
             if (n == 0 && r == 0) {
@@ -2011,16 +2019,21 @@ public final class MathFunctions {
         .impl(MathFunctions::normalImpl) //
         .build();
 
-    private static Computer normalImpl(final List<Computer> args) {
+    private static Computer normalImpl(final Arguments<Computer> args) {
         return FloatComputer.of(ctx -> {
-            var value = toFloat(args.get(0)).compute(ctx);
-            var mean = toFloat(args.get(1)).compute(ctx);
-            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(ctx) : 1.0;
+
+            var standardDeviationComputer = args.getArgument("standard_deviation").map(Computer::toFloat);
+
+            var standardDeviation =
+                standardDeviationComputer.isOk() ? standardDeviationComputer.getValue().compute(ctx) : 1.0;
 
             if (isNearZero(standardDeviation) || standardDeviation < 0) {
                 ctx.addWarning("normal returned NaN because standard deviation <= 0");
                 return Float.NaN;
             }
+
+            var value = toFloat(args.getArgument("x").getValue()).compute(ctx);
+            var mean = toFloat(args.getArgument("mean").getValue()).compute(ctx);
 
             return Math.exp(-Math.pow(value - mean, 2) / (2 * Math.pow(standardDeviation, 2)))
                 / (standardDeviation * Math.sqrt(2 * Math.PI));
@@ -2072,16 +2085,20 @@ public final class MathFunctions {
         .impl(MathFunctions::errorFunctionImpl) //
         .build();
 
-    private static Computer errorFunctionImpl(final List<Computer> args) {
+    private static Computer errorFunctionImpl(final Arguments<Computer> args) {
         return FloatComputer.of(ctx -> {
-            var value = toFloat(args.get(0)).compute(ctx);
-            var mean = toFloat(args.get(1)).compute(ctx);
-            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(ctx) : (1.0 / Math.sqrt(2));
+            var standardDeviationComputer = args.getArgument("standard_deviation").map(Computer::toFloat);
+
+            var standardDeviation =
+                standardDeviationComputer.isOk() ? standardDeviationComputer.getValue().compute(ctx) : 1.0;
 
             if (isNearZero(standardDeviation) || standardDeviation < 0) {
                 ctx.addWarning("error_function returned NaN because standard deviation <= 0");
                 return Float.NaN;
             }
+
+            var value = toFloat(args.getArgument("x").getValue()).compute(ctx);
+            var mean = toFloat(args.getArgument("mean").getValue()).compute(ctx);
 
             double scaledValue = (value - mean) / (standardDeviation * Math.sqrt(2));
             return erf(scaledValue);
@@ -2128,12 +2145,12 @@ public final class MathFunctions {
         .keywords("NaN") //
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isFloatOrOpt())) //
-        .returnType("`TRUE` if x is `NaN`, `FALSE` otherwise", RETURN_BOOLEAN, args -> BOOLEAN) //
+        .returnType("`TRUE` if x is `NaN`, `FALSE` otherwise", RETURN_BOOLEAN, args -> BOOLEAN)//
         .impl(MathFunctions::isNanImpl) //
         .build();
 
-    private static Computer isNanImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer isNanImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return BooleanComputer.of(ctx -> !c.isMissing(ctx) && Double.isNaN(c.compute(ctx)), ctx -> false);
     }
 
@@ -2153,12 +2170,12 @@ public final class MathFunctions {
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isFloatOrOpt())) //
         .returnType("x if x is not `NaN`, `MISSING` otherwise", RETURN_INTEGER_FLOAT_MISSING,
-            args -> FLOAT(anyOptional(args))) //
+            args -> FLOAT(anyOptional(args)))//
         .impl(MathFunctions::nanToMissingImpl) //
         .build();
 
-    private static Computer nanToMissingImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    private static Computer nanToMissingImpl(final Arguments<Computer> args) {
+        var c = toFloat(args.getArgument("x").getValue());
         return FloatComputer.of( //
             c::compute, //
             ctx -> c.isMissing(ctx) || Double.isNaN(c.compute(ctx)) //
@@ -2196,16 +2213,16 @@ public final class MathFunctions {
      * @return
      */
     private static IntBinaryOperator nanPropagatingStreamExtremumReducer(final ExtremumType extremum,
-        final Double[] values) {
+        final List<Double> values) {
         return (a, b) -> {
-            if (Double.isNaN(values[a])) {
+            if (Double.isNaN(values.get(a))) {
                 return a;
-            } else if (Double.isNaN(values[b])) {
+            } else if (Double.isNaN(values.get(b))) {
                 return b;
             } else if (extremum == ExtremumType.MAXIMUM) {
-                return values[a] >= values[b] ? a : b;
+                return values.get(a) >= values.get(b) ? a : b;
             } else {
-                return values[a] <= values[b] ? a : b;
+                return values.get(a) <= values.get(b) ? a : b;
             }
         };
     }
@@ -2219,12 +2236,12 @@ public final class MathFunctions {
      * @param values
      * @return
      */
-    private static IntBinaryOperator streamExtremumReducer(final ExtremumType extremum, final Long[] values) {
+    private static IntBinaryOperator streamExtremumReducer(final ExtremumType extremum, final List<Long> values) {
         return (a, b) -> {
             if (extremum == ExtremumType.MAXIMUM) {
-                return values[a] >= values[b] ? a : b;
+                return values.get(a) >= values.get(b) ? a : b;
             } else {
-                return values[a] <= values[b] ? a : b;
+                return values.get(a) <= values.get(b) ? a : b;
             }
         };
     }

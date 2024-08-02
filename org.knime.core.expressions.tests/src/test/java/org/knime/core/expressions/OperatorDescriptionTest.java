@@ -51,7 +51,6 @@ package org.knime.core.expressions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.knime.core.expressions.OperatorDescription.Argument.matchSignature;
 
 import java.util.List;
 import java.util.Map;
@@ -74,88 +73,88 @@ final class OperatorDescriptionTest {
 
     @Test
     void testMatchWithAllPositionalArguments() {
-        var result = matchSignature( //
+        var result = Arguments.matchSignature( //
             List.of(ARG_1, ARG_2), //
-            new Arguments<>(List.of("value1", "value2"), Map.of()) //
+            List.of("value1", "value2"), //
+            Map.of() //
         );
 
-        assertTrue(result.isPresent(), "Expected result to be present");
-        assertEquals("value1", result.get().get("arg1"), "Expected 'arg1' to be 'value1'");
-        assertEquals("value2", result.get().get("arg2"), "Expected 'arg2' to be 'value2'");
+        assertTrue(result.isOk(), "Expected result to be present");
+        assertEquals("value1", result.getValue().getArgument("arg1").getValue(), "Expected 'arg1' to be 'value1'");
+        assertEquals("value2", result.getValue().getArgument("arg2").getValue(), "Expected 'arg2' to be 'value2'");
     }
 
     @Test
     void testMatchWithAllNamedArguments() {
-        var result = matchSignature( //
+        var result = Arguments.matchSignature( //
             List.of(ARG_1, ARG_2), //
-            new Arguments<>(List.of(), Map.of("arg1", "value1", "arg2", "value2")) //
+            List.of(), Map.of("arg1", "value1", "arg2", "value2") //
         );
 
-        assertTrue(result.isPresent(), "Expected result to be present");
-        assertEquals("value1", result.get().get("arg1"), "Expected 'arg1' to be 'value1'");
-        assertEquals("value2", result.get().get("arg2"), "Expected 'arg2' to be 'value2'");
+        assertTrue(result.isOk(), "Expected result to be present");
+        assertEquals("value1", result.getValue().getArgument("arg1").getValue(), "Expected 'arg1' to be 'value1'");
+        assertEquals("value2", result.getValue().getArgument("arg2").getValue(), "Expected 'arg2' to be 'value2'");
     }
 
     @Test
     void testMatchWithMixedArguments() {
-        var result = matchSignature( //
+        var result = Arguments.matchSignature( //
             List.of(ARG_1, ARG_2), //
-            new Arguments<>(List.of("value1"), Map.of("arg2", "value2")) //
+            List.of("value1"), Map.of("arg2", "value2") //
         );
 
-        assertTrue(result.isPresent(), "Expected result to be present");
-        assertEquals("value1", result.get().get("arg1"), "Expected 'arg1' to be 'value1'");
-        assertEquals("value2", result.get().get("arg2"), "Expected 'arg2' to be 'value2'");
+        assertTrue(result.isOk(), "Expected result to be present");
+        assertEquals("value1", result.getValue().getArgument("arg1").getValue(), "Expected 'arg1' to be 'value1'");
+        assertEquals("value2", result.getValue().getArgument("arg2").getValue(), "Expected 'arg2' to be 'value2'");
     }
 
     @Test
     void testMatchWithExtraPositionalArguments() {
-        var result = matchSignature( //
+        var result = Arguments.matchSignature( //
             List.of(ARG_1), //
-            new Arguments<>(List.of("value1", "value2"), Map.of()) //
+            List.of("value1", "value2"), Map.of() //
         );
 
-        assertFalse(result.isPresent(), "Expected result to be empty due to extra positional arguments");
+        assertFalse(result.isOk(), "Expected result to be empty due to extra positional arguments");
     }
 
     @Test
     void testMatchWithExtraNamedArguments() {
-        var result = matchSignature( //
+        var result = Arguments.matchSignature( //
             List.of(ARG_1), //
-            new Arguments<>(List.of(), Map.of("arg1", "value1", "arg2", "value2")) //
+            List.of(), Map.of("arg1", "value1", "arg2", "value2") //
         );
 
-        assertFalse(result.isPresent(), "Expected result to be empty due to extra named arguments");
+        assertFalse(result.isOk(), "Expected result to be empty due to extra named arguments");
     }
 
     @Test
     void testMatchWithDuplicateNamedArguments() {
-        var result = matchSignature( //
+        var result = Arguments.matchSignature( //
             List.of(ARG_1), //
-            new Arguments<>(List.of("value1"), Map.of("arg1", "value2")) //
+            List.of("value1"), Map.of("arg1", "value2") //
         );
 
-        assertFalse(result.isPresent(), "Expected result to be empty due to duplicate named arguments");
+        assertFalse(result.isOk(), "Expected result to be empty due to duplicate named arguments");
     }
 
     @Test
     void testMatchWithEmptyArguments() {
-        var result = matchSignature( //
+        var result = Arguments.matchSignature( //
             List.of(ARG_1), //
-            new Arguments<>(List.of(), Map.of()) //
+            List.of(), Map.of() //
         );
 
-        assertTrue(result.isPresent(), "Expected result to be present for empty arguments");
-        assertTrue(result.get().isEmpty(), "Expected result map to be empty for empty arguments");
+        assertTrue(result.isError(), "Expected result to be present for empty arguments");
     }
 
     @Test
     void testMatchWithEmptySignature() {
-        var result = matchSignature( //
+        var result = Arguments.matchSignature( //
             List.of(), //
-            new Arguments<>(List.of("value1"), Map.of("arg1", "value2")) //
+            List.of("value1"), Map.of("arg1", "value2") //
         );
 
-        assertFalse(result.isPresent(), "Expected result to be empty due to empty signature");
+        assertFalse(result.isOk(), "Expected result to be empty due to empty signature");
     }
 }

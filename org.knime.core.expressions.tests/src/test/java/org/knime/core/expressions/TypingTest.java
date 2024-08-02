@@ -90,14 +90,16 @@ import static org.knime.core.expressions.ValueType.STRING;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.functions.ExpressionFunction;
+import org.knime.core.expressions.functions.ExpressionFunctionBuilder;
+import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
 
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
@@ -221,15 +223,12 @@ final class TypingTest {
             // === Function calls
             FUNCTION_CALL(FUN(TestFunctions.INT_TO_FLOAT_FN, INT(1)), FLOAT), //
             FUNCTION_CALL_NO_ARGS(FUN(TestFunctions.FN_WITH_NO_ARGS), MISSING), //
-            FUNCTION_CALL_WITH_TWO_SIGS_1(FUN(TestFunctions.TWO_SIG_FN, INT(1)), FLOAT), //
-            FUNCTION_CALL_WITH_TWO_SIGS_2(FUN(TestFunctions.TWO_SIG_FN, FLOAT(1), STR("bar")), INTEGER), //
 
             // === Aggregation calls
             AGG_CALL_WITH_INT_ARG_I(AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("i")), INTEGER), //
             AGG_CALL_WITH_INT_ARG_OPT_F(AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("f?")), OPT_FLOAT), //
-            AGG_CALL_WITH_NAMED_ARG(
-                AGG(TestAggregations.EXPECT_POS_AND_NAMED_ARG, List.of(INT(1)), Map.of("named_arg_id", FLOAT(2.0))),
-                MISSING), //
+            AGG_CALL_WITH_NAMED_ARG(AGG(TestAggregations.EXPECT_POS_AND_NAMED_ARG, List.of(),
+                Map.of("named_arg_id", FLOAT(2.0))), MISSING), //
 
             // === Complex Expressions
             NESTED_BINARY_OPS(OP(OP(INT(2), PLUS, COL("i?")), MULTIPLY, FLOAT(4.0)), OPT_FLOAT), //
@@ -352,35 +351,46 @@ final class TypingTest {
     }
 
     private static enum TestFunctions implements ExpressionFunction {
-            FN_WITH_NO_ARGS(List.of(), MISSING), //
-            INT_TO_FLOAT_FN(List.of(INTEGER), FLOAT), //
-            TWO_SIG_FN(Map.of(List.of(INTEGER), FLOAT, List.of(FLOAT, STRING), INTEGER)), //
-            FN_WITH_NO_XXXX(List.of(), MISSING); // here to test error message - note similarity to FN_WITH_NO_ARGS
+            FN_WITH_NO_ARGS(Map.of(), MISSING), //
+            INT_TO_FLOAT_FN(Map.of("arg1", INTEGER), FLOAT), //
+            FN_WITH_NO_XXXX(Map.of(), MISSING); // here to test error message - note similarity to FN_WITH_NO_ARGS
 
-        private final Map<List<ValueType>, ValueType> m_argsToOutputs;
 
-        private TestFunctions(final List<ValueType> args, final ValueType output) {
-            this(Map.of(args, output));
-        }
+        private final ReturnResult<ValueType> m_output;
 
-        private TestFunctions(final Map<List<ValueType>, ValueType> argsToOutput) {
-            m_argsToOutputs = argsToOutput;
+        private final OperatorDescription m_description;
+
+        private final List<Argument> m_expectedSignature;
+
+        private TestFunctions(final Map<String, ValueType> args, final ValueType output) {
+
+            m_output = ReturnResult.success(output);
+
+            m_expectedSignature = args.entrySet().stream() //
+                .map(e -> Argument.fromArg( //
+                    new ExpressionFunctionBuilder.Arg(e.getKey(), "", ExpressionFunctionBuilder.hasType(e.getValue()),
+                        ArgKind.REQUIRED))) //
+                .toList();
+            m_description = new OperatorDescription(this.name(), "Test function", m_expectedSignature, "Some return type",
+                "Some return description", List.of(), "Test category", OperatorDescription.FUNCTION_ENTRY_TYPE);
         }
 
         @Override
-        public Optional<ValueType> returnType(final List<ValueType> argTypes) {
-            return Optional.ofNullable(m_argsToOutputs.get(argTypes));
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
+
+            var typeCheck = Arguments.matchTypes(m_expectedSignature, argTypes);
+            return typeCheck.isOk() ? m_output : ReturnResult.failure("Invalid arguments" + typeCheck.getErrorMessage());
         }
 
         @Override
-        public Computer apply(final List<Computer> args) {
+        public Computer apply(final Arguments<Computer> args) {
             throw new IllegalStateException("Should not be called during type inferrence");
         }
 
         @Override
         public OperatorDescription description() {
-            return new OperatorDescription(this.name(), "Test function", List.of(), "Some return type",
-                "Some return description", List.of(), "Test category", OperatorDescription.FUNCTION_ENTRY_TYPE);
+
+            return m_description;
         }
     }
 }
