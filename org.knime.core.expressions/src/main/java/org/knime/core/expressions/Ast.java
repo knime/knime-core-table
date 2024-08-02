@@ -134,6 +134,8 @@ public sealed interface Ast
      */
     String toExpression();
 
+
+
     /**
      * Call the appropriate visit function of the given visitor.
      *
@@ -380,6 +382,7 @@ public sealed interface Ast
      * Create a new {@link ColumnAccess} for the given column name and data.
      *
      * @param name the column name
+     * @param offset
      * @param data
      * @return the node
      */
@@ -496,8 +499,7 @@ public sealed interface Ast
 
     /**
      * Create a new {@link FunctionCall} with the given arguments and with no data.
-     *
-     * @param name the name of the function
+     * @param function the function
      * @param args the arguments
      * @return the node
      */
@@ -508,7 +510,7 @@ public sealed interface Ast
     /**
      * Create a new {@link FunctionCall} with the given arguments and with the given data.
      *
-     * @param name the name of the function
+     * @param function the function
      * @param args the arguments
      * @param data
      * @return the node
@@ -521,7 +523,7 @@ public sealed interface Ast
     /**
      * Create a new {@link AggregationCall} with the given arguments and with no data.
      *
-     * @param name the name of the aggregation
+     * @param aggregation the aggregation
      * @param args the arguments
      * @return the node
      */
@@ -532,7 +534,7 @@ public sealed interface Ast
     /**
      * Create a new {@link AggregationCall} with the given arguments and with the given data.
      *
-     * @param name the name of the aggregation
+     * @param aggregation the aggregation
      * @param args the arguments
      * @param data
      * @return the node
@@ -1004,8 +1006,20 @@ public sealed interface Ast
 
         @Override
         public List<Ast> children() {
-            return args.asList();
+            return args.toList();
         }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+            return this.toString().equals(other.toString());
+        }
+
     }
 
     /**
@@ -1029,7 +1043,18 @@ public sealed interface Ast
 
         @Override
         public List<Ast> children() {
-            return new ArrayList<>(args.asList());
+            return args.map(Ast.class::cast).toList();
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+            return this.toString().equals(other.toString());
         }
     }
 }

@@ -186,7 +186,7 @@ public class AggregationBuilder {
         }
 
         @Override
-        public ReturnResult returnType(final Arguments<ConstantAst> arguments,
+        public ReturnResult<ValueType> returnType(final Arguments<ConstantAst> arguments,
             final Function<String, ReturnResult<ValueType>> columnType) {
 
             return m_returnTypeMapping.returnType(arguments, columnType);

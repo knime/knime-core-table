@@ -161,9 +161,22 @@ public final class AstTestUtils {
         return FUN(name, List.of(args), Map.of());
     }
 
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @return a {@link Ast.FunctionCall}
+     */
     public static Ast.FunctionCall FUN(final ExpressionFunction name, final List<Ast> positionalArgs,
         final Map<String, Ast> namedArgs) { // NOSONAR - name useful for visual clarity
-        return Ast.functionCall(name, new Arguments<Ast>(positionalArgs, namedArgs));
+        var args = Arguments.matchSignature(name.description().arguments(), positionalArgs, namedArgs);
+
+        if (args.isError()) {
+            throw new IllegalArgumentException(args.getErrorMessage() + " for function " + name.name()
+                + " with arguments " + positionalArgs + " and " + namedArgs + " expected "
+                + name.description().arguments());
+        }
+        return Ast.functionCall(name,args.getValue() );
     }
 
     /**
@@ -183,6 +196,7 @@ public final class AstTestUtils {
      */
     public static Ast.AggregationCall AGG(final ColumnAggregation name, final List<ConstantAst> positionalArgs,
         final Map<String, ConstantAst> namedArgs) { // NOSONAR - name useful for visual clarity
-        return Ast.aggregationCall(name, new Arguments<>(positionalArgs, namedArgs));
+        var args = Arguments.matchSignature(name.description().arguments(), positionalArgs, namedArgs);
+        return Ast.aggregationCall(name,args.isOk() ? args.getValue() : Arguments.empty());
     }
 }

@@ -60,6 +60,7 @@ import java.util.function.Supplier;
  * @author David Hickey, TNG Technology Consulting GmbH
  * @param <T>
  */
+@SuppressWarnings("rawtypes")
 public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResult.Failure {
 
     /**
@@ -142,6 +143,13 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
     T orElseGet(Function<String, ? extends T> other);
 
     /**
+     * @param exceptionSupplier
+     * @return the value
+     *
+     */
+    T orElseThrow(Function<String, ? extends RuntimeException> exceptionSupplier);
+
+    /**
      * Return result that contains a return value. Use {@link ReturnResult#success} to create a new {@link Success}.
      *
      * @param <T>
@@ -191,6 +199,11 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
 
         @Override
         public T orElseGet(final Function<String, ? extends T> other) {
+            return getValue();
+        }
+
+        @Override
+        public T orElseThrow(final Function<String, ? extends RuntimeException> exceptionSupplier) {
             return getValue();
         }
     }
@@ -246,6 +259,11 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
         @Override
         public T orElseGet(final Function<String, ? extends T> other) {
             return other.apply(m_errorMessage);
+        }
+
+        @Override
+        public T orElseThrow(final Function<String, ? extends RuntimeException> exceptionSupplier) {
+            throw exceptionSupplier.apply(m_errorMessage);
         }
     }
 

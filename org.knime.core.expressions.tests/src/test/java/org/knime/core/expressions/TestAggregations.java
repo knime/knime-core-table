@@ -58,6 +58,7 @@ import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.aggregations.ColumnAggregation;
 
 /**
@@ -69,11 +70,20 @@ enum TestAggregations implements ColumnAggregation {
         /** Requires column name as arg and return 42 with the same type (must be numeric) */
         RETURN_42_WITH_COL_TYPE( //
             (args, columnType) -> {
-                if (args.positionalArguments().size() == 1 && args.namedArguments().size() == 0
-                    && args.positionalArguments().get(0) instanceof Ast.StringConstant colName) {
-                    return columnType.apply(colName.value()).filter(ValueType::isNumericOrOpt, "RETURN_42_WITH_COL_TYPE not numeric");
+                var columnArg = args.getArgument("column");
+
+                if (columnArg.isError()) {
+                    return ReturnResult
+                        .failure("No column name provided: " + columnArg.getErrorMessage() + ". " + args);
                 }
+
+                if (columnArg.getValue() instanceof Ast.StringConstant colName) {
+                    return columnType.apply(colName.value()).filter(ValueType::isNumericOrOpt,
+                        "RETURN_42_WITH_COL_TYPE not numeric");
+                }
+
                 return ReturnResult.failure("Invalid arguments to aggregation RETURN_42_WITH_COL_TYPE");
+
             }, //
             call -> {
                 if (ValueType.INTEGER.equals(Typing.getType(call).baseType())) {
@@ -83,25 +93,29 @@ enum TestAggregations implements ColumnAggregation {
                 } else {
                     return Optional.empty();
                 }
-            } //
+            }, //
+            List.of(new Argument("column", "STRING", "")) //
         ), //
         /** Expect to be called like (INTEGER, named_arg_id=FLOAT). Returns MISSING. */
         EXPECT_POS_AND_NAMED_ARG( //
             (args, columnType) -> {
-                if (args.positionalArguments().size() == 1 && args.namedArguments().size() == 1
-                    && args.positionalArguments().get(0) instanceof Ast.IntegerConstant
-                    && args.namedArguments().get("named_arg_id") instanceof Ast.FloatConstant) {
+                var namedArg = args.getArgument("named_arg_id");
 
-                    return ReturnResult.success(ValueType.MISSING);
+                if (namedArg.isError()) {
+                    return ReturnResult.failure("No named argument named_arg_id provided");
                 }
-                return ReturnResult.failure("Invalid arguments to aggregation EXPECT_POS_AND_NAMED_ARG");
+
+                return ReturnResult.success(ValueType.MISSING);
+
             }, //
             call -> {
                 return Optional.of(ctx -> true);
-            } //
+            }, //
+            List.of(new Argument("named_arg_id", "FLOAT", "")) //
         ), //
         /** Exists only to check that error message for unknown aggregation suggests similar aggregation names */
-        RETURN_42_WITH_COL_TXXX((args, columnType) -> ReturnResult.failure("some error"), call -> Optional.empty());
+        RETURN_42_WITH_COL_TXXX((args, columnType) -> ReturnResult.failure("some error"), call -> Optional.empty(),
+            List.of());
 
     public static final Map<String, ColumnAggregation> TEST_AGGREGATIONS =
         TestUtils.enumFinderAsMap(TestAggregations.values(), ColumnAggregation.class);
@@ -113,11 +127,14 @@ enum TestAggregations implements ColumnAggregation {
 
     private final Function<AggregationCall, Optional<Computer>> m_computer;
 
+    private final List<Argument> m_arguments;
+
     private TestAggregations(
         final BiFunction<Arguments<ConstantAst>, Function<String, ReturnResult<ValueType>>, ReturnResult<ValueType>> returnType,
-        final Function<AggregationCall, Optional<Computer>> computer) {
+        final Function<AggregationCall, Optional<Computer>> computer, final List<Argument> arguments) {
         m_returnType = returnType;
         m_computer = computer;
+        m_arguments = arguments;
     }
 
     @Override
@@ -132,7 +149,7 @@ enum TestAggregations implements ColumnAggregation {
 
     @Override
     public OperatorDescription description() {
-        return new OperatorDescription(this.name(), "Test aggregation", List.of(), "Some return type",
+        return new OperatorDescription(this.name(), "Test aggregation", m_arguments, "Some return type",
             "Some return description", List.of(), "Test category", OperatorDescription.FUNCTION_ENTRY_TYPE);
     }
 }
