@@ -226,6 +226,15 @@ The control flow graph $(V,F)$ is "almost a tree":\
 Everything is sequential, with branching only on `APPEND` and `CONCATENATE` nodes.
 An (otherwise) sequential branch may split into multiple parallel `ROWFILTER` nodes and immediately re-join afterwards.
 
+=== filter-split and filter-join
+
+#let filts = $F^or$
+#let filtj = $F^and$
+For convenience, before and after parallel `ROWFILTER` nodes, we can put dummy _filter-split_ $filts$ and filter-join $filtj$ nodes whose only purpose is to split and join control flow edges. With this, control flow (between `APPEND` and `CONCATENATE`) can treated as sequential, that is, one edge going into and out of each node.
+
+
+
+
 == Execution ordering
 
 $D$ and $F$ imply a strict partial order $C$ on nodes, where $C$ is the transitive closure of $D union F$.
@@ -288,16 +297,25 @@ Ignored for the further formalization.
 
 #pagebreak()
 
-== Subgraphs
-Needs definition of execution / control flow dependencies.
+= Subgraphs
 
-Subgraph with single "output node" (one "exec connection", all _out-cols_) can be treated as a _virtual table source_.
+Ideas:
+- Subgraph with single "output node" (one control flow edge, all _out-cols_) can be treated as a _virtual table source_.
+  If additionally there are one or more "input nodes"  (one control flow edge, all _in-cols_), the subgraph can be treated as a single _virtual table operator_.
+  Inside a subgraph _in-cols_ and _out-cols_ are not necessary.
+  These are only interesting when attaching new virtual table operations (slicing or column selection on cursor, merging partially optimized graphs, ...)
+  So we can forget about them when doing modifications (inside) a graph except at the `SOURCE` and `CONSUMER`.
 
-If additionally there are one or more "input nodes" (one "exec connection", all _in-cols_), the subgraph can be treated as a single _virtual table operator_.
+- subgraphs can be replaced by specifying nodes/edges to remove, nodes/edges to add, and mapping for data / control flow crossing into and out of the subgraph.
 
-Inside a subgraph _in-cols_ and _out-cols_ are not necessary.
+- All optimization rules can be expressed as subgraph replacements.
 
-Only interesting when attaching new virtual table operations (slicing or column selection on cursor, merging partially optimized graphs, ...)
+- Branches of `APPEND` can be merged if they are "control-flow compatible" (same `SOURCE`s, `ROWFILTER`s, and `SLICE`s).
+  There may be varying details (additional `MAP`s, different columns used, additional `ROWINDEX`s).
+  We can specify a unification algorithm that produces a single subgraph, such that both "control-flow compatible" branches can be subgraph-replaced with identical copies.
+  These branches can then be merged into a single branch.
+  (And possibly, the `APPEND` is left with only a single branch and can be eliminated.)
+
 
 
 == subgraph replacement
@@ -310,13 +328,35 @@ $G subset F$ with $(u, u') in G$ iff $u in U and u' in U$.
 The _boundary_ $B(U)$ of subgraph $U$ is the set of all
 - inputs $gamma_u^i$ of any node $u in U$ that are produced by nodes $v in.not U$,
 - outputs $delta_u^i$ of any node $u in U$ that are used by nodes $v in.not U$,
-- edges $(u, v) in F$ with $u in U$ and $v in.not U$,
-- edges $(v, u) in F$ with $u in U$ and $v in.not U$.
+- nodes $u in U$ where $(u, v) in F$ or $(v, u) in F$ and $v in.not U$\
+  (nodes that have control flow links from/to the "outside").
 
-Replacement
+Let's require that a subgraph never contains only part of a parallel `ROWFILTER` section.
+
+Replacement $R$
 $
-(V,F) |_((U, G) |-> (U', G'))
+(U, G) scripts(|->)_r (U', G')
 $
+where $r: B(U) -> B(U`)$ maps boundary elements.
+
+Applying $R$ to $(V,F)$:
+
+$
+V |_R &= (V without U) union U' \
+F |_R &= (F without G without F_(|U)) union G' union F_(U'|)
+$
+
+- remove nodes $U$ and edges $G$
+- add nodes $U`$ and edges $G`$
+- replace boundary elements
+
+
+
+
+$
+a eq.triple^(->) b
+$
+
 
 Maybe abbreviated as 
 $
