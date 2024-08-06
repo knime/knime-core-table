@@ -60,7 +60,6 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.fun
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isAnything;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isBoolean;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isBooleanOrOpt;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isInteger;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isIntegerOrOpt;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isString;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isStringOrOpt;
@@ -1083,7 +1082,9 @@ public final class StringFunctions {
                 index, it returns the entire substring after the start index. The
                 start index begins at 1.
 
-                If any of the arguments are `MISSING`, the result is also `MISSING`.
+                If `string` or `start` are `MISSING`, the result is also `MISSING`.
+                If `length` is `MISSING`, it returns the substring from the given
+                `start` to the end of the string.
 
                 **Examples**
                 * `substring("OpenAI", 2, 4)` returns "penA"
@@ -1091,6 +1092,9 @@ public final class StringFunctions {
                   Length is greater than the remaining characters, so returns the rest of the string.
                 * `substring("substring", 5)` returns "tring"\\
                   No length provided, so returns everything after the 5th character
+                * `substring("substring", 4, <MISSING>)` returns "string"\\
+                  If an expression returns `MISSING` for the length parameter,
+                  it will return the substring from the start index to the end of the string.
                 """) //
         .keywords("extract") //
         .category(CATEGORY_EXTRACT_REPLACE.name()) //
@@ -1098,20 +1102,24 @@ public final class StringFunctions {
             arg("string", "Original string", isStringOrOpt()), //
             arg("start", "Start index (inclusive, 1-indexed)", isIntegerOrOpt()), //
             optarg("length", "Length - if unspecified, or bigger than the string, get entire string after the start",
-                isInteger()) //
+                isIntegerOrOpt()) //
         ) //
         .returnType("Extracted substring", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING( args[0].isOptional() || args[1].isOptional() ))//
         .impl(StringFunctions::substrImpl) //
         .build();
 
     private static Computer substrImpl(final List<Computer> args) {
+
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
             int start = (int)toInteger(args.get(1)).compute(ctx);
-            int length = args.size() == 3 //
-                ? (int)toInteger(args.get(2)).compute(ctx) //
-                : (str.length() - start + 1);
+
+            int length = str.length() - start + 1;
+
+            if( args.size() == 3 && !args.get(2).isMissing(ctx) ) {//
+                length = (int)toInteger(args.get(2)).compute(ctx);
+            }
 
             // We do one-indexing in expressions editor
             // Also: clamp indices rather than erroring
@@ -1122,9 +1130,15 @@ public final class StringFunctions {
             );
         };
 
+        Predicate<EvaluationContext> isMissingComputer = ctx -> {
+            var stringMissing = args.get(0).isMissing(ctx);
+            var startMissing = args.get(1).isMissing(ctx);
+            return stringMissing || startMissing;
+        };
+
         return StringComputer.of( //
             value, //
-            anyMissing(args) //
+            isMissingComputer //
         );
     }
 
