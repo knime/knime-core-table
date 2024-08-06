@@ -58,6 +58,7 @@ import static org.knime.core.expressions.ValueType.OPT_INTEGER;
 import static org.knime.core.expressions.ValueType.OPT_STRING;
 import static org.knime.core.expressions.ValueType.STRING;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.arg;
+import static org.knime.core.expressions.functions.FunctionTestBuilder.misInteger;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.misString;
 
 import java.util.List;
@@ -366,8 +367,10 @@ final class StringFunctionTests {
             .typing("STRING + start", List.of(STRING, INTEGER), STRING) //
             .typing("STRING?", List.of(OPT_STRING, INTEGER), OPT_STRING) //
             .typing("STRING + start + len", List.of(STRING, INTEGER, INTEGER), STRING) //
+            .typing("optional length", List.of(STRING, INTEGER, OPT_INTEGER), STRING) //
             .illegalArgs("1 string", List.of(STRING)) //
             .impl("substr", List.of(arg("abcdefg"), arg(2), arg(3)), "bcd") //
+            .impl("length is MISSING",List.of(arg("abcdefg"), arg(0), misInteger()), "abcdefg") //))
             .impl("noop", List.of(arg("abcdefg"), arg(1), arg(100)), "abcdefg") //
             .tests();
     }

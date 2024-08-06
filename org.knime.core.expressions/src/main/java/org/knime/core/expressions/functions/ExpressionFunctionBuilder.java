@@ -103,6 +103,25 @@ public final class ExpressionFunctionBuilder {
     }
 
     /**
+     * Check if a subset of the argument types is optional by name. If the argument is not found in the argument list,
+     * an IllegalArgumentException is thrown.
+     *
+     * @param types the argument types
+     * @param argumentNamesToCheck the names of the arguments to check
+     * @return <code>true</code> if at least one type is optional
+     *
+     **/
+    public static boolean anyOptional(final Arguments<ValueType> types, final String... argumentNamesToCheck) {
+        return argumentNamesToCheck.length > 0 && Arrays.stream(argumentNamesToCheck).map(arg -> {
+            var argToCheck = types.getArgument(arg);
+            if (argToCheck.isError()) {
+                throw new IllegalArgumentException("Argument " + arg + " not found in the argument list.");
+            }
+            return argToCheck.getValue().isOptional();
+        }).anyMatch(b -> b);
+    }
+
+    /**
      * Factory for isMissing argument to computers. Returns an Predicate<EvaluationContext> that returns true iff at
      * least one if the arguments is missing.
      *
