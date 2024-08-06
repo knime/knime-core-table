@@ -60,7 +60,6 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.fun
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isAnything;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isBoolean;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isBooleanOrOpt;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isInteger;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isIntegerOrOpt;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isString;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isStringOrOpt;
@@ -1083,7 +1082,13 @@ public final class StringFunctions {
                 index, it returns the entire substring after the start index. The
                 start index begins at 1.
 
-                If any of the arguments are `MISSING`, the result is also `MISSING`.
+                If `string` is `MISSING`, the result is also `MISSING`.
+
+                If `start` is `MISSING`, the substring starts at the beginning of
+                the string.
+
+                If `length` is `MISSING`, it returns the substring from the given
+                `start` to the end of the string.
 
                 **Examples**
                 * `substring("OpenAI", 2, 4)` returns "penA"
@@ -1091,6 +1096,9 @@ public final class StringFunctions {
                   Length is greater than the remaining characters, so returns the rest of the string.
                 * `substring("substring", 5)` returns "tring"\\
                   No length provided, so returns everything after the 5th character
+                * `substring("substring", 4, <MISSING>)` returns "string"\\
+                  If an expression returns `MISSING` for the length parameter,
+                  it will return the substring from the start index to the end of the string.
                 """) //
         .keywords("extract") //
         .category(CATEGORY_EXTRACT_REPLACE.name()) //
@@ -1098,34 +1106,39 @@ public final class StringFunctions {
             arg("string", "Original string", isStringOrOpt()), //
             arg("start", "Start index (inclusive, 1-indexed)", isIntegerOrOpt()), //
             optarg("length", "Length - if unspecified, or bigger than the string, get entire string after the start",
-                isInteger()) //
+                isIntegerOrOpt()) //
         ) //
-        .returnType("Extracted substring", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("Extracted substring", RETURN_STRING_MISSING, args -> args[0]) //
         .impl(StringFunctions::substrImpl) //
         .build();
 
     private static Computer substrImpl(final List<Computer> args) {
+
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get(0)).compute(ctx);
-            int start = (int)toInteger(args.get(1)).compute(ctx);
-            int length = args.size() == 3 //
-                ? (int)toInteger(args.get(2)).compute(ctx) //
-                : (str.length() - start + 1);
+            int start = args.get(1).isMissing(ctx) ? 1 : (int)toInteger(args.get(1)).compute(ctx);
 
-            // We do one-indexing in expressions editor
-            // Also: clamp indices rather than erroring
-            int clampedStart = Math.min(Math.max(start - 1, 0), str.length());
-            return str.substring( //
-                clampedStart, //
-                Math.max(clampedStart, Math.min(start - 1 + length, str.length())) //
-            );
+            if (start < 1) {
+                ctx.addWarning("The start index is set to 1 because the index must be 1 or higher.");
+                start = 1;
+            }
+
+            int clampedStart = Math.min(start - 1, str.length());
+
+            int length = str.length() - clampedStart;
+
+            if (args.size() == 3 && !args.get(2).isMissing(ctx)) {//
+                length = Math.max(0, (int)toInteger(args.get(2)).compute(ctx));
+            }
+
+            int clampedEnd = Math.min(clampedStart + length, str.length());
+
+            return str.substring(clampedStart, clampedEnd);
         };
 
         return StringComputer.of( //
             value, //
-            anyMissing(args) //
-        );
+            ctx -> args.get(0).isMissing(ctx));
     }
 
     public static final ExpressionFunction FIRST_CHARS = functionBuilder() //
