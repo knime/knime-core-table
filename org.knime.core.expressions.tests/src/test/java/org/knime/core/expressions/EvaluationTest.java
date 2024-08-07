@@ -78,17 +78,15 @@ import static org.knime.core.expressions.TestUtils.COLUMN_ID;
 import static org.knime.core.expressions.TestUtils.COLUMN_NAME;
 import static org.knime.core.expressions.TestUtils.computerResultChecker;
 
-import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -99,6 +97,8 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.functions.ExpressionFunction;
+import org.knime.core.expressions.functions.ExpressionFunctionBuilder;
+import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
 
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
@@ -119,7 +119,8 @@ final class EvaluationTest {
                 .andThen(c -> ReturnResult.fromOptional(c, "var missing").map(TestFlowVariable::type)));
         var result = Evaluation.evaluate( //
             ast, //
-            COLUMN_ID.andThen(COLUMN_NAME) //
+            COLUMN_ID //
+                .andThen(COLUMN_NAME) //
                 .andThen(FIND_TEST_COLUMN) //
                 .andThen(c -> c.map(TestColumn::computer)), //
             TestUtils.FLOW_VAR_NAME.andThen(FIND_TEST_FLOW_VARIABLE).andThen(c -> c.map(TestFlowVariable::computer)), //
@@ -367,7 +368,7 @@ final class EvaluationTest {
 
             // === Function and Aggregation calls
 
-            FN_PLUS_100(FUN(TestFunctions.plus_100_fn, INT(10)), 110), //
+            FN_PLUS_100(FUN(TestFunctions.PLUS_100_FN, INT(10)), 110), //
             AGG_RETURN_42_WITH_COL_TYPE_I(AstTestUtils.AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("INTEGER")),
                 42), //
             AGG_RETURN_42_WITH_COL_TYPE_F(AstTestUtils.AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("FLOAT")),
@@ -487,43 +488,41 @@ final class EvaluationTest {
     }
 
     private static enum TestFunctions implements ExpressionFunction {
-            plus_100_fn(List.of(ValueType.INTEGER), ValueType.INTEGER, c -> IntegerComputer
+            PLUS_100_FN(List.of(ValueType.INTEGER), ValueType.INTEGER, c -> IntegerComputer
                 .of(ctx -> ((IntegerComputer)c.getArgument("arg0").getValue()).compute(ctx) + 100, ctx -> false)), //
         ;
 
-        private final Map<Arguments<ValueType>, ReturnResult<ValueType>> m_argsToOutputs;
+        private final Arguments<ValueType> m_validArgs;
+
+        private final ValueType m_returnType;
 
         private final Function<Arguments<Computer>, Computer> m_apply;
 
-        private final List<Argument> m_args;
+        private final List<Argument> m_argSignature;
 
         private boolean m_descriptionCalled = false;
 
-        private TestFunctions(final List<ValueType> args, final ValueType output,
+        private TestFunctions(final List<ValueType> args, final ValueType returnType,
             final Function<Arguments<Computer>, Computer> apply) {
 
             m_apply = apply;
+            m_returnType = returnType;
 
-            AtomicInteger index = new AtomicInteger(0);
+            m_argSignature = IntStream.range(0, args.size()).mapToObj(i -> new Argument("arg" + i, "INTEGER", "",
+                ArgKind.REQUIRED, ExpressionFunctionBuilder.hasType(args.get(i)))).collect(Collectors.toList());
 
-            m_args = args.stream().map(arg -> new Argument("arg" + index.getAndIncrement(), "INTEGER", ""))
-                .collect(Collectors.toList());
-
-            index.set(0);
-            var namedArguments = new Arguments<ValueType>(
-                args.stream().map(arg -> new AbstractMap.SimpleEntry<>("arg" + index.getAndIncrement(), arg))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a,
+            m_validArgs = new Arguments<ValueType>( //
+                IntStream.range(0, args.size()).boxed() //
+                    .collect(Collectors.toMap(i -> "arg" + i, args::get, (a, b) -> a, //
                         LinkedHashMap<String, ValueType>::new)));
-
-            m_argsToOutputs = Map.of(namedArguments, ReturnResult.success(output));
         }
 
         @Override
         public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
-            var correctArgs = m_argsToOutputs.get(argTypes);
-            return correctArgs == null
-                ? ReturnResult.failure("Arg (" + argTypes + ") not found in (" + m_argsToOutputs.keySet() + ").")
-                : correctArgs;
+
+            return m_validArgs.equals(argTypes) //
+                ? ReturnResult.success(m_returnType)
+                : ReturnResult.failure("Arg (" + argTypes + ") not valid. Valid Arguments: (" + m_validArgs + ").");
         }
 
         @Override
@@ -537,7 +536,7 @@ final class EvaluationTest {
                 throw new IllegalStateException("Should not be called during function evaluation");
             }
             m_descriptionCalled = true;
-            return new OperatorDescription(this.name(), "Test function", m_args, "Some return type",
+            return new OperatorDescription(this.name(), "Test function", m_argSignature, "Some return type",
                 "Some return description", List.of(), "Test category", OperatorDescription.FUNCTION_ENTRY_TYPE);
         }
     }

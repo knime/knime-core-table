@@ -49,7 +49,6 @@
 package org.knime.core.expressions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -71,41 +70,38 @@ final class OperatorDescriptionTest {
 
     private static final Argument ARG_2 = new OperatorDescription.Argument("arg2", "", "");
 
+    private static final void assertDefaultArguments(final ReturnResult<Arguments<String>> args) {
+        assertTrue(args.isOk(), "Expected result to be present");
+        assertEquals("value1", args.getValue().getArgument("arg1").getValue(),
+            "Expected value of 'arg1' to be 'value1', but got '" + args.getValue().getArgument("arg1").getValue()
+                + "'");
+        assertEquals("value2", args.getValue().getArgument("arg2").getValue(),
+            "Expected value of 'arg2' to be 'value2', but got '" + args.getValue().getArgument("arg2").getValue());
+    }
+
     @Test
     void testMatchWithAllPositionalArguments() {
-        var result = Arguments.matchSignature( //
+        assertDefaultArguments( Arguments.matchSignature( //
             List.of(ARG_1, ARG_2), //
             List.of("value1", "value2"), //
             Map.of() //
-        );
-
-        assertTrue(result.isOk(), "Expected result to be present");
-        assertEquals("value1", result.getValue().getArgument("arg1").getValue(), "Expected 'arg1' to be 'value1'");
-        assertEquals("value2", result.getValue().getArgument("arg2").getValue(), "Expected 'arg2' to be 'value2'");
+        ));
     }
 
     @Test
     void testMatchWithAllNamedArguments() {
-        var result = Arguments.matchSignature( //
+        assertDefaultArguments(Arguments.matchSignature( //
             List.of(ARG_1, ARG_2), //
             List.of(), Map.of("arg1", "value1", "arg2", "value2") //
-        );
-
-        assertTrue(result.isOk(), "Expected result to be present");
-        assertEquals("value1", result.getValue().getArgument("arg1").getValue(), "Expected 'arg1' to be 'value1'");
-        assertEquals("value2", result.getValue().getArgument("arg2").getValue(), "Expected 'arg2' to be 'value2'");
+        ));
     }
 
     @Test
     void testMatchWithMixedArguments() {
-        var result = Arguments.matchSignature( //
+        assertDefaultArguments(Arguments.matchSignature( //
             List.of(ARG_1, ARG_2), //
             List.of("value1"), Map.of("arg2", "value2") //
-        );
-
-        assertTrue(result.isOk(), "Expected result to be present");
-        assertEquals("value1", result.getValue().getArgument("arg1").getValue(), "Expected 'arg1' to be 'value1'");
-        assertEquals("value2", result.getValue().getArgument("arg2").getValue(), "Expected 'arg2' to be 'value2'");
+        ));
     }
 
     @Test
@@ -115,7 +111,7 @@ final class OperatorDescriptionTest {
             List.of("value1", "value2"), Map.of() //
         );
 
-        assertFalse(result.isOk(), "Expected result to be empty due to extra positional arguments");
+        assertTrue(result.isError(), "Expected result to be empty due to extra positional arguments");
     }
 
     @Test
@@ -125,7 +121,7 @@ final class OperatorDescriptionTest {
             List.of(), Map.of("arg1", "value1", "arg2", "value2") //
         );
 
-        assertFalse(result.isOk(), "Expected result to be empty due to extra named arguments");
+        assertTrue(result.isError(), "Expected result to be empty due to extra named arguments");
     }
 
     @Test
@@ -135,7 +131,7 @@ final class OperatorDescriptionTest {
             List.of("value1"), Map.of("arg1", "value2") //
         );
 
-        assertFalse(result.isOk(), "Expected result to be empty due to duplicate named arguments");
+        assertTrue(result.isError(), "Expected result to be empty due to duplicate named arguments");
     }
 
     @Test
@@ -155,6 +151,6 @@ final class OperatorDescriptionTest {
             List.of("value1"), Map.of("arg1", "value2") //
         );
 
-        assertFalse(result.isOk(), "Expected result to be empty due to empty signature");
+        assertTrue(result.isError(), "Expected result to be empty due to empty signature");
     }
 }

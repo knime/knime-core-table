@@ -50,7 +50,6 @@ package org.knime.core.expressions.aggregations;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -64,6 +63,7 @@ import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.TestUtils;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -114,12 +114,11 @@ public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
         BiFunction<Ast.ConstantAst, Map<String, Ast.ConstantAst>, Arguments<Ast.ConstantAst>> makeArgs =
             (final Ast.ConstantAst columnAst,
                 final Map<String, Ast.ConstantAst> additionalArgs) -> new Arguments<ConstantAst>(
-                    new LinkedHashMap<String, Ast.ConstantAst>() {
-                        {
-                            put("column", columnAst);
-                            additionalArgs.forEach(this::put);
-                        }
-                    });
+                    TestUtils.LinkedHashMapBuilder.<String, Ast.ConstantAst> create() //
+                        .put("column", columnAst) //
+                        .putAll(additionalArgs) //
+                        .build() //
+            );
 
         Function<String, Arguments<Ast.ConstantAst>> defaultArgs = (final String columnType) -> makeArgs
             .apply(Ast.stringConstant(columnType), Map.of("ignore_nan", Ast.booleanConstant(false)));

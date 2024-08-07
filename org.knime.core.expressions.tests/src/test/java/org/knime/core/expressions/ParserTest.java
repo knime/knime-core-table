@@ -79,7 +79,6 @@ import static org.knime.core.expressions.AstTestUtils.ROW_ID;
 import static org.knime.core.expressions.AstTestUtils.ROW_INDEX;
 import static org.knime.core.expressions.AstTestUtils.STR;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -262,32 +261,24 @@ final class ParserTest {
             // Function calls
             FUNC_SINGLE_ARG("sin(1)", FUN(MathFunctions.SIN, INT(1))), //
             FUNC_TRAILING_COMMA("max(1,2,)", FUN(MathFunctions.MAX, INT(1), INT(2))), //
-            FUNC_COLUMN_ACCESS_PARM("sin($[\"col\"])",
-                FUN(MathFunctions.SIN, COL("col"))), //
+            FUNC_COLUMN_ACCESS_PARM("sin($[\"col\"])", FUN(MathFunctions.SIN, COL("col"))), //
             FUNC_NESTED_EXPR("sin(1 + 2)", FUN(MathFunctions.SIN, OP(INT(1), PLUS, INT(2)))), //
             FUNC_NESTED_FUNC("sin(cos(1))", FUN(MathFunctions.SIN, FUN(MathFunctions.COS, INT(1)))), //
 
-
             // Aggregation functions
-            COL_AGG("COLUMN_AVERAGE(\"column name\")",
-                AGG(BuiltInAggregations.AVERAGE, STR("column name"))), //
+            COL_AGG("COLUMN_AVERAGE(\"column name\")", AGG(BuiltInAggregations.AVERAGE, STR("column name"))), //
             COL_AGG_NAMED_ARG("COLUMN_AVERAGE(\"column name\", ignore_nan=TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_nan", BOOL(true)))), //
-            COL_AGG_NAMED_ARG_WITH_WHITESPACE(
-                "COLUMN_AVERAGE(\"column name\", ignore_nan =TRUE)",
+            COL_AGG_NAMED_ARG_WITH_WHITESPACE("COLUMN_AVERAGE(\"column name\", ignore_nan =TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_nan", BOOL(true)))), //
-            COL_AGG_ONLY_NAMED_ARGS(
-                "COLUMN_AVERAGE(column=\"column name\", ignore_nan=TRUE)",
+            COL_AGG_ONLY_NAMED_ARGS("COLUMN_AVERAGE(column=\"column name\", ignore_nan=TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(),
-                    new LinkedHashMap<>() {  // Be aware that insertion order is important here
-                        {
-                            put("column", STR("column name"));
-                            put("ignore_nan", BOOL(true));
-                        }
-                    })),
-            COL_AGG_ONLY_POS_ARGS(
-                "COLUMN_AVERAGE(\"column name\", TRUE)",
-                AGG(BuiltInAggregations.AVERAGE,  STR("column name"),  BOOL(true))), //
+                    TestUtils.LinkedHashMapBuilder.<String,Ast.ConstantAst> create()  //
+                        .put("column", STR("column name")) //
+                        .put("ignore_nan", BOOL(true)) //
+                        .build())), //
+            COL_AGG_ONLY_POS_ARGS("COLUMN_AVERAGE(\"column name\", TRUE)",
+                AGG(BuiltInAggregations.AVERAGE, STR("column name"), BOOL(true))), //
 
             // Special stuff
 
@@ -320,7 +311,7 @@ final class ParserTest {
             COMPLEX_3("round(average($age,$age), 0) >= 30 and lower_case($department) = \"marketing\"", //
                 OP( //
                     OP( //
-                        FUN(MathFunctions.ROUNDHALFEVEN, FUN(MathFunctions.AVERAGE, COL("age"),COL("age")), INT(0)), //
+                        FUN(MathFunctions.ROUNDHALFEVEN, FUN(MathFunctions.AVERAGE, COL("age"), COL("age")), INT(0)), //
                         GREATER_THAN_EQUAL, //
                         INT(30) //
                     ), //
@@ -435,7 +426,7 @@ final class ParserTest {
     void testNewExpression() throws ExpressionCompileException {
         // A new expression with all the AST node types
         var expr = "10 + if(FALSE,-atan2(-20,2.5), parse_float('4' + $var + $$context))";
-            //      0    ^    1    ^    2    ^    3    ^    4    ^    5    ^
+        //      0    ^    1    ^    2    ^    3    ^    4    ^    5    ^
 
         var ast = Parser.parse(expr);
 

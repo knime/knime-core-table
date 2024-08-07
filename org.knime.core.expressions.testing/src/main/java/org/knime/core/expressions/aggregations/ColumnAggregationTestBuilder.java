@@ -67,7 +67,7 @@ public final class ColumnAggregationTestBuilder {
             var arguments =
                 Arguments.matchSignature(m_aggregation.description().arguments(), positionalArguments, namedArguments);
             if (arguments.isError()) {
-                throw new AssertionError("should match signature: "+arguments.getErrorMessage());
+                throw new AssertionError("should match signature: " + arguments.getErrorMessage());
             }
 
             var returnType = m_aggregation.returnType(arguments.getValue(), this::columnType);

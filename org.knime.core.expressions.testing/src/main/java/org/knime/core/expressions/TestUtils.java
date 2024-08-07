@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -226,5 +227,55 @@ public final class TestUtils {
             assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
             assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML), computerDesc + " should eval correctly");
         };
+    }
+
+    /**
+     *  create LinkedHashMaps on the fly
+     */
+    public static class LinkedHashMapBuilder<K, V> {
+        private final LinkedHashMap<K, V> map = new LinkedHashMap<>();
+
+        /**
+         * @param key
+         * @param value
+         * @return this builder
+         */
+        public LinkedHashMapBuilder<K, V> put(final K key, final V value) {
+            map.put(key, value);
+            return this;
+        }
+
+            /**
+             * @param key
+             * @param value
+             * @return this builder
+             */
+        public LinkedHashMapBuilder<K, V> putAll(final Map<K, V> mapToInsert) {
+                map.putAll(mapToInsert);
+                return this;
+        }
+
+        /**
+         * @return the built map
+         */
+        public LinkedHashMap<K, V> build() {
+            return map;
+        }
+
+        /**
+         * start building a new LinkedHashMap. Specify types like this:
+         * <pre>{@code
+         * var map = LinkedHashMapBuilder.<String, Integer>create()
+         *    .put("foo", 1)
+         *    .put("bar", 2)
+         *    .build();
+         * </pre>
+         * @param <K>
+         * @param <V>
+         * @return
+         */
+        public static <K, V> LinkedHashMapBuilder<K, V> create() {
+            return new LinkedHashMapBuilder<>();
+        }
     }
 }

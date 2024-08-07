@@ -439,7 +439,6 @@ public final class FunctionTestBuilder {
      * @param expected
      * @return <code>this</code> for chaining
      */
-
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final String expected) {
         return impl(name, positionalArgs, namedArgs, c -> {

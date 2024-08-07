@@ -169,14 +169,13 @@ public final class AstTestUtils {
      */
     public static Ast.FunctionCall FUN(final ExpressionFunction name, final List<Ast> positionalArgs,
         final Map<String, Ast> namedArgs) { // NOSONAR - name useful for visual clarity
-        var args = Arguments.matchSignature(name.description().arguments(), positionalArgs, namedArgs);
 
-        if (args.isError()) {
-            throw new IllegalArgumentException(args.getErrorMessage() + " for function " + name.name()
-                + " with arguments " + positionalArgs + " and " + namedArgs + " expected "
-                + name.description().arguments());
-        }
-        return Ast.functionCall(name,args.getValue() );
+        var args = Arguments.matchSignature(name.description().arguments(), positionalArgs, namedArgs) //
+            .orElseThrow(
+                cause -> new IllegalArgumentException(cause + " for function " + name.name() + " with arguments "
+                    + positionalArgs + " and " + namedArgs + ". But expected " + name.description().arguments()));
+
+        return Ast.functionCall(name, args);
     }
 
     /**
@@ -196,7 +195,12 @@ public final class AstTestUtils {
      */
     public static Ast.AggregationCall AGG(final ColumnAggregation name, final List<ConstantAst> positionalArgs,
         final Map<String, ConstantAst> namedArgs) { // NOSONAR - name useful for visual clarity
-        var args = Arguments.matchSignature(name.description().arguments(), positionalArgs, namedArgs);
-        return Ast.aggregationCall(name,args.isOk() ? args.getValue() : Arguments.empty());
+
+        var args = Arguments.matchSignature(name.description().arguments(), positionalArgs, namedArgs) //
+            .orElseThrow(
+                cause -> new IllegalArgumentException(cause + " for function " + name.name() + " with arguments "
+                    + positionalArgs + " and " + namedArgs + ". But expected " + name.description().arguments()));
+        ;
+        return Ast.aggregationCall(name, args);
     }
 }
