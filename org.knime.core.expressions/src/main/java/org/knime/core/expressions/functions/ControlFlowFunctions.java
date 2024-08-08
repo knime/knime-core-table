@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions.functions;
 
+import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
@@ -56,7 +57,6 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.arg
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isAnything;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isBoolean;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isOneOfBaseTypes;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.vararg;
 
 import java.util.ArrayList;
@@ -93,10 +93,9 @@ public final class ControlFlowFunctions {
 
     /** Argument identifier */
     private static String CONDITION = "condition_1";
+    private static String TRUE_BRANCH = "value_1";
+    private static String ELSE = "additional_conditions__value_if_all_false";
 
-    private static String VALUE = "value_1";
-
-    private static String ELSE = "additional_conditions_value_if_all_false";
 
     /** The "if*" function */
     public static final ExpressionFunction IF = functionBuilder() //
@@ -134,10 +133,10 @@ public final class ControlFlowFunctions {
         ) //
         .keywords("conditional") //
         .category(CATEGORY.name()) //
-        .args( //
-            arg("condition_1", "Boolean condition. See how to chain multiple conditions in description below.",
+        .args( // We could give the matcher details about the semantical meaning of the arguments improving error messages.
+            arg(CONDITION, "Boolean condition. See how to chain multiple conditions in description below.",
                 isBoolean()), //
-            arg("value_1", "Expression if condition 1 is `TRUE`.", isAnything()), //
+            arg(TRUE_BRANCH, "Expression if condition 1 is `TRUE`.", isAnything()), //
             vararg(ELSE, "Pairs of conditions and related expressions executed when the condition evaluates to `TRUE`. "
                 + "Last argument is the mandatory default (\"else\" case) to be returned when no condition is fulfilled.",
                 isAnything()) //
@@ -149,30 +148,28 @@ public final class ControlFlowFunctions {
 
     private static ReturnResult<ValueType> ifReturnType(final Arguments<ValueType> arguments) {
 
-        var elseIf = arguments.getVariableArgument();
-        if (elseIf.isError() || elseIf.getValue().isEmpty()) {
+        // At this point we already validated the arguments, so we can safely assume that the arguments are present
+        // and the types are correct. Nevertheless, the vararg is not checked for the correct number of arguments.
+        var elseIfArgument = arguments.getVariableArgument();
+        if (elseIfArgument.isError() || elseIfArgument.getValue().isEmpty()) {
             return ReturnResult.failure("if statements have to have at least one else branch");
         }
-
-        if (elseIf.getValue().size() % 2 == 0) {
+        if (elseIfArgument.getValue().size() % 2 == 0) {
             return ReturnResult.failure("Parameter " + ELSE + " has to be [condition,value]_n + else value.");
         }
+        var elseIf = elseIfArgument.getValue();
 
-        var firstBranch = arguments.getArgument("value_1");
-        if (firstBranch.isError()) {
-            return ReturnResult.failure("no value found for the first branch");
-        }
+        var firstBranch = arguments.getArgument("value_1").getValue();
 
         ArrayList<ValueType> branchExpressions = new ArrayList<>();
-        branchExpressions.add(firstBranch.getValue());
+        branchExpressions.add(firstBranch);
 
-        for (int i = 1; i < elseIf.getValue().size() - 1; i += 2) {
-            branchExpressions.add(elseIf.getValue().get(i));
+        for (int i = 1; i < elseIf.size() - 1; i += 2) {
+            branchExpressions.add(elseIf.get(i));
         }
-        branchExpressions.add(elseIf.getValue().get(elseIf.getValue().size() - 1));
+        branchExpressions.add(elseIf.get(elseIf.size() - 1));
 
-        return ReturnResult.fromNullable(calculateReturnTypeFromBranchExpressionValues(branchExpressions),
-            "could not determine return type");
+        return calculateReturnTypeFromBranchExpressionValues(branchExpressions);
 
     }
 
@@ -186,8 +183,8 @@ public final class ControlFlowFunctions {
             return missing -> true;
         }
         if (((BooleanComputer)condition.getValue()).compute(ctx)) {
-            var value = arguments.getArgument(VALUE);
-            return value.isOk() ? arguments.getArgument(VALUE).getValue() : null;
+            var value = arguments.getArgument(TRUE_BRANCH);
+            return value.isOk() ? arguments.getArgument(TRUE_BRANCH).getValue() : null;
         }
 
         var elseIf = arguments.getVariableArgument();
@@ -209,10 +206,9 @@ public final class ControlFlowFunctions {
 
     /** The "switch" function: switch(value, A, exprInCaseA, B, exprInCaseB, ...) */
     /** Argument identifier */
-    private static final String EXPRESSION = "expression";
-
-    private static final String CASE = "case_1";
-
+    private static final String SWITCH_EXPRESSION = "expression";
+    private static final String SWITCH_CASE = "case_1";
+    private static final String SWITCH_VALUE = "value_1";
     private static final String DEFAULT = "value_if_none_matched";
 
     /** The "switch" function: switch(value, A, exprInCaseA, B, exprInCaseB, ...) */
@@ -242,14 +238,13 @@ public final class ControlFlowFunctions {
                 ```
                 """ //
 
-        ) //
+        ) // isOneOfBaseTypes(STRING,BOOLEAN)
         .keywords("conditional") //
         .category(CATEGORY.name()) //
         .args( //
-            arg(EXPRESSION, "Value to switch on. Only accepts string or integer types.",
-                isOneOfBaseTypes(STRING, INTEGER)), //
-            arg(CASE, "Case to check equality against `expression`.", isOneOfBaseTypes(STRING, INTEGER)), //
-            arg(VALUE, "Expression to execute, when `case_1` matches the `expression`.", isAnything()), //
+            arg(SWITCH_EXPRESSION, "Value to switch on. Only accepts string or integer types.", isAnything()), //
+            arg(SWITCH_CASE, "Case to check equality against `expression`.", isAnything()), //
+            arg(SWITCH_VALUE, "Expression to execute, when `case_1` matches the `expression`.", isAnything()), //
             vararg(DEFAULT,
                 "Optional pairs of `case_N` values to check for equality with the `expression` and `value_N` expressions. "
                     + "The last argument can be an optional `value_if_none_matched` expression to be applied as a default when no match is found. "
@@ -264,35 +259,26 @@ public final class ControlFlowFunctions {
     private static ReturnResult<ValueType> switchReturnType(final Arguments<ValueType> arguments) {
         var cases = arguments.getVariableArgument().or(() -> List.of()).getValue();
 
-        var switchValue = arguments.getArgument(EXPRESSION);
+        var switchExpression = arguments.getArgument(SWITCH_EXPRESSION).getValue();
 
-        // FIXME: remove additional error checks?
-        if (switchValue.isError()) {
-            return ReturnResult.failure("switch statements have to have a switch value");
+        if (switchExpression.baseType() != BOOLEAN && switchExpression.baseType() != STRING && switchExpression.baseType() != INTEGER) {
+            return ReturnResult.failure("Switch expression, i.e., the value to switch on, must be "
+                + "of type STRING, BOOLEAN or INTEGER. First argument is of type " + switchExpression.baseType() + ".");
         }
 
-        if (switchValue.getValue().baseType() != STRING && switchValue.getValue().baseType() != INTEGER
-            && switchValue.getValue() != MISSING) {
-            return ReturnResult.failure("switch value has to be of type string or integer");
-        }
         for (int i = 0; i < cases.size() - 1; i += 2) {
             if (cases.get(i) == MISSING) {
                 continue;
             }
-            if (cases.get(i).baseType() != switchValue.getValue().baseType()) {
-                return ReturnResult.failure("case values have to be of the same type as the switch value");
+            if (cases.get(i).baseType() != switchExpression.baseType()) {
+                return ReturnResult.failure("Case and switch expressions must have the same type.");
             }
         }
 
         boolean hasDefaultCase = cases.size() % 2 == 1;
         ArrayList<ValueType> branchExpressions = new ArrayList<>();
 
-        var test = arguments.getArgument(VALUE);
-        if (test.isError()) {
-            return ReturnResult.failure("no value found for the first case");
-        }
-
-        branchExpressions.add(test.getValue());
+        branchExpressions.add(arguments.getArgument(TRUE_BRANCH).getValue());
 
         int defaultIndex = cases.size() - (cases.size() % 2);
         for (int i = 1; i < defaultIndex; i += 2) {
@@ -303,12 +289,8 @@ public final class ControlFlowFunctions {
             branchExpressions.add(cases.get(cases.size() - 1));
         }
 
-        var returnType = calculateReturnTypeFromBranchExpressionValues(branchExpressions);
-
-        if (returnType == null) {
-            return ReturnResult.failure("could not determine return type");
-        }
-        return ReturnResult.success(hasDefaultCase ? returnType : returnType.optionalType());
+        return calculateReturnTypeFromBranchExpressionValues(branchExpressions)
+            .map(type -> hasDefaultCase ? type : type.optionalType());
     }
 
     private static ReturnResult<ValueType> switchReturnTypeFromComputer(final Arguments<Computer> arguments) {
@@ -322,7 +304,7 @@ public final class ControlFlowFunctions {
 
     private static Computer computeMatchingCaseSwitch(final Arguments<Computer> arguments,
         final EvaluationContext ctx) {
-        Computer switchExpression = arguments.getArgument(EXPRESSION).getValue();
+        Computer switchExpression = arguments.getArgument(SWITCH_VALUE).getValue();
         var cases = arguments.getVariableArgument();
 
         if (cases.isError()) {
@@ -358,13 +340,15 @@ public final class ControlFlowFunctions {
         return hasDefaultCase ? cases.getValue().get(cases.getValue().size() - 1) : w -> true;
     }
 
-    private static ValueType calculateReturnTypeFromBranchExpressionValues(final List<ValueType> expressions) {
+    private static ReturnResult<ValueType>
+        calculateReturnTypeFromBranchExpressionValues(final List<ValueType> expressions) {
         if (expressions.stream().allMatch(type -> type == MISSING)) {
-            return null;
+            return ReturnResult.failure("All branch expressions are missing. "
+                + "At least one branch has to be present to infer the return type for conditional functions.");
         }
 
         if (!expressions.stream().allMatch(isCompatibleTo(expressions.get(0)))) {
-            return null;
+            return ReturnResult.failure("All branch expressions have to have the same type.");
         }
 
         ValueType commonReturnBaseType =
@@ -374,9 +358,9 @@ public final class ControlFlowFunctions {
         }
 
         if (expressions.stream().anyMatch(ValueType::isOptional)) {
-            return commonReturnBaseType.optionalType();
+            return ReturnResult.success(commonReturnBaseType.optionalType());
         } else {
-            return commonReturnBaseType;
+            return ReturnResult.success(commonReturnBaseType);
         }
     }
 

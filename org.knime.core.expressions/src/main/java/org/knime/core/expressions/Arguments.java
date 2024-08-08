@@ -213,25 +213,23 @@ public class Arguments<T> {
         final Arguments<ValueType> arguments) {
         var test = arguments.getNamedArguments();
 
+        var position = 0L;
         for (var arg : test.entrySet()) {
 
-            OperatorDescription.Argument argFunc = null;
-            for (var a : signature) {
-                if (a.name().equals(arg.getKey())) {
-                    argFunc = a;
-                    break;
-                }
-            }
+            position++;
+            OperatorDescription.Argument argument =
+                signature.stream().filter(a -> a.name().equals(arg.getKey())).findFirst().orElse(null);
 
-            if (argFunc == null) {
+
+            if (argument == null) {
                 return ReturnResult.failure("Argument not found: " + arg.getKey());
             }
 
-            if (!argFunc.matcher().matches(arg.getValue())) {
-
-                return ReturnResult.failure("Argument '" + arg.getKey() + "' is not of the expected type: "
-                    + argFunc.type() + " but got " + arg.getValue() + ".");
+            if (!argument.matcher().matches(arg.getValue())) {
+                return ReturnResult.failure("Argument"+ position + " '" + arg.getKey() + "' is not of the expected type: "
+                    + argument.type() + " but got " + arg.getValue() + ".");
             }
+
         }
 
         return ReturnResult.success(true);
@@ -250,6 +248,33 @@ public class Arguments<T> {
         }
         return ReturnResult.success(argument);
     }
+
+    /**
+     * Get the position of an argument in the list of arguments.
+     * If the argument is missing, return the first position
+     * after the last named argument.
+     *
+     * @param name the name of the argument
+     * @return the position of the argument in the list of arguments
+     */
+    private Long getPositionOfArgument(final String name) {
+        var position = 0L;
+        for (var entry : m_namedArguments.keySet()) {
+            if (entry.equals(name)) {
+                return position;
+            }
+            position++;
+        }
+        return position;
+    }
+
+
+
+
+        //AtomicInteger position = new AtomicInteger(0);
+        //this.stream().findFirst(
+        //    arg -> arg.getKey().equals(name)).map(Map.Entry::getKey).orElse(null);)
+       // }
 
     /**
      * Get the variable argument. If the variable argument is missing, return an error. There is at most one variable

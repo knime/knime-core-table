@@ -214,25 +214,13 @@ final class Typing {
                 return ErrorValueType.combined(argTypes.toList());
             }
 
-            var returnType = node.function().returnType(argTypes);
-
-            if (returnType.isOk()) {
-                return returnType.getValue();
-            } else {
-                return ErrorValueType.functionNotApplicable(node, argTypes);
-            }
-
+            return node.function().returnType(argTypes).orElseGet(cause -> ErrorValueType.typingError(cause, node));
         }
 
         @Override
         public ValueType visit(final AggregationCall node) throws RuntimeException {
-            var ret = node.aggregation().returnType(node.args(), m_columnType);
-
-            if (ret.isOk()) {
-                return ret.getValue();
-            } else {
-                return ErrorValueType.aggregationNotApplicable(node, ret.getErrorMessage());
-            }
+            return node.aggregation().returnType(node.args(), m_columnType)
+                .orElseGet(cause -> ErrorValueType.typingError(cause, node));
         }
 
         private static ValueType arithmeticType(final BinaryOp node, final ValueType typeA, final ValueType typeB) {
@@ -363,15 +351,6 @@ final class Typing {
 
         static ErrorValueType unaryOpNotApplicable(final UnaryOp node, final ValueType t) {
             return typingError("Operator '" + node.op().symbol() + "' is not applicable for " + t.name() + ".", node);
-        }
-
-        static ErrorValueType functionNotApplicable(final FunctionCall node, final Arguments<ValueType> args) {
-            return typingError("The function " + node.function().name() + " is not applicable to the arguments " + args,
-                node);
-        }
-
-        static ErrorValueType aggregationNotApplicable(final AggregationCall node, final String errorMessage) {
-            return typingError(errorMessage, node);
         }
 
         static ErrorValueType nullishOpNotApplicable(final BinaryOp node, final ValueType t1, final ValueType t2) {

@@ -227,6 +227,15 @@ public final class ExpressionFunctionBuilder {
     }
 
     /**
+     * @param types
+     * @return  an {@link ArgMatcher} that matches any of the given types
+     */
+    public static ArgMatcher isOneOfTypes(final ValueType... types) {
+        return new ArgMatcherImpl("ANY OF " + Arrays.toString(types),
+            arg -> Arrays.stream(types).anyMatch(validArg -> validArg.equals(arg)));
+    }
+
+    /**
      * @param type the exact type to match
      * @return an {@link ArgMatcher} that matches only the given type
      */
