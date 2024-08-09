@@ -260,41 +260,41 @@ final class TypingTest {
 
     private static enum TypingErrorTestCase {
             // === Arithmetic Operations
-            ARITHMETICS_ON_BOOLEANS(OP(BOOL(true), PLUS, BOOL(false)), "+", "BOOLEAN"), //
-            ARITHMETICS_ON_STRING_AND_BOOLEAN(OP(STR("foo"), DIVIDE, COL("b?")), "/", "STRING", "BOOLEAN?"), //
-            ARITHMETICS_ON_INT_AND_BOOLEAN(OP(INT(5), PLUS, BOOL(false)), "+", "INTEGER", "BOOLEAN"), //
-            ARITHMETICS_ON_INT_MISSING(OP(INT(5), PLUS, MIS()), "+", "INTEGER", "MISSING"), //
-            FLOOR_DIVISION_ON_FLOAT(OP(FLOAT(10.1), FLOOR_DIVIDE, FLOAT(2)), "//", "FLOAT"), //
-            FLOOR_DIVISION_ON_INT_AND_FLOAT(OP(INT(2), FLOOR_DIVIDE, FLOAT(2.0)), "//", "FLOAT", "INTEGER"), //
-            NEGATE_STRING(OP(MINUS, STR("foo")), "-", "STRING"), //
-            NEGATE_MISSING(OP(MINUS, MIS()), "-", "MISSING"), //
+            ARITHMETICS_ON_BOOLEANS(OP(BOOL(true), PLUS, BOOL(false)), "+", BOOLEAN.name()), //
+            ARITHMETICS_ON_STRING_AND_BOOLEAN(OP(STR("foo"), DIVIDE, COL("b?")), "/", STRING.name(), OPT_BOOLEAN.name()), //
+            ARITHMETICS_ON_INT_AND_BOOLEAN(OP(INT(5), PLUS, BOOL(false)), "+", INTEGER.name(), BOOLEAN.name()), //
+            ARITHMETICS_ON_INT_MISSING(OP(INT(5), PLUS, MIS()), "+", INTEGER.name(), MISSING.name()), //
+            FLOOR_DIVISION_ON_FLOAT(OP(FLOAT(10.1), FLOOR_DIVIDE, FLOAT(2)), "//", FLOAT.name()), //
+            FLOOR_DIVISION_ON_INT_AND_FLOAT(OP(INT(2), FLOOR_DIVIDE, FLOAT(2.0)), "//", FLOAT.name(), INTEGER.name()), //
+            NEGATE_STRING(OP(MINUS, STR("foo")), "-", STRING.name()), //
+            NEGATE_MISSING(OP(MINUS, MIS()), "-", MISSING.name()), //
 
             // === Comparison Operations
-            ORDERING_ON_INT_AND_BOOLEAN(OP(INT(100), GREATER_THAN, BOOL(false)), ">", "INTEGER", "BOOLEAN"), //
-            ORDERING_ON_STRING(OP(STR("a"), LESS_THAN, STR("b")), "<", "STRING"), //
-            ORDERING_ON_INT_AND_MISSING(OP(INT(20), LESS_THAN, MIS()), "<", "INTEGER", "MISSING"), //
-            EQUALITY_ON_STRING_AND_BOOLEAN(OP(STR("a"), NOT_EQUAL_TO, BOOL(false)), "!=", "STRING", "BOOLEAN"), //
-            EQUALITY_ON_INT_AND_STRING(OP(INT(20), EQUAL_TO, STR("bar")), "==", "INTEGER", "STRING"), //
+            ORDERING_ON_INT_AND_BOOLEAN(OP(INT(100), GREATER_THAN, BOOL(false)), ">", INTEGER.name(), BOOLEAN.name()), //
+            ORDERING_ON_STRING(OP(STR("a"), LESS_THAN, STR("b")), "<", STRING.name()), //
+            ORDERING_ON_INT_AND_MISSING(OP(INT(20), LESS_THAN, MIS()), "<", INTEGER.name(), MISSING.name()), //
+            EQUALITY_ON_STRING_AND_BOOLEAN(OP(STR("a"), NOT_EQUAL_TO, BOOL(false)), "!=", STRING.name(), BOOLEAN.name()), //
+            EQUALITY_ON_INT_AND_STRING(OP(INT(20), EQUAL_TO, STR("bar")), "==", INTEGER.name(), STRING.name()), //
 
             // === Logical Operations
-            LOGICAL_ON_INTEGER(OP(INT(10), CONDITIONAL_AND, INT(20)), "and", "INTEGER"), //
-            LOGICAL_ON_BOOL_AND_FLOAT(OP(BOOL(false), CONDITIONAL_OR, FLOAT(10.1)), "or", "FLOAT", "BOOLEAN"), //
-            LOGICAL_ON_MISSING_AND_BOOL(OP(MIS(), CONDITIONAL_AND, BOOL(false)), "and", "MISSING", "BOOLEAN"), //
-            LOGICAL_NOT_ON_STRING(OP(NOT, STR("foo")), "not", "STRING"), //
-            LOGICAL_NOT_ON_MISSING(OP(NOT, MIS()), "not", "MISSING"), //
+            LOGICAL_ON_INTEGER(OP(INT(10), CONDITIONAL_AND, INT(20)), "and", INTEGER.name()), //
+            LOGICAL_ON_BOOL_AND_FLOAT(OP(BOOL(false), CONDITIONAL_OR, FLOAT(10.1)), "or", FLOAT.name(), BOOLEAN.name()), //
+            LOGICAL_ON_MISSING_AND_BOOL(OP(MIS(), CONDITIONAL_AND, BOOL(false)), "and", MISSING.name(), BOOLEAN.name()), //
+            LOGICAL_NOT_ON_STRING(OP(NOT, STR("foo")), "not", STRING.name()), //
+            LOGICAL_NOT_ON_MISSING(OP(NOT, MIS()), "not", MISSING.name()), //
 
             // === MISSING Fallback Operator
-            FALLBACK_BOTH_MISSING(OP(MIS(), MISSING_FALLBACK, MIS()), "one", "must", "not", "MISSING"),
+            FALLBACK_BOTH_MISSING(OP(MIS(), MISSING_FALLBACK, MIS()), "one", "must", "not", MISSING.name()),
             FALLBACK_NOT_SAME_TYPE(OP(INT(0), MISSING_FALLBACK, BOOL(false)), "must", "compatible"),
             FALLBACK_NOT_SAME_OPTIONAL_TYPES(OP(COL("f?"), MISSING_FALLBACK, COL("s?")), "must", "compatible"),
             FALLBACK_NOT_SAME_MIXED_TYPES(OP(INT(0), MISSING_FALLBACK, COL("s?")), "must", "compatible"),
 
             // === String Concatenation
-            STRING_CONCAT_STRING_AND_MISSING(OP(STR("foo"), PLUS, MIS()), "+", "STRING", "MISSING"), //
-            STRING_CONCAT_MISSING_AND_STRING(OP(MIS(), PLUS, STR("foo")), "+", "STRING", "MISSING"), //
+            STRING_CONCAT_STRING_AND_MISSING(OP(STR("foo"), PLUS, MIS()), "+", STRING.name(), MISSING.name()), //
+            STRING_CONCAT_MISSING_AND_STRING(OP(MIS(), PLUS, STR("foo")), "+", STRING.name(), MISSING.name()), //
 
             // === Function calls
-            FUNCTION_CALL_WRONG_ARG_TYPES(FUN(TestFunctions.INT_TO_FLOAT_FN, FLOAT(1.0)), "INT_TO_FLOAT_FN", "FLOAT"), //
+            FUNCTION_CALL_WRONG_ARG_TYPES(FUN(TestFunctions.INT_TO_FLOAT_FN, FLOAT(1.0)), "INT_TO_FLOAT_FN", FLOAT.name()), //
 
             // === Aggregation calls
             AGG_CALL_WRONG_ARG_TYPES(AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("s?")),

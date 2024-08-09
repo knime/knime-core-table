@@ -133,7 +133,7 @@ public final class ControlFlowFunctions {
         ) //
         .keywords("conditional") //
         .category(CATEGORY.name()) //
-        .args( // We could give the matcher details about the semantical meaning of the arguments improving error messages.
+        .args( // FIXME: We could give the matcher details about the semantical meaning of the arguments improving error messages.
             arg(CONDITION, "Boolean condition. See how to chain multiple conditions in description below.",
                 isBoolean()), //
             arg(TRUE_BRANCH, "Expression if condition 1 is `TRUE`.", isAnything()), //
@@ -261,9 +261,9 @@ public final class ControlFlowFunctions {
 
         var switchExpression = arguments.getArgument(SWITCH_EXPRESSION).getValue();
 
-        if (switchExpression.baseType() != BOOLEAN && switchExpression.baseType() != STRING && switchExpression.baseType() != INTEGER) {
+        if (switchExpression.baseType() != STRING && switchExpression.baseType() != INTEGER) {
             return ReturnResult.failure("Switch expression, i.e., the value to switch on, must be "
-                + "of type STRING, BOOLEAN or INTEGER. First argument is of type " + switchExpression.baseType() + ".");
+                + "of type STRING or INTEGER. First argument is of type " + switchExpression.baseType() + ".");
         }
 
         for (int i = 0; i < cases.size() - 1; i += 2) {

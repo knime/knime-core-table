@@ -64,6 +64,7 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.ReturnTypeDescriptions;
 import org.knime.core.expressions.ToBooleanFunction;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
@@ -164,12 +165,12 @@ public final class ExpressionFunctionBuilder {
 
     /** @return an {@link ArgMatcher} that matches all numeric non-optional types */
     public static ArgMatcher isNumeric() {
-        return new ArgMatcherImpl("INTEGER | FLOAT", ValueType::isNumeric);
+        return new ArgMatcherImpl(ReturnTypeDescriptions.RETURN_INTEGER_FLOAT, ValueType::isNumeric);
     }
 
     /** @return an {@link ArgMatcher} that matches all numeric types (optional or not) */
     public static ArgMatcher isNumericOrOpt() {
-        return new ArgMatcherImpl("INTEGER? | FLOAT?", ValueType::isNumericOrOpt);
+        return new ArgMatcherImpl(ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING, ValueType::isNumericOrOpt);
     }
 
     /** @return an {@link ArgMatcher} that matches {@link ValueType#INTEGER} */
@@ -214,7 +215,7 @@ public final class ExpressionFunctionBuilder {
 
     /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
     public static ArgMatcher isAnything() {
-        return new ArgMatcherImpl("ANY", arg -> true);
+        return new ArgMatcherImpl("ANYTHING", arg -> true);
     }
 
     /**
@@ -228,10 +229,11 @@ public final class ExpressionFunctionBuilder {
 
     /**
      * @param types
-     * @return  an {@link ArgMatcher} that matches any of the given types
+     * @return an {@link ArgMatcher} that matches any of the given types
      */
     public static ArgMatcher isOneOfTypes(final ValueType... types) {
-        return new ArgMatcherImpl("ANY OF " + Arrays.toString(types),
+        var argListWithMissingOnlyOnce =Arrays.stream(types).map(ValueType::optionalType).toArray(ValueType[]::new);
+        return new ArgMatcherImpl("ANY OF " + argListWithMissingOnlyOnce,
             arg -> Arrays.stream(types).anyMatch(validArg -> validArg.equals(arg)));
     }
 

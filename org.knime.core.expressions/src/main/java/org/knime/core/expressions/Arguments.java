@@ -50,6 +50,7 @@ package org.knime.core.expressions;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,15 +68,21 @@ import java.util.stream.Stream;
  * @param <T> the type of the arguments
  * @param m_namedArguments a map of named arguments
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author Tobias Kampmann, TNG, Schwerte, Germany
  */
 public class Arguments<T> {
 
+    // FIXME: If we make the constructor private, we can save the signature of the function in the Arguments object.
+    //  This would allow to check if the arguments match the signature in the matchTypes method.
     private static final String MISSING_REQUIRED_ARGUMENT = "Missing required argument: ";
 
-    // A LinkedHasmap is used to preserve the order of the arguments from the input order.
-    // This will be used to allow for a conversion to a list of arguments in the same order as
-    // they were input which match the order of the function signature when Arguments are created
-    // by matchSignature.
+    /**
+     * The named arguments.
+     * A LinkedHasmap is used to preserve the order of the arguments from the input order.
+     * This will be used to allow for a conversion to a list of arguments in the same order as
+     * they were input which match the order of the function signature when Arguments are created
+     * by matchSignature.
+     */
     private final LinkedHashMap<String, T> m_namedArguments;
 
     private final List<T> m_varArgument;
@@ -83,9 +90,9 @@ public class Arguments<T> {
     private final String m_varArgumentName;
 
     /**
-     * @param namedArguments
-     * @param varArgument
-     * @param varArgumentName
+     * @param namedArguments a map of named arguments
+     * @param varArgument a list of arguments
+     * @param varArgumentName the name of the variable argument. used for rendering
      */
     public Arguments(final LinkedHashMap<String, T> namedArguments, final List<T> varArgument,
         final String varArgumentName) {
@@ -97,16 +104,17 @@ public class Arguments<T> {
     }
 
     /**
+     * Just a convenience constructor to set a default name for the variable argument in tests.
+     *
      * @param namedArguments
      * @param varArgument
      */
     public Arguments(final LinkedHashMap<String, T> namedArguments, final List<T> varArgument) {
-
-        this(namedArguments, varArgument, "defaultVarArgumentName");
-
+        this(namedArguments, varArgument,"defaultVarArgumentName");
     }
 
     /**
+     * Create an Arguments object with only named arguments.
      * @param namedArguments
      */
     public Arguments(final LinkedHashMap<String, T> namedArguments) {
@@ -185,8 +193,7 @@ public class Arguments<T> {
             }
         }
 
-        return ReturnResult.success(
-            varargName == null ? new Arguments<>(argumentsMap) : new Arguments<>(argumentsMap, varargs, varargName));
+        return ReturnResult.success( new Arguments<>(argumentsMap, varargs, varargName));
     }
 
     /**
@@ -211,15 +218,14 @@ public class Arguments<T> {
      */
     public static ReturnResult<Boolean> matchTypes(final List<OperatorDescription.Argument> signature,
         final Arguments<ValueType> arguments) {
-        var test = arguments.getNamedArguments();
+        var namedArguments = arguments.getNamedArguments();
 
         var position = 0L;
-        for (var arg : test.entrySet()) {
+        for (var arg : namedArguments.entrySet()) {
 
             position++;
             OperatorDescription.Argument argument =
                 signature.stream().filter(a -> a.name().equals(arg.getKey())).findFirst().orElse(null);
-
 
             if (argument == null) {
                 return ReturnResult.failure("Argument not found: " + arg.getKey());
@@ -230,6 +236,18 @@ public class Arguments<T> {
                     + argument.type() + " but got " + arg.getValue() + ".");
             }
 
+        }
+        var variableArgumentsResult = arguments.getVariableArgument();
+        List<ValueType> variableArguments =
+            variableArgumentsResult.isOk() ? variableArgumentsResult.getValue() : List.of();
+        var argument = signature.get(signature.size() - 1);
+        for (var arg : variableArguments) {
+
+            position++;
+            if (!argument.matcher().matches(arg)) {
+                return ReturnResult
+                    .failure("Variable argument " + position + ": " + argument.matcher().createErrorMessage(arg));
+            }
         }
 
         return ReturnResult.success(true);
@@ -278,15 +296,15 @@ public class Arguments<T> {
 
     /**
      * Get the variable argument. If the variable argument is missing, return an error. There is at most one variable
-     * argument.
+     * argument (containing arbitrary many values).
      *
      * @return the variable argument or an error message if the variable argument is missing
      */
     public ReturnResult<List<T>> getVariableArgument() {
+
         if (m_varArgument.isEmpty()) {
             return ReturnResult.failure("No variable argument present");
         }
-
         return ReturnResult.success(m_varArgument);
     }
 
@@ -294,7 +312,7 @@ public class Arguments<T> {
      * @return all named arguments
      */
     public Map<String, T> getNamedArguments() {
-        return m_namedArguments;
+        return Collections.unmodifiableMap(m_namedArguments);
     }
 
     /**

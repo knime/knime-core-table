@@ -436,13 +436,10 @@ final class Parser {
                         ) //
                     );
 
-            var test = Arguments.matchSignature(aggregation.description().arguments(), positionalArgs, namedArgs);
+            var validatedArguments = Arguments.matchSignature(aggregation.description().arguments(), positionalArgs, namedArgs).orElseThrow(
+                cause -> syntaxError(cause, getLocation(ctx)));
 
-            if (test.isError()) {
-                throw syntaxError(test.getErrorMessage(), getLocation(ctx));
-            }
-
-            return aggregationCall(aggregation, test.getValue(), createData(getLocation(ctx)));
+            return aggregationCall(aggregation, validatedArguments, createData(getLocation(ctx)));
         }
 
         private static ConstantAst visitAggregationArg(final KnimeExpressionParser.ExprContext expr) {
