@@ -77,11 +77,9 @@ public class Arguments<T> {
     private static final String MISSING_REQUIRED_ARGUMENT = "Missing required argument: ";
 
     /**
-     * The named arguments.
-     * A LinkedHasmap is used to preserve the order of the arguments from the input order.
-     * This will be used to allow for a conversion to a list of arguments in the same order as
-     * they were input which match the order of the function signature when Arguments are created
-     * by matchSignature.
+     * The named arguments. A LinkedHasmap is used to preserve the order of the arguments from the input order. This
+     * will be used to allow for a conversion to a list of arguments in the same order as they were input which match
+     * the order of the function signature when Arguments are created by matchSignature.
      */
     private final LinkedHashMap<String, T> m_namedArguments;
 
@@ -104,13 +102,14 @@ public class Arguments<T> {
     }
 
     /**
-     * Just a convenience constructor to set a default name for the variable argument in tests.
+     * Just a convenience constructor to set a default name for the variable argument in tests. This name is only used
+     * for rendering the arguments.
      *
      * @param namedArguments
      * @param varArgument
      */
     public Arguments(final LinkedHashMap<String, T> namedArguments, final List<T> varArgument) {
-        this(namedArguments, varArgument,"defaultVarArgumentName");
+        this(namedArguments, varArgument, "defaultVarArgumentName");
     }
 
     /**
@@ -193,7 +192,7 @@ public class Arguments<T> {
             }
         }
 
-        return ReturnResult.success( new Arguments<>(argumentsMap, varargs, varargName));
+        return ReturnResult.success(new Arguments<>(argumentsMap, varargs, varargName));
     }
 
     /**
@@ -232,21 +231,21 @@ public class Arguments<T> {
             }
 
             if (!argument.matcher().matches(arg.getValue())) {
-                return ReturnResult.failure("Argument"+ position + " '" + arg.getKey() + "' is not of the expected type: "
-                    + argument.type() + " but got " + arg.getValue() + ".");
+                return ReturnResult.failure("Argument" + position + " '" + arg.getKey()
+                    + "' is not of the expected type: " + argument.type() + " but got " + arg.getValue() + ".");
             }
 
         }
-        var variableArgumentsResult = arguments.getVariableArgument();
-        List<ValueType> variableArguments =
-            variableArgumentsResult.isOk() ? variableArgumentsResult.getValue() : List.of();
+
+        List<ValueType> variableArguments = arguments.getVariableArgument();
+
         var argument = signature.get(signature.size() - 1);
         for (var arg : variableArguments) {
 
             position++;
             if (!argument.matcher().matches(arg)) {
-                return ReturnResult
-                    .failure("Variable argument " + position + ": " + argument.matcher().createErrorMessage(arg));
+                return ReturnResult.failure("Argument(vararg) " + position + " '" + arguments.m_varArgumentName
+                    + "' is not of the expected type: " + argument.type() + " but got " + arg + ".");
             }
         }
 
@@ -268,44 +267,13 @@ public class Arguments<T> {
     }
 
     /**
-     * Get the position of an argument in the list of arguments.
-     * If the argument is missing, return the first position
-     * after the last named argument.
-     *
-     * @param name the name of the argument
-     * @return the position of the argument in the list of arguments
-     */
-    private Long getPositionOfArgument(final String name) {
-        var position = 0L;
-        for (var entry : m_namedArguments.keySet()) {
-            if (entry.equals(name)) {
-                return position;
-            }
-            position++;
-        }
-        return position;
-    }
-
-
-
-
-        //AtomicInteger position = new AtomicInteger(0);
-        //this.stream().findFirst(
-        //    arg -> arg.getKey().equals(name)).map(Map.Entry::getKey).orElse(null);)
-       // }
-
-    /**
      * Get the variable argument. If the variable argument is missing, return an error. There is at most one variable
      * argument (containing arbitrary many values).
      *
      * @return the variable argument or an error message if the variable argument is missing
      */
-    public ReturnResult<List<T>> getVariableArgument() {
-
-        if (m_varArgument.isEmpty()) {
-            return ReturnResult.failure("No variable argument present");
-        }
-        return ReturnResult.success(m_varArgument);
+    public List<T> getVariableArgument() {
+        return Collections.unmodifiableList(m_varArgument);
     }
 
     /**

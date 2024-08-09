@@ -135,6 +135,7 @@ final class ControlFlowFunctionTests {
             .typing("optinal string case", List.of(OPT_STRING, STRING, INTEGER, OPT_STRING, INTEGER, INTEGER), INTEGER) //
             .typing("missing string case", List.of(OPT_STRING, STRING, INTEGER, MISSING, INTEGER, INTEGER), INTEGER) //
             .typing("MISSING case expression", List.of(OPT_STRING, STRING, MISSING, INTEGER), OPT_INTEGER) //
+            .illegalArgs("no arguments", List.of())//
             .illegalArgs("incompatible return expressions", List.of(INTEGER, INTEGER, FLOAT, STRING))//
             .illegalArgs("two few Arguments", List.of(STRING, INTEGER)) //
             .illegalArgs("no float as case/value", List.of(FLOAT, FLOAT, STRING, STRING)) //

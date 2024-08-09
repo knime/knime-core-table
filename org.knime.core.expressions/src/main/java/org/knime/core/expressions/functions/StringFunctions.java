@@ -72,7 +72,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.function.Function;
@@ -1080,7 +1079,7 @@ public final class StringFunctions {
             ArrayList<String> strings = new ArrayList<>();
             strings.add(toString(args.getArgument("string_1").getValue()).compute(ctx));
 
-            for (var arg : args.getVariableArgument().or(List::of).getValue()) {
+            for (var arg : args.getVariableArgument()) {
                 strings.add(toString(arg).compute(ctx));
             }
 

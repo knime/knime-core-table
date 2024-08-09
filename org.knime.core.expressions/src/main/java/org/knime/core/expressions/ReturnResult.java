@@ -228,7 +228,8 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
 
         @Override
         public T getValue() {
-            throw new IllegalStateException("No value available for error return value");
+            throw new IllegalStateException(
+                "No value available for error return value. Error message is: " + m_errorMessage);
         }
 
         @Override

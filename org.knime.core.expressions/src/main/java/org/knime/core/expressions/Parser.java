@@ -386,32 +386,18 @@ final class Parser {
 
         public Ast visitFunctionCall(final FunctionOrAggregationCallContext ctx, final ExpressionFunction function) {
 
-            if (ctx.arguments() == null) {
-                return functionCall(function, Arguments.empty(), createData(getLocation(ctx)));
-            }
+            Map<String, Ast> namedArgs = ctx.arguments() == null ? Map.of() //
+                : ctx.arguments().namedArgument().stream() //
+                    .collect(Collectors.toMap(arg -> arg.argName.getText(), arg -> arg.expr().accept(this)));
 
-            var namedArgs = //
-                ctx.arguments().namedArgument() //
-                    .stream() //
-                    .collect( //
-                        Collectors.toMap( //
-                            arg -> arg.argName.getText(), //
-                            arg -> arg.expr().accept(this) //
-                        ) //
-                    );
+            List<Ast> positionalArgs = ctx.arguments() == null ? List.of() //
+                : ctx.arguments().positionalArgument().stream() //
+                    .map(arg -> arg.accept(this)).toList();
 
-            var positionalArgs = ctx.arguments().positionalArgument() //
-                .stream() //
-                .map(arg -> arg.accept(this)) //
-                .toList();
+            var args = Arguments.matchSignature(function.description().arguments(), positionalArgs, namedArgs) //
+                .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
 
-            var args = Arguments.matchSignature(function.description().arguments(), positionalArgs, namedArgs);
-
-            if (args.isError()) {
-                throw syntaxError(args.getErrorMessage(), getLocation(ctx));
-            }
-
-            return functionCall(function, args.getValue(), createData(getLocation(ctx)));
+            return functionCall(function, args, createData(getLocation(ctx)));
         }
 
         public static Ast visitAggregationCall(final FunctionOrAggregationCallContext ctx,
@@ -421,13 +407,14 @@ final class Parser {
                 return aggregationCall(aggregation, Arguments.empty(), createData(getLocation(ctx)));
             }
 
-            var positionalArgs = ctx.arguments().positionalArgument() //
-                .stream() //
-                .map(arg -> visitAggregationArg(arg.expr())) //
-                .toList();
+            List<ConstantAst> positionalArgs = ctx.arguments() == null ? List.of() //
+                : ctx.arguments().positionalArgument() //
+                    .stream() //
+                    .map(arg -> visitAggregationArg(arg.expr())) //
+                    .toList();
 
-            var namedArgs = //
-                ctx.arguments().namedArgument() //
+            Map<String, ConstantAst> namedArgs = ctx.arguments() == null ? Map.of() //
+                : ctx.arguments().namedArgument() //
                     .stream() //
                     .collect( //
                         Collectors.toMap( //
@@ -436,10 +423,11 @@ final class Parser {
                         ) //
                     );
 
-            var validatedArguments = Arguments.matchSignature(aggregation.description().arguments(), positionalArgs, namedArgs).orElseThrow(
-                cause -> syntaxError(cause, getLocation(ctx)));
+            var args =
+                Arguments.matchSignature(aggregation.description().arguments(), positionalArgs, namedArgs)
+                    .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
 
-            return aggregationCall(aggregation, validatedArguments, createData(getLocation(ctx)));
+            return aggregationCall(aggregation, args, createData(getLocation(ctx)));
         }
 
         private static ConstantAst visitAggregationArg(final KnimeExpressionParser.ExprContext expr) {
@@ -455,9 +443,9 @@ final class Parser {
             throw syntaxError("Aggregation functions only allow constant expressions as arguments.", getLocation(expr));
         }
 
-        private static boolean isSpecialColumnAccessor(final KnimeExpressionParser.ExprContext expr)  {
+        private static boolean isSpecialColumnAccessor(final KnimeExpressionParser.ExprContext expr) {
             return (expr.getChildCount() == 1 && expr.getChild(0) instanceof AtomContext atom
-                    && (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null));
+                && (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null));
         }
 
         @Override
