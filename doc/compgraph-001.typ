@@ -44,12 +44,12 @@ As much as possible stick to the following notation:
   [`CONSUMER`],    [$omega in Omega$],     [$T$],
   [`MAP`],         [$mu in Mu$],           [$M$],
   [`ROWINDEX`],    [$kappa in Kappa$],     [$K$],
-  [`OBSERVER`],    [$omicron in Omicron$], [$O$],
+  [#strike[#text(red)[`OBSERVER`]]],    [#text(red)[$omicron in Omicron$]], [#text(red)[$O$]],
 )
 For example, `SOURCE` specs will be denoted as $sigma_i$, with $sigma_i in Sigma$ the set of all `SOURCE` specs.
 `SOURCE` nodes in the compgraph will be labeled $S_j$.
 
-The set of all possible specs is $Theta = Sigma union Chi union Phi union Lambda union Psi union Xi union Omega union Mu union Kappa union Omicron$.
+The set of all possible specs is $Theta = Sigma union Chi union Phi union Lambda union Psi union Xi union Omega union Mu union Kappa$.
 
 A virtual table definition (or rather its producing `TableTransform`) translates into a "spec graph":
 - Nodes $v in V$ represent `TableTransform`s.
@@ -251,7 +251,7 @@ To create a concrete execution ordering of a graph,
 All execution orderings are semantically equivalent, in the sense that they lead to the same _result table_ at the `CONSUMER`.
 
 #text(red)[TODO:\
-Unfortunately, it the execution semantics is not trivial to formally define.
+Unfortunately, the execution semantics is not trivial to formally define.
 If we had a definition, then it should be possible to prove that:
 1. the spec order corresponds to a particular execution ordering, and
 2. all execution orderings are semantically equivalent, and
@@ -267,14 +267,11 @@ Recursively define property "_required_" on nodes and accesses:
 - If a node is required, then all _inputs_ of the node are required.
 - If an _output_ of a node is required, then the node is required.
 - If node $v$ is required and $(v,u) in F$, then node $u$ is required.
-- #text(red)[TODO: $(v,u) in F$].
 - #text(red)[TODO: Special case: `APPEND` and `CONCATENATE` require inputs corresponding to required outputs.]
 
-#text(red)[TODO: generalize to sub-graphs. no `CONSUMER`.]
+#text(red)[TODO: generalize to sub-graphs (no `CONSUMER`).]
 
-#pagebreak()
-
-= #text(red)[TODO]
+= #text(red)[TODO Execution]
 
 Execution: All nodes in the subgraph, ordered such that all control and data dependencies are satisfied.
 (_All nodes_, doesn't matter if they are useful, we'll take care of that separately.)
@@ -306,74 +303,125 @@ Ideas:
   These are only interesting when attaching new virtual table operations (slicing or column selection on cursor, merging partially optimized graphs, ...)
   So we can forget about them when doing modifications (inside) a graph except at the `SOURCE` and `CONSUMER`.
 
-- subgraphs can be replaced by specifying nodes/edges to remove, nodes/edges to add, and mapping for data / control flow crossing into and out of the subgraph.
+- Subgraphs can be replaced by specifying nodes/edges to remove, nodes/edges to add, and mapping for data / control flow crossing into and out of the subgraph.
 
 - All optimization rules can be expressed as subgraph replacements.
 
-- Branches of `APPEND` can be merged if they are "control-flow compatible" (same `SOURCE`s, `ROWFILTER`s, and `SLICE`s).
-  There may be varying details (additional `MAP`s, different columns used, additional `ROWINDEX`s).
-  We can specify a unification algorithm that produces a single subgraph, such that both "control-flow compatible" branches can be subgraph-replaced with identical copies.
-  These branches can then be merged into a single branch.
+- Branches of `APPEND` can be merged if they are "control-flow compatible".
   (And possibly, the `APPEND` is left with only a single branch and can be eliminated.)
 
 
 
-== subgraph replacement
+== Subgraph replacement
 
-For this, subgraph is more general than previous:
-
-Subgraph $S(U) = (U, G)$ is defined by a subset of nodes $U subset V$ such that
-$G subset F$ with $(u, u') in G$ iff $u in U and u' in U$.
-
-The _boundary_ $B(U)$ of subgraph $U$ is the set of all
-- inputs $gamma_u^i$ of any node $u in U$ that are produced by nodes $v in.not U$,
-- outputs $delta_u^i$ of any node $u in U$ that are used by nodes $v in.not U$,
-- nodes $u in U$ where $(u, v) in F$ or $(v, u) in F$ and $v in.not U$\
-  (nodes that have control flow links from/to the "outside").
-
-Let's require that a subgraph never contains only part of a parallel `ROWFILTER` section.
-
-Replacement $R$
+A subgraph $S(U) = (U, F_U)$ of $(V,F)$ is defined by a subset of nodes $U subset V$.\
+$U$ implies the set of fully contained control flow edges $F_U subset F$, i.e.,
 $
-(U, G) scripts(|->)_r (U', G')
-$
-where $r: B(U) -> B(U`)$ maps boundary elements.
-
-Applying $R$ to $(V,F)$:
-
-$
-V |_R &= (V without U) union U' \
-F |_R &= (F without G without F_(|U)) union G' union F_(U'|)
+F_U = { (u, u') | (u, u') in F and u in U and u' in U}.
 $
 
-- remove nodes $U$ and edges $G$
-- add nodes $U`$ and edges $G`$
-- replace boundary elements
-
-
-
-
+The _input boundary_ $Gamma_U$ is the set of inputs of nodes $U$ that are produced by nodes outside of $U$, i.e.,
 $
-a eq.triple^(->) b
+Gamma_U = {gamma_u^i | u in U and gamma_u^i eq.triple delta_v^j and v in.not U}.
 $
 
-
-Maybe abbreviated as 
+The _output boundary_ $Delta_U$ is the set of outputs of nodes $U$ that are used by nodes outside of $U$, i.e.,
 $
-V |_(U |-> U')
+Delta_U = {delta_u^i | u in U and delta_u^i eq.triple gamma_v^j and v in.not U}.
 $
-with control flow edges implied from context.
 
-== subgraph eqivalence
+The _in-flow boundary_ $I(U) subset F$ is the set of control flow edges crossing into the subgraph, i.e.,
+$
+I(U) = {(v,u) | (v,u) in F and v in.not U and u in U}.
+$
 
-subgraphs are equivalent (wrt subset of outputs) if execution leads to same values on subset of values.
+The _out-flow boundary_ $O(U) subset F$ is the set of control flow edges crossing out of the subgraph, i.e.,
+$
+O(U) = {(u, v) | (u, v) in F and v in.not U and u in U}.
+$
+
+The _boundary_ $B(U) subset U$ is the set of nodes that have edges crossing into or out of the subgraph, i.e.,
+$
+B(U) = {u | u in U and exists (v in.not U) thick (u,v) in F or (v,u) in F} = {u | (u,v) in O(U) or (v,u) in I(U)}.
+$
+
+Subgraphs $S(U)$ can be replaced with a graph $(U',F')$.
+We can express comp graph optimization rules as a series of appropriate subgraph replacements that do not change the overall semantics of the graph.
+
+Replacing $S(U) = (U, F_U)$ requires $(U',F')$ which replace the nodes and fully contained edges,
+and a mapping $r$ for "stitching" the boundary:
+- $r_Gamma: Gamma_U -> Gamma(U')$,
+- $r_Delta: Delta_U -> Delta(U')$,
+- $r_I: I(U) -> {(v, u') | v in F without U and u' in U'}$, and
+- $r_O: O(U) -> {(u', v) | v in F without U and u' in U'}$.
 
 
+= Unification
 
+Branches of `APPEND` can be merged if they are "control-flow compatible".
+That means, they have the same `SOURCE`s, `ROWFILTER`s, and `SLICE`s in the same (partial) order.
+Other details may vary: Some `MAP` and `ROWINDEX` nodes might occur in only one of the branches.
 
+Such branches can be merged into a single branch.
+(And possibly, the `APPEND` is left with only a single branch and can be eliminated.)
 
+The following unification algorithm produces a single subgraph, such that both branches can be subgraph-replaced with identical copies of the unified graph
+(or fails if the branches are not "control-flow compatible").
+
+#text(red)[
+  For now, assume that the matched subgraphs have no `APPEND` or `CONCATENATE`.
+  This can be built on top, but requires backtracking to find corresponding branches.
+  ]
+
+*Algorithm: Unification* \
+*Input:* subgraphs $V_1, V_2 subset V$ \
+*Output* $(U`, F`), r_Delta_1, r_Delta_2, r_U_1, r_U_2$ \
+#set enum(full: true)
++ Initialize
+  $U' := emptyset$,
+  $F' := emptyset$,
+  $r_Delta_1 := emptyset$,
+  $r_Delta_2 := emptyset$,
+  $r_U_1 := emptyset$,
+  $r_U_2 := emptyset$
++ Repeat until all nodes in $V_1$ and $V_2$ have a corresponding node in $U'$:
+  + Find candidates from $U_1$ for adding to the unified graph,
+    $
+      C_1 = {v in U_1 | (forall i thick r_Delta_1(gamma^i_v_1) eq.not emptyset) and (forall (v,u) in F thick r_U_1(u) eq.not emptyset)}
+    $
+    and similarly candidates $C_2$ from $U_2$
+  + Find matching candidates $v_1 in C_1, v_2 in C_2$ such that
+    $
+    theta_v_1 &= theta_v_2 ", and" \
+    forall i thick r_Delta_1(gamma^i_v_1) & eq.triple r_Delta_2(gamma^i_v_2).
+    $
+    (I.e., the nodes have matching specs and matching inputs.)
+  + If a match was found, add a new unified node $u$ with $theta_u = theta_v_1$:
+    $
+      U' &:= U' union {u} \
+      F' &:= F' union {(u, v) | (u', v') in F and (r_U_1(u') = u) and (r_U_1(v') = v)} \
+      r_Delta_1(delta^i_v_1) &:= delta^i_u quad (forall i)\
+      r_U_1(v_1) &:= u \
+      F' &:= F' union {(u, v) | (u', v') in F and (r_U_2(u') = u) and (r_U_2(v') = v)} \
+      r_Delta_2(delta^i_v_2) &:= delta^i_u quad (forall i)\
+      r_U_2(v_2) &:= u \
+    $
+  + If no match was found:
+    + If there is a `ROWINDEX` in one of the candidate sets, add a unified node for that.
+      For example, assume $v_1 in C_1$ with $theta_v_1 in Kappa$, then add $u$ with $theta_u = theta_v_1$:
+      $
+        U' &:= U' union {u} \
+        F' &:= F' union {(u, v) | (u', v') in F and (r_U_1(u') = u) and (r_U_1(v') = v)} \
+        r_Delta_1(delta^i_v_1) &:= delta^i_u quad (forall i)\
+        r_U_1(v_1) &:= u \
+      $
+    + Else-if there is a `MAP` in one of the candidate sets, add a unified node for that.
+    + Else fail. ($V_1$ and $V_2$) are not compatible.
 #pagebreak()
+
 = Optimizations
+
+The idea is to replace subgraphs such that the overall semantics of the graph is not changed.
 
 #text(red)[*TODO:*]
 Think through these optimization steps.\
@@ -393,47 +441,6 @@ Can we still recover a spec graph after applying them?\
 - moveSlicesBeforeConcatenates
 - eliminateSingletonConcatenates
 
-
-#pagebreak()
-
-= Unification
-
-Two DAGs to match: $G_1, G_2$
-
-
-#set enum(full: true)
-+ Find nodes without _un-linked_ requirements: $C_1, C_2$ 
-+ Pick nodes from $C_1, C_2$ and unify:
-  + If $v_1 in C_1$ with $theta_v_1 in Sigma union Psi union Xi$:\
-    If $exists v_2 in C_2$ such that $theta_v_2 = theta_v_1$, then unify $(v_1, v_2) -> u$.\
-    Otherwise fail unification.
-
-  + If $v_1 in C_1$ with $theta_v_1 in Kappa$:\
-    If $exists v_2 in C_2$ such that $theta_v_2 = theta_v_1$, then unify $(v_1, v_2) -> u$.\
-    Otherwise unify $v_1 -> u$.
-
-  + If $v_2 in C_2$ with $theta_v_2 in Kappa$:\
-    Unify $v_2 -> u$.
-
-  + If $v_1 in C_1$ with $theta_v_1 in Mu$:\
-    If $exists v_2 in C_2$ such that $theta_v_2 = theta_v_1$ and \
-    $forall i exists beta_q$ such that $alpha^i_v_1 -> beta_q and alpha^i_v_2 -> beta_q$,
-    then unify $(v_1, v_2) -> u$.\
-    Otherwise unify $v_1 -> u$.
-
-  + If $v_2 in C_2$ with $theta_v_2 in Mu$:\
-    Unify $v_2 -> u$.
-
-
-
-+ next
-
-
-*Unify $(v_1, v_2) -> u$:*\
-Create a node $u$ in the unified DAG.\
-Link $v_1 -> u$, $beta^i_v_1 -> beta^i_u$, $beta^r_v_1 -> beta^r_u$.\
-Link $v_2 -> u$, $beta^i_v_2 -> beta^i_u$, $beta^r_v_2 -> beta^r_u$.\
-Nodes and accesses $v_!, v_2, beta^i_v_1, beta^i_v_2, beta^r_v_1, beta^r_v_2$ are _linked_ now.
 
 #pagebreak()
 
