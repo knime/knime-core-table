@@ -66,7 +66,7 @@ public enum RagNodeType {
     APPENDMISSING, //
     MISSING, //
     CONCATENATE, //
-    COLFILTER, //
+    COLFILTER, // TODO (TP) rename COLSELECT
     MAP, //
     ROWFILTER, //
     CONSUMER, //
