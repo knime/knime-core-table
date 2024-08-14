@@ -1,12 +1,14 @@
 #import "@preview/fletcher:0.5.1" as fletcher: diagram, node, edge
 
+#set page(numbering: "1 / 1")
+
 #align(center, text(17pt)[
   *Virtual Tables Comp-Graph*
 ])
 
 #align(center)[
   v0.1 \
-  26.07.2024 \
+  12.08.2024 \
   Tobias Pietzsch \
 ]
 
@@ -74,11 +76,37 @@ An edge $e = (v,v') in E subset V times V$ means $v'$ is a preceeding transform 
 == Spec details
 
 *`SOURCE`:*
- $sigma in Sigma$ is a tuple $sigma = (t_sigma, n_sigma)$, where
+$sigma in Sigma$ is a tuple $sigma = (t_sigma, n_sigma)$ where
 $t_sigma$ is the UUID of a source table, and
 $n_sigma$ is the number of columns in the source table.
 
+*`COLSELECT`:*
+$chi in Chi$ is a tuple $chi = (c_chi)$ where
+$c_chi in cal(P)(NN)$ is a tuple of input column indices.
 
+*`ROWFILTER`:*
+#text(red)[TODO]
+
+*`SLICE`:*
+#text(red)[TODO]
+
+*`APPEND`:*
+$psi in Psi$ is the empty tuple $psi = ()$, i.e., `APPEND` is fully defined by preceeding transforms.
+
+*`CONCATENATE`:*
+$xi in Xi$ is the empty tuple $xi = ()$, i.e., `CONCATENATE` is fully defined by preceeding transforms.
+
+*`CONSUMER`:*
+#text(red)[TODO]
+
+*`MAP`*:
+$mu in Mu$ is a tuple $mu = (m_mu, c_mu, n_mu)$ where
+$m_mu$ is the mapper function ID,
+$c_mu$ is a tuple of input column indices, and
+$n_mu$ is the number of columns produced by the mapper function.
+
+*`ROWINDEX`*:
+$kappa in Kappa$ is the empty tuple $kappa = ()$, i.e., `ROWINDEX` is fully defined by preceeding transforms.
 
 == Predecessors of a node
 
@@ -94,7 +122,10 @@ $
 )
 $
 
-If $|Pi(v)|=1$, we may use $pi(v) in Pi(v)$ denotes the single predecessor.
+For `APPEND` and `CONCATENATE`, predecessor order matters.\
+We use $pi_(i)(v)$ to denote the $i$th predecessor (with $0 <= i < |Pi(v)|$).\
+If $|Pi(v)|=1$, we may use $pi(v)$ denotes the single predecessor $pi_(0)(v)$.
+
 
 == Number of columns
 
@@ -103,13 +134,13 @@ The number of columns of (the virtual table corresponding to the sub-tree rooted
 #let ncols = $op("ncols")$
 $
 ncols(v) := cases(
-  n_sigma      & "if" theta_v = sigma in Sigma,
-  "TODO"       & "if" theta_v = mu in Mu "MAP",
-  "TODO"       & "if" theta_v = kappa in Kappa "ROWINDEX",
-  "TODO"       & "if" theta_v = chi in Chi "COLSELECT",
-  "TODO"       & "if" theta_v = psi in Psi "APPEND",
-  "TODO"       & "if" theta_v = xi in Xi "CONCATENATE",
-  ncols(pi(v)) & "otherwise",
+  n_sigma                   & "if" theta_v = sigma in Sigma     quad &"// SOURCE",
+  n_mu                      & "if" theta_v = mu in Mu           quad &"// MAP",
+  ncols(pi(v)) + 1          & "if" theta_v = kappa in Kappa     quad &"// ROWINDEX",
+  |c_chi|                   & "if" theta_v = chi in Chi         quad &"// COLSELECT",
+  sum_i ncols(pi_(i)(v))    & "if" theta_v = psi in Psi         quad &"// APPEND",
+  ncols(pi_0(v))            & "otherwise"                       quad &"// ROWFILTER, SLICE",
+                            &                                        &"// CONCATENATE, CONSUMER)",
 ) $
 
 
@@ -417,8 +448,9 @@ The following unification algorithm produces a single subgraph, such that both b
       $
     + Else-if there is a `MAP` in one of the candidate sets, add a unified node for that.
     + Else fail. ($V_1$ and $V_2$) are not compatible.
-#pagebreak()
 
+
+// #pagebreak()
 = Optimizations
 
 The idea is to replace subgraphs such that the overall semantics of the graph is not changed.
@@ -433,9 +465,9 @@ Can we still recover a spec graph after applying them?\
 - eliminateRowIndexes
 - eliminateAppends
 - mergeSlices
-- mergeRowIndexSiblings
+- #strike[mergeRowIndexSiblings]
 - mergeRowIndexSequence
-- moveSlicesBeforeObserves
+- #strike[moveSlicesBeforeObserves]
 - moveSlicesBeforeAppends
 - moveSlicesBeforeRowIndexes
 - moveSlicesBeforeConcatenates
