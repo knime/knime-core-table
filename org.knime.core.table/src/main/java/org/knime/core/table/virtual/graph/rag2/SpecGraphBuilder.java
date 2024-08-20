@@ -53,6 +53,7 @@ import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
 import org.knime.core.table.virtual.graph.rag.RagNodeType;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -72,9 +73,11 @@ public class SpecGraphBuilder {
     }
 
 
-    static class Node {
-        private static int ids = 0;
+    record ControlFlowEdge(Node.PredecessorData from, Node to) {}
 
+    static class Node {
+
+        private static int ids = 0;
         final int id = ids++;
 
         final RagNodeType type;
@@ -85,43 +88,103 @@ public class SpecGraphBuilder {
 
         final List<AccessId> outCols;
 
-        record PredecessorData(Node predecessor, List<AccessId> inCols) {
+        final List<AccessId> outputs;
+
+        record PredecessorData(Node predecessor, List<AccessId> inCols, List<AccessId> inputs,
+                               List<Node> controlFlowPredecessors) {
+            PredecessorData(Node predecessor, List<AccessId> inCols, List<AccessId> inputs) {
+                this(predecessor, inCols, inputs, new ArrayList<>());
+            }
         }
 
         final List<PredecessorData> predecessorData;
 
         public Node(
-                final RagNodeType type,
                 final TableTransformSpec spec,
-                final int numColumns,
                 final List<Node> predecessors ) {
-            this.type = type;
             this.spec = spec;
-            this.numColumns = numColumns;
+            this.type = RagNodeType.forSpec(spec);
+
+            numColumns = switch (type) {
+                case SOURCE -> ((SourceTransformSpec)spec).getSchema().numColumns();
+                case MAP -> ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
+                case ROWINDEX -> predecessors.get(0).numColumns + 1;
+                case COLFILTER -> ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
+                case APPEND -> predecessors.stream().mapToInt(n -> n.numColumns).sum();
+                case SLICE, ROWFILTER, CONCATENATE -> predecessors.get(0).numColumns;
+                case CONSUMER -> 0; // TODO (TP) or should it be predecessors.get(0).numColumns ???
+                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
+                        throw new UnsupportedOperationException(
+                                "not handled yet. needs to be implemented or removed"); // TODO (TP)
+            };
+
             predecessorData = new ArrayList<>();
             for (int i = 0; i < predecessors.size(); i++) {
                 final Node p = predecessors.get(i);
                 final List<AccessId> inCols = createCols(p.numColumns, "alpha", id, predecessors.size() > 1 ? i : -1);
-                predecessorData.add( new PredecessorData(p, inCols));
+
+                final int numInputs = switch (type) {
+                    case SOURCE, COLFILTER, SLICE, ROWINDEX  -> 0;
+                    case MAP -> ((MapTransformSpec)spec).getColumnSelection().length;
+                    case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection().length;
+                    case APPEND, CONCATENATE, CONSUMER -> p.numColumns;
+                    case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
+                            throw new UnsupportedOperationException(
+                                    "not handled yet. needs to be implemented or removed"); // TODO (TP)
+                };
+                final List<AccessId> inputs = createCols(numInputs, "gamma", id, predecessors.size() > 1 ? i : -1);
+                predecessorData.add(new PredecessorData(p, inCols, inputs));
             }
 
             outCols = createCols(numColumns, "beta", id, -1);
-            traceInOut();
+
+            final int numOutputs = switch (type) {
+                case SOURCE, MAP, APPEND, CONCATENATE, CONSUMER -> numColumns;
+                case ROWINDEX -> 1;
+                case SLICE, COLFILTER, ROWFILTER -> 0;
+                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
+                        throw new UnsupportedOperationException(
+                                "not handled yet. needs to be implemented or removed"); // TODO (TP)
+            };
+            outputs = createCols( numOutputs, "delta", id, -1);
+
+            // Access tracing
+            traceIncolsToOutcols();
             tracePredecessorIn();
+            traceOutcolsToOutputs();
+            traceInputsToIncols();
+
+            // Control Flow
+            controlFlowPredecessors
         }
 
-        AccessId outCol( int i ) {
+        AccessId outCol(int i) {
             return outCols.get(i);
         }
 
-        AccessId inCol( int i ) {
+        AccessId inCol(int i) {
             return inCol(0, i);
         }
 
-        AccessId inCol( int p, int i ) {
+        AccessId inCol(int p, int i) {
             return predecessorData.get(p).inCols.get(i);
         }
 
+        AccessId output(int i) {
+            return outputs.get(i);
+        }
+
+        AccessId input(int i) {
+            return input(0, i);
+        }
+
+        AccessId input(int p, int i) {
+            return predecessorData.get(p).inputs.get(i);
+        }
+
+        /**
+         * link predecessor outcols to incols of this node
+         */
         private void tracePredecessorIn() {
             for (int j = 0; j < predecessorData.size(); ++j) {
                 final Node p = predecessorData.get(j).predecessor();
@@ -131,7 +194,10 @@ public class SpecGraphBuilder {
             }
         }
 
-        private void traceInOut()
+        /**
+         * link incols to outcols for pass-through columns
+         */
+        private void traceIncolsToOutcols()
         {
             switch (type) {
                 case SOURCE, MAP, APPEND, CONCATENATE, CONSUMER -> {
@@ -164,6 +230,62 @@ public class SpecGraphBuilder {
             }
         }
 
+        /**
+         * link outcols to outputs (columns that are produced by this node)
+         */
+        private void traceOutcolsToOutputs()
+        {
+            switch (type) {
+                case SOURCE, MAP, APPEND, CONCATENATE, CONSUMER -> {
+                    for (int i = 0; i < numColumns; i++) {
+                        outCol(i).union(output(i));
+                    }
+                }
+                case ROWINDEX -> {
+                    outCol(numColumns - 1).union(output(0));
+                }
+                case SLICE, COLFILTER, ROWFILTER -> {
+                }
+                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
+                        throw new UnsupportedOperationException(
+                                "not handled yet. needs to be implemented or removed"); // TODO (TP)
+            }
+        }
+
+        /**
+         * link incols to inputs (columns that are used by this node)
+         */
+        private void traceInputsToIncols()
+        {
+            switch (type) {
+                case MAP -> {
+                    final int[] selection = ((MapTransformSpec)spec).getColumnSelection();
+                    for (int i = 0; i < selection.length; i++) {
+                        input(i).union(inCol(selection[i]));
+                    }
+                }
+                case ROWFILTER -> {
+                    final int[] selection = ((RowFilterTransformSpec)spec).getColumnSelection();
+                    for (int i = 0; i < selection.length; i++) {
+                        input(i).union(inCol(selection[i]));
+                    }
+                }
+                case APPEND, CONCATENATE, CONSUMER -> {
+                    for (int j = 0; j < predecessorData.size(); ++j) {
+                        final Node p = predecessorData.get(j).predecessor(); // TODO: Add convenience method predecessor(j) --> predecessorData.get(j).predecessor()
+                        for (int i = 0; i < p.numColumns; i++) {
+                            input(j, i).union(inCol(j, i));
+                        }
+                    }
+                }
+                case SOURCE, SLICE, COLFILTER, ROWINDEX -> {
+                }
+                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
+                        throw new UnsupportedOperationException(
+                                "not handled yet. needs to be implemented or removed"); // TODO (TP)
+            }
+        }
+
         @Override
         public String toString() {
             return toString("");
@@ -176,10 +298,13 @@ public class SpecGraphBuilder {
             sb.append(", spec=").append(spec);
             sb.append(", numColumns=").append(numColumns);
 
-            final List<AccessId> inCols = predecessorData.stream().flatMap(pd -> pd.inCols.stream()).toList();
-            sb.append(", inCols=").append(inCols);
+//            final List<AccessId> inCols = predecessorData.stream().flatMap(pd -> pd.inCols.stream()).toList();
+//            sb.append(", inCols=").append(inCols);
+//            sb.append(", outCols=").append(outCols);
 
-            sb.append(", outCols=").append(outCols);
+            final List<AccessId> inputs = predecessorData.stream().flatMap(pd -> pd.inputs.stream()).toList();
+            sb.append(", inputs").append(inputs);
+            sb.append(", outputs=").append(outputs);
 
             final List<Node> predecessors = predecessorData.stream().map(pd -> pd.predecessor).toList();
             if (predecessors.isEmpty()) {
@@ -197,6 +322,8 @@ public class SpecGraphBuilder {
         }
 
     }
+
+
 
     static class SpecGraph {
         final List<Node> nodes = new ArrayList<>();
@@ -219,9 +346,9 @@ public class SpecGraphBuilder {
         }
     }
 
-    static class AccessId
-    {
+    static class AccessId {
         final Node producer;
+
         final int outColIndex;
 
         AccessId parent;
@@ -258,23 +385,25 @@ public class SpecGraphBuilder {
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder();
-//            sb.append("{");
+            //            sb.append("{");
             sb.append(label);
 
-            if ( producer != null ) {
+            if (producer != null) {
                 sb.append("(producer=").append(producer.id);
                 sb.append(", ").append(outColIndex);
                 sb.append(")");
             }
 
             final AccessId setLeader = find();
-            if ( setLeader != this ) {
+            if (setLeader != this) {
                 sb.append("-->").append(setLeader);
             }
-//            sb.append('}');
+            //            sb.append('}');
             return sb.toString();
         }
     }
+
+
 
     /**
      * Builds a spec graph from {@code table}.
@@ -310,19 +439,6 @@ public class SpecGraphBuilder {
     private static Node createNodes(final TableTransform transform) {
         final TableTransformSpec spec = transform.getSpec();
         final List<Node> predecessors = transform.getPrecedingTransforms().stream().map(SpecGraphBuilder::createNodes).toList();
-        final RagNodeType type = RagNodeType.forSpec(spec);
-        final int numColumns = switch (type) {
-            case SOURCE -> ((SourceTransformSpec)spec).getSchema().numColumns();
-            case MAP -> ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
-            case ROWINDEX -> predecessors.get(0).numColumns + 1;
-            case COLFILTER -> ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
-            case APPEND -> predecessors.stream().mapToInt(n -> n.numColumns).sum();
-            case SLICE, ROWFILTER, CONCATENATE -> predecessors.get(0).numColumns;
-            case CONSUMER -> 0;
-            case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
-                    throw new UnsupportedOperationException(
-                            "not handled yet. needs to be implemented or removed"); // TODO (TP)
-        };
-        return new Node(type, spec, numColumns, predecessors);
+        return new Node(spec, predecessors);
     }
 }
