@@ -45,12 +45,18 @@
  */
 package org.knime.core.table.virtual.graph.rag2;
 
+import static org.knime.core.table.virtual.graph.rag.RagEdgeType.SPEC;
+
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
+import org.knime.core.table.virtual.graph.rag.RagEdgeType;
 import org.knime.core.table.virtual.graph.rag.RagNodeType;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
@@ -62,23 +68,53 @@ public class SpecGraphBuilder {
 
 
     static List<AccessId> createCols(final int n, final String debugVarName, int debugNodeId, int debugPredecessorIndex) {
-        final List<AccessId> inCols = new ArrayList<>( n );
+        return createCols(null, n, debugVarName, debugNodeId, debugPredecessorIndex);
+    }
+
+    static List<AccessId> createCols(final Node producer, final int n, final String debugVarName, int debugNodeId, int debugPredecessorIndex) {
+        final List<AccessId> cols = new ArrayList<>( n );
         for (int i = 0; i < n; i++) {
             String label = debugVarName + "^" + i + "_v" + debugNodeId;
             if (debugPredecessorIndex >= 0)
                 label += "(" + debugPredecessorIndex + ")";
-            inCols.add(new AccessId(label));
+            cols.add(new AccessId(producer, producer != null ? i : -1, label));
         }
-        return inCols;
+        return cols;
+    }
+
+    record ControlFlowEdge(PredecessorData from, Node to) {}
+
+    record PredecessorData(
+            Node node,
+            Node predecessor,
+            List<AccessId> inCols,
+            List<AccessId> inputs,
+            List<ControlFlowEdge> controlFlowEdges) {
+        PredecessorData(Node node, Node predecessor, List<AccessId> inCols, List<AccessId> inputs) {
+            this(node, predecessor, inCols, inputs, new ArrayList<>());
+        }
+    }
+
+    static Iterable<Node> specPredecessors(Node first) {
+        return () -> new Iterator<>() {
+            private Node next = first;
+
+            @Override
+            public boolean hasNext() {
+                return next != null;
+            }
+
+            @Override
+            public Node next() {
+                final Node current = next;
+                next = next.specPredecessor();
+                return current;
+            }
+        };
     }
 
 
-    record ControlFlowEdge(Node.PredecessorData from, Node to) {}
-
     static class Node {
-
-        private static int ids = 0;
-        final int id = ids++;
 
         final RagNodeType type;
 
@@ -90,12 +126,7 @@ public class SpecGraphBuilder {
 
         final List<AccessId> outputs;
 
-        record PredecessorData(Node predecessor, List<AccessId> inCols, List<AccessId> inputs,
-                               List<Node> controlFlowPredecessors) {
-            PredecessorData(Node predecessor, List<AccessId> inCols, List<AccessId> inputs) {
-                this(predecessor, inCols, inputs, new ArrayList<>());
-            }
-        }
+        final List<ControlFlowEdge> controlFlowEdges = new ArrayList<>();
 
         final List<PredecessorData> predecessorData;
 
@@ -104,6 +135,68 @@ public class SpecGraphBuilder {
                 final List<Node> predecessors ) {
             this.spec = spec;
             this.type = RagNodeType.forSpec(spec);
+
+            predecessorData = new ArrayList<>();
+            for (int i = 0; i < predecessors.size(); i++) {
+                final Node p = predecessors.get(i);
+                final List<AccessId> inCols = createCols(p.numColumns, "alpha", id, predecessors.size() > 1 ? i : -1);
+
+                final int numInputs = switch (type) {
+                    case SOURCE, COLFILTER, SLICE, ROWINDEX  -> 0;
+                    case MAP -> ((MapTransformSpec)spec).getColumnSelection().length;
+                    case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection().length;
+                    case APPEND, CONCATENATE, CONSUMER -> p.numColumns;
+                    case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER -> throw unhandledNodeType();
+                };
+                final List<AccessId> inputs = createCols(numInputs, "gamma", id, predecessors.size() > 1 ? i : -1);
+                final PredecessorData pd = new PredecessorData(this, p, inCols, inputs);
+                final List<ControlFlowEdge> inflow = pd.controlFlowEdges();
+                switch (type) {
+                    case MAP, COLFILTER, SOURCE -> {
+                    }
+                    case SLICE, APPEND, CONCATENATE, ROWINDEX, CONSUMER -> {
+                        boolean rowFilterHit = false;
+                        for (Node node : specPredecessors(p)) {
+                            switch (node.type) {
+                                case MAP, COLFILTER -> {
+                                    continue;
+                                }
+                                case ROWFILTER -> {
+                                    rowFilterHit = true;
+                                    inflow.add(new ControlFlowEdge(pd, node));
+                                    continue;
+                                }
+                                default -> {
+                                    if (!rowFilterHit) {
+                                        inflow.add(new ControlFlowEdge(pd, node));
+                                    }
+                                }
+                                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER -> throw unhandledNodeType();
+                            }
+                            break;
+                        }
+                    }
+                    case ROWFILTER -> {
+                        for (Node node : specPredecessors(p)) {
+                            switch (node.type) {
+                                case MAP, COLFILTER, ROWFILTER -> {
+                                    continue;
+                                }
+                                default -> {
+                                    inflow.add(new ControlFlowEdge(pd, node));
+                                }
+                                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER -> throw unhandledNodeType();
+                            }
+                            break;
+                        }
+                    }
+                    case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER -> throw unhandledNodeType();
+                }
+                inflow.forEach(edge -> {
+                    System.out.println("control flow: " + edge.from.node.id + " --> " + edge.to.id);
+                });
+                predecessorData.add(pd);
+            }
 
             numColumns = switch (type) {
                 case SOURCE -> ((SourceTransformSpec)spec).getSchema().numColumns();
@@ -117,25 +210,6 @@ public class SpecGraphBuilder {
                         throw new UnsupportedOperationException(
                                 "not handled yet. needs to be implemented or removed"); // TODO (TP)
             };
-
-            predecessorData = new ArrayList<>();
-            for (int i = 0; i < predecessors.size(); i++) {
-                final Node p = predecessors.get(i);
-                final List<AccessId> inCols = createCols(p.numColumns, "alpha", id, predecessors.size() > 1 ? i : -1);
-
-                final int numInputs = switch (type) {
-                    case SOURCE, COLFILTER, SLICE, ROWINDEX  -> 0;
-                    case MAP -> ((MapTransformSpec)spec).getColumnSelection().length;
-                    case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection().length;
-                    case APPEND, CONCATENATE, CONSUMER -> p.numColumns;
-                    case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
-                            throw new UnsupportedOperationException(
-                                    "not handled yet. needs to be implemented or removed"); // TODO (TP)
-                };
-                final List<AccessId> inputs = createCols(numInputs, "gamma", id, predecessors.size() > 1 ? i : -1);
-                predecessorData.add(new PredecessorData(p, inCols, inputs));
-            }
-
             outCols = createCols(numColumns, "beta", id, -1);
 
             final int numOutputs = switch (type) {
@@ -146,16 +220,17 @@ public class SpecGraphBuilder {
                         throw new UnsupportedOperationException(
                                 "not handled yet. needs to be implemented or removed"); // TODO (TP)
             };
-            outputs = createCols( numOutputs, "delta", id, -1);
+            outputs = createCols( this, numOutputs, "delta", id, -1);
 
             // Access tracing
             traceIncolsToOutcols();
             tracePredecessorIn();
             traceOutcolsToOutputs();
             traceInputsToIncols();
+        }
 
-            // Control Flow
-            controlFlowPredecessors
+        Node specPredecessor() {
+            return predecessorData.isEmpty() ? null : predecessorData.get(0).predecessor;
         }
 
         AccessId outCol(int i) {
@@ -224,9 +299,7 @@ public class SpecGraphBuilder {
                         outCol(i).union(inCol(selection[i]));
                     }
                 }
-                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
-                        throw new UnsupportedOperationException(
-                                "not handled yet. needs to be implemented or removed"); // TODO (TP)
+                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER -> throw unhandledNodeType();
             }
         }
 
@@ -246,9 +319,7 @@ public class SpecGraphBuilder {
                 }
                 case SLICE, COLFILTER, ROWFILTER -> {
                 }
-                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
-                        throw new UnsupportedOperationException(
-                                "not handled yet. needs to be implemented or removed"); // TODO (TP)
+                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER -> throw unhandledNodeType();
             }
         }
 
@@ -280,9 +351,7 @@ public class SpecGraphBuilder {
                 }
                 case SOURCE, SLICE, COLFILTER, ROWINDEX -> {
                 }
-                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
-                        throw new UnsupportedOperationException(
-                                "not handled yet. needs to be implemented or removed"); // TODO (TP)
+                case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER -> throw unhandledNodeType();
             }
         }
 
@@ -321,12 +390,28 @@ public class SpecGraphBuilder {
             return sb.toString();
         }
 
+
+        // ids are just for printing ...
+        private static int nextNodeId = 0;
+        private final int id = nextNodeId++;
+
+        /**
+         * To make it easier to identify nodes in debug output, each node is assigned a
+         * unique id on construction.
+         * <p>
+         * <em>This might be removed later. Please do not rely on uniqueness of {@code
+         * id()}!</em>
+         */
+        public int id() {
+            return id;
+        }
     }
 
 
 
-    static class SpecGraph {
+    public static class SpecGraph {
         final List<Node> nodes = new ArrayList<>();
+
 
         final Node root;
 
@@ -344,6 +429,80 @@ public class SpecGraphBuilder {
         public String toString() {
             return "SpecGraph{root=\n" + root.toString("  ") + "\n}";
         }
+    }
+
+
+    record Edge(RagEdgeType type, Node source, Node target) {
+    }
+
+    static class Edges {
+        final Set<Edge> edges = new HashSet<>();
+
+        Edges(Node root) {
+            addRecursively1(root);
+            addRecursively2(root);
+        }
+
+        private void addRecursively1(Node node) {
+            for (PredecessorData pd : node.predecessorData) {
+                edges.add(new Edge(RagEdgeType.SPEC, node, pd.predecessor));
+                addRecursively1(pd.predecessor);
+            }
+        }
+
+        private void addRecursively2(Node node) {
+            for (PredecessorData pd : node.predecessorData) {
+                pd.controlFlowEdges.forEach(cfe -> edges.add( //
+                        new Edge(RagEdgeType.EXEC, node, cfe.to())));
+
+                pd.inputs.forEach(accessId -> edges.add( //
+                        new Edge(RagEdgeType.DATA, node, accessId.find().producer)));
+
+                addRecursively2(pd.predecessor);
+            }
+        }
+    }
+
+    public static String mermaid(final SpecGraph graph, final boolean darkMode) {
+        final var sb = new StringBuilder("graph TD\n");
+        for (final Node node : graph.nodes) {
+            final String name = "<" + node.id() + "> " + node.spec.toString();
+            sb.append("  " + node.id() + "(\"" + name + "\")\n");
+        }
+        int edgeId = 0;
+        final Set<Edge> edges = new Edges(graph.root).edges;
+        for (final Edge edge : edges) {
+            if (edge.type() == SPEC) {
+                sb.append("  " + edge.target().id() + "--- " + edge.source().id() + "\n");
+            } else {
+                sb.append("  " + edge.target().id() + "--> " + edge.source().id() + "\n");
+            }
+            switch (edge.type() )
+            {
+                case SPEC:
+                    sb.append("  linkStyle " + edgeId + " stroke:" + //
+                            (darkMode ? "#444444,anything" : "#DDDDDD,anything") + ";\n");
+                    break;
+                case DATA:
+                    sb.append("  linkStyle " + edgeId + " stroke:" + //
+                            (darkMode ? "blue" : "#8888FF,anything") + ";\n");
+                    break;
+                case EXEC:
+                    sb.append("  linkStyle " + edgeId + " stroke:" + //
+                            (darkMode ? "red" : "#FF8888,anything") + ";\n");
+                    break;
+                case ORDER:
+                    sb.append("  linkStyle " + edgeId + " stroke:" + //
+                            (darkMode ? "white" : "black") + ";\n");
+                    break;
+                case FLATTENED_ORDER:
+                    sb.append("  linkStyle " + edgeId + " stroke:" + //
+                            (darkMode ? "lime" : "lime") + ";\n");
+                    break;
+            }
+            ++edgeId;
+        }
+        return sb.toString();
     }
 
     static class AccessId {
@@ -441,4 +600,43 @@ public class SpecGraphBuilder {
         final List<Node> predecessors = transform.getPrecedingTransforms().stream().map(SpecGraphBuilder::createNodes).toList();
         return new Node(spec, predecessors);
     }
+
+    private static UnsupportedOperationException unhandledNodeType() {
+        return new UnsupportedOperationException("not handled yet. needs to be implemented or removed");
+    }
+
 }
+
+
+
+
+
+
+
+
+/*
+                switch (type) {
+                    case SOURCE -> {
+                    }
+                    case SLICE -> {
+                    }
+                    case APPEND -> {
+                    }
+                    case CONCATENATE -> {
+                    }
+                    case COLFILTER -> {
+                    }
+                    case MAP -> {
+                    }
+                    case ROWFILTER -> {
+                    }
+                    case CONSUMER -> {
+                    }
+                    case ROWINDEX -> {
+                    }
+                    case APPENDMISSING, MISSING, MATERIALIZE, WRAPPER, IDENTITY, OBSERVER ->
+                            throw new UnsupportedOperationException(
+                                    "not handled yet. needs to be implemented or removed"); // TODO (TP)
+                }
+
+ */
