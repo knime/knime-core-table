@@ -2,6 +2,8 @@ package org.knime.core.table.virtual.graph.rag3;
 
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.Terminal;
 
 public class RagPlayground3 {
 
@@ -10,10 +12,10 @@ public class RagPlayground3 {
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
         final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
 
-        SpecGraph.Terminal terminal = SpecGraph.buildSpecGraph(table.getProducingTransform());
+        Terminal terminal = SpecGraph.buildSpecGraph(table.getProducingTransform());
         System.out.println("terminal = " + terminal);
 
-        SpecGraph.DependencyGraph graph = new SpecGraph.DependencyGraph(terminal);
+        MermaidGraph graph = new MermaidGraph(terminal);
         System.out.println("graph = " + graph);
 
         var mermaid = new Mermaid();

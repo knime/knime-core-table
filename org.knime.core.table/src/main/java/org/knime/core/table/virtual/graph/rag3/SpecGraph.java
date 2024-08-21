@@ -1,7 +1,7 @@
 package org.knime.core.table.virtual.graph.rag3;
 
-import static org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph.DependencyType.CONTROL;
-import static org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph.DependencyType.DATA;
+import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.CONTROL;
+import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.DATA;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.COLSELECT;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.ROWFILTER;
 
@@ -14,7 +14,7 @@ import java.util.function.IntUnaryOperator;
 
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
-import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph.DependencyEdge;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.Edge;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
@@ -378,15 +378,65 @@ public class SpecGraph {
 
 
 
-    static class DependencyGraph {
-        enum DependencyType {DATA, CONTROL}
-        record DependencyEdge(DependencyType type, Node from, Node to) {}
+    /**
+     * Builds a spec graph from {@code tableTransform}.
+     *
+     * @param tableTransform the producingTransform of the table
+     * @return spec graph representing the given table
+     */
+    public static Terminal buildSpecGraph(final TableTransform tableTransform) {
+        return new Terminal(tableTransform);
+    }
+
+
+
+
+
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    //
+    // CapBuilder
+    //
+
+
+
+    //
+    // CapBuilder
+    //
+    // -----------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    //
+    // Mermaid
+    //
+
+    static class MermaidGraph {
+        enum EdgeType {DATA, CONTROL}
+        record Edge(EdgeType type, Node from, Node to) {}
 
         private final Node consumer;
         private final Set<Node> nodes = new HashSet<>();
-        private final Set<DependencyEdge> edges = new HashSet<>();
+        private final Set<Edge> edges = new HashSet<>();
 
-        DependencyGraph(Terminal terminal)
+        MermaidGraph(Terminal terminal)
         {
             consumer = new Node(terminal.port);
             addRecursively(consumer);
@@ -398,12 +448,12 @@ public class SpecGraph {
                     port.controlFlowEdges().forEach(e -> {
                         final Node target = e.to().owner();
                         addRecursively(target);
-                        edges.add(new DependencyEdge(CONTROL, node, target));
+                        edges.add(new Edge(CONTROL, node, target));
                     });
                     port.accesses().forEach(a -> {
                         final Node target = a.find().producer().node();
                         addRecursively(target);
-                        edges.add(new DependencyEdge(DATA, node, target));
+                        edges.add(new Edge(DATA, node, target));
                     });
                 });
             }
@@ -419,14 +469,14 @@ public class SpecGraph {
         }
     }
 
-    public static String mermaid(final DependencyGraph graph, final boolean darkMode) {
+    public static String mermaid(final MermaidGraph graph, final boolean darkMode) {
         final var sb = new StringBuilder("graph BT\n");
         for (final Node node : graph.nodes) {
             final String name = "<" + node.id() + "> " + node.spec;
             sb.append("  " + node.id() + "(\"" + name + "\")\n");
         }
         int edgeId = 0;
-        for (final DependencyEdge edge : graph.edges) {
+        for (final Edge edge : graph.edges) {
             sb.append("  " + edge.from().id() + "--> " + edge.to().id() + "\n");
             sb.append("  linkStyle " + edgeId + " stroke:");
             sb.append(switch (edge.type()) {
@@ -439,14 +489,8 @@ public class SpecGraph {
         return sb.toString();
     }
 
-    /**
-     * Builds a spec graph from {@code tableTransform}.
-     *
-     * @param tableTransform the producingTransform of the table
-     * @return spec graph representing the given table
-     */
-    public static Terminal buildSpecGraph(final TableTransform tableTransform) {
-        return new Terminal(tableTransform);
-    }
-
+    //
+    // Mermaid
+    //
+    // -----------------------------------------------------------------------------------------------------------------
 }
