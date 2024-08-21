@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
 
+import org.knime.core.table.virtual.TableTransform;
+import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
+import org.knime.core.table.virtual.graph.rag2.SpecGraphBuilder;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
@@ -76,6 +79,14 @@ public class SpecGraph {
         return label;
     }
 
+    // TODO (for debugging only)
+    static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
+        return i -> accessLabel(varName, nodeId, predecessorIndex, i);
+    }
+
+
+
+
     //
     // AccessIds
     //
@@ -83,11 +94,38 @@ public class SpecGraph {
 
 
 
-    record ControlFlowEdge(Port from, Port to) {}
+    record ControlFlowEdge(Port from, Port to) {
+        /**
+         * Remove this {@code ControlFlowEdge} from its target {@code Port} and
+         * replace it with a new edge from {@code from}.
+         *
+         * @return the new edge
+         * @throws IllegalStateException if the target {@code Port} does not have exactly one edge.
+         */
+        ControlFlowEdge relinkFrom(Port from) throws IllegalStateException {
+            if (to.controlFlowEdges.size() != 1)
+                throw new IllegalStateException();
+            final ControlFlowEdge e = new ControlFlowEdge(from, to);
+            from.controlFlowEdges.add(e);
+            to.controlFlowEdges.clear();
+            to.controlFlowEdges.add(e);
+            return e;
+        }
+    }
 
     record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
+        Port(Node owner, List<AccessId> accesses) {
+            this(owner, accesses, new ArrayList<>());
+        }
+
         AccessId access(int i) {
             return accesses.get(i);
+        }
+
+        void linkTo(Port to) {
+            final ControlFlowEdge e = new ControlFlowEdge(this, to);
+            controlFlowEdges.add(e);
+            to.controlFlowEdges().add(e);
         }
     }
 
@@ -103,66 +141,52 @@ public class SpecGraph {
                 final Terminal predecessor = predecessors.get(p);
                 final int numInputs = switch (type) {
                     case SOURCE, SLICE, ROWINDEX  -> 0;
-                    case MAP -> ((MapTransformSpec)spec).getColumnSelection().length;
-                    case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection().length;
+                    case MAP, ROWFILTER -> getColumnSelection(spec).length;
                     case APPEND, CONCATENATE -> predecessor.numColumns();
                     case OBSERVER -> throw unhandledNodeType();
                     // TODO: COLSELECT shouldn't be a possible value here --> SpecType vs NodeType
                     case COLSELECT -> throw new IllegalArgumentException();
                 };
 
+                final List<AccessId> inputs = createAccessIds(null, numInputs, accessLabel("gamma", id, p));
+                final Port inPort = new Port(this, inputs);
+
+                // access tracing:
                 // link inputs to predecessor outCols
-                final IntUnaryOperator selection = switch (type) {
-                    case MAP -> i -> ((MapTransformSpec)spec).getColumnSelection()[i];
-                    case ROWFILTER -> i -> ((RowFilterTransformSpec)spec).getColumnSelection()[i];
-                    default -> i -> i;
-                };
-                final int fp = p;
-                final List<AccessId> inputs = createAccessIds(this, numInputs, i -> accessLabel("gamma", id, fp, i));
-                for (int i = 0; i < numInputs; i++) {
-                    inputs.get(i).union(predecessor.outCol(selection.applyAsInt(i)));
+                switch (type) {
+                    case MAP, ROWFILTER -> {
+                        final int[] selection = getColumnSelection(spec);
+                        unionAccesses(inPort, predecessor.port, numInputs, i -> selection[i]);
+                    }
+                    default -> unionAccesses(inPort, predecessor.port,numInputs);
                 }
 
-                final Port inPort = new Port(this, inputs, new ArrayList<>());
-                in.add(inPort);
-
-                final List<ControlFlowEdge> predecessorControlFlowEdges = predecessor.port.controlFlowEdges();
+                // control flow:
                 switch(type) {
                     case ROWFILTER -> {
-                        final Node predecessorNode = predecessorControlFlowEdges.get(0).to().owner();
+                        final ControlFlowEdge predecessorEdge = predecessor.port.controlFlowEdges().get(0);
+                        final Node predecessorNode = predecessorEdge.to().owner();
                         if (predecessorNode.type == ROWFILTER) {
                             // if predecessor links to a ROWFILTER (one or more)
                             // link this node to the target of that ROWFILTER's controlFlowEdge
-                            // the outside handler should then link to all predecessor ROWFILTERs and this one too (TODO)
                             final Port target = predecessorNode.in.get(0).controlFlowEdges().get(0).to();
-                            final ControlFlowEdge edge = new ControlFlowEdge(inPort, target);
-                            inPort.controlFlowEdges().add(edge);
-                            target.controlFlowEdges().add(edge);
+                            inPort.linkTo(target);
                         } else {
-                            // otherwise
-                            // re-link the predecessor controlFlowEdge (there is only one) to this node
-                            final ControlFlowEdge edge =
-                                    new ControlFlowEdge(inPort, predecessorControlFlowEdges.get(0).to());
-                            inPort.controlFlowEdges().add(edge);
-                            predecessorControlFlowEdges.clear();
-                            predecessorControlFlowEdges.add(edge);
+                            // otherwise re-link the predecessor controlFlowEdge
+                            // (there is only one) to this node
+                            predecessorEdge.relinkFrom(inPort);
                         }
                     }
                     case SLICE, ROWINDEX, APPEND, CONCATENATE -> {
-                        // look at predecessor controlFlowEdges
-                        // re-link them to this Node
-                        // the outside handler should then link to this one (TODO)
-                        predecessorControlFlowEdges.forEach(e -> {
-                            ControlFlowEdge edge = new ControlFlowEdge(inPort, e.to());
-                            inPort.controlFlowEdges().add(edge);
-                            e.to().controlFlowEdges().clear();
-                            e.to().controlFlowEdges().add(edge);
-                        });
+                        // re-link the predecessor controlFlowEdges to this Node
+                        predecessor.port.controlFlowEdges().forEach(e -> e.relinkFrom(inPort));
                     }
                     case OBSERVER -> throw unhandledNodeType();
                     default -> {
                     }
                 }
+
+                in.add(inPort);
             }
 
             final int numOutputs = switch (type) {
@@ -172,18 +196,20 @@ public class SpecGraph {
                 case OBSERVER -> throw unhandledNodeType();
                 case COLSELECT -> throw new IllegalArgumentException();
             };
-            final List<AccessId> outputs = createAccessIds(this, numOutputs, i -> accessLabel("delta", id, -1, i));
-            out = new Port(this, outputs, new ArrayList<>());
+            final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", id, -1));
+            out = new Port(this, outputs);
         }
 
         AccessId output(int i) {
             return out.access(i);
         }
 
+        // TODO unused? remove?
         AccessId input(int i) {
             return input(0, i);
         }
 
+        // TODO unused? remove?
         AccessId input(int p, int i) {
             return in.get(p).access(i);
         }
@@ -194,8 +220,11 @@ public class SpecGraph {
     }
 
     static class Terminal {
-
         final Port port;
+
+        Terminal(final TableTransform t) {
+            this(t.getSpec(), t.getPrecedingTransforms().stream().map(Terminal::new).toList());
+        }
 
         Terminal(final TableTransformSpec spec, final List<Terminal> predecessors) {
             final SpecType type = SpecType.forSpec(spec);
@@ -218,40 +247,29 @@ public class SpecGraph {
                     ? null // don't create a new node, just permute predecessor's outCols
                     : new Node(spec, numColumns, predecessors);
 
-            // access tracing
-            switch(type) {
+            // access tracing:
+            switch (type) {
                 case SOURCE, MAP, APPEND, CONCATENATE -> {
                     // link outCols to node's outputs
-                    for (int i = 0; i < numColumns; i++) {
-                        outCol(i).union(node.output(i));
-                    }
+                    unionAccesses(port, node.out, numColumns);
                 }
                 case SLICE, ROWFILTER -> {
                     // link outCols to the predecessor's outCols
                     // (there is exactly one predecessor)
-                    final Terminal predecessor = predecessors.get(0);
-                    for (int i = 0; i < numColumns; i++) {
-                        outCol(i).union(predecessor.outCol(i));
-                    }
+                    unionAccesses(port, predecessors.get(0).port, numColumns);
                 }
                 case ROWINDEX -> {
                     // link outCols (except the last one) to the predecessor's outCols
                     // (there is exactly one predecessor)
-                    final Terminal predecessor = predecessors.get(0);
-                    for (int i = 0; i < numColumns - 1; i++) {
-                        outCol(i).union(predecessor.outCol(i));
-                    }
+                    unionAccesses(port, predecessors.get(0).port, numColumns - 1);
                     // link the last outCol to the node's output
                     outCol(numColumns - 1).union(node.output(0));
                 }
                 case COLSELECT -> {
                     // apply selection to predecessor's outCols
                     // (there is exactly one predecessor)
-                    final int[] selection = ((SelectColumnsTransformSpec)spec).getColumnSelection();
-                    final Terminal predecessor = predecessors.get(0);
-                    for (int i = 0; i < numColumns - 1; i++) {
-                        outCol(i).union(predecessor.outCol(selection[i]));
-                    }
+                    final int[] selection = getColumnSelection(spec);
+                    unionAccesses(port, predecessors.get(0).port, numColumns, i -> selection[i]);
                 }
             }
 
@@ -259,39 +277,23 @@ public class SpecGraph {
             switch (type) {
                 case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> {
                     // link to the new node
-                    final ControlFlowEdge e = new ControlFlowEdge(port, node.out);
-                    port.controlFlowEdges().add(e);
-                    node.out.controlFlowEdges().add(e);
+                    port.linkTo(node.out);
                 }
                 case MAP, COLSELECT -> {
                     // link to everything that was linked to by predecessor
                     // (there is exactly one predecessor)
-                    final Terminal predecessor = predecessors.get(0);
-                    predecessor.port.controlFlowEdges().forEach(edge -> {
-                        // TODO: the following is a candidate for method extraction
-                        //       could become: edge.to().reLinkFrom(port)
-                        //       or similar
-                        final ControlFlowEdge e = new ControlFlowEdge(port, edge.to());
-                        port.controlFlowEdges().add(e);
-                        edge.to().controlFlowEdges().clear();
-                        edge.to().controlFlowEdges().add(e);
-                    });
+                    final List<ControlFlowEdge> predecessorControlFlowEdges = predecessors.get(0).port.controlFlowEdges();
+                    predecessorControlFlowEdges.forEach(e -> e.relinkFrom(port));
                 }
                 case ROWFILTER -> {
-                    // link to the new node, and all other ROWFILTERs that were linked to by predecessor
+                    // link to other ROWFILTERs that were linked to by predecessor
                     // (there is exactly one predecessor)
-                    final Terminal predecessor = predecessors.get(0);
-                    if ( predecessor.port.controlFlowEdges().get(0).to().owner().type == ROWFILTER ) {
-                        predecessor.port.controlFlowEdges().forEach(edge -> {
-                            final ControlFlowEdge e = new ControlFlowEdge(port, edge.to());
-                            port.controlFlowEdges().add(e);
-                            edge.to().controlFlowEdges().clear();
-                            edge.to().controlFlowEdges().add(e);
-                        });
+                    final List<ControlFlowEdge> predecessorControlFlowEdges = predecessors.get(0).port.controlFlowEdges();
+                    if (predecessorControlFlowEdges.get(0).to().owner().type == ROWFILTER) {
+                        predecessorControlFlowEdges.forEach(e -> e.relinkFrom(port));
                     }
-                    final ControlFlowEdge e = new ControlFlowEdge(port, node.out);
-                    port.controlFlowEdges().add(e);
-                    node.out.controlFlowEdges().add(e);
+                    // link to the new node
+                    port.linkTo(node.out);
                 }
             }
         }
@@ -303,12 +305,52 @@ public class SpecGraph {
         AccessId outCol(int i) {
             return port.access(i);
         }
-
     }
 
+    private static void unionAccesses(Port from, Port to, int n) {
+        for (int i = 0; i < n; i++) {
+            from.access(i).union(to.access(i));
+        }
+    }
 
+    private static void unionAccesses(Port from, Port to, int n, IntUnaryOperator indexMapper) {
+        for (int i = 0; i < n; i++) {
+            from.access(i).union(to.access(indexMapper.applyAsInt(i)));
+        }
+    }
+
+    private static int[] getColumnSelection(TableTransformSpec spec) {
+        return switch (SpecType.forSpec(spec)) {
+            case MAP -> ((MapTransformSpec)spec).getColumnSelection();
+            case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection();
+            case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection();
+            default -> throw new IllegalArgumentException();
+        };
+    }
 
     private static UnsupportedOperationException unhandledNodeType() {
         return new UnsupportedOperationException("not handled yet. needs to be implemented or removed");
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Builds a spec graph from {@code tableTransform}.
+     *
+     * @param tableTransform the producingTransform of the table
+     * @return spec graph representing the given table
+     */
+    public static Terminal buildSpecGraph(final TableTransform tableTransform) {
+        return new Terminal(tableTransform);
+    }
+
 }
