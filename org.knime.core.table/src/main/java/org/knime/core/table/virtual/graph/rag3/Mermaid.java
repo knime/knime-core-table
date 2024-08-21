@@ -3,7 +3,7 @@ package org.knime.core.table.virtual.graph.rag3;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph;
 
 /**
  * Visualize {@code RagGraph} using <a href=https://mermaid-js.github.io>mermaid</a>.
@@ -20,11 +20,11 @@ public class Mermaid {
         sb = new StringBuilder();
     }
 
-    public void append(final String title, final DependencyGraph graph) {
+    public void append(final String title, final MermaidGraph graph) {
         append(title, null, graph);
     }
 
-    public void append(final String title, final String description, final DependencyGraph graph) {
+    public void append(final String title, final String description, final MermaidGraph graph) {
         if (title != null) {
             sb.append("<h3>").append(title).append("</h3>\n");
         }
