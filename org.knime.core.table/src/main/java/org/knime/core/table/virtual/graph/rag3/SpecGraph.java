@@ -43,10 +43,6 @@ public class SpecGraph {
             this.label = label;
         }
 
-        public AccessId(String label) {
-            this(null, label);
-        }
-
         public Producer producer() {
             return producer;
         }
@@ -67,13 +63,7 @@ public class SpecGraph {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder();
-            sb.append(label);
-            final AccessId setLeader = find();
-            if (setLeader != this) {
-                sb.append(" -> ").append(setLeader);
-            }
-            return sb.toString();
+            return label + (parent == this ? "" : "->" + find());
         }
     }
 
@@ -95,9 +85,6 @@ public class SpecGraph {
             return label;
         };
     }
-
-
-
 
     //
     // AccessIds
@@ -245,6 +232,7 @@ public class SpecGraph {
             return in.get(p).access(i);
         }
 
+        // TODO shorten?
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("Node{");
@@ -359,10 +347,7 @@ public class SpecGraph {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Terminal{");
-            sb.append("port=").append(port);
-            sb.append('}');
-            return sb.toString();
+            return "Terminal{port=" + port + "}";
         }
     }
 

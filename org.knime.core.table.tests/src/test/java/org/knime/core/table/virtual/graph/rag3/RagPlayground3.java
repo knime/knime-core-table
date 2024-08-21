@@ -6,9 +6,9 @@ import org.knime.core.table.virtual.graph.VirtualTableTests;
 public class RagPlayground3 {
 
     public static void main(String[] args) {
-        final VirtualTable table = VirtualTableTests.vtMinimal();
+//        final VirtualTable table = VirtualTableTests.vtMinimal();
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
-//        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
+        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
 
         SpecGraph.Terminal terminal = SpecGraph.buildSpecGraph(table.getProducingTransform());
         System.out.println("terminal = " + terminal);
