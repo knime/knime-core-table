@@ -10,9 +10,17 @@ public class RagPlayground3 {
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
 //        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
 
-        SpecGraph.Terminal specGraph = SpecGraph.buildSpecGraph(table.getProducingTransform());
+        SpecGraph.Terminal terminal = SpecGraph.buildSpecGraph(table.getProducingTransform());
+        System.out.println("terminal = " + terminal);
 
-        System.out.println("specGraph = " + specGraph);
+        SpecGraph.DependencyGraph graph = new SpecGraph.DependencyGraph(terminal);
+        System.out.println("graph = " + graph);
+
+        var mermaid = new Mermaid();
+        mermaid.append("<pre>" + graph + "</pre>");
+        mermaid.append("SpecGraph", graph);
+        mermaid.save("/Users/pietzsch/git/mermaid/b_graph.html");
+
 
     }
 }
