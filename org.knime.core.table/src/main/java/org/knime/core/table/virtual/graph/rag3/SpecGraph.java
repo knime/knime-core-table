@@ -7,16 +7,25 @@ import static org.knime.core.table.virtual.graph.rag3.SpecType.CONSUMER;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.ROWFILTER;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
 
+import org.knime.core.table.row.Selection;
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
+import org.knime.core.table.virtual.graph.cap.CapAccessId;
+import org.knime.core.table.virtual.graph.cap.CapNode;
+import org.knime.core.table.virtual.graph.cap.CapNodeSource;
+import org.knime.core.table.virtual.graph.rag.AccessId;
 import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.Edge;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -416,16 +425,34 @@ public class SpecGraph {
         record BranchNode(Node node, List<Branch> branches) implements DepNode {
         }
 
-        // TODO: probably we don't need sourceDependencies
-        record Branch(Set<DepNode> sourceDependencies, List<SeqNode> innerNodes, BranchNode target) {
+        record Branch(List<SeqNode> innerNodes, BranchNode target) {
         }
+
+        void sequentialize(final Branch branch) {
+            branch.target().branches().forEach(this::sequentialize);
+            final Set<SeqNode> todo = new HashSet<>(branch.innerNodes);
+            branch.innerNodes.clear();
+            while(!todo.isEmpty()) {
+                var candidates =
+                        todo.stream().filter(node -> node.dependencies().stream().noneMatch(todo::contains)).toList();
+                var next = policy.apply(candidates);
+                branch.innerNodes().add(next);
+                todo.remove(next);
+            }
+        }
+
+        static final Function<List<SeqNode>, SeqNode> policy = nodes -> nodes.get(0);
 
         private final DepNode consumerDepNode;
         private final Map<Node, DepNode> depNodes = new HashMap<>();
+        private final Branch rootBranch;
 
         public DependencyGraph(final Terminal terminal) {
             final Node consumer = new Node(terminal.port);
             consumerDepNode = getDepNode(consumer, new ArrayList<>(), new AtomicReference<>());
+            // TODO: Remove explicit CONSUMER. We just need a Branch and the Terminal Port
+            rootBranch = ((BranchNode)consumerDepNode).branches().get(0);
+            sequentialize(rootBranch);
         }
 
         private DepNode getDepNode(Node node, List<SeqNode> innerNodes, AtomicReference<BranchNode> branchTarget)
@@ -437,48 +464,21 @@ public class SpecGraph {
             switch (node.type) {
                 case SOURCE, APPEND, CONCATENATE, CONSUMER -> {
                     final ArrayList<Branch> branches = new ArrayList<>();
-                    // TODO: refactor:
-                    //       probably if we extract from port -> {...} part a
-                    //       method
-                    //          Branch getBranch(Port) {...}
-                    //       then we don't need a CONSUMER
                     node.in.forEach(port -> {
-                        final Set<DepNode> dependencies = new HashSet<>();
-                        final List<SeqNode> innerNodesX = new ArrayList<>();
-                        final AtomicReference<BranchNode> branchTargetX = new AtomicReference<>();
-                        port.controlFlowEdges().forEach(e -> {
-                            final Node target = e.to().owner();
-                            final DepNode depTarget = getDepNode(target, innerNodesX, branchTargetX);
-                            dependencies.add(depTarget);
-                        });
-                        port.accesses().forEach(a -> {
-                            final Node target = a.find().producer().node();
-                            final DepNode depTarget = getDepNode(target, innerNodesX, branchTargetX);
-                            dependencies.add(depTarget);
-                        });
-                        final Branch branch = new Branch(dependencies, innerNodesX, branchTargetX.get());
+                        final List<SeqNode> inner = new ArrayList<>();
+                        final AtomicReference<BranchNode> target = new AtomicReference<>();
+                        getDependencies(inner, target, port);
+                        final Branch branch = new Branch(inner, target.get());
                         branches.add(branch);
                     });
-
                     final BranchNode branchNode = new BranchNode(node, branches);
                     branchTarget.setPlain(branchNode);
                     depNodes.put(node, branchNode);
                     return branchNode;
                 }
                 case SLICE, MAP, ROWFILTER, ROWINDEX -> {
-                    Set<DepNode> dependencies = new HashSet<>();
                     final Port port = node.in.get(0);
-                    port.controlFlowEdges().forEach(e -> {
-                        final Node target = e.to().owner();
-                        final DepNode depTarget = getDepNode(target, innerNodes, branchTarget);
-                        dependencies.add(depTarget);
-                    });
-                    port.accesses().forEach(a -> {
-                        final Node target = a.find().producer().node();
-                        final DepNode depTarget = getDepNode(target, innerNodes, branchTarget);
-                        dependencies.add(depTarget);
-                    });
-
+                    final Set<DepNode> dependencies = getDependencies(innerNodes, branchTarget, port);
                     final SeqNode seqNode = new SeqNode(node, dependencies);
                     innerNodes.add(seqNode);
                     depNodes.put(node, seqNode);
@@ -488,9 +488,134 @@ public class SpecGraph {
                 default -> throw new IllegalArgumentException();
             }
         }
+
+        private Set<DepNode> getDependencies(final List<SeqNode> innerNodes,
+                final AtomicReference<BranchNode> branchTarget, final Port port) {
+            final Set<DepNode> dependencies = new HashSet<>();
+            port.controlFlowEdges().forEach(e -> {
+                final Node target = e.to().owner();
+                final DepNode depTarget = getDepNode(target, innerNodes, branchTarget);
+                dependencies.add(depTarget);
+            });
+            port.accesses().forEach(a -> {
+                final Node target = a.find().producer().node();
+                final DepNode depTarget = getDepNode(target, innerNodes, branchTarget);
+                dependencies.add(depTarget);
+            });
+            return dependencies;
+        }
     }
 
 
+    static class BuildCap {
+
+        private final List<CapNode> cursorAssemblyPlan;
+        private final Map<Node, CapNode> capNodes;
+        private final Map<AccessId, CapAccessId> capAccessIds;
+
+        BuildCap(final DependencyGraph sequentializedGraph) {
+            cursorAssemblyPlan = new ArrayList<>();
+            capNodes = new HashMap<>();
+            capAccessIds = new HashMap<>();
+
+            DependencyGraph.Branch branch = sequentializedGraph.rootBranch;
+
+            appendBranch(branch);
+        }
+
+        private int index = 0;
+        private CapNode appendBranch(final DependencyGraph.Branch branch) {
+
+            // append predecessor branches
+            final List<CapNode> heads = new ArrayList<>();
+            branch.target().branches().forEach(b -> heads.add(appendBranch(b)));
+
+            // append branch target
+            final Node target = branch.target().node();
+            switch (target.type) {
+                case SOURCE -> {
+                    final SourceTransformSpec spec = (SourceTransformSpec)target.spec;
+                    final UUID uuid = spec.getSourceIdentifier();
+                    final List<AccessId> outputs = target.out.accesses();
+                    final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
+                    final Selection.RowRangeSelection range = spec.getRowRange();
+                    final CapNodeSource capNode = new CapNodeSource(index++, uuid, columns, range);
+                    createCapAccessIdsFor(outputs, capNode);
+                    append(target, capNode);
+                }
+                case APPEND -> {
+                    // TODO
+                    throw new UnsupportedOperationException();
+                }
+                case CONCATENATE -> {
+                    // TODO
+                    throw new UnsupportedOperationException();
+                }
+                case CONSUMER -> {
+                    // TODO (maybe? in the end we will probably not need CONSUMER?
+                    throw new UnsupportedOperationException();
+                }
+                default -> throw new IllegalStateException();
+            }
+
+            // append inner nodes
+            //            TODO...
+            branch.innerNodes.forEach(depNode -> {
+                final Node node = depNode.node();
+                final List<AccessId> inputs = node.in.get(0).accesses();
+                final CapAccessId[] capInputs = capAccessIdsFor(inputs);
+                switch (node.type) {
+                    case MAP -> {
+                        // TODO
+                    }
+                    case SLICE -> {
+                        // TODO
+                    }
+                    case ROWFILTER -> {
+                        // TODO
+                    }
+                    case ROWINDEX -> {
+                        // TODO
+                    }
+                    case OBSERVER -> throw unhandledNodeType();
+                    default -> throw new IllegalStateException();
+                }
+            });
+        }
+
+        /**
+         * Append the given {@code capNode} to the plan.
+         * Remember the association to corresponding {@code ragNode}.
+         */
+        private void append(final Node ragNode, final CapNode capNode) {
+            cursorAssemblyPlan.add(capNode);
+            capNodes.put(ragNode, capNode);
+        }
+
+        /**
+         * Create a new CapAccessId with the given producer and slot indices starting from 0 for the given {@code outputs} AccessIds.
+         */
+        private void createCapAccessIdsFor(final Iterable<AccessId> outputs, final CapNode producer) {
+            int i = 0;
+            for (AccessId output : outputs) {
+                capAccessIds.put(output.find(), new CapAccessId(producer, i++));
+            }
+        }
+
+        /**
+         * Get CapAccessId[] array corresponding to (Rag)AccessIds collection.
+         */
+        private CapAccessId[] capAccessIdsFor(final Collection<AccessId> ids) {
+            final CapAccessId[] imps = new CapAccessId[ids.size()];
+            int i = 0;
+            for (AccessId id : ids) {
+                imps[i++] = capAccessIds.get(id.find());
+            }
+            return imps;
+        }
+
+
+    }
 
     //
     // CapBuilder
