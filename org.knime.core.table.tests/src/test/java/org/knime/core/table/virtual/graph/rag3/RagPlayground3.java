@@ -2,6 +2,7 @@ package org.knime.core.table.virtual.graph.rag3;
 
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.Terminal;
 
@@ -23,6 +24,7 @@ public class RagPlayground3 {
         mermaid.append("SpecGraph", graph);
         mermaid.save("/Users/pietzsch/git/mermaid/b_graph.html");
 
-
+        DependencyGraph depGraph = new DependencyGraph(terminal);
+        System.out.println("depGraph = " + depGraph);
     }
 }
