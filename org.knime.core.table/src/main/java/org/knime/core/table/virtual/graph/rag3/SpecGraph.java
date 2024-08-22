@@ -3,12 +3,16 @@ package org.knime.core.table.virtual.graph.rag3;
 import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.CONTROL;
 import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.DATA;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.COLSELECT;
+import static org.knime.core.table.virtual.graph.rag3.SpecType.CONSUMER;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.ROWFILTER;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
 
@@ -146,7 +150,7 @@ public class SpecGraph {
         // TODO consumer-like artificial node to anchor DependencyGraph
         Node(Port inPort) {
             spec = new ConsumerTransformSpec();
-            type = null;
+            type = CONSUMER;
             in.add(inPort);
             out = null;
         }
@@ -163,7 +167,7 @@ public class SpecGraph {
                     case APPEND, CONCATENATE -> predecessor.numColumns();
                     case OBSERVER -> throw unhandledNodeType();
                     // TODO: COLSELECT shouldn't be a possible value here --> SpecType vs NodeType
-                    case COLSELECT -> throw new IllegalArgumentException();
+                    case COLSELECT, CONSUMER -> throw new IllegalArgumentException();
                 };
 
                 final List<AccessId> inputs = createAccessIds(null, numInputs, accessLabel("gamma", id, p));
@@ -212,7 +216,7 @@ public class SpecGraph {
                 case ROWINDEX -> 1;
                 case SLICE, ROWFILTER -> 0;
                 case OBSERVER -> throw unhandledNodeType();
-                case COLSELECT -> throw new IllegalArgumentException();
+                case COLSELECT, CONSUMER -> throw new IllegalArgumentException();
             };
             final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", id, -1));
             out = new Port(this, outputs);
@@ -275,6 +279,7 @@ public class SpecGraph {
                 case APPEND -> predecessors.stream().mapToInt(Terminal::numColumns).sum();
                 case SLICE, ROWFILTER, CONCATENATE -> predecessors.get(0).numColumns();
                 case OBSERVER -> throw unhandledNodeType();
+                case CONSUMER -> throw new IllegalArgumentException();
             };
 
             final Node owner = null; // TODO: use dummy consumer node as owner?
@@ -398,6 +403,92 @@ public class SpecGraph {
     //
     // CapBuilder
     //
+
+    static class DependencyGraph {
+
+        interface DepNode {
+            Node node();
+        }
+
+        record SeqNode(Node node, Set<DepNode> dependencies) implements DepNode {
+        }
+
+        record BranchNode(Node node, List<Branch> branches) implements DepNode {
+        }
+
+        // TODO: probably we don't need sourceDependencies
+        record Branch(Set<DepNode> sourceDependencies, List<SeqNode> innerNodes, BranchNode target) {
+        }
+
+        private final DepNode consumerDepNode;
+        private final Map<Node, DepNode> depNodes = new HashMap<>();
+
+        public DependencyGraph(final Terminal terminal) {
+            final Node consumer = new Node(terminal.port);
+            consumerDepNode = getDepNode(consumer, new ArrayList<>(), new AtomicReference<>());
+        }
+
+        private DepNode getDepNode(Node node, List<SeqNode> innerNodes, AtomicReference<BranchNode> branchTarget)
+        {
+            final DepNode depNode = depNodes.get(node);
+            if (depNode != null) {
+                return depNode;
+            }
+            switch (node.type) {
+                case SOURCE, APPEND, CONCATENATE, CONSUMER -> {
+                    final ArrayList<Branch> branches = new ArrayList<>();
+                    // TODO: refactor:
+                    //       probably if we extract from port -> {...} part a
+                    //       method
+                    //          Branch getBranch(Port) {...}
+                    //       then we don't need a CONSUMER
+                    node.in.forEach(port -> {
+                        final Set<DepNode> dependencies = new HashSet<>();
+                        final List<SeqNode> innerNodesX = new ArrayList<>();
+                        final AtomicReference<BranchNode> branchTargetX = new AtomicReference<>();
+                        port.controlFlowEdges().forEach(e -> {
+                            final Node target = e.to().owner();
+                            final DepNode depTarget = getDepNode(target, innerNodesX, branchTargetX);
+                            dependencies.add(depTarget);
+                        });
+                        port.accesses().forEach(a -> {
+                            final Node target = a.find().producer().node();
+                            final DepNode depTarget = getDepNode(target, innerNodesX, branchTargetX);
+                            dependencies.add(depTarget);
+                        });
+                        final Branch branch = new Branch(dependencies, innerNodesX, branchTargetX.get());
+                        branches.add(branch);
+                    });
+
+                    final BranchNode branchNode = new BranchNode(node, branches);
+                    branchTarget.setPlain(branchNode);
+                    depNodes.put(node, branchNode);
+                    return branchNode;
+                }
+                case SLICE, MAP, ROWFILTER, ROWINDEX -> {
+                    Set<DepNode> dependencies = new HashSet<>();
+                    final Port port = node.in.get(0);
+                    port.controlFlowEdges().forEach(e -> {
+                        final Node target = e.to().owner();
+                        final DepNode depTarget = getDepNode(target, innerNodes, branchTarget);
+                        dependencies.add(depTarget);
+                    });
+                    port.accesses().forEach(a -> {
+                        final Node target = a.find().producer().node();
+                        final DepNode depTarget = getDepNode(target, innerNodes, branchTarget);
+                        dependencies.add(depTarget);
+                    });
+
+                    final SeqNode seqNode = new SeqNode(node, dependencies);
+                    innerNodes.add(seqNode);
+                    depNodes.put(node, seqNode);
+                    return seqNode;
+                }
+                case OBSERVER -> throw unhandledNodeType();
+                default -> throw new IllegalArgumentException();
+            }
+        }
+    }
 
 
 
