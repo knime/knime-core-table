@@ -1,7 +1,5 @@
 package org.knime.core.table.virtual.graph.rag3;
 
-import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,15 +10,10 @@ import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
-import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
-import org.knime.core.table.virtual.graph.rag.RagBuilder;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
-import org.knime.core.table.virtual.spec.SourceTableProperties;
 
 public class ExecCap3 {
 
@@ -54,7 +47,12 @@ public class ExecCap3 {
 
         // create CAP
         SpecGraph.Terminal terminal = SpecGraph.buildSpecGraph(table.getProducingTransform());
-        SpecGraph.DependencyGraph depGraph = new SpecGraph.DependencyGraph(terminal);
+
+        System.out.println(new SpecGraph.MermaidGraph(terminal));
+        SpecGraph.Terminal terminal2 = SpecGraph.copy(terminal);
+        System.out.println(new SpecGraph.MermaidGraph(terminal2));
+
+        SpecGraph.DependencyGraph depGraph = new SpecGraph.DependencyGraph(terminal2);
         CursorAssemblyPlan cap = SpecGraph.BuildCap.getCursorAssemblyPlan(depGraph);
 
 

@@ -12,9 +12,9 @@ import org.knime.core.table.virtual.graph.rag3.SpecGraph.Terminal;
 public class RagPlayground3 {
 
     public static void main(String[] args) {
-//        final VirtualTable table = VirtualTableTests.vtMinimal();
+        final VirtualTable table = VirtualTableTests.vtMinimal();
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
-        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
+//        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
 
         Terminal terminal = SpecGraph.buildSpecGraph(table.getProducingTransform());
         System.out.println("terminal = " + terminal);
@@ -36,5 +36,19 @@ public class RagPlayground3 {
         for (CapNode node : cap.nodes()) {
             System.out.println("<" + node.index() + "> " + node);
         }
+
+
+
+        final Terminal terminal2 = SpecGraph.copy(terminal);
+        DependencyGraph depGraph2 = new DependencyGraph(terminal2);
+        System.out.println("depGraph2 = " + depGraph2);
+
+        CursorAssemblyPlan cap2 = BuildCap.getCursorAssemblyPlan(depGraph2);
+        System.out.println();
+        System.out.println("cap2 = ");
+        for (CapNode node : cap2.nodes()) {
+            System.out.println("<" + node.index() + "> " + node);
+        }
+
     }
 }

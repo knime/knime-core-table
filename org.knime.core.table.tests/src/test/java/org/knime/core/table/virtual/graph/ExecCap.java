@@ -87,9 +87,9 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMinimal();
 //        final VirtualTable table = VirtualTableTests.vtMinimal(sourceIdentifiers, sourceAccessibles);
 
-//        final UUID[] sourceIdentifiers = createSourceIds(2);
-//        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppend();
-//        final VirtualTable table = VirtualTableTests.vtAppend(sourceIdentifiers, sourceAccessibles);
+        final UUID[] sourceIdentifiers = createSourceIds(2);
+        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppend();
+        final VirtualTable table = VirtualTableTests.vtAppend(sourceIdentifiers, sourceAccessibles);
 
 //        final UUID[] sourceIdentifiers = createSourceIds(2);
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppendAndSlice();
@@ -165,9 +165,9 @@ public class ExecCap {
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMinimal();
 //        final VirtualTable table = VirtualTableTests.vtRowIndexMapsSequential(sourceIdentifiers, sourceAccessibles);
 
-        final UUID[] sourceIdentifiers = createSourceIds(2);
-        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataObserve();
-        final VirtualTable table = VirtualTableTests.vtObserve(sourceIdentifiers, sourceAccessibles);
+//        final UUID[] sourceIdentifiers = createSourceIds(2);
+//        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataObserve();
+//        final VirtualTable table = VirtualTableTests.vtObserve(sourceIdentifiers, sourceAccessibles);
 
 
         if ( doExecute ) {
