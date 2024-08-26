@@ -4,12 +4,16 @@ import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.Edg
 import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.DATA;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.COLSELECT;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.ROWFILTER;
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.BASIC;
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.LOOKAHEAD;
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.RANDOMACCESS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
+import java.util.function.LongBinaryOperator;
 
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -41,7 +46,7 @@ import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
-import org.knime.core.table.virtual.spec.SourceTableProperties;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
@@ -150,6 +155,10 @@ public class SpecGraph {
             this(owner, accesses, new ArrayList<>());
         }
 
+        Port(Node owner) {
+            this(owner, new ArrayList<>());
+        }
+
         AccessId access(int i) {
             return accesses.get(i);
         }
@@ -173,6 +182,12 @@ public class SpecGraph {
             type = null;
             in.add(inPort);
             out = null;
+        }
+
+        Node(final TableTransformSpec spec, final SpecType type) {
+            this.spec = spec;
+            this.type = type;
+            out = new Port(this);
         }
 
         Node(final TableTransformSpec spec, final int numColumns, final List<Terminal> predecessors) {
@@ -242,6 +257,10 @@ public class SpecGraph {
             out = new Port(this, outputs);
         }
 
+        public SpecType type() {
+            return type;
+        }
+
         AccessId output(int i) {
             return out.access(i);
         }
@@ -263,11 +282,7 @@ public class SpecGraph {
         // TODO shorten?
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Node{");
-            sb.append("type=").append(type);
-            sb.append(", id=").append(id);
-            sb.append('}');
-            return sb.toString();
+            return "(<" + id + ">, " + type + ", " + spec + ")";
         }
 
         // ids are just for printing ...
@@ -288,6 +303,10 @@ public class SpecGraph {
 
     static class Terminal {
         final Port port;
+
+        Terminal(final Port port) {
+            this.port = port;
+        }
 
         Terminal(final TableTransform t) {
             this(t.getSpec(), t.getPrecedingTransforms().stream().map(Terminal::new).toList());
@@ -418,6 +437,187 @@ public class SpecGraph {
 
 
 
+    static Terminal copy(final Terminal terminal) {
+        return new Terminal(new TerminalCopier().copyInPort(terminal.port, null));
+    }
+
+    private static class TerminalCopier {
+        private final Map<Node, Node> nodes = new HashMap<>();
+        private final Map<AccessId, AccessId> accessIds = new HashMap<>();
+
+        private Port copyInPort(final Port port, final Node owner) {
+//            System.out.println("TerminalCopier.copyInPort");
+//            System.out.println("  port = " + port + ", owner = " + owner);
+            final Port portCopy = new Port(owner);
+            port.accesses().forEach(a -> portCopy.accesses().add(copyOf(a.find())));
+            port.controlFlowEdges.forEach(e -> portCopy.linkTo(copyOf(e.to().owner()).out));
+            return portCopy;
+        }
+
+        private Node copyOf(final Node node) {
+//            System.out.println("TerminalCopier.copyOf");
+//            System.out.println("  node = " + node);
+            final Node n = nodes.get(node);
+            if (n != null) {
+                return n;
+            }
+            final Node nodeCopy = new Node(node.getTransformSpec(), node.type());
+            nodes.put(node, nodeCopy);
+            node.out.accesses().forEach(a -> nodeCopy.out.accesses().add(copyOf(a.find())));
+            node.in.forEach(port -> nodeCopy.in.add(copyInPort(port, nodeCopy)));
+            return nodeCopy;
+        }
+
+        private AccessId copyOf(final AccessId access) {
+//            System.out.println("TerminalCopier.copyOf");
+//            System.out.println("  access = " + access);
+            final AccessId a = accessIds.get(access);
+            if (a != null) {
+                return a;
+            }
+            final Producer producerCopy = copyOf(access.producer());
+            return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label));
+        }
+
+        private Producer copyOf(Producer producer) {
+//            System.out.println("TerminalCopier.copyOf");
+//            System.out.println("  producer = " + producer);
+            return new Producer(copyOf(producer.node()), producer.index());
+        }
+    }
+
+
+
+
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    //
+    // RagGraphProperties
+    //
+
+    // TODO: make member of Terminal?
+    static long numRows(final Terminal terminal)
+    {
+        final Node node = terminal.port.controlFlowEdges().get(0).to().owner();
+        return numRows(node);
+    }
+
+    private static long numRows(final Node node) {
+        return switch (node.type()) {
+            case SOURCE -> node.<SourceTransformSpec>getTransformSpec().numRows();
+            case ROWFILTER -> -1;
+            case SLICE -> {
+                final SliceTransformSpec spec = node.getTransformSpec();
+                final long from = spec.getRowRangeSelection().fromIndex();
+                final long to = spec.getRowRangeSelection().toIndex();
+                final long s = accPredecessorNumRows(node, Math::max);
+                yield s < 0 ? s : Math.max(0, Math.min(s, to) - from);
+            }
+            case ROWINDEX, OBSERVER, APPEND ->
+                // If any predecessor doesn't know its size, the size of this node is also unknown.
+                // Otherwise, the size of this node is max of its predecessors.
+                accPredecessorNumRows(node, Math::max);
+            case CONCATENATE ->
+                // If any predecessor doesn't know its size, the size of this node is also unknown.
+                // Otherwise, the size of this is the sum of its predecessors.
+                accPredecessorNumRows(node, Long::sum);
+            case COLSELECT, MAP -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
+        };
+    }
+
+    /**
+     * Accumulate numRows of EXEC predecessors of {@code node}.
+     * Returns -1, if at least one predecessor doesn't know its numRows.
+     * Returns 0 if there are no predecessors.
+     */
+    private static long accPredecessorNumRows(final Node node, final LongBinaryOperator acc) {
+        long size = 0;
+        // TODO accessor in()
+        for (Port port : node.in) {
+            // TODO: shortcut candidate:
+            final Node predecessor = port.controlFlowEdges().get(0).to().owner();
+            final long s = numRows(predecessor);
+            if ( s < 0 ) {
+                return -1;
+            }
+            size = acc.applyAsLong(size, s);
+        }
+        return size;
+    }
+
+
+
+
+    /**
+     * Returns the {@link CursorType} supported by the given linearized {@code
+     * RagGraph} (without additional prefetching and buffering).
+     * The result is determined by the {@code CursorType} of the sources, and
+     * the presence of ROWFILTER operations, etc.
+     *
+     * @return cursor supported at consumer node of the {@code orderedRag}
+     */
+    // TODO: make member of Terminal?
+    private static CursorType supportedCursorType(final Terminal terminal) {
+        final Node node = terminal.port.controlFlowEdges().get(0).to().owner();
+        return supportedCursorType(node);
+    }
+
+    private static CursorType supportedCursorType(final Node node) {
+        return switch (node.type()) {
+            case SOURCE -> node.<SourceTransformSpec>getTransformSpec().getProperties().cursorType();
+            case ROWFILTER -> BASIC;
+            case SLICE, APPEND, ROWINDEX, OBSERVER -> {
+                var cursorType = RANDOMACCESS;
+                for (Port port : node.in) {
+                    // TODO: shortcut candidate:
+                    final Node predecessor = port.controlFlowEdges().get(0).to().owner();
+                    cursorType = min(cursorType, supportedCursorType(predecessor));
+                    if (cursorType == BASIC) {
+                        break;
+                    }
+                }
+                yield cursorType;
+            }
+            case CONCATENATE -> {
+                // all predecessors need to support random-access AND
+                // all predecessors except the last one need to know numRows()
+                var cursorType = RANDOMACCESS;
+                for (int i = 0; i < node.in.size(); i++) {
+                    Port port = node.in.get(i);
+                    // TODO: shortcut candidate:
+                    final Node predecessor = port.controlFlowEdges().get(0).to().owner();
+                    cursorType = min(cursorType, supportedCursorType(predecessor));
+                    if (i != node.in.size() - 1 && numRows(predecessor) < 0) {
+                        cursorType = min(cursorType, LOOKAHEAD);
+                    }
+                    if (cursorType == BASIC ) {
+                        break;
+                    }
+                }
+                yield cursorType;
+            }
+            case COLSELECT, MAP -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
+        };
+    }
+
+    private static CursorType min(CursorType arg0, CursorType arg1) {
+        return switch (arg0) {
+            case BASIC -> BASIC;
+            case LOOKAHEAD -> arg1.supportsLookahead() ? LOOKAHEAD : BASIC;
+            case RANDOMACCESS -> arg1;
+        };
+    }
+
+
+    //
+    // RagGraphProperties
+    //
+    // -----------------------------------------------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -543,9 +743,11 @@ public class SpecGraph {
 
         public static CursorAssemblyPlan getCursorAssemblyPlan(final DependencyGraph sequentializedGraph) {
             final BuildCap builder = new BuildCap(sequentializedGraph);
-            // TODO: compute numRows and cursorType ... TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-            return new CursorAssemblyPlan(builder.cap, SourceTableProperties.CursorType.BASIC, -1,
-                    builder.sourceSchemas);
+            final CursorType cursorType = supportedCursorType(sequentializedGraph.terminal);
+            System.out.println("cursorType = " + cursorType);
+            final long numRows = numRows(sequentializedGraph.terminal);
+            System.out.println("numRows = " + numRows);
+            return new CursorAssemblyPlan(builder.cap, cursorType, numRows, builder.sourceSchemas);
         }
 
         private int index = 0;
@@ -713,16 +915,20 @@ public class SpecGraph {
 
     static class MermaidGraph {
         enum EdgeType {DATA, CONTROL}
-        record Edge(EdgeType type, Node from, Node to) {}
 
-        private final Node consumer;
-        private final Set<Node> nodes = new HashSet<>();
-        private final Set<Edge> edges = new HashSet<>();
+        record Edge(EdgeType type, Node from, Node to) {
+            @Override
+            public String toString() {
+                return "(" + from.id() + " -> " + to.id() + ", " + type + ")";
+            }
+        }
+
+        private final Set<Node> nodes = new LinkedHashSet<>();
+        private final Set<Edge> edges = new LinkedHashSet<>();
 
         MermaidGraph(Terminal terminal)
         {
-            consumer = new Node(terminal.port);
-            addRecursively(consumer);
+            addRecursively(new Node(terminal.port));
         }
 
         void addRecursively(Node node) {
@@ -744,10 +950,12 @@ public class SpecGraph {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("DependencyGraph{");
-            sb.append("nodes=").append(nodes);
-            sb.append(", edges=").append(edges);
-            sb.append('}');
+            final StringBuilder sb = new StringBuilder("MermaidGraph{");
+            sb.append("\n  nodes=");
+            nodes.forEach(node -> sb.append("\n    ").append(node));
+            sb.append("\n  edges=");
+            edges.forEach(edge -> sb.append("\n    ").append(edge));
+            sb.append("\n}");
             return sb.toString();
         }
     }
