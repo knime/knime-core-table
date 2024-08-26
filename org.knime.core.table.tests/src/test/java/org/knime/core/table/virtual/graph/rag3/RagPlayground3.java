@@ -2,6 +2,9 @@ package org.knime.core.table.virtual.graph.rag3;
 
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
+import org.knime.core.table.virtual.graph.cap.CapNode;
+import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.BuildCap;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.Terminal;
@@ -26,5 +29,12 @@ public class RagPlayground3 {
 
         DependencyGraph depGraph = new DependencyGraph(terminal);
         System.out.println("depGraph = " + depGraph);
+
+        CursorAssemblyPlan cap = BuildCap.getCursorAssemblyPlan(depGraph);
+        System.out.println();
+        System.out.println("cap = ");
+        for (CapNode node : cap.nodes()) {
+            System.out.println("<" + node.index() + "> " + node);
+        }
     }
 }

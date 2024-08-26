@@ -43,59 +43,97 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  */
-package org.knime.core.table.virtual.graph.exec;
+package org.knime.core.table.virtual.graph.rag3;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.row.DefaultReadAccessRow;
+import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.row.Selection;
+import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
+import org.knime.core.table.virtual.graph.exec.AssembleNodeImps;
+import org.knime.core.table.virtual.graph.exec.CapExecutorUtils;
+import org.knime.core.table.virtual.graph.exec.SequentialNodeImpConsumer;
 
-public class SequentialNodeImpConsumer implements SequentialNodeImp {
+class CapRowAccessible3 implements RowAccessible {
 
-    private final AccessImp[] inputs;
+    private final CursorAssemblyPlan cap;
 
-    private final SequentialNodeImp predecessor;
+    private final ColumnarSchema schema;
 
-    private final ReadAccess[] outputs;
+    private final Map<UUID, RowAccessible> availableSources;
 
-    SequentialNodeImpConsumer(final AccessImp[] inputs, final SequentialNodeImp predecessor) {
-        this.inputs = inputs;
-        this.predecessor = predecessor;
-        outputs = new ReadAccess[inputs.length];
+    CapRowAccessible3( //
+            final CursorAssemblyPlan cap, //
+            final ColumnarSchema schema, //
+            final Map<UUID, RowAccessible> availableSources) {
+        this.cap = cap;
+        this.schema = schema;
+        this.availableSources = availableSources;
     }
 
     @Override
-    public ReadAccess getOutput(final int i) {
-        return outputs[i];
-    }
-
-    public int numOutputs() {
-        return outputs.length;
-    }
-
-    private void link() {
-        for (int i = 0; i < inputs.length; i++) {
-            outputs[i] = inputs[i].getReadAccess();
-        }
+    public ColumnarSchema getSchema() {
+        return schema;
     }
 
     @Override
-    public void create() {
-        predecessor.create();
-        link();
+    public Cursor<ReadAccessRow> createCursor() {
+        return new CapCursor(assembleConsumer(), schema);
+    }
+
+    private SequentialNodeImpConsumer assembleConsumer() {
+        final List<RowAccessible> sources = CapExecutorUtils.getSources(cap, availableSources);
+        return new AssembleNodeImps(cap.nodes(), sources).getConsumer();
     }
 
     @Override
-    public boolean forward() {
-        return predecessor.forward();
+    public Cursor<ReadAccessRow> createCursor(final Selection selection) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean canForward() {
-        return predecessor.canForward();
+    public long size() {
+        return cap.numRows();
     }
 
     @Override
     public void close() throws IOException {
-        predecessor.close();
+        // TODO ?
     }
+
+    static class CapCursor implements Cursor<ReadAccessRow> {
+
+        final SequentialNodeImpConsumer node;
+
+        private final ReadAccessRow access;
+
+        public CapCursor(final SequentialNodeImpConsumer node, final ColumnarSchema schema) {
+            node.create();
+            access = new DefaultReadAccessRow(schema.numColumns(), node::getOutput);
+            this.node = node;
+        }
+
+        @Override
+        public ReadAccessRow access() {
+            return access;
+        }
+
+        @Override
+        public boolean forward() {
+            return node.forward();
+        }
+
+        @Override
+        public void close() throws IOException {
+            node.close();
+        }
+    }
+
 }

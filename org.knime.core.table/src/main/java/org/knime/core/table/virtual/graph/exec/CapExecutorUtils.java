@@ -62,14 +62,14 @@ import org.knime.core.table.virtual.graph.cap.CapNodeMaterialize;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 
-class CapExecutorUtils {
+public class CapExecutorUtils {
 
     /**
      * Get list of sources occurring in {@code CursorAssemblyPlan}. The list
      * contains one source for each {@code CapNodeSource} in the order in which
      * they occur in the CAP.
      */
-    static List<RowAccessible> getSources(final CursorAssemblyPlan cap, final Map<UUID, RowAccessible> uuidRowAccessibleMap) {
+    public static List<RowAccessible> getSources(final CursorAssemblyPlan cap, final Map<UUID, RowAccessible> uuidRowAccessibleMap) {
         final List<RowAccessible> sources = new ArrayList<>();
         final Map<UUID, ColumnarSchema> schemas = cap.schemas();
         for (CapNode node : cap.nodes()) {
