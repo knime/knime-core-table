@@ -67,7 +67,7 @@ import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 
-class AssembleNodeImps {
+public class AssembleNodeImps {
 
     private final List<SequentialNodeImp> imps;
 

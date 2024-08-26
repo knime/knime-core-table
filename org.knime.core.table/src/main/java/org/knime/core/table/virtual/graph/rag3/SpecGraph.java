@@ -3,10 +3,10 @@ package org.knime.core.table.virtual.graph.rag3;
 import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.CONTROL;
 import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.DATA;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.COLSELECT;
-import static org.knime.core.table.virtual.graph.rag3.SpecType.CONSUMER;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.ROWFILTER;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,13 +24,24 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.cap.CapAccessId;
 import org.knime.core.table.virtual.graph.cap.CapNode;
+import org.knime.core.table.virtual.graph.cap.CapNodeAppend;
+import org.knime.core.table.virtual.graph.cap.CapNodeConcatenate;
+import org.knime.core.table.virtual.graph.cap.CapNodeConsumer;
+import org.knime.core.table.virtual.graph.cap.CapNodeMap;
+import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
+import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
+import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
-import org.knime.core.table.virtual.graph.rag.AccessId;
+import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph.DepNode;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.Edge;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
+import org.knime.core.table.virtual.spec.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
+import org.knime.core.table.virtual.spec.SliceTransformSpec;
+import org.knime.core.table.virtual.spec.SourceTableProperties;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
@@ -159,7 +170,7 @@ public class SpecGraph {
         // TODO consumer-like artificial node to anchor DependencyGraph
         Node(Port inPort) {
             spec = new ConsumerTransformSpec();
-            type = CONSUMER;
+            type = null;
             in.add(inPort);
             out = null;
         }
@@ -176,7 +187,7 @@ public class SpecGraph {
                     case APPEND, CONCATENATE -> predecessor.numColumns();
                     case OBSERVER -> throw unhandledNodeType();
                     // TODO: COLSELECT shouldn't be a possible value here --> SpecType vs NodeType
-                    case COLSELECT, CONSUMER -> throw new IllegalArgumentException();
+                    case COLSELECT -> throw new IllegalArgumentException();
                 };
 
                 final List<AccessId> inputs = createAccessIds(null, numInputs, accessLabel("gamma", id, p));
@@ -225,7 +236,7 @@ public class SpecGraph {
                 case ROWINDEX -> 1;
                 case SLICE, ROWFILTER -> 0;
                 case OBSERVER -> throw unhandledNodeType();
-                case COLSELECT, CONSUMER -> throw new IllegalArgumentException();
+                case COLSELECT -> throw new IllegalArgumentException();
             };
             final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", id, -1));
             out = new Port(this, outputs);
@@ -243,6 +254,10 @@ public class SpecGraph {
         // TODO unused? remove?
         AccessId input(int p, int i) {
             return in.get(p).access(i);
+        }
+
+        public <T extends TableTransformSpec> T getTransformSpec() {
+            return (T)spec;
         }
 
         // TODO shorten?
@@ -288,13 +303,11 @@ public class SpecGraph {
                 case APPEND -> predecessors.stream().mapToInt(Terminal::numColumns).sum();
                 case SLICE, ROWFILTER, CONCATENATE -> predecessors.get(0).numColumns();
                 case OBSERVER -> throw unhandledNodeType();
-                case CONSUMER -> throw new IllegalArgumentException();
             };
 
-            final Node owner = null; // TODO: use dummy consumer node as owner?
             final List<AccessId> accessIds = createAccessIds(null, numColumns, i -> "terminal_" + i);
             final ArrayList<ControlFlowEdge> controlFlowEdges = new ArrayList<>();
-            port = new Port(owner, accessIds, controlFlowEdges);
+            port = new Port(null, accessIds, controlFlowEdges);
 
             final Node node = (type == COLSELECT) //
                     ? null // don't create a new node, just permute predecessor's outCols
@@ -443,15 +456,15 @@ public class SpecGraph {
 
         static final Function<List<SeqNode>, SeqNode> policy = nodes -> nodes.get(0);
 
-        private final DepNode consumerDepNode;
         private final Map<Node, DepNode> depNodes = new HashMap<>();
+
+        private final Terminal terminal;
+
         private final Branch rootBranch;
 
         public DependencyGraph(final Terminal terminal) {
-            final Node consumer = new Node(terminal.port);
-            consumerDepNode = getDepNode(consumer, new ArrayList<>(), new AtomicReference<>());
-            // TODO: Remove explicit CONSUMER. We just need a Branch and the Terminal Port
-            rootBranch = ((BranchNode)consumerDepNode).branches().get(0);
+            this.terminal = terminal;
+            rootBranch = getBranch(terminal.port);
             sequentialize(rootBranch);
         }
 
@@ -462,15 +475,9 @@ public class SpecGraph {
                 return depNode;
             }
             switch (node.type) {
-                case SOURCE, APPEND, CONCATENATE, CONSUMER -> {
+                case SOURCE, APPEND, CONCATENATE -> {
                     final ArrayList<Branch> branches = new ArrayList<>();
-                    node.in.forEach(port -> {
-                        final List<SeqNode> inner = new ArrayList<>();
-                        final AtomicReference<BranchNode> target = new AtomicReference<>();
-                        getDependencies(inner, target, port);
-                        final Branch branch = new Branch(inner, target.get());
-                        branches.add(branch);
-                    });
+                    node.in.forEach(port -> branches.add(getBranch(port)));
                     final BranchNode branchNode = new BranchNode(node, branches);
                     branchTarget.setPlain(branchNode);
                     depNodes.put(node, branchNode);
@@ -478,7 +485,7 @@ public class SpecGraph {
                 }
                 case SLICE, MAP, ROWFILTER, ROWINDEX -> {
                     final Port port = node.in.get(0);
-                    final Set<DepNode> dependencies = getDependencies(innerNodes, branchTarget, port);
+                    final Set<DepNode> dependencies = getDependencies(port, innerNodes, branchTarget);
                     final SeqNode seqNode = new SeqNode(node, dependencies);
                     innerNodes.add(seqNode);
                     depNodes.put(node, seqNode);
@@ -489,8 +496,15 @@ public class SpecGraph {
             }
         }
 
-        private Set<DepNode> getDependencies(final List<SeqNode> innerNodes,
-                final AtomicReference<BranchNode> branchTarget, final Port port) {
+        private Branch getBranch(final Port port) {
+            final List<SeqNode> inner = new ArrayList<>();
+            final AtomicReference<BranchNode> target = new AtomicReference<>();
+            getDependencies(port, inner, target);
+            return new Branch(inner, target.get());
+        }
+
+        private Set<DepNode> getDependencies(final Port port, final List<SeqNode> innerNodes,
+                final AtomicReference<BranchNode> branchTarget) {
             final Set<DepNode> dependencies = new HashSet<>();
             port.controlFlowEdges().forEach(e -> {
                 final Node target = e.to().owner();
@@ -509,78 +523,131 @@ public class SpecGraph {
 
     static class BuildCap {
 
-        private final List<CapNode> cursorAssemblyPlan;
+        private final List<CapNode> cap;
         private final Map<Node, CapNode> capNodes;
         private final Map<AccessId, CapAccessId> capAccessIds;
+        private final Map<UUID, ColumnarSchema> sourceSchemas;
 
         BuildCap(final DependencyGraph sequentializedGraph) {
-            cursorAssemblyPlan = new ArrayList<>();
+            cap = new ArrayList<>();
             capNodes = new HashMap<>();
             capAccessIds = new HashMap<>();
+            sourceSchemas = new HashMap<>();
 
             DependencyGraph.Branch branch = sequentializedGraph.rootBranch;
 
-            appendBranch(branch);
+            final CapNode capNode = appendBranch(branch);
+            final CapAccessId[] inputs = capAccessIdsFor(sequentializedGraph.terminal.port.accesses());
+            cap.add(new CapNodeConsumer(index++, inputs, capNode.index()));
+        }
+
+        public static CursorAssemblyPlan getCursorAssemblyPlan(final DependencyGraph sequentializedGraph) {
+            final BuildCap builder = new BuildCap(sequentializedGraph);
+            // TODO: compute numRows and cursorType ... TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+            return new CursorAssemblyPlan(builder.cap, SourceTableProperties.CursorType.BASIC, -1,
+                    builder.sourceSchemas);
         }
 
         private int index = 0;
         private CapNode appendBranch(final DependencyGraph.Branch branch) {
-
             // append predecessor branches
             final List<CapNode> heads = new ArrayList<>();
             branch.target().branches().forEach(b -> heads.add(appendBranch(b)));
+
+            // current head while building this branch
+            CapNode capNode = null;
 
             // append branch target
             final Node target = branch.target().node();
             switch (target.type) {
                 case SOURCE -> {
-                    final SourceTransformSpec spec = (SourceTransformSpec)target.spec;
+                    final SourceTransformSpec spec = target.getTransformSpec();
                     final UUID uuid = spec.getSourceIdentifier();
                     final List<AccessId> outputs = target.out.accesses();
                     final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
                     final Selection.RowRangeSelection range = spec.getRowRange();
-                    final CapNodeSource capNode = new CapNodeSource(index++, uuid, columns, range);
+                    capNode = new CapNodeSource(index++, uuid, columns, range);
                     createCapAccessIdsFor(outputs, capNode);
                     append(target, capNode);
+                    sourceSchemas.put(uuid, spec.getSchema());
                 }
                 case APPEND -> {
-                    // TODO
-                    throw new UnsupportedOperationException();
+                    final int numPredecessors = heads.size();
+                    final int[] predecessors = new int[numPredecessors];
+                    final int[][] predecessorOutputIndices = new int[numPredecessors][];
+                    final long[] predecessorSizes = new long[numPredecessors];
+                    final List<AccessId> inputs = new ArrayList<>();
+                    for ( int i = 0; i < numPredecessors; ++i ) {
+                        predecessors[i] = heads.get(i).index();
+                        predecessorSizes[i] = -1; // TODO implement numRows... TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+                        final List<AccessId> branchInputs = target.in.get(i).accesses();
+                        predecessorOutputIndices[i] = new int[branchInputs.size()];
+                        Arrays.setAll(predecessorOutputIndices[i], j -> j + inputs.size());
+                        inputs.addAll(branchInputs);
+                    }
+                    final CapAccessId[] capInputs = capAccessIdsFor(inputs);
+                    capNode = new CapNodeAppend(index++, capInputs, predecessors, predecessorOutputIndices, predecessorSizes);
+                    createCapAccessIdsFor(target.out.accesses(), capNode);
+                    append(target, capNode);
                 }
                 case CONCATENATE -> {
-                    // TODO
-                    throw new UnsupportedOperationException();
-                }
-                case CONSUMER -> {
-                    // TODO (maybe? in the end we will probably not need CONSUMER?
-                    throw new UnsupportedOperationException();
+                    final int numPredecessors = heads.size();
+                    final int[] predecessors = new int[numPredecessors];
+                    final CapAccessId[][] capInputs = new CapAccessId[numPredecessors][];
+                    final long[] predecessorSizes = new long[numPredecessors];
+                    for ( int i = 0; i < numPredecessors; ++i ) {
+                        predecessors[i] = heads.get(i).index();
+                        capInputs[i] = capAccessIdsFor(target.in.get(i).accesses());
+                        predecessorSizes[i] = -1; // TODO implement numRows... TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+                    }
+                    capNode = new CapNodeConcatenate(index++, capInputs, predecessors, predecessorSizes);
+                    createCapAccessIdsFor(target.out.accesses(), capNode);
+                    append(target, capNode);
                 }
                 default -> throw new IllegalStateException();
             }
 
             // append inner nodes
-            //            TODO...
-            branch.innerNodes.forEach(depNode -> {
+            for (DepNode depNode : branch.innerNodes) {
                 final Node node = depNode.node();
                 final List<AccessId> inputs = node.in.get(0).accesses();
                 final CapAccessId[] capInputs = capAccessIdsFor(inputs);
+
+                final int predecessor = capNode.index();
                 switch (node.type) {
                     case MAP -> {
-                        // TODO
+                        final MapTransformSpec spec = node.getTransformSpec();
+                        final List<AccessId> outputs = node.out.accesses();
+                        final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
+                        capNode = new CapNodeMap(index++, capInputs, predecessor, columns, spec.getMapperFactory());
+                        createCapAccessIdsFor(outputs, capNode);
+                        append(node, capNode);
                     }
                     case SLICE -> {
-                        // TODO
+                        final SliceTransformSpec spec = node.getTransformSpec();
+                        final long from = spec.getRowRangeSelection().fromIndex();
+                        final long to = spec.getRowRangeSelection().toIndex();
+                        capNode = new CapNodeSlice(index++, predecessor, from, to);
+                        append(node, capNode);
                     }
                     case ROWFILTER -> {
-                        // TODO
+                        final RowFilterTransformSpec spec = node.getTransformSpec();
+                        capNode = new CapNodeRowFilter(index++, capInputs, predecessor, spec.getFilterFactory());
+                        append(node, capNode);
                     }
                     case ROWINDEX -> {
-                        // TODO
+                        final RowIndexTransformSpec spec = node.getTransformSpec();
+                        final List<AccessId> outputs = node.out.accesses();
+                        capNode = new CapNodeRowIndex(index++, predecessor, spec.getOffset());
+                        createCapAccessIdsFor(outputs, capNode);
+                        append(node, capNode);
                     }
                     case OBSERVER -> throw unhandledNodeType();
                     default -> throw new IllegalStateException();
                 }
-            });
+            }
+
+            return capNode;
         }
 
         /**
@@ -588,7 +655,7 @@ public class SpecGraph {
          * Remember the association to corresponding {@code ragNode}.
          */
         private void append(final Node ragNode, final CapNode capNode) {
-            cursorAssemblyPlan.add(capNode);
+            cap.add(capNode);
             capNodes.put(ragNode, capNode);
         }
 

@@ -1,6 +1,5 @@
 package org.knime.core.table.virtual.graph.rag3;
 
-import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -21,8 +20,7 @@ public enum SpecType {
     MAP, //
     ROWFILTER, //
     ROWINDEX, //
-    OBSERVER, //
-    CONSUMER;
+    OBSERVER;
 
     public static SpecType forSpec(final TableTransformSpec spec) {
         if (spec instanceof SourceTransformSpec)
@@ -43,8 +41,6 @@ public enum SpecType {
             return ROWINDEX;
         else if (spec instanceof ObserverTransformSpec)
             return OBSERVER;
-        else if (spec instanceof ConsumerTransformSpec)
-            return CONSUMER;
         else
             throw new IllegalArgumentException();
     }
