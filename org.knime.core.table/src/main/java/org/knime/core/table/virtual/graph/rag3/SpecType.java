@@ -42,6 +42,6 @@ public enum SpecType {
         else if (spec instanceof ObserverTransformSpec)
             return OBSERVER;
         else
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("TableTransformSpec " + spec + ": spec type not handled (yet)");
     }
 }

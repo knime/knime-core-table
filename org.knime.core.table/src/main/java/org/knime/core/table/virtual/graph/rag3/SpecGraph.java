@@ -261,25 +261,10 @@ public class SpecGraph {
             return type;
         }
 
-        AccessId output(int i) {
-            return out.access(i);
-        }
-
-        // TODO unused? remove?
-        AccessId input(int i) {
-            return input(0, i);
-        }
-
-        // TODO unused? remove?
-        AccessId input(int p, int i) {
-            return in.get(p).access(i);
-        }
-
         public <T extends TableTransformSpec> T getTransformSpec() {
             return (T)spec;
         }
 
-        // TODO shorten?
         @Override
         public String toString() {
             return "(<" + id + ">, " + type + ", " + spec + ")";
@@ -348,7 +333,7 @@ public class SpecGraph {
                     // (there is exactly one predecessor)
                     unionAccesses(port, predecessors.get(0).port, numColumns - 1);
                     // link the last outCol to the node's output
-                    outCol(numColumns - 1).union(node.output(0));
+                    outCol(numColumns - 1).union(node.out.access(0));
                 }
                 case COLSELECT -> {
                     // apply selection to predecessor's outCols
