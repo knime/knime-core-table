@@ -16,8 +16,8 @@ public class RagPlayground3 {
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
 //        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
 
-        SpecGraph.TableTransformGraph tableTransformGraph = SpecGraph.buildSpecGraph(table.getProducingTransform());
-        System.out.println("terminal = " + tableTransformGraph);
+        var tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
+        System.out.println("tableTransformGraph = " + tableTransformGraph);
 
         MermaidGraph graph = new MermaidGraph(tableTransformGraph);
         System.out.println("graph = " + graph);
@@ -39,7 +39,7 @@ public class RagPlayground3 {
 
 
 
-        final TableTransformGraph tableTransformGraph2 = SpecGraph.copy(tableTransformGraph);
+        final TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();
         DependencyGraph depGraph2 = new DependencyGraph(tableTransformGraph2);
         System.out.println("depGraph2 = " + depGraph2);
 
