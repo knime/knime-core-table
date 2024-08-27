@@ -31,199 +31,92 @@ public class TableTransformGraph {
     }
 
     /**
-     * Create {@code n} new {@code AccessId}s with the given {@code
-     * producerNode} (may be {@code null}). The {@code AccessId}s will be
-     * labeled by applying the given {@code label} function to {@code 0, 1, ...,
-     * n-1}.
+     * Bundle incoming/outgoing accesses and control-flow edges.
+     * <p>
+     * Every {@code Node} has exactly one {@link Node#out() out} port.
+     * <p>
+     * Every {@code Node} has exactly one {@link Node#in() in} port, except SOURCE which has none, and APPEND/CONCATENATE which have one or more.
      *
-     * @param producerNode
-     * @param n
-     * @param label
-     * @return
+     * @param owner            the node which this port belongs to (as in or out port)
+     * @param accesses         the input or output accesses (depending on whether this is an in or out port)
+     * @param controlFlowEdges control-flow edges from or to this port (depending on whether this is an in or out port)
      */
-    private static List<AccessId> createAccessIds(final Node producerNode, final int n,
-            final IntFunction<String> label) {
-        final List<AccessId> cols = new ArrayList<>(n);
-        for (int i = 0; i < n; i++) {
-            AccessId.Producer producer = producerNode == null ? null : new AccessId.Producer(producerNode, i);
-            cols.add(new AccessId(producer, label.apply(i)));
+    record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
+        Port(Node owner, List<AccessId> accesses) {
+            this(owner, accesses, new ArrayList<>());
         }
-        return cols;
+
+        Port(Node owner) {
+            this(owner, new ArrayList<>());
+        }
+
+        AccessId access(int i) {
+            return accesses.get(i);
+        }
+
+        /**
+         * Add a new control-flow edge from this port to the {@link Node#out() out} port of the given {@code Node}.
+         * <p>
+         * <em>This should be only called on an {@link Node#in() in} port!</em>
+         */
+        void linkTo(Node to) {
+            final ControlFlowEdge e = new ControlFlowEdge(this, to.out());
+            controlFlowEdges.add(e);
+            to.out().controlFlowEdges().add(e);
+        }
+    }
+
+    record ControlFlowEdge(Port from, Port to) {
+        /**
+         * Remove this {@code ControlFlowEdge} from its target {@code Port} and
+         * replace it with a new edge from {@code from}.
+         *
+         * @return the new edge
+         * @throws IllegalStateException if the target {@code Port} does not have exactly one edge.
+         */
+        ControlFlowEdge relinkFrom(Port from) throws IllegalStateException {
+            if (to.controlFlowEdges.size() != 1)
+                throw new IllegalStateException();
+            final ControlFlowEdge e = new ControlFlowEdge(from, to);
+            from.controlFlowEdges.add(e);
+            to.controlFlowEdges.clear();
+            to.controlFlowEdges.add(e);
+            return e;
+        }
+
+        @Override
+        public String toString() {
+            return "ControlFlowEdge{" + //
+                    "from=" + (from.owner() == null ? "terminal" : from.owner().id()) + //
+                    ", to=" + to.owner().id() + "}";
+        }
     }
 
     /**
-     * Create an AccessId labeling function
-     * TODO: javadoc
+     * A node in the TableTransformGraph.
      */
-    private static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
-        return i -> {
-            String label = varName + "^" + i + "_v" + nodeId;
-            if (predecessorIndex >= 0)
-                label += "(" + predecessorIndex + ")";
-            return label;
-        };
-    }
-
-    final Port terminal;
-
-    TableTransformGraph(final Port terminal) {
-        this.terminal = terminal;
-    }
-
-    TableTransformGraph(final TableTransform t) {
-        this(t.getSpec(), t.getPrecedingTransforms().stream().map(TableTransformGraph::new).toList());
-    }
-
-    TableTransformGraph(final TableTransformSpec spec, final List<TableTransformGraph> predecessors) {
-        final SpecType type = SpecType.forSpec(spec);
-        final int numColumns = switch (type) {
-            case SOURCE -> ((SourceTransformSpec)spec).getSchema().numColumns();
-            case MAP -> ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
-            case ROWINDEX -> predecessors.get(0).numColumns() + 1;
-            case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
-            case APPEND -> predecessors.stream().mapToInt(TableTransformGraph::numColumns).sum();
-            case SLICE, ROWFILTER, CONCATENATE -> predecessors.get(0).numColumns();
-            case OBSERVER -> throw SpecGraph.unhandledNodeType();
-        };
-
-        final List<AccessId> accessIds = createAccessIds(null, numColumns, i -> "terminal_" + i);
-        final ArrayList<ControlFlowEdge> controlFlowEdges = new ArrayList<>();
-        terminal = new Port(null, accessIds, controlFlowEdges);
-
-        final Node node = (type == COLSELECT) //
-                ? null // don't create a new node, just permute predecessor's outCols
-                : new Node(spec, numColumns, predecessors);
-
-        // access tracing:
-        switch (type) {
-            case SOURCE, MAP, APPEND, CONCATENATE -> {
-                // link outCols to node's outputs
-                unionAccesses(terminal, node.out, numColumns);
-            }
-            case SLICE, ROWFILTER -> {
-                // link outCols to the predecessor's outCols
-                // (there is exactly one predecessor)
-                unionAccesses(terminal, predecessors.get(0).terminal, numColumns);
-            }
-            case ROWINDEX -> {
-                // link outCols (except the last one) to the predecessor's outCols
-                // (there is exactly one predecessor)
-                unionAccesses(terminal, predecessors.get(0).terminal, numColumns - 1);
-                // link the last outCol to the node's output
-                outCol(numColumns - 1).union(node.out.access(0));
-            }
-            case COLSELECT -> {
-                // apply selection to predecessor's outCols
-                // (there is exactly one predecessor)
-                final int[] selection = getColumnSelection(spec);
-                unionAccesses(terminal, predecessors.get(0).terminal, numColumns, i -> selection[i]);
-            }
-        }
-
-        // control flow:
-        switch (type) {
-            case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> {
-                // link to the new node
-                terminal.linkTo(node.out);
-            }
-            case MAP, COLSELECT -> {
-                // link to everything that was linked to by predecessor
-                // (there is exactly one predecessor)
-                final List<ControlFlowEdge> predecessorControlFlowEdges =
-                        predecessors.get(0).terminal.controlFlowEdges();
-                predecessorControlFlowEdges.forEach(e -> e.relinkFrom(terminal));
-            }
-            case ROWFILTER -> {
-                // link to other ROWFILTERs that were linked to by predecessor
-                // (there is exactly one predecessor)
-                final List<ControlFlowEdge> predecessorControlFlowEdges =
-                        predecessors.get(0).terminal.controlFlowEdges();
-                if (predecessorControlFlowEdges.get(0).to().owner().type == ROWFILTER) {
-                    predecessorControlFlowEdges.forEach(e -> e.relinkFrom(terminal));
-                }
-                // link to the new node
-                terminal.linkTo(node.out);
-            }
-        }
-    }
-
-    int numColumns() {
-        return terminal.accesses().size();
-    }
-
-    AccessId outCol(int i) {
-        return terminal.access(i);
-    }
-
-    @Override
-    public String toString() {
-        return "TableTransformGraph{terminal=" + terminal + "}";
-    }
-
-    /**
-     * TODO javadoc
-     */
-    public TableTransformGraph copy() {
-        class Copier {
-            private final Map<Node, Node> nodes = new HashMap<>();
-
-            private final Map<AccessId, AccessId> accessIds = new HashMap<>();
-
-            private Port copyInPort(final Port port, final Node owner) {
-                final Port portCopy = new Port(owner);
-                port.accesses().forEach(a -> portCopy.accesses().add(copyOf(a.find())));
-                port.controlFlowEdges.forEach(e -> portCopy.linkTo(copyOf(e.to().owner()).out));
-                return portCopy;
-            }
-
-            private Node copyOf(final Node node) {
-                final Node n = nodes.get(node);
-                if (n != null) {
-                    return n;
-                }
-                final Node nodeCopy = new Node(node.getTransformSpec(), node.type());
-                nodes.put(node, nodeCopy);
-                node.out.accesses().forEach(a -> nodeCopy.out.accesses().add(copyOf(a.find())));
-                node.in.forEach(port -> nodeCopy.in.add(copyInPort(port, nodeCopy)));
-                return nodeCopy;
-            }
-
-            private AccessId copyOf(final AccessId access) {
-                final AccessId a = accessIds.get(access);
-                if (a != null) {
-                    return a;
-                }
-                final AccessId.Producer producerCopy = copyOf(access.producer());
-                return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label()));
-            }
-
-            private AccessId.Producer copyOf(AccessId.Producer producer) {
-                return new AccessId.Producer(copyOf(producer.node()), producer.index());
-            }
-        }
-        return new TableTransformGraph(new Copier().copyInPort(terminal, null));
-    }
-
     static class Node {
         private final TableTransformSpec spec;
-
         private final SpecType type;
-
         private final List<Port> in = new ArrayList<>();
-
         private final Port out;
 
-        // TODO consumer-like artificial node to anchor DependencyGraph
-        Node(Port inPort) {
+        /**
+         * Create a dummy CONSUMER node. Only needed for visualization.
+         */
+        Node() {
             spec = new ConsumerTransformSpec();
             type = null;
-            in.add(inPort);
             out = null;
         }
 
-        Node(final TableTransformSpec spec, final SpecType type) {
+        /**
+         * Create a new node with the given {@code TableTransformSpec} but without populated inputs or outputs.
+         * This is needed to implement {@link #copy()}.
+         */
+        Node(final TableTransformSpec spec) {
             this.spec = spec;
-            this.type = type;
+            type = SpecType.forSpec(spec);
             out = new Port(this);
         }
 
@@ -264,7 +157,7 @@ public class TableTransformGraph {
                             // if predecessor links to a ROWFILTER (one or more)
                             // link this node to the target of that ROWFILTER's controlFlowEdge
                             final Port target = predecessorNode.in.get(0).controlFlowEdges().get(0).to();
-                            inPort.linkTo(target);
+                            inPort.linkTo(target.owner());
                         } else {
                             // otherwise re-link the predecessor controlFlowEdge
                             // (there is only one) to this node
@@ -317,7 +210,6 @@ public class TableTransformGraph {
 
         // ids are just for printing ...
         private static int nextNodeId = 0;
-
         private final int id = nextNodeId++;
 
         /**
@@ -332,52 +224,145 @@ public class TableTransformGraph {
         }
     }
 
-    record ControlFlowEdge(Port from, Port to) {
-        /**
-         * Remove this {@code ControlFlowEdge} from its target {@code Port} and
-         * replace it with a new edge from {@code from}.
-         *
-         * @return the new edge
-         * @throws IllegalStateException if the target {@code Port} does not have exactly one edge.
-         */
-        ControlFlowEdge relinkFrom(Port from) throws IllegalStateException {
-            if (to.controlFlowEdges.size() != 1)
-                throw new IllegalStateException();
-            final ControlFlowEdge e = new ControlFlowEdge(from, to);
-            from.controlFlowEdges.add(e);
-            to.controlFlowEdges.clear();
-            to.controlFlowEdges.add(e);
-            return e;
+
+
+    /**
+     * Control-flow and accesses at the root (output, CONSUMER, sink, ...) of this {@code TableTransformGraph}.
+     */
+    final Port terminal;
+
+    TableTransformGraph(final Port terminal) {
+        this.terminal = terminal;
+    }
+
+    TableTransformGraph(final TableTransform t) {
+        this(t.getSpec(), t.getPrecedingTransforms().stream().map(TableTransformGraph::new).toList());
+    }
+
+    TableTransformGraph(final TableTransformSpec spec, final List<TableTransformGraph> predecessors) {
+        final SpecType type = SpecType.forSpec(spec);
+        final int numColumns = switch (type) {
+            case SOURCE -> ((SourceTransformSpec)spec).getSchema().numColumns();
+            case MAP -> ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
+            case ROWINDEX -> predecessors.get(0).numColumns() + 1;
+            case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
+            case APPEND -> predecessors.stream().mapToInt(TableTransformGraph::numColumns).sum();
+            case SLICE, ROWFILTER, CONCATENATE -> predecessors.get(0).numColumns();
+            case OBSERVER -> throw SpecGraph.unhandledNodeType();
+        };
+
+        final List<AccessId> accessIds = createAccessIds(null, numColumns, i -> "beta^" + i);
+        final ArrayList<ControlFlowEdge> controlFlowEdges = new ArrayList<>();
+        terminal = new Port(null, accessIds, controlFlowEdges);
+
+        final Node node = (type == COLSELECT) //
+                ? null // don't create a new node, just permute predecessor's outCols
+                : new Node(spec, numColumns, predecessors);
+
+        // access tracing:
+        switch (type) {
+            case SOURCE, MAP, APPEND, CONCATENATE -> {
+                // link outCols to node's outputs
+                unionAccesses(terminal, node.out, numColumns);
+            }
+            case SLICE, ROWFILTER -> {
+                // link outCols to the predecessor's outCols
+                // (there is exactly one predecessor)
+                unionAccesses(terminal, predecessors.get(0).terminal, numColumns);
+            }
+            case ROWINDEX -> {
+                // link outCols (except the last one) to the predecessor's outCols
+                // (there is exactly one predecessor)
+                unionAccesses(terminal, predecessors.get(0).terminal, numColumns - 1);
+                // link the last outCol to the node's output
+                terminal.access(numColumns - 1).union(node.out.access(0));
+            }
+            case COLSELECT -> {
+                // apply selection to predecessor's outCols
+                // (there is exactly one predecessor)
+                final int[] selection = getColumnSelection(spec);
+                unionAccesses(terminal, predecessors.get(0).terminal, numColumns, i -> selection[i]);
+            }
         }
 
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("ControlFlowEdge{");
-            sb.append("from=").append(from.owner() == null ? "terminal" : from.owner().id());
-            sb.append(", to=").append(to.owner().id());
-            sb.append('}');
-            return sb.toString();
+        // control flow:
+        switch (type) {
+            case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> {
+                // link to the new node
+                terminal.linkTo(node);
+            }
+            case MAP, COLSELECT -> {
+                // link to everything that was linked to by predecessor
+                // (there is exactly one predecessor)
+                final List<ControlFlowEdge> predecessorControlFlowEdges =
+                        predecessors.get(0).terminal.controlFlowEdges();
+                predecessorControlFlowEdges.forEach(e -> e.relinkFrom(terminal));
+            }
+            case ROWFILTER -> {
+                // link to other ROWFILTERs that were linked to by predecessor
+                // (there is exactly one predecessor)
+                final List<ControlFlowEdge> predecessorControlFlowEdges =
+                        predecessors.get(0).terminal.controlFlowEdges();
+                if (predecessorControlFlowEdges.get(0).to().owner().type == ROWFILTER) {
+                    predecessorControlFlowEdges.forEach(e -> e.relinkFrom(terminal));
+                }
+                // link to the new node
+                terminal.linkTo(node);
+            }
         }
     }
 
-    record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
-        Port(Node owner, List<AccessId> accesses) {
-            this(owner, accesses, new ArrayList<>());
-        }
+    int numColumns() {
+        return terminal.accesses().size();
+    }
 
-        Port(Node owner) {
-            this(owner, new ArrayList<>());
-        }
+    @Override
+    public String toString() {
+        return "TableTransformGraph{terminal=" + terminal + "}";
+    }
 
-        AccessId access(int i) {
-            return accesses.get(i);
-        }
+    /**
+     * TODO javadoc
+     */
+    public TableTransformGraph copy() {
+        class Copier {
+            private final Map<Node, Node> nodes = new HashMap<>();
 
-        void linkTo(Port to) {
-            final ControlFlowEdge e = new ControlFlowEdge(this, to);
-            controlFlowEdges.add(e);
-            to.controlFlowEdges().add(e);
+            private final Map<AccessId, AccessId> accessIds = new HashMap<>();
+
+            private Port copyInPort(final Port port, final Node owner) {
+                final Port portCopy = new Port(owner);
+                port.accesses().forEach(a -> portCopy.accesses().add(copyOf(a.find())));
+                port.controlFlowEdges.forEach(e -> portCopy.linkTo(copyOf(e.to().owner())));
+                return portCopy;
+            }
+
+            private Node copyOf(final Node node) {
+                final Node n = nodes.get(node);
+                if (n != null) {
+                    return n;
+                }
+                final Node nodeCopy = new Node((TableTransformSpec)node.getTransformSpec()); // TODO cast necessary because of Node(Port) constructor
+                nodes.put(node, nodeCopy);
+                node.out.accesses().forEach(a -> nodeCopy.out.accesses().add(copyOf(a.find())));
+                node.in.forEach(port -> nodeCopy.in.add(copyInPort(port, nodeCopy)));
+                return nodeCopy;
+            }
+
+            private AccessId copyOf(final AccessId access) {
+                final AccessId a = accessIds.get(access);
+                if (a != null) {
+                    return a;
+                }
+                final AccessId.Producer producerCopy = copyOf(access.producer());
+                return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label()));
+            }
+
+            private AccessId.Producer copyOf(AccessId.Producer producer) {
+                return new AccessId.Producer(copyOf(producer.node()), producer.index());
+            }
         }
+        return new TableTransformGraph(new Copier().copyInPort(terminal, null));
     }
 
     private static void unionAccesses(Port from, Port to, int n) {
@@ -398,6 +383,41 @@ public class TableTransformGraph {
             case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection();
             case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection();
             default -> throw new IllegalArgumentException();
+        };
+    }
+
+    /**
+     * Create {@code n} new {@code AccessId}s with the given {@code
+     * producerNode} (may be {@code null}). The {@code AccessId}s will be
+     * labeled by applying the given {@code label} function to {@code 0, 1, ...,
+     * n-1}.
+     *
+     * @param producerNode
+     * @param n
+     * @param label
+     * @return
+     */
+    private static List<AccessId> createAccessIds(final Node producerNode, final int n,
+            final IntFunction<String> label) {
+        final List<AccessId> cols = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            AccessId.Producer producer = producerNode == null ? null : new AccessId.Producer(producerNode, i);
+            cols.add(new AccessId(producer, label.apply(i)));
+        }
+        return cols;
+    }
+
+    /**
+     * Create an AccessId labeling function to produce labels like
+     * "alpha^i_v1(0)" (this would be created for {@code varName="alpha"},
+     * {@code nodeId=1}, {@code predecessorIndex=0}).
+     */
+    private static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
+        return i -> {
+            String label = varName + "^" + i + "_v" + nodeId;
+            if (predecessorIndex >= 0)
+                label += "(" + predecessorIndex + ")";
+            return label;
         };
     }
 }

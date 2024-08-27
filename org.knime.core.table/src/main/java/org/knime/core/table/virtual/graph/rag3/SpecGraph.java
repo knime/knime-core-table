@@ -489,7 +489,9 @@ public class SpecGraph {
 
         MermaidGraph(TableTransformGraph tableTransformGraph)
         {
-            addRecursively(new Node(tableTransformGraph.terminal));
+            final Node consumer = new Node();
+            consumer.in().add(tableTransformGraph.terminal);
+            addRecursively(consumer);
         }
 
         void addRecursively(Node node) {
