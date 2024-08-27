@@ -11,9 +11,10 @@ public class RagPlayground3 {
 
     public static void main(String[] args) {
 //        final VirtualTable table = VirtualTableTests.vtMinimal();
-        final VirtualTable table = VirtualTableTests.vtAppend();
+//        final VirtualTable table = VirtualTableTests.vtAppend();
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
 //        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
+        final VirtualTable table = VirtualTableTests.vtLinear().slice(2,4).slice(0,1);
 
         var tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
         System.out.println("tableTransformGraph = " + tableTransformGraph);
@@ -25,6 +26,10 @@ public class RagPlayground3 {
 
         var mermaid = new Mermaid();
         mermaid.append("<pre>" + dependencyGraph + "</pre>");
+        mermaid.append("SpecGraph", tableTransformGraph);
+
+        while(Util.mergeSlices(tableTransformGraph)) {
+        }
         mermaid.append("SpecGraph", tableTransformGraph);
 
         BranchGraph depGraph = new BranchGraph(tableTransformGraph);
