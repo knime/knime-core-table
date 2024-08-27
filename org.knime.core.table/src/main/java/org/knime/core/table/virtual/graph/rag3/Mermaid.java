@@ -95,8 +95,8 @@ public class Mermaid {
     private static String mermaid(final TableTransformGraph graph) {
         final DependencyGraph depGraph = new DependencyGraph(graph);
         final var sb = new StringBuilder("graph BT\n");
-        for (final Node node : depGraph.nodes) {
-            final String name = "<" + node.id() + "> " + node.getTransformSpec();
+        for (final DependencyGraph.Node node : depGraph.nodes) {
+            final String name = "<" + node.id() + "> " + node.spec();
             sb.append("  " + node.id() + "(\"" + name + "\")\n");
         }
         int edgeId = 0;
