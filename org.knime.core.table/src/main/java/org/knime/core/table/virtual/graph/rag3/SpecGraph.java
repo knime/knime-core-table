@@ -62,7 +62,7 @@ public class SpecGraph {
     }
 
     private static long numRows(final Port port) {
-        return numRows(port.controlFlowEdges().get(0).to().owner());
+        return numRows(port.controlFlowTarget(0));
     }
 
     private static long numRows(final Node node) {
@@ -96,9 +96,7 @@ public class SpecGraph {
     private static long accPredecessorNumRows(final Node node, final LongBinaryOperator acc) {
         long size = 0;
         for (Port port : node.in()) {
-            // TODO: shortcut candidate:
-            final Node predecessor = port.controlFlowEdges().get(0).to().owner();
-            final long s = numRows(predecessor);
+            final long s = numRows(port.controlFlowTarget(0));
             if ( s < 0 ) {
                 return -1;
             }
@@ -119,9 +117,8 @@ public class SpecGraph {
      * @return cursor supported at consumer node of the {@code orderedRag}
      */
     // TODO: make member of TableTransformGraph?
-    private static CursorType supportedCursorType(final TableTransformGraph tableTransformGraph) {
-        final Node node = tableTransformGraph.terminal.controlFlowEdges().get(0).to().owner();
-        return supportedCursorType(node);
+    private static CursorType supportedCursorType(final TableTransformGraph graph) {
+        return supportedCursorType(graph.terminal.controlFlowTarget(0));
     }
 
     private static CursorType supportedCursorType(final Node node) {
@@ -131,9 +128,7 @@ public class SpecGraph {
             case SLICE, APPEND, ROWINDEX, OBSERVER -> {
                 var cursorType = RANDOMACCESS;
                 for (Port port : node.in()) {
-                    // TODO: shortcut candidate:
-                    final Node predecessor = port.controlFlowEdges().get(0).to().owner();
-                    cursorType = min(cursorType, supportedCursorType(predecessor));
+                    cursorType = min(cursorType, supportedCursorType(port.controlFlowTarget(0)));
                     if (cursorType == BASIC) {
                         break;
                     }
@@ -145,9 +140,8 @@ public class SpecGraph {
                 // all predecessors except the last one need to know numRows()
                 var cursorType = RANDOMACCESS;
                 for (int i = 0; i < node.in().size(); i++) {
-                    Port port = node.in().get(i);
-                    // TODO: shortcut candidate:
-                    final Node predecessor = port.controlFlowEdges().get(0).to().owner();
+                    Port port = node.in(i);
+                    final Node predecessor = port.controlFlowTarget(0);
                     cursorType = min(cursorType, supportedCursorType(predecessor));
                     if (i != node.in().size() - 1 && numRows(predecessor) < 0) {
                         cursorType = min(cursorType, LOOKAHEAD);
@@ -245,7 +239,7 @@ public class SpecGraph {
                     return branchNode;
                 }
                 case SLICE, MAP, ROWFILTER, ROWINDEX -> {
-                    final Port port = node.in().get(0);
+                    final Port port = node.in(0);
                     final Set<DepNode> dependencies = getDependencies(port, innerNodes, branchTarget);
                     final SeqNode seqNode = new SeqNode(node, dependencies);
                     innerNodes.add(seqNode);
@@ -342,8 +336,8 @@ public class SpecGraph {
                     final List<AccessId> inputs = new ArrayList<>();
                     for ( int i = 0; i < numPredecessors; ++i ) {
                         predecessors[i] = heads.get(i).index();
-                        predecessorSizes[i] = numRows(target.in().get(i));
-                        final List<AccessId> branchInputs = target.in().get(i).accesses();
+                        predecessorSizes[i] = numRows(target.in(i));
+                        final List<AccessId> branchInputs = target.in(i).accesses();
                         predecessorOutputIndices[i] = new int[branchInputs.size()];
                         Arrays.setAll(predecessorOutputIndices[i], j -> j + inputs.size());
                         inputs.addAll(branchInputs);
@@ -360,8 +354,8 @@ public class SpecGraph {
                     final long[] predecessorSizes = new long[numPredecessors];
                     for ( int i = 0; i < numPredecessors; ++i ) {
                         predecessors[i] = heads.get(i).index();
-                        capInputs[i] = capAccessIdsFor(target.in().get(i).accesses());
-                        predecessorSizes[i] = numRows(target.in().get(i));
+                        capInputs[i] = capAccessIdsFor(target.in(i).accesses());
+                        predecessorSizes[i] = numRows(target.in(i));
                     }
                     capNode = new CapNodeConcatenate(index++, capInputs, predecessors, predecessorSizes);
                     createCapAccessIdsFor(target.out().accesses(), capNode);
@@ -373,7 +367,7 @@ public class SpecGraph {
             // append inner nodes
             for (DepNode depNode : branch.innerNodes) {
                 final Node node = depNode.node();
-                final List<AccessId> inputs = node.in().get(0).accesses();
+                final List<AccessId> inputs = node.in(0).accesses();
                 final CapAccessId[] capInputs = capAccessIdsFor(inputs);
 
                 final int predecessor = capNode.index();
