@@ -157,7 +157,7 @@ class BuildCap {
                     createCapAccessIdsFor(outputs, capNode);
                     append(node, capNode);
                 }
-                case OBSERVER -> throw SpecGraph.unhandledNodeType();
+                case OBSERVER -> throw Util.unhandledNodeType();
                 default -> throw new IllegalStateException();
             }
         }
