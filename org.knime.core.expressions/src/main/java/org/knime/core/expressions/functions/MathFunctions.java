@@ -1472,10 +1472,14 @@ public final class MathFunctions {
                 Negative values of precision will round to the left of the decimal, i.e.
                 `roundhalfdown(123.4, -2)` will round to 100.0.
 
-                If any argument is `MISSING`, the result will also be `MISSING`. If
-                the precision argument is not specified, the result will be of type
+                If the number to round `x` is `MISSING`, the result will also be `MISSING`.
+
+                If the precision argument is not specified, the result will be of type
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
+
+                If the precision argument evaluates to `MISSING` the default value of 0 is used
+                and a `FLOAT` is returned.
 
                 `roundhalfdown(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
                 The precision argument must be an integer and cannot be `NaN`.
@@ -1498,7 +1502,7 @@ public final class MathFunctions {
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
         .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
-            args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> (args.length == 1) ? INTEGER(args[0].isOptional()) : FLOAT(args[0].isOptional())) //
         .impl(roundImplFactory(RoundingMode.HALF_DOWN, "roundhalfdown")) //
         .build();
 
@@ -1512,10 +1516,14 @@ public final class MathFunctions {
                 Negative values of precision will round to the left of the decimal, i.e.
                 `roundhalfup(123.45, -2)` will round to 100.0.
 
-                If any argument is `MISSING`, the result will also be `MISSING`. If
-                the precision argument is not specified, the result will be of type
+                If the number to round `x` is `MISSING`, the result will also be `MISSING`.
+
+                If the precision argument is not specified, the result will be of type
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
+
+                If the precision argument evaluates to `MISSING` the default value of 0 is used
+                and a `FLOAT` is returned.
 
                 `roundhalfup(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
                 The precision argument must be an integer and cannot be `NaN`.
@@ -1538,7 +1546,7 @@ public final class MathFunctions {
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
         .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
-            args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> (args.length == 1) ? INTEGER(args[0].isOptional()) : FLOAT(args[0].isOptional())) //
         .impl(roundImplFactory(RoundingMode.HALF_UP, "roundhalfup")) //
         .build();
 
@@ -1553,10 +1561,14 @@ public final class MathFunctions {
                 Negative values of precision will round to the left of the decimal, i.e.
                 `round(123.45, -2)` will round to 100.0.
 
-                If any argument is `MISSING`, the result will also be `MISSING`. If
-                the precision argument is not specified, the result will be of type
+                If the number to round `x` is `MISSING`, the result will also be `MISSING`.
+
+                If the precision argument is not specified, the result will be of type
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
+
+                If the precision argument evaluates to `MISSING` the default value of 0 is used
+                and a `FLOAT` is returned.
 
                 `round(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
                 The precision argument must be an integer and cannot be `NaN`.
@@ -1581,7 +1593,7 @@ public final class MathFunctions {
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
         .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
-            args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+            args -> (args.length == 1) ? INTEGER(args[0].isOptional()) : FLOAT(args[0].isOptional())) //
         .impl(roundImplFactory(RoundingMode.HALF_EVEN, "round")) //
         .build();
 
@@ -1597,7 +1609,6 @@ public final class MathFunctions {
             var c = toFloat(args.get(0));
 
             if (args.size() == 1) {
-                // Return integer
                 return IntegerComputer.of( //
                     ctx -> BigDecimal.valueOf(c.compute(ctx)).setScale(0, mode).longValue(), //
                     ctx -> {
@@ -1612,7 +1623,9 @@ public final class MathFunctions {
                     });
             } else {
                 return FloatComputer.of(ctx -> {
-                    int scale = (int)toInteger(args.get(1)).compute(ctx);
+                    var precisionArgument = args.get(1);
+
+                    int scale = precisionArgument.isMissing(ctx) ? 0 : (int)toInteger(args.get(1)).compute(ctx);
                     double value = c.compute(ctx);
 
                     if (Double.isNaN(value)) {
@@ -1621,7 +1634,7 @@ public final class MathFunctions {
                     } else {
                         return BigDecimal.valueOf(value).setScale(scale, mode).doubleValue();
                     }
-                }, anyMissing(args));
+                }, c::isMissing);
             }
         };
     }
