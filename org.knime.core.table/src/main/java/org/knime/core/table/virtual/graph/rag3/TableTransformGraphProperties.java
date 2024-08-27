@@ -59,7 +59,7 @@ public class TableTransformGraphProperties {
     }
 
     static CursorType supportedCursorType(final TableTransformGraph graph) {
-        return supportedCursorType(graph.terminal.controlFlowTarget(0));
+        return supportedCursorType(graph.terminal().controlFlowTarget(0));
     }
 
     private static CursorType supportedCursorType(final Node node) {

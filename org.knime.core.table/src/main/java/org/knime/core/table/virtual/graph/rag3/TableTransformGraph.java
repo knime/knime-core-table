@@ -101,7 +101,7 @@ public class TableTransformGraph {
     /**
      * A node in the TableTransformGraph.
      */
-    static class Node {
+    public static class Node {
         private final TableTransformSpec spec;
         private final SpecType type;
         private final List<Port> in = new ArrayList<>();
@@ -234,10 +234,7 @@ public class TableTransformGraph {
         }
     }
 
-    /**
-     * Control-flow and accesses at the root (output, CONSUMER, sink, ...) of this {@code TableTransformGraph}.
-     */
-    final Port terminal;
+    private final Port terminal;
 
     TableTransformGraph(final Port terminal) {
         this.terminal = terminal;
@@ -320,6 +317,16 @@ public class TableTransformGraph {
         }
     }
 
+    /**
+     * Control-flow and accesses at the root (output, CONSUMER, sink, ...) of this {@code TableTransformGraph}.
+     */
+    public Port terminal() {
+        return terminal;
+    }
+
+    /**
+     * number of columns at the root (output, CONSUMER, sink, ...) of this {@code TableTransformGraph}.
+     */
     public int numColumns() {
         return terminal.accesses().size();
     }
