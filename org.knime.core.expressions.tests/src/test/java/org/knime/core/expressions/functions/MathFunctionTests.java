@@ -1081,15 +1081,24 @@ final class MathFunctionTests {
             .typing("FLOAT", List.of(FLOAT, FLOAT), FLOAT) //
             .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
             .typing("INTEGER+FLOAT", List.of(INTEGER, FLOAT, FLOAT), FLOAT) //
+            .typing("optional mean", List.of(FLOAT, OPT_FLOAT), FLOAT) //
+            .typing("optional mean and deviation", List.of(FLOAT, OPT_FLOAT, OPT_FLOAT), FLOAT) //
             .illegalArgs("STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
             .illegalArgs("MISSING", List.of(MISSING)) //
             .illegalArgs("TOO FEW", List.of(INTEGER)) //
-            .warns("negative deviation", List.of(arg(0), arg(0), arg(-1))) //
+            .illegalArgs("TOO FEW2", List.of(FLOAT)) //
+            .illegalArgs("STRING as mean", List.of(INTEGER, STRING)) //
             .implWithTolerance("peak value", List.of(arg(0), arg(0), arg(1)), 1 / (Math.sqrt(2 * Math.PI))) //
             .implWithTolerance("peak value without deviation", List.of(arg(0), arg(0)), 1 / (Math.sqrt(2 * Math.PI))) //
             .implWithTolerance("far away", List.of(arg(0), arg(-1000), arg(1)), 0) //
-            .implWithTolerance("value 1,0", List.of(arg(1), arg(0)), 0.241970725, -10 ^ -6) //
+            .implWithTolerance("value 1,0", List.of(arg(1), arg(0)), 0.241970725, 1E-6) //
+            .implWithTolerance("value 1, with missing deviation", //
+                List.of(arg(1), arg(0), misFloat()), 0.241970725, //
+                1E-6) //
+            .implWithTolerance("value 1, deviation and mean missing", //
+                List.of(arg(1), misFloat(), misFloat()), //
+                0.241970725, 1E-6) //
             .impl("NaN", List.of(arg(Float.NaN), arg(1), arg(1)), Float.NaN) //
             .impl("NaN 2", List.of(arg(1), arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("NaN 3", List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN) //
@@ -1105,18 +1114,25 @@ final class MathFunctionTests {
             .typing("FLOAT", List.of(FLOAT, FLOAT), FLOAT) //
             .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
             .typing("INTEGER+FLOAT", List.of(INTEGER, FLOAT, FLOAT), FLOAT) //
+            .typing("optional mean", List.of(FLOAT, OPT_FLOAT), FLOAT) //
+            .typing("optional mean and deviation", List.of(FLOAT, OPT_FLOAT, OPT_FLOAT), FLOAT) //
             .illegalArgs("STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
             .illegalArgs("MISSING", List.of(MISSING)) //
             .illegalArgs("TOO FEW", List.of(INTEGER)) //
-            .warns("negative deviation", List.of(arg(0), arg(0), arg(-1))) //
-            .implWithTolerance("inflection point", List.of(arg(0), arg(0), arg(1)), 0., -10 ^ -6) //
-            .implWithTolerance("peak value", List.of(arg(100), arg(0), arg(1)), 1, -10 ^ -6) //
-            .implWithTolerance("peak value without deviation", List.of(arg(100), arg(0)), 1, -10 ^ -6) //
-            .implWithTolerance("should be zero", List.of(arg(-100), arg(100)), 0, -10 ^ -6) //
-            .implWithTolerance("value 1", List.of(arg(1), arg(0)), 0.842700793, -10 ^ -6) //
-            .implWithTolerance("value 2", List.of(arg(2), arg(0)), 0.995322265, -10 ^ -6) //
-            .implWithTolerance("value 3", List.of(arg(3), arg(0)), 0.999977909, -10 ^ -6) //
+            .illegalArgs("TOO FEW2", List.of(FLOAT)) //
+            .illegalArgs("STRING as mean", List.of(INTEGER, STRING)) //
+            .implWithTolerance("inflection point", List.of(arg(0), arg(0), arg(1)), 0., 1E-6) //
+            .implWithTolerance("peak value", List.of(arg(100), arg(0), arg(1)), 1, 1E-6) //
+            .implWithTolerance("peak value without deviation", List.of(arg(100), arg(0)), 1, 1E-6) //
+            .implWithTolerance("should be minus 1", List.of(arg(-100), arg(100)), -1.0, 1E-6) //
+            .implWithTolerance("value 1", List.of(arg(1), arg(0)), 0.842700793, 1E-6) //
+            .implWithTolerance("value 1, deviation missing", List.of(arg(1), arg(0), misFloat()), 0.842700793, 1E-6) //
+            .implWithTolerance("value 1, deviation and mean missing", //
+                List.of(arg(1), misFloat(), misFloat()), //
+                0.842700793, 1E-6) //
+            .implWithTolerance("value 2", List.of(arg(2), arg(0)), 0.995322265, 1E-6) //
+            .implWithTolerance("value 3", List.of(arg(3), arg(0)), 0.999977909, 1E-6) //
             .impl("NaN", List.of(arg(Float.NaN), arg(1), arg(1)), Float.NaN) //
             .impl("NaN 2", List.of(arg(1), arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("NaN 3", List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN) //
