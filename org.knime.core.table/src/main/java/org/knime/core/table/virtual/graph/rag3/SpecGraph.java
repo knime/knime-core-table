@@ -2,9 +2,6 @@ package org.knime.core.table.virtual.graph.rag3;
 
 import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.CONTROL;
 import static org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.EdgeType.DATA;
-import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.BASIC;
-import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.LOOKAHEAD;
-import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.RANDOMACCESS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +15,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.LongBinaryOperator;
 
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -49,132 +45,6 @@ public class SpecGraph {
     static UnsupportedOperationException unhandledNodeType() { // TODO: handle or remove OBSERVER case
         return new UnsupportedOperationException("not handled yet. needs to be implemented or removed");
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    //
-    // RagGraphProperties
-    //
-
-    // TODO: make member of TableTransformGraph?
-    static long numRows(final TableTransformGraph graph)
-    {
-        return numRows(graph.terminal);
-    }
-
-    private static long numRows(final Port port) {
-        return numRows(port.controlFlowTarget(0));
-    }
-
-    private static long numRows(final Node node) {
-        return switch (node.type()) {
-            case SOURCE -> node.<SourceTransformSpec>getTransformSpec().numRows();
-            case ROWFILTER -> -1;
-            case SLICE -> {
-                final SliceTransformSpec spec = node.getTransformSpec();
-                final long from = spec.getRowRangeSelection().fromIndex();
-                final long to = spec.getRowRangeSelection().toIndex();
-                final long s = accPredecessorNumRows(node, Math::max);
-                yield s < 0 ? s : Math.max(0, Math.min(s, to) - from);
-            }
-            case ROWINDEX, OBSERVER, APPEND ->
-                // If any predecessor doesn't know its size, the size of this node is also unknown.
-                // Otherwise, the size of this node is max of its predecessors.
-                accPredecessorNumRows(node, Math::max);
-            case CONCATENATE ->
-                // If any predecessor doesn't know its size, the size of this node is also unknown.
-                // Otherwise, the size of this is the sum of its predecessors.
-                accPredecessorNumRows(node, Long::sum);
-            case COLSELECT, MAP -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
-        };
-    }
-
-    /**
-     * Accumulate numRows of EXEC predecessors of {@code node}.
-     * Returns -1, if at least one predecessor doesn't know its numRows.
-     * Returns 0 if there are no predecessors.
-     */
-    private static long accPredecessorNumRows(final Node node, final LongBinaryOperator acc) {
-        long size = 0;
-        for (Port port : node.in()) {
-            final long s = numRows(port.controlFlowTarget(0));
-            if ( s < 0 ) {
-                return -1;
-            }
-            size = acc.applyAsLong(size, s);
-        }
-        return size;
-    }
-
-
-
-
-    /**
-     * Returns the {@link CursorType} supported by the given linearized {@code
-     * RagGraph} (without additional prefetching and buffering).
-     * The result is determined by the {@code CursorType} of the sources, and
-     * the presence of ROWFILTER operations, etc.
-     *
-     * @return cursor supported at consumer node of the {@code orderedRag}
-     */
-    // TODO: make member of TableTransformGraph?
-    private static CursorType supportedCursorType(final TableTransformGraph graph) {
-        return supportedCursorType(graph.terminal.controlFlowTarget(0));
-    }
-
-    private static CursorType supportedCursorType(final Node node) {
-        return switch (node.type()) {
-            case SOURCE -> node.<SourceTransformSpec>getTransformSpec().getProperties().cursorType();
-            case ROWFILTER -> BASIC;
-            case SLICE, APPEND, ROWINDEX, OBSERVER -> {
-                var cursorType = RANDOMACCESS;
-                for (Port port : node.in()) {
-                    cursorType = min(cursorType, supportedCursorType(port.controlFlowTarget(0)));
-                    if (cursorType == BASIC) {
-                        break;
-                    }
-                }
-                yield cursorType;
-            }
-            case CONCATENATE -> {
-                // all predecessors need to support random-access AND
-                // all predecessors except the last one need to know numRows()
-                var cursorType = RANDOMACCESS;
-                for (int i = 0; i < node.in().size(); i++) {
-                    Port port = node.in(i);
-                    final Node predecessor = port.controlFlowTarget(0);
-                    cursorType = min(cursorType, supportedCursorType(predecessor));
-                    if (i != node.in().size() - 1 && numRows(predecessor) < 0) {
-                        cursorType = min(cursorType, LOOKAHEAD);
-                    }
-                    if (cursorType == BASIC ) {
-                        break;
-                    }
-                }
-                yield cursorType;
-            }
-            case COLSELECT, MAP -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
-        };
-    }
-
-    private static CursorType min(CursorType arg0, CursorType arg1) {
-        return switch (arg0) {
-            case BASIC -> BASIC;
-            case LOOKAHEAD -> arg1.supportsLookahead() ? LOOKAHEAD : BASIC;
-            case RANDOMACCESS -> arg1;
-        };
-    }
-
-
-    //
-    // RagGraphProperties
-    //
-    // -----------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
 
     // -----------------------------------------------------------------------------------------------------------------
     //
@@ -298,9 +168,9 @@ public class SpecGraph {
 
         public static CursorAssemblyPlan getCursorAssemblyPlan(final DependencyGraph sequentializedGraph) {
             final BuildCap builder = new BuildCap(sequentializedGraph);
-            final CursorType cursorType = supportedCursorType(sequentializedGraph.tableTransformGraph);
+            final CursorType cursorType = sequentializedGraph.tableTransformGraph.supportedCursorType();
             System.out.println("cursorType = " + cursorType);
-            final long numRows = numRows(sequentializedGraph.tableTransformGraph);
+            final long numRows = sequentializedGraph.tableTransformGraph.numRows();
             System.out.println("numRows = " + numRows);
             return new CursorAssemblyPlan(builder.cap, cursorType, numRows, builder.sourceSchemas);
         }
@@ -336,7 +206,7 @@ public class SpecGraph {
                     final List<AccessId> inputs = new ArrayList<>();
                     for ( int i = 0; i < numPredecessors; ++i ) {
                         predecessors[i] = heads.get(i).index();
-                        predecessorSizes[i] = numRows(target.in(i));
+                        predecessorSizes[i] = TableTransformGraphProperties.numRows(target.in(i));
                         final List<AccessId> branchInputs = target.in(i).accesses();
                         predecessorOutputIndices[i] = new int[branchInputs.size()];
                         Arrays.setAll(predecessorOutputIndices[i], j -> j + inputs.size());
@@ -355,7 +225,7 @@ public class SpecGraph {
                     for ( int i = 0; i < numPredecessors; ++i ) {
                         predecessors[i] = heads.get(i).index();
                         capInputs[i] = capAccessIdsFor(target.in(i).accesses());
-                        predecessorSizes[i] = numRows(target.in(i));
+                        predecessorSizes[i] = TableTransformGraphProperties.numRows(target.in(i));
                     }
                     capNode = new CapNodeConcatenate(index++, capInputs, predecessors, predecessorSizes);
                     createCapAccessIdsFor(target.out().accesses(), capNode);

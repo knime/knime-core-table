@@ -15,6 +15,8 @@ import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
+import org.knime.core.table.virtual.spec.SourceTableProperties;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
@@ -232,8 +234,6 @@ public class TableTransformGraph {
         }
     }
 
-
-
     /**
      * Control-flow and accesses at the root (output, CONSUMER, sink, ...) of this {@code TableTransformGraph}.
      */
@@ -320,8 +320,30 @@ public class TableTransformGraph {
         }
     }
 
-    int numColumns() {
+    public int numColumns() {
         return terminal.accesses().size();
+    }
+
+    /**
+     * Returns the number of rows of this {@code TableTransformGraph}, or a
+     * negative value if the number of rows cannot be determined.
+     *
+     * @return number of rows in this {@code TableTransformGraph}
+     */
+    public long numRows() {
+        return TableTransformGraphProperties.numRows(terminal);
+    }
+
+    /**
+     * Returns the {@link CursorType} supported by this {@code
+     * TableTransformGraph} (without additional prefetching and buffering). The
+     * result is determined by the {@code CursorType} of the sources, and the
+     * presence of ROWFILTER operations, etc.
+     *
+     * @return cursor supported by this {@code TableTransformGraph}
+     */
+    public CursorType supportedCursorType() {
+        return TableTransformGraphProperties.supportedCursorType(this);
     }
 
     @Override
@@ -330,7 +352,7 @@ public class TableTransformGraph {
     }
 
     /**
-     * TODO javadoc
+     * Make an independent copy of this {@code TableTransformGraph}.
      */
     public TableTransformGraph copy() {
         class Copier {
