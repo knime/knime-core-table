@@ -9,7 +9,6 @@ import java.util.UUID;
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
@@ -19,8 +18,6 @@ import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 public class ExecCap3 {
 
     public static void main(String[] args) {
-        UUID[] sinkIdentifiers = null;
-        RowWriteAccessible[] sinkAccessibles = null;
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMinimal();
@@ -30,10 +27,14 @@ public class ExecCap3 {
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataAppend();
 //        final VirtualTable table = VirtualTableTests.vtAppend(sourceIdentifiers, sourceAccessibles);
 
-        final UUID[] sourceIdentifiers = createSourceIds(1);
-        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMapsAndFilters();
-        final VirtualTable table = VirtualTableTests.vtMapsAndFilters(sourceIdentifiers, sourceAccessibles);
+//        final UUID[] sourceIdentifiers = createSourceIds(1);
+//        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMapsAndFilters();
+//        final VirtualTable table = VirtualTableTests.vtMapsAndFilters(sourceIdentifiers, sourceAccessibles);
 
+
+        final UUID[] sourceIdentifiers = createSourceIds(1);
+        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataLinear();
+        final VirtualTable table = VirtualTableTests.vtLinear(sourceIdentifiers, sourceAccessibles).slice(2,4).slice(0,1);
 
 
 
@@ -48,6 +49,11 @@ public class ExecCap3 {
 
         // create CAP
         TableTransformGraph tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
+
+        // try some optimizations
+        Util.pruneAccesses(tableTransformGraph);
+        while(Util.mergeSlices(tableTransformGraph)) {
+        }
 
         System.out.println(new DependencyGraph(tableTransformGraph));
         TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();

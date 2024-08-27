@@ -59,6 +59,10 @@ public class TableTransformGraph {
             return controlFlowEdges.get(i).to().owner();
         }
 
+        Node controlFlowSource(int i) {
+            return controlFlowEdges.get(i).from().owner();
+        }
+
         /**
          * Add a new control-flow edge from this port to the {@link Node#out() out} port of the given {@code Node}.
          * <p>
@@ -86,6 +90,23 @@ public class TableTransformGraph {
             from.controlFlowEdges.add(e);
             to.controlFlowEdges.clear();
             to.controlFlowEdges.add(e);
+            return e;
+        }
+
+        /**
+         * Remove this {@code ControlFlowEdge} from its source {@code Port} and
+         * replace it with a new edge to {@code to}.
+         *
+         * @return the new edge
+         * @throws IllegalStateException if the source {@code Port} does not have exactly one edge.
+         */
+        ControlFlowEdge relinkTo(Port to) throws IllegalStateException {
+            if (from.controlFlowEdges.size() != 1)
+                throw new IllegalStateException();
+            final ControlFlowEdge e = new ControlFlowEdge(from, to);
+            to.controlFlowEdges.add(e);
+            from.controlFlowEdges.clear();
+            from.controlFlowEdges.add(e);
             return e;
         }
 
@@ -425,7 +446,7 @@ public class TableTransformGraph {
      * @param label
      * @return
      */
-    private static List<AccessId> createAccessIds(final Node producerNode, final int n,
+    static List<AccessId> createAccessIds(final Node producerNode, final int n,
             final IntFunction<String> label) {
         final List<AccessId> cols = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
@@ -440,7 +461,7 @@ public class TableTransformGraph {
      * "alpha^i_v1(0)" (this would be created for {@code varName="alpha"},
      * {@code nodeId=1}, {@code predecessorIndex=0}).
      */
-    private static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
+    static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
         return i -> {
             String label = varName + "^" + i + "_v" + nodeId;
             if (predecessorIndex >= 0)
