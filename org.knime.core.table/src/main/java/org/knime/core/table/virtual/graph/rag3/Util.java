@@ -2,17 +2,25 @@ package org.knime.core.table.virtual.graph.rag3;
 
 import static org.knime.core.table.virtual.graph.rag3.SpecType.APPEND;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.SLICE;
+import static org.knime.core.table.virtual.graph.rag3.SpecType.SOURCE;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.knime.core.table.row.Selection;
+import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.schema.DataSpecs;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
+import org.knime.core.table.virtual.graph.rag.AccessIds;
+import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag3.AccessId.Producer;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
+import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
@@ -136,41 +144,42 @@ public class Util {
 
 
 
+    record AppendAccesses(Port outPort, int outAccessIndex, Port inPort, int inAccessIndex) {
+        static AppendAccesses find(AccessId a) {
+            AccessId access = a.find();
+            Node node = access.producer().node();
+            if (node.type() == APPEND) {
+                final int i = node.out().accesses().indexOf(access);
+                if (i >= 0) {
+                    int j = 0;
+                    for (Port port : node.in()) {
+                        final int n = port.accesses().size();
+                        if (j + n > i) {
+                            return new AppendAccesses(node.out(), i, port, i - j);
+                        }
+                        j += n;
+                    }
+                }
+            }
+            throw new IllegalArgumentException();
+        }
+
+        AccessId input() {
+            return inPort.access(inAccessIndex);
+        }
+
+        void remove() {
+            outPort.accesses().remove(outAccessIndex);
+            inPort.accesses().remove(inAccessIndex);
+        }
+    }
+
     /**
      * Identify and remove {@code AccessId} that are produced but never used in the {@code graph}.
      *
      * @return {@code true} if any unused access was found and removed
      */
     public static boolean pruneAccesses(TableTransformGraph graph) {
-
-        record AppendAccesses(Port outPort, int outAccessIndex, Port inPort, int inAccessIndex) {
-            static AppendAccesses find(Node node, AccessId access) {
-                if (node.type() == APPEND) {
-                    final int i = node.out().accesses().indexOf(access);
-                    if (i >= 0) {
-                        int j = 0;
-                        for (Port port : node.in()) {
-                            final int n = port.accesses().size();
-                            if (j + n > i) {
-                                return new AppendAccesses(node.out(), i, port, i - j);
-                            }
-                            j += n;
-                        }
-                    }
-                }
-                throw new IllegalArgumentException();
-            }
-
-            AccessId input() {
-                return inPort.access(inAccessIndex);
-            }
-
-            void remove() {
-                outPort.accesses().remove(outAccessIndex);
-                inPort.accesses().remove(inAccessIndex);
-            }
-        }
-
         class Required {
             Required(TableTransformGraph graph) {
                 final Port port = graph.terminal();
@@ -204,7 +213,7 @@ public class Util {
                     switch (node.type()) {
                         case SOURCE, ROWINDEX -> {
                         }
-                        case APPEND -> addRequired(AppendAccesses.find(node, access).input());
+                        case APPEND -> addRequired(AppendAccesses.find(access).input());
                         case CONCATENATE -> {
                             final int i = node.out().accesses().indexOf(access);
                             node.in().forEach(in -> addRequired(in.access(i)));
@@ -237,7 +246,7 @@ public class Util {
                         unused.forEach(access -> {
                             switch (node.type()) {
                                 case SOURCE, MAP, ROWINDEX -> node.out().accesses().remove(access);
-                                case APPEND -> AppendAccesses.find(node, access).remove();
+                                case APPEND -> AppendAccesses.find(access).remove();
                                 case CONCATENATE -> {
                                     final int i = node.out().accesses().indexOf(access);
                                     node.out().accesses().remove(i);
@@ -256,6 +265,48 @@ public class Util {
         }
 
         return new Required(graph).pruneAccesses();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public static ColumnarSchema createSchema(final TableTransformGraph graph) {
+        final List<AccessId> accesses = graph.terminal().accesses();
+        final DataSpecWithTraits[] specs = new DataSpecWithTraits[accesses.size()];
+        Arrays.setAll(specs, i -> getSpecWithTraits(accesses.get(i)));
+        return ColumnarSchema.of(specs);
+    }
+
+    private static DataSpecWithTraits getSpecWithTraits(final AccessId access) {
+        final Producer producer = access.find().producer();
+        final Node node = producer.node();
+        return switch (node.type()) {
+            case SOURCE -> {
+                final SourceTransformSpec spec = node.getTransformSpec();
+                yield spec.getSchema().getSpecWithTraits(producer.index());
+            }
+            case APPEND -> getSpecWithTraits(AppendAccesses.find(access).input());
+            case CONCATENATE -> {
+                final int i = node.out().accesses().indexOf(access);
+                yield getSpecWithTraits(node.in(0).access(i));
+            }
+            case MAP -> {
+                final MapTransformSpec spec = node.getTransformSpec();
+                yield spec.getMapperFactory().getOutputSchema().getSpecWithTraits(producer.index());
+            }
+            case ROWINDEX -> DataSpecs.LONG;
+            default -> throw new IllegalArgumentException("unexpected node type " + node.type());
+        };
     }
 
 }
