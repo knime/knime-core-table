@@ -1,6 +1,6 @@
 package org.knime.core.table.virtual.graph.rag3;
 
-import org.knime.core.table.virtual.graph.rag3.SpecGraph.TableTransformGraph.Node;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
 
 class AccessId {
 
