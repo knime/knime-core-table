@@ -46,10 +46,10 @@ public class ExecCap3 {
         }
 
         // create CAP
-        SpecGraph.TableTransformGraph tableTransformGraph = SpecGraph.TableTransformGraph.of(table.getProducingTransform());
+        TableTransformGraph tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
 
         System.out.println(new SpecGraph.MermaidGraph(tableTransformGraph));
-        SpecGraph.TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();
+        TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();
         System.out.println(new SpecGraph.MermaidGraph(tableTransformGraph2));
 
         SpecGraph.DependencyGraph depGraph = new SpecGraph.DependencyGraph(tableTransformGraph2);

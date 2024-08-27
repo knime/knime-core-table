@@ -7,7 +7,6 @@ import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.BuildCap;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph;
-import org.knime.core.table.virtual.graph.rag3.SpecGraph.TableTransformGraph;
 
 public class RagPlayground3 {
 
@@ -37,9 +36,7 @@ public class RagPlayground3 {
             System.out.println("<" + node.index() + "> " + node);
         }
 
-
-
-        final TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();
+        var tableTransformGraph2 = tableTransformGraph.copy();
         DependencyGraph depGraph2 = new DependencyGraph(tableTransformGraph2);
         System.out.println("depGraph2 = " + depGraph2);
 
