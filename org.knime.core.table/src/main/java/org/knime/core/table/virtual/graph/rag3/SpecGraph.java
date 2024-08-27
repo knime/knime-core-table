@@ -39,6 +39,7 @@ import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
+import org.knime.core.table.virtual.graph.rag3.AccessId.Producer;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph.DepNode;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.Edge;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -52,51 +53,18 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
 
 public class SpecGraph {
 
-    // -----------------------------------------------------------------------------------------------------------------
-    //
-    // AccessIds
-    //
-
-    record Producer(Node node, int index) {}
-
-    static class AccessId {
-        private final Producer producer;
-
-        private AccessId parent;
-
-        private final String label; // TODO (for debugging only)
-
-        public AccessId(final Producer producer, String label) {
-            this.producer = producer;
-            this.parent = this;
-            this.label = label;
-        }
-
-        public Producer producer() {
-            return producer;
-        }
-
-        public AccessId find() {
-            if (parent != this) {
-                final var p = parent.find();
-                if (parent != p) {
-                    parent = p;
-                }
-            }
-            return parent;
-        }
-
-        public void union(final AccessId other) {
-            parent = other.find();
-        }
-
-        @Override
-        public String toString() {
-            return label + (parent == this ? "" : "->" + find());
-        }
-    }
-
-    static List<AccessId> createAccessIds(final Node producerNode, final int n, final IntFunction<String> label) {
+    /**
+     * Create {@code n} new {@code AccessId}s with the given {@code
+     * producerNode} (may be {@code null}). The {@code AccessId}s will be
+     * labeled by applying the given {@code label} function to {@code 0, 1, ...,
+     * n-1}.
+     *
+     * @param producerNode
+     * @param n
+     * @param label
+     * @return
+     */
+    private static List<AccessId> createAccessIds(final Node producerNode, final int n, final IntFunction<String> label) {
         final List<AccessId> cols = new ArrayList<>( n );
         for (int i = 0; i < n; i++) {
             Producer producer = producerNode == null ? null : new Producer(producerNode, i);
@@ -105,8 +73,11 @@ public class SpecGraph {
         return cols;
     }
 
-    // TODO (for debugging only)
-    static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
+    /**
+     * Create an AccessId labeling function
+     * TODO: javadoc
+     */
+    private static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
         return i -> {
             String label = varName + "^" + i + "_v" + nodeId;
             if (predecessorIndex >= 0)
@@ -115,10 +86,7 @@ public class SpecGraph {
         };
     }
 
-    //
-    // AccessIds
-    //
-    // -----------------------------------------------------------------------------------------------------------------
+
 
 
 
@@ -461,7 +429,7 @@ public class SpecGraph {
                 return a;
             }
             final Producer producerCopy = copyOf(access.producer());
-            return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label));
+            return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label()));
         }
 
         private Producer copyOf(Producer producer) {
