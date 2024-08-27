@@ -13,6 +13,7 @@ import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
+import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 
 public class ExecCap3 {
