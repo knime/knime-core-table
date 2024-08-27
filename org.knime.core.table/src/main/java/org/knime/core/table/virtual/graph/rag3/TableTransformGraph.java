@@ -108,15 +108,6 @@ public class TableTransformGraph {
         private final Port out;
 
         /**
-         * Create a dummy CONSUMER node. Only needed for visualization.
-         */
-        Node() {
-            spec = new ConsumerTransformSpec();
-            type = null;
-            out = null;
-        }
-
-        /**
          * Create a new node with the given {@code TableTransformSpec} but without populated inputs or outputs.
          * This is needed to implement {@link #copy()}.
          */
@@ -126,7 +117,7 @@ public class TableTransformGraph {
             out = new Port(this);
         }
 
-        Node(final TableTransformSpec spec, final int numColumns, final List<TableTransformGraph> predecessors) {
+        private Node(final TableTransformSpec spec, final int numColumns, final List<TableTransformGraph> predecessors) {
             this.spec = spec;
             type = SpecType.forSpec(spec);
 
@@ -219,7 +210,7 @@ public class TableTransformGraph {
         }
 
         // ids are just for printing ...
-        private static int nextNodeId = 0;
+        private static int nextNodeId = 1;
         private final int id = nextNodeId++;
 
         /**

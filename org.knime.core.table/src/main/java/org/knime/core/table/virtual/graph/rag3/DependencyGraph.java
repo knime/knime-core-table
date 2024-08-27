@@ -3,10 +3,14 @@ package org.knime.core.table.virtual.graph.rag3;
 import static org.knime.core.table.virtual.graph.rag3.DependencyGraph.EdgeType.CONTROL;
 import static org.knime.core.table.virtual.graph.rag3.DependencyGraph.EdgeType.DATA;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
+import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
+import org.knime.core.table.virtual.spec.TableTransformSpec;
 
 /**
  * A graph that explicitly represents execution ordering constraints between the
@@ -25,31 +29,53 @@ public class DependencyGraph {
         }
     }
 
+    record Node(int id, TableTransformSpec spec) {
+        Node(TableTransformGraph.Node node) {
+            this(node.id(), node.getTransformSpec());
+        }
+
+        @Override
+        public String toString() {
+            return "(<" + id + ">, " + spec + ")";
+        }
+    }
+
+    private final Map<TableTransformGraph.Node, Node> nodeMap = new HashMap<>();
+
     final Set<Node> nodes = new LinkedHashSet<>();
 
     final Set<Edge> edges = new LinkedHashSet<>();
 
-    public DependencyGraph(TableTransformGraph tableTransformGraph) {
-        final Node consumer = new Node();
-        consumer.in().add(tableTransformGraph.terminal());
-        addRecursively(consumer);
+    public DependencyGraph(final TableTransformGraph tableTransformGraph) {
+        final Node consumer = new Node(0, new ConsumerTransformSpec());
+        nodes.add(consumer);
+        addRecursively(consumer, tableTransformGraph.terminal());
     }
 
-    private void addRecursively(Node node) {
-        if (nodes.add(node)) {
-            node.in().forEach(port -> {
-                port.controlFlowEdges().forEach(e -> {
-                    final Node target = e.to().owner();
-                    addRecursively(target);
-                    edges.add(new Edge(CONTROL, node, target));
-                });
-                port.accesses().forEach(a -> {
-                    final Node target = a.find().producer().node();
-                    addRecursively(target);
-                    edges.add(new Edge(DATA, node, target));
-                });
-            });
+    private void addRecursively(final Node fromNode, final Port port) {
+        port.controlFlowEdges().forEach(e -> {
+            final TableTransformGraph.Node target = e.to().owner();
+            Node toNode = addRecursively(target );
+            edges.add(new Edge(CONTROL, fromNode, toNode));
+        });
+        port.accesses().forEach(a -> {
+            final TableTransformGraph.Node target = a.find().producer().node();
+            Node toNode = addRecursively(target );
+            edges.add(new Edge(DATA, fromNode, toNode));
+        });
+    }
+
+    private Node addRecursively(final TableTransformGraph.Node ttgNode) {
+        final Node existing = nodeMap.get(ttgNode);
+        if (existing != null) {
+            return existing;
         }
+
+        final Node node = new Node(ttgNode);
+        nodeMap.put(ttgNode, node);
+        nodes.add(node);
+        ttgNode.in().forEach(port -> addRecursively(node, port));
+        return node;
     }
 
     @Override
