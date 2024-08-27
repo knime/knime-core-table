@@ -43,6 +43,7 @@ import org.knime.core.table.virtual.graph.rag3.AccessId.Producer;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph.DepNode;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph.Edge;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.TableTransformGraph.Node;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.TableTransformGraph.Port;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowIndexTransformSpec;
@@ -85,58 +86,6 @@ public class SpecGraph {
                 label += "(" + predecessorIndex + ")";
             return label;
         };
-    }
-
-
-
-
-
-    record ControlFlowEdge(Port from, Port to) {
-        /**
-         * Remove this {@code ControlFlowEdge} from its target {@code Port} and
-         * replace it with a new edge from {@code from}.
-         *
-         * @return the new edge
-         * @throws IllegalStateException if the target {@code Port} does not have exactly one edge.
-         */
-        ControlFlowEdge relinkFrom(Port from) throws IllegalStateException {
-            if (to.controlFlowEdges.size() != 1)
-                throw new IllegalStateException();
-            final ControlFlowEdge e = new ControlFlowEdge(from, to);
-            from.controlFlowEdges.add(e);
-            to.controlFlowEdges.clear();
-            to.controlFlowEdges.add(e);
-            return e;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("ControlFlowEdge{");
-            sb.append("from=").append(from.owner() == null ? "terminal" : from.owner().id());
-            sb.append(", to=").append(to.owner().id());
-            sb.append('}');
-            return sb.toString();
-        }
-    }
-
-    record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
-        Port(Node owner, List<AccessId> accesses) {
-            this(owner, accesses, new ArrayList<>());
-        }
-
-        Port(Node owner) {
-            this(owner, new ArrayList<>());
-        }
-
-        AccessId access(int i) {
-            return accesses.get(i);
-        }
-
-        void linkTo(Port to) {
-            final ControlFlowEdge e = new ControlFlowEdge(this, to);
-            controlFlowEdges.add(e);
-            to.controlFlowEdges().add(e);
-        }
     }
 
     public static class TableTransformGraph {
@@ -404,6 +353,54 @@ public class SpecGraph {
              */
             public int id() {
                 return id;
+            }
+        }
+
+        record ControlFlowEdge(Port from, Port to) {
+            /**
+             * Remove this {@code ControlFlowEdge} from its target {@code Port} and
+             * replace it with a new edge from {@code from}.
+             *
+             * @return the new edge
+             * @throws IllegalStateException if the target {@code Port} does not have exactly one edge.
+             */
+            ControlFlowEdge relinkFrom(Port from) throws IllegalStateException {
+                if (to.controlFlowEdges.size() != 1)
+                    throw new IllegalStateException();
+                final ControlFlowEdge e = new ControlFlowEdge(from, to);
+                from.controlFlowEdges.add(e);
+                to.controlFlowEdges.clear();
+                to.controlFlowEdges.add(e);
+                return e;
+            }
+
+            @Override
+            public String toString() {
+                final StringBuilder sb = new StringBuilder("ControlFlowEdge{");
+                sb.append("from=").append(from.owner() == null ? "terminal" : from.owner().id());
+                sb.append(", to=").append(to.owner().id());
+                sb.append('}');
+                return sb.toString();
+            }
+        }
+
+        record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
+            Port(Node owner, List<AccessId> accesses) {
+                this(owner, accesses, new ArrayList<>());
+            }
+
+            Port(Node owner) {
+                this(owner, new ArrayList<>());
+            }
+
+            AccessId access(int i) {
+                return accesses.get(i);
+            }
+
+            void linkTo(Port to) {
+                final ControlFlowEdge e = new ControlFlowEdge(this, to);
+                controlFlowEdges.add(e);
+                to.controlFlowEdges().add(e);
             }
         }
     }
