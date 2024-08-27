@@ -81,12 +81,20 @@ public class DependencyGraph {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("DependencyGraph{");
+        return "DependencyGraph" + prettyPrint();
+    }
+
+    private String prettyPrint() {
+        final StringBuilder sb = new StringBuilder("{");
         sb.append("\n  nodes=");
         nodes.forEach(node -> sb.append("\n    ").append(node));
         sb.append("\n  edges=");
         edges.forEach(edge -> sb.append("\n    ").append(edge));
         sb.append("\n}");
         return sb.toString();
+    }
+
+    public static String prettyPrint(final TableTransformGraph tableTransformGraph) {
+        return new DependencyGraph(tableTransformGraph).prettyPrint();
     }
 }

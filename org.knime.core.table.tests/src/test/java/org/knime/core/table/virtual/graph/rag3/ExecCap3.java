@@ -53,8 +53,8 @@ public class ExecCap3 {
         TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();
         System.out.println(new DependencyGraph(tableTransformGraph2));
 
-        SpecGraph.BranchGraph depGraph = new SpecGraph.BranchGraph(tableTransformGraph2);
-        CursorAssemblyPlan cap = SpecGraph.BuildCap.getCursorAssemblyPlan(depGraph);
+        BranchGraph depGraph = new BranchGraph(tableTransformGraph2);
+        CursorAssemblyPlan cap = BuildCap.getCursorAssemblyPlan(depGraph);
 
 
         // create RowAccessible

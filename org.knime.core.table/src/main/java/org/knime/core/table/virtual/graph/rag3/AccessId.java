@@ -2,9 +2,9 @@ package org.knime.core.table.virtual.graph.rag3;
 
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
 
-class AccessId {
+public class AccessId {
 
-    record Producer(Node node, int index) {
+    public record Producer(Node node, int index) {
     }
 
     private final Producer producer;
