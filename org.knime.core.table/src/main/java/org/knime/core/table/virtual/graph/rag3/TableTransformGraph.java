@@ -11,6 +11,7 @@ import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
 
 import org.knime.core.table.virtual.TableTransform;
+import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
@@ -70,7 +71,7 @@ public class TableTransformGraph {
         }
     }
 
-    record ControlFlowEdge(Port from, Port to) {
+    public record ControlFlowEdge(Port from, Port to) {
         /**
          * Remove this {@code ControlFlowEdge} from its target {@code Port} and
          * replace it with a new edge from {@code from}.
@@ -344,7 +345,8 @@ public class TableTransformGraph {
 
     @Override
     public String toString() {
-        return "TableTransformGraph{terminal=" + terminal + "}";
+        // return "TableTransformGraph{terminal=" + terminal + "}";
+        return "TableTransformGraph" + DependencyGraph.prettyPrint(this);
     }
 
     /**
