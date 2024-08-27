@@ -3,16 +3,14 @@ package org.knime.core.table.virtual.graph.rag3;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
 
 /**
- * Visualize {@code RagGraph} using <a href=https://mermaid-js.github.io>mermaid</a>.
+ * Visualize {@code TableTransformGraph} using <a href=https://mermaid-js.github.io>mermaid</a>.
  */
 public class Mermaid {
 
     private static final boolean darkMode = true;
-
-    private static final boolean hideMissingValuesSource = false;
 
     private final StringBuilder sb;
 
@@ -20,11 +18,11 @@ public class Mermaid {
         sb = new StringBuilder();
     }
 
-    public void append(final String title, final MermaidGraph graph) {
+    public void append(final String title, final TableTransformGraph graph) {
         append(title, null, graph);
     }
 
-    public void append(final String title, final String description, final MermaidGraph graph) {
+    public void append(final String title, final String description, final TableTransformGraph graph) {
         if (title != null) {
             sb.append("<h3>").append(title).append("</h3>\n");
         }
@@ -43,7 +41,7 @@ public class Mermaid {
 //            sb.append("'darkMode': 'false'");
         }
         sb.append("}}}%%\n");
-        sb.append(SpecGraph.mermaid(graph, darkMode));
+        sb.append(mermaid(graph));
         sb.append("</div><br/>\n");
     }
 
@@ -93,4 +91,26 @@ public class Mermaid {
             </body>
             </html>
             """;
+
+    private static String mermaid(final TableTransformGraph graph) {
+        final DependencyGraph depGraph = new DependencyGraph(graph);
+        final var sb = new StringBuilder("graph BT\n");
+        for (final Node node : depGraph.nodes) {
+            final String name = "<" + node.id() + "> " + node.getTransformSpec();
+            sb.append("  " + node.id() + "(\"" + name + "\")\n");
+        }
+        int edgeId = 0;
+        for (final DependencyGraph.Edge edge : depGraph.edges) {
+            sb.append("  " + edge.from().id() + "--> " + edge.to().id() + "\n");
+            sb.append("  linkStyle " + edgeId + " stroke:");
+            sb.append(switch (edge.type()) {
+                case DATA -> (darkMode ? "blue" : "#8888FF,anything");
+                case CONTROL -> (darkMode ? "red" : "#FF8888,anything");
+            });
+            sb.append(";\n");
+            ++edgeId;
+        }
+        return sb.toString();
+    }
+
 }

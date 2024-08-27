@@ -48,11 +48,11 @@ public class ExecCap3 {
         // create CAP
         TableTransformGraph tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
 
-        System.out.println(new SpecGraph.MermaidGraph(tableTransformGraph));
+        System.out.println(new DependencyGraph(tableTransformGraph));
         TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();
-        System.out.println(new SpecGraph.MermaidGraph(tableTransformGraph2));
+        System.out.println(new DependencyGraph(tableTransformGraph2));
 
-        SpecGraph.DependencyGraph depGraph = new SpecGraph.DependencyGraph(tableTransformGraph2);
+        SpecGraph.BranchGraph depGraph = new SpecGraph.BranchGraph(tableTransformGraph2);
         CursorAssemblyPlan cap = SpecGraph.BuildCap.getCursorAssemblyPlan(depGraph);
 
 

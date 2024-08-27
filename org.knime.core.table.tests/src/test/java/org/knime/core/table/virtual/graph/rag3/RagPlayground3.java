@@ -5,8 +5,6 @@ import org.knime.core.table.virtual.graph.VirtualTableTests;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.BuildCap;
-import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph;
-import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph;
 
 public class RagPlayground3 {
 
@@ -18,15 +16,15 @@ public class RagPlayground3 {
         var tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
         System.out.println("tableTransformGraph = " + tableTransformGraph);
 
-        MermaidGraph graph = new MermaidGraph(tableTransformGraph);
-        System.out.println("graph = " + graph);
+        var dependencyGraph = new DependencyGraph(tableTransformGraph);
+        System.out.println("graph = " + dependencyGraph);
 
         var mermaid = new Mermaid();
-        mermaid.append("<pre>" + graph + "</pre>");
-        mermaid.append("SpecGraph", graph);
+        mermaid.append("<pre>" + dependencyGraph + "</pre>");
+        mermaid.append("SpecGraph", tableTransformGraph);
         mermaid.save("/Users/pietzsch/git/mermaid/b_graph.html");
 
-        DependencyGraph depGraph = new DependencyGraph(tableTransformGraph);
+        SpecGraph.BranchGraph depGraph = new SpecGraph.BranchGraph(tableTransformGraph);
         System.out.println("depGraph = " + depGraph);
 
         CursorAssemblyPlan cap = BuildCap.getCursorAssemblyPlan(depGraph);
@@ -37,7 +35,7 @@ public class RagPlayground3 {
         }
 
         var tableTransformGraph2 = tableTransformGraph.copy();
-        DependencyGraph depGraph2 = new DependencyGraph(tableTransformGraph2);
+        SpecGraph.BranchGraph depGraph2 = new SpecGraph.BranchGraph(tableTransformGraph2);
         System.out.println("depGraph2 = " + depGraph2);
 
         CursorAssemblyPlan cap2 = BuildCap.getCursorAssemblyPlan(depGraph2);
