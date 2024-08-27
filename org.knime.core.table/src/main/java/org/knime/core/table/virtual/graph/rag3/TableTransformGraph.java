@@ -54,6 +54,10 @@ public class TableTransformGraph {
             return accesses.get(i);
         }
 
+        Node controlFlowTarget(int i) {
+            return controlFlowEdges.get(i).to().owner();
+        }
+
         /**
          * Add a new control-flow edge from this port to the {@link Node#out() out} port of the given {@code Node}.
          * <p>
@@ -156,8 +160,8 @@ public class TableTransformGraph {
                         if (predecessorNode.type == ROWFILTER) {
                             // if predecessor links to a ROWFILTER (one or more)
                             // link this node to the target of that ROWFILTER's controlFlowEdge
-                            final Port target = predecessorNode.in.get(0).controlFlowEdges().get(0).to();
-                            inPort.linkTo(target.owner());
+                            final Node target = predecessorNode.in(0).controlFlowTarget(0);
+                            inPort.linkTo(target);
                         } else {
                             // otherwise re-link the predecessor controlFlowEdge
                             // (there is only one) to this node
@@ -193,6 +197,10 @@ public class TableTransformGraph {
 
         public List<Port> in() {
             return in;
+        }
+
+        public Port in(int i) {
+            return in.get(i);
         }
 
         public Port out() {
@@ -333,7 +341,7 @@ public class TableTransformGraph {
             private Port copyInPort(final Port port, final Node owner) {
                 final Port portCopy = new Port(owner);
                 port.accesses().forEach(a -> portCopy.accesses().add(copyOf(a.find())));
-                port.controlFlowEdges.forEach(e -> portCopy.linkTo(copyOf(e.to().owner())));
+                port.controlFlowEdges().forEach(e -> portCopy.linkTo(copyOf(e.to().owner())));
                 return portCopy;
             }
 
