@@ -55,39 +55,6 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
 
 public class SpecGraph {
 
-    /**
-     * Create {@code n} new {@code AccessId}s with the given {@code
-     * producerNode} (may be {@code null}). The {@code AccessId}s will be
-     * labeled by applying the given {@code label} function to {@code 0, 1, ...,
-     * n-1}.
-     *
-     * @param producerNode
-     * @param n
-     * @param label
-     * @return
-     */
-    private static List<AccessId> createAccessIds(final Node producerNode, final int n, final IntFunction<String> label) {
-        final List<AccessId> cols = new ArrayList<>( n );
-        for (int i = 0; i < n; i++) {
-            Producer producer = producerNode == null ? null : new Producer(producerNode, i);
-            cols.add(new AccessId(producer, label.apply(i)));
-        }
-        return cols;
-    }
-
-    /**
-     * Create an AccessId labeling function
-     * TODO: javadoc
-     */
-    private static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
-        return i -> {
-            String label = varName + "^" + i + "_v" + nodeId;
-            if (predecessorIndex >= 0)
-                label += "(" + predecessorIndex + ")";
-            return label;
-        };
-    }
-
     public static class TableTransformGraph {
 
         /**
@@ -100,6 +67,39 @@ public class SpecGraph {
             return new TableTransformGraph(tableTransform);
         }
 
+
+        /**
+         * Create {@code n} new {@code AccessId}s with the given {@code
+         * producerNode} (may be {@code null}). The {@code AccessId}s will be
+         * labeled by applying the given {@code label} function to {@code 0, 1, ...,
+         * n-1}.
+         *
+         * @param producerNode
+         * @param n
+         * @param label
+         * @return
+         */
+        private static List<AccessId> createAccessIds(final Node producerNode, final int n, final IntFunction<String> label) {
+            final List<AccessId> cols = new ArrayList<>( n );
+            for (int i = 0; i < n; i++) {
+                Producer producer = producerNode == null ? null : new Producer(producerNode, i);
+                cols.add(new AccessId(producer, label.apply(i)));
+            }
+            return cols;
+        }
+
+        /**
+         * Create an AccessId labeling function
+         * TODO: javadoc
+         */
+        private static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
+            return i -> {
+                String label = varName + "^" + i + "_v" + nodeId;
+                if (predecessorIndex >= 0)
+                    label += "(" + predecessorIndex + ")";
+                return label;
+            };
+        }
 
 
         final Port terminal;
@@ -403,30 +403,30 @@ public class SpecGraph {
                 to.controlFlowEdges().add(e);
             }
         }
-    }
 
-    private static void unionAccesses(Port from, Port to, int n) {
-        for (int i = 0; i < n; i++) {
-            from.access(i).union(to.access(i));
+        private static void unionAccesses(Port from, Port to, int n) {
+            for (int i = 0; i < n; i++) {
+                from.access(i).union(to.access(i));
+            }
+        }
+
+        private static void unionAccesses(Port from, Port to, int n, IntUnaryOperator indexMapper) {
+            for (int i = 0; i < n; i++) {
+                from.access(i).union(to.access(indexMapper.applyAsInt(i)));
+            }
+        }
+
+        private static int[] getColumnSelection(TableTransformSpec spec) {
+            return switch (SpecType.forSpec(spec)) {
+                case MAP -> ((MapTransformSpec)spec).getColumnSelection();
+                case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection();
+                case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection();
+                default -> throw new IllegalArgumentException();
+            };
         }
     }
 
-    private static void unionAccesses(Port from, Port to, int n, IntUnaryOperator indexMapper) {
-        for (int i = 0; i < n; i++) {
-            from.access(i).union(to.access(indexMapper.applyAsInt(i)));
-        }
-    }
-
-    private static int[] getColumnSelection(TableTransformSpec spec) {
-        return switch (SpecType.forSpec(spec)) {
-            case MAP -> ((MapTransformSpec)spec).getColumnSelection();
-            case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection();
-            case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection();
-            default -> throw new IllegalArgumentException();
-        };
-    }
-
-    private static UnsupportedOperationException unhandledNodeType() {
+    static UnsupportedOperationException unhandledNodeType() { // TODO: handle or remove OBSERVER case
         return new UnsupportedOperationException("not handled yet. needs to be implemented or removed");
     }
 
@@ -435,7 +435,7 @@ public class SpecGraph {
     // RagGraphProperties
     //
 
-    // TODO: make member of Terminal?
+    // TODO: make member of TableTransformGraph?
     static long numRows(final TableTransformGraph tableTransformGraph)
     {
         final Node node = tableTransformGraph.terminal.controlFlowEdges().get(0).to().owner();
@@ -496,7 +496,7 @@ public class SpecGraph {
      *
      * @return cursor supported at consumer node of the {@code orderedRag}
      */
-    // TODO: make member of Terminal?
+    // TODO: make member of TableTransformGraph?
     private static CursorType supportedCursorType(final TableTransformGraph tableTransformGraph) {
         final Node node = tableTransformGraph.terminal.controlFlowEdges().get(0).to().owner();
         return supportedCursorType(node);
