@@ -10,9 +10,9 @@ import org.knime.core.table.virtual.graph.rag3.debug.Mermaid;
 public class RagPlayground3 {
 
     public static void main(String[] args) {
-        final VirtualTable table = VirtualTableTests.vtMinimal();
+//        final VirtualTable table = VirtualTableTests.vtMinimal();
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
-//        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
+        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
 
         var tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
         System.out.println("tableTransformGraph = " + tableTransformGraph);
@@ -23,10 +23,11 @@ public class RagPlayground3 {
         var mermaid = new Mermaid();
         mermaid.append("<pre>" + dependencyGraph + "</pre>");
         mermaid.append("SpecGraph", tableTransformGraph);
-        mermaid.save("/Users/pietzsch/git/mermaid/b_graph.html");
 
         BranchGraph depGraph = new BranchGraph(tableTransformGraph);
         System.out.println("depGraph = " + depGraph);
+        mermaid.append("BranchGraph", depGraph);
+        mermaid.save("/Users/pietzsch/git/mermaid/b_graph.html");
 
         CursorAssemblyPlan cap = BuildCap.getCursorAssemblyPlan(depGraph);
         System.out.println();
