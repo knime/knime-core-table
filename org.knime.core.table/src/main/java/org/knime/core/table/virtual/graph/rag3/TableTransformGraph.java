@@ -11,11 +11,9 @@ import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
 
 import org.knime.core.table.virtual.TableTransform;
-import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
-import org.knime.core.table.virtual.spec.SourceTableProperties;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -43,7 +41,7 @@ public class TableTransformGraph {
      * @param accesses         the input or output accesses (depending on whether this is an in or out port)
      * @param controlFlowEdges control-flow edges from or to this port (depending on whether this is an in or out port)
      */
-    record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
+    public record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
         Port(Node owner, List<AccessId> accesses) {
             this(owner, accesses, new ArrayList<>());
         }

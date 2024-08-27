@@ -1,9 +1,9 @@
-package org.knime.core.table.virtual.graph.rag3;
+package org.knime.core.table.virtual.graph.rag3.debug;
 
 import java.io.FileWriter;
 import java.io.IOException;
 
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
 
 /**
  * Visualize {@code TableTransformGraph} using <a href=https://mermaid-js.github.io>mermaid</a>.
@@ -95,12 +95,12 @@ public class Mermaid {
     private static String mermaid(final TableTransformGraph graph) {
         final DependencyGraph depGraph = new DependencyGraph(graph);
         final var sb = new StringBuilder("graph BT\n");
-        for (final DependencyGraph.Node node : depGraph.nodes) {
+        for (var node : depGraph.nodes) {
             final String name = "<" + node.id() + "> " + node.spec();
             sb.append("  " + node.id() + "(\"" + name + "\")\n");
         }
         int edgeId = 0;
-        for (final DependencyGraph.Edge edge : depGraph.edges) {
+        for (var edge : depGraph.edges) {
             sb.append("  " + edge.from().id() + "--> " + edge.to().id() + "\n");
             sb.append("  linkStyle " + edgeId + " stroke:");
             sb.append(switch (edge.type()) {
@@ -112,5 +112,4 @@ public class Mermaid {
         }
         return sb.toString();
     }
-
 }

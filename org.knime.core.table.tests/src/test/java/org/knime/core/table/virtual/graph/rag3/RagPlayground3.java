@@ -5,6 +5,8 @@ import org.knime.core.table.virtual.graph.VirtualTableTests;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.BuildCap;
+import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
+import org.knime.core.table.virtual.graph.rag3.debug.Mermaid;
 
 public class RagPlayground3 {
 
