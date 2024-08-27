@@ -2,13 +2,16 @@ package org.knime.core.table.virtual.graph.rag3.debug;
 
 import static org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph.EdgeType.CONTROL;
 import static org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph.EdgeType.DATA;
+import static org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph.EdgeType.EXECUTION;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
+import org.knime.core.table.virtual.graph.rag3.BranchGraph;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
@@ -21,7 +24,7 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
  */
 public class DependencyGraph {
 
-    enum EdgeType {DATA, CONTROL}
+    enum EdgeType {DATA, CONTROL, EXECUTION}
 
     record Edge(EdgeType type, Node from, Node to) {
         @Override
@@ -96,5 +99,34 @@ public class DependencyGraph {
 
     public static String prettyPrint(final TableTransformGraph tableTransformGraph) {
         return new DependencyGraph(tableTransformGraph).prettyPrint();
+    }
+
+
+
+
+
+    public DependencyGraph(final BranchGraph branchGraph) {
+        final Node consumer = new Node(0, new ConsumerTransformSpec());
+        nodes.add(consumer);
+        addRecursively(consumer, branchGraph.rootBranch);
+    }
+
+    private void addRecursively(Node fromNode, final BranchGraph.BranchEdge branch) {
+        final List<BranchGraph.InnerNode> innerNodes = branch.innerNodes();
+        for (int i = innerNodes.size() - 1; i >= 0; i--) {
+            BranchGraph.InnerNode innerNode = innerNodes.get(i);
+            final Node toNode = new Node(innerNode.node());
+            nodes.add(toNode);
+            edges.add(new Edge(EXECUTION, fromNode, toNode));
+            fromNode = toNode;
+        }
+        final Node toNode = new Node(branch.target().node());
+        nodes.add(toNode);
+        edges.add(new Edge(EXECUTION, fromNode, toNode));
+        branch.target().branches().forEach(b -> addRecursively(toNode, b));
+    }
+
+    public static String prettyPrint(final BranchGraph branchGraph) {
+        return new DependencyGraph(branchGraph).prettyPrint();
     }
 }

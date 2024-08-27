@@ -3,6 +3,7 @@ package org.knime.core.table.virtual.graph.rag3.debug;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import org.knime.core.table.virtual.graph.rag3.BranchGraph;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
 
 /**
@@ -23,6 +24,18 @@ public class Mermaid {
     }
 
     public void append(final String title, final String description, final TableTransformGraph graph) {
+        append(title, description, mermaid(new DependencyGraph(graph)));
+    }
+
+    public void append(final String title, final BranchGraph graph) {
+        append(title, null, graph);
+    }
+
+    public void append(final String title, final String description, final BranchGraph graph) {
+        append(title, description, mermaid(new DependencyGraph(graph)));
+    }
+
+    private void append(final String title, final String description, final String graph) {
         if (title != null) {
             sb.append("<h3>").append(title).append("</h3>\n");
         }
@@ -37,11 +50,11 @@ public class Mermaid {
             sb.append("'darkMode': 'true'");
         } else {
             sb.append("'background' : '#AAAAAA', ");
-//            sb.append("'primaryColor': '#44FF44', ");
-//            sb.append("'darkMode': 'false'");
+            //            sb.append("'primaryColor': '#44FF44', ");
+            //            sb.append("'darkMode': 'false'");
         }
         sb.append("}}}%%\n");
-        sb.append(mermaid(graph));
+        sb.append(graph);
         sb.append("</div><br/>\n");
     }
 
@@ -92,8 +105,7 @@ public class Mermaid {
             </html>
             """;
 
-    private static String mermaid(final TableTransformGraph graph) {
-        final DependencyGraph depGraph = new DependencyGraph(graph);
+    private static String mermaid(final DependencyGraph depGraph) {
         final var sb = new StringBuilder("graph BT\n");
         for (var node : depGraph.nodes) {
             final String name = "<" + node.id() + "> " + node.spec();
@@ -106,6 +118,7 @@ public class Mermaid {
             sb.append(switch (edge.type()) {
                 case DATA -> (darkMode ? "blue" : "#8888FF,anything");
                 case CONTROL -> (darkMode ? "red" : "#FF8888,anything");
+                case EXECUTION -> (darkMode ? "lime" : "lime");
             });
             sb.append(";\n");
             ++edgeId;

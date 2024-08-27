@@ -44,7 +44,7 @@ class BuildCap {
         capAccessIds = new HashMap<>();
         sourceSchemas = new HashMap<>();
 
-        BranchGraph.Branch branch = sequentializedGraph.rootBranch;
+        BranchGraph.BranchEdge branch = sequentializedGraph.rootBranch;
 
         final CapNode capNode = appendBranch(branch);
         final CapAccessId[] inputs = capAccessIdsFor(sequentializedGraph.tableTransformGraph.terminal().accesses());
@@ -63,7 +63,7 @@ class BuildCap {
 
     private int index = 0;
 
-    private CapNode appendBranch(final BranchGraph.Branch branch) {
+    private CapNode appendBranch(final BranchGraph.BranchEdge branch) {
         // append predecessor branches
         final List<CapNode> heads = new ArrayList<>();
         branch.target().branches().forEach(b -> heads.add(appendBranch(b)));
