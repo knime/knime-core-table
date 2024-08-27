@@ -56,10 +56,13 @@ public class SpecGraph {
     //
 
     // TODO: make member of TableTransformGraph?
-    static long numRows(final TableTransformGraph tableTransformGraph)
+    static long numRows(final TableTransformGraph graph)
     {
-        final Node node = tableTransformGraph.terminal.controlFlowEdges().get(0).to().owner();
-        return numRows(node);
+        return numRows(graph.terminal);
+    }
+
+    private static long numRows(final Port port) {
+        return numRows(port.controlFlowEdges().get(0).to().owner());
     }
 
     private static long numRows(final Node node) {
@@ -339,7 +342,7 @@ public class SpecGraph {
                     final List<AccessId> inputs = new ArrayList<>();
                     for ( int i = 0; i < numPredecessors; ++i ) {
                         predecessors[i] = heads.get(i).index();
-                        predecessorSizes[i] = -1; // TODO implement numRows... TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+                        predecessorSizes[i] = numRows(target.in().get(i));
                         final List<AccessId> branchInputs = target.in().get(i).accesses();
                         predecessorOutputIndices[i] = new int[branchInputs.size()];
                         Arrays.setAll(predecessorOutputIndices[i], j -> j + inputs.size());
@@ -358,7 +361,7 @@ public class SpecGraph {
                     for ( int i = 0; i < numPredecessors; ++i ) {
                         predecessors[i] = heads.get(i).index();
                         capInputs[i] = capAccessIdsFor(target.in().get(i).accesses());
-                        predecessorSizes[i] = -1; // TODO implement numRows... TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+                        predecessorSizes[i] = numRows(target.in().get(i));
                     }
                     capNode = new CapNodeConcatenate(index++, capInputs, predecessors, predecessorSizes);
                     createCapAccessIdsFor(target.out().accesses(), capNode);
