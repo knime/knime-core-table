@@ -7,7 +7,7 @@ import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.BuildCap;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.DependencyGraph;
 import org.knime.core.table.virtual.graph.rag3.SpecGraph.MermaidGraph;
-import org.knime.core.table.virtual.graph.rag3.SpecGraph.Terminal;
+import org.knime.core.table.virtual.graph.rag3.SpecGraph.TableTransformGraph;
 
 public class RagPlayground3 {
 
@@ -16,10 +16,10 @@ public class RagPlayground3 {
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
 //        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
 
-        Terminal terminal = SpecGraph.buildSpecGraph(table.getProducingTransform());
-        System.out.println("terminal = " + terminal);
+        SpecGraph.TableTransformGraph tableTransformGraph = SpecGraph.buildSpecGraph(table.getProducingTransform());
+        System.out.println("terminal = " + tableTransformGraph);
 
-        MermaidGraph graph = new MermaidGraph(terminal);
+        MermaidGraph graph = new MermaidGraph(tableTransformGraph);
         System.out.println("graph = " + graph);
 
         var mermaid = new Mermaid();
@@ -27,7 +27,7 @@ public class RagPlayground3 {
         mermaid.append("SpecGraph", graph);
         mermaid.save("/Users/pietzsch/git/mermaid/b_graph.html");
 
-        DependencyGraph depGraph = new DependencyGraph(terminal);
+        DependencyGraph depGraph = new DependencyGraph(tableTransformGraph);
         System.out.println("depGraph = " + depGraph);
 
         CursorAssemblyPlan cap = BuildCap.getCursorAssemblyPlan(depGraph);
@@ -39,8 +39,8 @@ public class RagPlayground3 {
 
 
 
-        final Terminal terminal2 = SpecGraph.copy(terminal);
-        DependencyGraph depGraph2 = new DependencyGraph(terminal2);
+        final TableTransformGraph tableTransformGraph2 = SpecGraph.copy(tableTransformGraph);
+        DependencyGraph depGraph2 = new DependencyGraph(tableTransformGraph2);
         System.out.println("depGraph2 = " + depGraph2);
 
         CursorAssemblyPlan cap2 = BuildCap.getCursorAssemblyPlan(depGraph2);
