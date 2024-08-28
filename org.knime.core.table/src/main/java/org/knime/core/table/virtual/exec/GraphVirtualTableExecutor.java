@@ -56,30 +56,26 @@ import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
-import org.knime.core.table.virtual.graph.rag.RagBuilder;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
-import org.knime.core.table.virtual.graph.rag.RagNode;
-import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
-    private final RagGraph specGraph;
+    private final TableTransformGraph tableTransformGraph;
     private final ColumnarSchema schema;
     private final CursorType cursorType;
 
     public GraphVirtualTableExecutor(final TableTransform leafTransform)
     {
-        specGraph = SpecGraphBuilder.buildSpecGraph(leafTransform);
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(specGraph);
-        schema = RagBuilder.createSchema(orderedRag);
-        cursorType = RagGraphProperties.supportedCursorType(orderedRag);
+        tableTransformGraph = new TableTransformGraph(leafTransform);
+        schema = TableTransformUtil.createSchema(tableTransformGraph);
+        cursorType = tableTransformGraph.supportedCursorType();
     }
 
     @Override
     public List<RowAccessible> execute(Map<UUID, RowAccessible> inputs) {
-        final RowAccessible rows = CapExecutor.createRowAccessible(specGraph, schema, cursorType, inputs);
+        final RowAccessible rows = CapExecutor.createRowAccessible(tableTransformGraph, schema, cursorType, inputs);
         return List.of(rows);
     }
 
@@ -92,10 +88,10 @@ public class GraphVirtualTableExecutor implements VirtualTableExecutor {
      * @throws CancellationException if the computation was cancelled
      * @throws CompletionException if the computation threw an exception
      */
-    public void execute(//
+    public void execute( // TODO (TP): REMOVE
             Map<UUID, RowAccessible> inputs,//
             Map<UUID, RowWriteAccessible> outputs//
     ) throws CancellationException, CompletionException {
-        CapExecutor.execute(specGraph, inputs, outputs);
+        throw new UnsupportedOperationException("TODO (TP): REMOVE");
     }
 }
