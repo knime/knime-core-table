@@ -157,7 +157,7 @@ class BuildCap {
                     createCapAccessIdsFor(outputs, capNode);
                     append(node, capNode);
                 }
-                case OBSERVER -> throw Util.unhandledNodeType();
+                case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                 default -> throw new IllegalStateException();
             }
         }

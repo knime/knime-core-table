@@ -2,7 +2,6 @@ package org.knime.core.table.virtual.graph.rag3;
 
 import static org.knime.core.table.virtual.graph.rag3.SpecType.APPEND;
 import static org.knime.core.table.virtual.graph.rag3.SpecType.SLICE;
-import static org.knime.core.table.virtual.graph.rag3.SpecType.SOURCE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,8 +14,6 @@ import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
-import org.knime.core.table.virtual.graph.rag.AccessIds;
-import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag3.AccessId.Producer;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
@@ -24,7 +21,7 @@ import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
-public class Util {
+public class TableTransformUtil { // TODO (TP) rename
 
     static UnsupportedOperationException unhandledNodeType() { // TODO: handle or remove OBSERVER case
         return new UnsupportedOperationException("not handled yet. needs to be implemented or removed");
@@ -193,7 +190,7 @@ public class Util {
                         case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> {
                         }
                         case ROWFILTER -> node.in(0).accesses().forEach(this::addRequired);
-                        case OBSERVER -> throw Util.unhandledNodeType();
+                        case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                         default -> throw new IllegalArgumentException();
                     }
                     node.in().forEach( //
@@ -222,7 +219,7 @@ public class Util {
                             requiredNodes.add(node);
                             node.in(0).accesses().forEach(this::addRequired);
                         }
-                        case OBSERVER -> throw Util.unhandledNodeType();
+                        case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                         default -> throw new IllegalArgumentException();
                     }
                 }
@@ -254,7 +251,7 @@ public class Util {
                                 }
                                 case SLICE, ROWFILTER -> {
                                 }
-                                case OBSERVER -> throw Util.unhandledNodeType();
+                                case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                                 default -> throw new IllegalArgumentException();
                             }
                         });
@@ -280,6 +277,7 @@ public class Util {
 
 
 
+    // TODO: make member of TableTransformGraph? TableTransformGraph.createSchema()?
     public static ColumnarSchema createSchema(final TableTransformGraph graph) {
         final List<AccessId> accesses = graph.terminal().accesses();
         final DataSpecWithTraits[] specs = new DataSpecWithTraits[accesses.size()];

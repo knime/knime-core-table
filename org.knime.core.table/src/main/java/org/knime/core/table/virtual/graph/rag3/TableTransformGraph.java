@@ -147,7 +147,7 @@ public class TableTransformGraph {
                     case SOURCE, SLICE, ROWINDEX -> 0;
                     case MAP, ROWFILTER -> getColumnSelection(spec).length;
                     case APPEND, CONCATENATE -> predecessor.numColumns();
-                    case OBSERVER -> throw Util.unhandledNodeType();
+                    case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                     // TODO: COLSELECT shouldn't be a possible value here --> SpecType vs NodeType
                     case COLSELECT -> throw new IllegalArgumentException();
                 };
@@ -185,7 +185,7 @@ public class TableTransformGraph {
                         // re-link the predecessor controlFlowEdges to this Node
                         predecessor.terminal.controlFlowEdges().forEach(e -> e.relinkFrom(inPort));
                     }
-                    case OBSERVER -> throw Util.unhandledNodeType();
+                    case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                     default -> {
                     }
                 }
@@ -197,7 +197,7 @@ public class TableTransformGraph {
                 case SOURCE, MAP, APPEND, CONCATENATE -> numColumns;
                 case ROWINDEX -> 1;
                 case SLICE, ROWFILTER -> 0;
-                case OBSERVER -> throw Util.unhandledNodeType();
+                case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                 case COLSELECT -> throw new IllegalArgumentException();
             };
             final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", id, -1));
@@ -251,7 +251,7 @@ public class TableTransformGraph {
         this.terminal = terminal;
     }
 
-    TableTransformGraph(final TableTransform t) {
+    public TableTransformGraph(final TableTransform t) {
         this(t.getSpec(), t.getPrecedingTransforms().stream().map(TableTransformGraph::new).toList());
     }
 
@@ -264,7 +264,7 @@ public class TableTransformGraph {
             case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
             case APPEND -> predecessors.stream().mapToInt(TableTransformGraph::numColumns).sum();
             case SLICE, ROWFILTER, CONCATENATE -> predecessors.get(0).numColumns();
-            case OBSERVER -> throw Util.unhandledNodeType();
+            case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
         };
 
         final List<AccessId> accessIds = createAccessIds(null, numColumns, i -> "beta^" + i);
