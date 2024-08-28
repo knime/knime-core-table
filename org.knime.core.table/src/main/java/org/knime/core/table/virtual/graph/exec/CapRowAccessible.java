@@ -58,12 +58,11 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
-import org.knime.core.table.virtual.graph.rag.RagBuilder;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagNode;
-import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
+import org.knime.core.table.virtual.graph.rag3.BranchGraph;
+import org.knime.core.table.virtual.graph.rag3.BuildCap;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -71,7 +70,7 @@ import com.google.common.cache.LoadingCache;
 
 class CapRowAccessible implements RowAccessible {
 
-    private final RagGraph specGraph;
+    private final TableTransformGraph tableTransformGraph;
 
     private final ColumnarSchema schema;
 
@@ -80,10 +79,10 @@ class CapRowAccessible implements RowAccessible {
     private final LoadingCache<Selection, CapCursorData> capCache;
 
     CapRowAccessible( //
-            final RagGraph specGraph, //
+            final TableTransformGraph tableTransformGraph, //
             final ColumnarSchema schema, //
             final Map<UUID, RowAccessible> availableSources) {
-        this.specGraph = specGraph;
+        this.tableTransformGraph = tableTransformGraph;
         this.schema = schema;
         this.availableSources = availableSources;
 
@@ -150,9 +149,9 @@ class CapRowAccessible implements RowAccessible {
 
     private CapCursorData createCursorData(final Selection selection) {
 
-        final RagGraph graph = SpecGraphBuilder.appendSelection(specGraph, selection);
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph, false);
-        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(orderedRag);
+        final TableTransformGraph graph = TableTransformUtil.appendSelection(tableTransformGraph, selection);
+        // TODO (TP) optimize graph
+        final CursorAssemblyPlan cap = BuildCap.createCursorAssemblyPlan(new BranchGraph(graph));
         final int numColumns = schema.numColumns();
         final int[] selected = selection.columns().allSelected(0, numColumns) //
                 ? null //
