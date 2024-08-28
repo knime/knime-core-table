@@ -18,6 +18,7 @@ import org.knime.core.table.virtual.graph.rag3.AccessId.Producer;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
@@ -307,4 +308,36 @@ public class TableTransformUtil { // TODO (TP) rename
         };
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Creates a copy of {@code graph}, with SLICE and COLFILTER operations
+     * appended that implement the given {@code selection}.
+     * <p>
+     * If {@link Selection#allSelected()}, then {@code graph} is returned as-is
+     * (no copy).
+     *
+     * @param graph a TableTransformGraph
+     * @param selection the selection (columns and row range) to append
+     * @return copy of TableTransformGraph with appended selection
+     */
+    public static TableTransformGraph appendSelection(TableTransformGraph graph, final Selection selection) {
+        if (!selection.rows().allSelected()) {
+            graph = graph.append(new SliceTransformSpec(selection.rows()));
+        }
+        if (!selection.columns().allSelected()) {
+            graph = graph.append(new SelectColumnsTransformSpec(selection.columns().getSelected()));
+        }
+        return graph;
+    }
 }

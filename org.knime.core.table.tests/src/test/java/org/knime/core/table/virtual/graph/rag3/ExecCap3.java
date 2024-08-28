@@ -47,8 +47,8 @@ public class ExecCap3 {
             uuidRowAccessibleMap.put(sourceIdentifiers[i], sourceAccessibles[i]);
         }
 
-        // create CAP
-        TableTransformGraph tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
+        // create TableTransformGraph
+        var tableTransformGraph = new TableTransformGraph(table.getProducingTransform());
 
         // try some optimizations
         TableTransformUtil.pruneAccesses(tableTransformGraph);
@@ -59,8 +59,9 @@ public class ExecCap3 {
         TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();
         System.out.println(new DependencyGraph(tableTransformGraph2));
 
+        // create CAP
         BranchGraph depGraph = new BranchGraph(tableTransformGraph2);
-        CursorAssemblyPlan cap = BuildCap.getCursorAssemblyPlan(depGraph);
+        CursorAssemblyPlan cap = BuildCap.createCursorAssemblyPlan(depGraph);
 
 
         // create RowAccessible
