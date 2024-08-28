@@ -51,8 +51,8 @@ public class ExecCap3 {
         TableTransformGraph tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
 
         // try some optimizations
-        Util.pruneAccesses(tableTransformGraph);
-        while(Util.mergeSlices(tableTransformGraph)) {
+        TableTransformUtil.pruneAccesses(tableTransformGraph);
+        while(TableTransformUtil.mergeSlices(tableTransformGraph)) {
         }
 
         System.out.println(new DependencyGraph(tableTransformGraph));

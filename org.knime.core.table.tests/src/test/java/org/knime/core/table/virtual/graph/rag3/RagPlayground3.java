@@ -19,7 +19,7 @@ public class RagPlayground3 {
         var tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
         System.out.println("tableTransformGraph = " + tableTransformGraph);
 
-        Util.pruneAccesses(tableTransformGraph);
+        TableTransformUtil.pruneAccesses(tableTransformGraph);
 
         var dependencyGraph = new DependencyGraph(tableTransformGraph);
         System.out.println("graph = " + dependencyGraph);
@@ -28,7 +28,7 @@ public class RagPlayground3 {
         mermaid.append("<pre>" + dependencyGraph + "</pre>");
         mermaid.append("SpecGraph", tableTransformGraph);
 
-        while(Util.mergeSlices(tableTransformGraph)) {
+        while(TableTransformUtil.mergeSlices(tableTransformGraph)) {
         }
         mermaid.append("SpecGraph", tableTransformGraph);
 

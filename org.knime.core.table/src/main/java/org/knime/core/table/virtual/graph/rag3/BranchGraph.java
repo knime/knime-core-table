@@ -125,7 +125,7 @@ public class BranchGraph {
                 depNodes.put(node, innerNode);
                 return innerNode;
             }
-            case OBSERVER -> throw Util.unhandledNodeType();
+            case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
             default -> throw new IllegalArgumentException();
         }
     }
