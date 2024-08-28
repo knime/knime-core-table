@@ -22,16 +22,6 @@ import org.knime.core.table.virtual.spec.TableTransformSpec;
 public class TableTransformGraph {
 
     /**
-     * Builds a spec graph from {@code tableTransform}.
-     *
-     * @param tableTransform the producingTransform of the table
-     * @return spec graph representing the given table
-     */
-    public static TableTransformGraph of(final TableTransform tableTransform) {
-        return new TableTransformGraph(tableTransform);
-    }
-
-    /**
      * Bundle incoming/outgoing accesses and control-flow edges.
      * <p>
      * Every {@code Node} has exactly one {@link Node#out() out} port.
@@ -251,8 +241,15 @@ public class TableTransformGraph {
         this.terminal = terminal;
     }
 
-    public TableTransformGraph(final TableTransform t) {
-        this(t.getSpec(), t.getPrecedingTransforms().stream().map(TableTransformGraph::new).toList());
+    /**
+     * Build a {@code TableTransformGraph} from {@code tableTransform}.
+     *
+     * @param tableTransform the producingTransform of the table
+     * @return TableTransformGraph  representing the given table
+     */
+    public TableTransformGraph(final TableTransform tableTransform) {
+        this(tableTransform.getSpec(),
+                tableTransform.getPrecedingTransforms().stream().map(TableTransformGraph::new).toList());
     }
 
     TableTransformGraph(final TableTransformSpec spec, final List<TableTransformGraph> predecessors) {
@@ -368,6 +365,17 @@ public class TableTransformGraph {
     public String toString() {
         // return "TableTransformGraph{terminal=" + terminal + "}";
         return "TableTransformGraph" + DependencyGraph.prettyPrint(this);
+    }
+
+    /**
+     * Create a new {@code TableTransformGraph} by appending the given {@code
+     * spec} to (a {@link #copy} of) this graph.
+     *
+     * @param spec TableTransformSpec to append
+     * @return a copy of this graph with the new spec appended.
+     */
+    public TableTransformGraph append(TableTransformSpec spec) {
+        return new TableTransformGraph(spec, List.of(copy()));
     }
 
     /**

@@ -28,7 +28,7 @@ import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
-class BuildCap {
+public class BuildCap { // TODO (TP): rename, this should replace existing CapBuilder
 
     private final List<CapNode> cap;
 
@@ -51,7 +51,7 @@ class BuildCap {
         cap.add(new CapNodeConsumer(index++, inputs, capNode.index()));
     }
 
-    public static CursorAssemblyPlan getCursorAssemblyPlan(final BranchGraph sequentializedGraph) {
+    public static CursorAssemblyPlan createCursorAssemblyPlan(final BranchGraph sequentializedGraph) {
         final BuildCap builder = new BuildCap(sequentializedGraph);
         final SourceTableProperties.CursorType cursorType =
                 sequentializedGraph.tableTransformGraph.supportedCursorType();

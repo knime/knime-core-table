@@ -16,7 +16,7 @@ public class RagPlayground3 {
 //        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
         final VirtualTable table = VirtualTableTests.vtLinear().slice(2,4).slice(0,1);
 
-        var tableTransformGraph = TableTransformGraph.of(table.getProducingTransform());
+        var tableTransformGraph = new TableTransformGraph(table.getProducingTransform());
         System.out.println("tableTransformGraph = " + tableTransformGraph);
 
         TableTransformUtil.pruneAccesses(tableTransformGraph);
@@ -37,7 +37,7 @@ public class RagPlayground3 {
         mermaid.append("BranchGraph", depGraph);
         mermaid.save("/Users/pietzsch/git/mermaid/b_graph.html");
 
-        CursorAssemblyPlan cap = BuildCap.getCursorAssemblyPlan(depGraph);
+        CursorAssemblyPlan cap = BuildCap.createCursorAssemblyPlan(depGraph);
         System.out.println();
         System.out.println("cap = ");
         for (CapNode node : cap.nodes()) {
