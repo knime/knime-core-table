@@ -116,7 +116,7 @@ final class ControlFlowFunctionTests {
                 List.of(arg(true), arg("true branch"), arg(true), arg("false branch"), arg(true), arg("fake branch"),
                     arg(true), arg("some name branch"), arg("else branch")),
                 "true branch") //
-            .impl("MISSING else case",List.of(arg(true),arg("true branch"), mis()), "true branch") //
+            .impl("MISSING else case", List.of(arg(true), arg("true branch"), mis()), "true branch") //
             .tests();
     }
 
@@ -134,7 +134,8 @@ final class ControlFlowFunctionTests {
             .typing("string", List.of(INTEGER, INTEGER, STRING), OPT_STRING) //
             .typing("optinal string case", List.of(OPT_STRING, STRING, INTEGER, OPT_STRING, INTEGER, INTEGER), INTEGER) //
             .typing("missing string case", List.of(OPT_STRING, STRING, INTEGER, MISSING, INTEGER, INTEGER), INTEGER) //
-            .typing("MISSING case expression", List.of(OPT_STRING, STRING, MISSING, INTEGER), OPT_INTEGER) //
+            .typing("MISSING value expression", List.of(OPT_STRING, STRING, MISSING, INTEGER), OPT_INTEGER) //
+            .typing("MISSING the first case", List.of(OPT_STRING, MISSING, STRING), OPT_STRING) //
             .illegalArgs("incompatible return expressions", List.of(INTEGER, INTEGER, FLOAT, STRING))//
             .illegalArgs("two few Arguments", List.of(STRING, INTEGER)) //
             .illegalArgs("no float as case/value", List.of(FLOAT, FLOAT, STRING, STRING)) //

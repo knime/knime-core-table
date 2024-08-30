@@ -209,7 +209,7 @@ public final class ControlFlowFunctions {
         .args( //
             arg("expression", "Value to switch on. Only accepts string or integer types.",
                 isOneOfBaseTypes(STRING, INTEGER)), //
-            arg("case_1", "Case to check equality against `expression`.", isOneOfBaseTypes(STRING, INTEGER)), //
+            arg("case_1", "Case to check equality against `expression`.", isOneOfBaseTypes(STRING, INTEGER, MISSING)), //
             arg("value_1", "Expression to execute, when `case_1` matches the `expression`.", isAnything()), //
             vararg("additional_cases, value_if_none_matched",
                 "Optional pairs of `case_N` values to check for equality with the `expression` and `value_N` expressions. "
