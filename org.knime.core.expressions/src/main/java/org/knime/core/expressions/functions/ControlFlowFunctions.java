@@ -147,6 +147,12 @@ public final class ControlFlowFunctions {
             return null;
         }
 
+        for (int i = 0; i < arguments.length - 1; i += 2) {
+            if (arguments[i] != ValueType.BOOLEAN) {
+                return null;
+            }
+        }
+
         ArrayList<ValueType> branchExpressions = new ArrayList<>();
 
         for (int i = 1; i < arguments.length - 1; i += 2) {
