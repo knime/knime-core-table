@@ -129,7 +129,7 @@ public class TableTransformGraphProperties {
             }
             case APPEND -> getSpecWithTraits(TableTransformUtil.AppendAccesses.find(access).input());
             case CONCATENATE -> {
-                final int i = node.out().accesses().indexOf(access);
+                final int i = node.out().accesses().indexOf(access.find());
                 yield getSpecWithTraits(node.in(0).access(i));
             }
             case MAP -> {
