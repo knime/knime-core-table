@@ -47,6 +47,9 @@ package org.knime.core.table.virtual.graph;
 
 import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
 import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.BASIC;
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.LOOKAHEAD;
+import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.RANDOMACCESS;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -60,11 +63,14 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
+import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.RagBuilder;
 import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
@@ -216,10 +222,10 @@ public class ExecCapAll {
             uuidRowAccessibleMap.put(sourceIdentifiers[i], accessibles[i]);
         }
 
-        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
-        final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
-        final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-        final CursorType cursorType = RagGraphProperties.supportedCursorType(orderedRag);
+        final TableTransformGraph graph = new TableTransformGraph(table.getProducingTransform());
+        TableTransformUtil.optimize(graph);
+        final CursorType cursorType = graph.supportedCursorType();
+        final ColumnarSchema schema = graph.createSchema();
         final RowAccessible rows = createRowAccessible(graph, schema, cursorType, uuidRowAccessibleMap);
 
         System.out.println(exampleName);

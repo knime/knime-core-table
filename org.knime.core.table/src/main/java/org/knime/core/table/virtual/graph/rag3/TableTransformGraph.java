@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
 
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -359,6 +360,16 @@ public class TableTransformGraph {
      */
     public CursorType supportedCursorType() {
         return TableTransformGraphProperties.supportedCursorType(this);
+    }
+
+    /**
+     * Returns the {@code ColumnarSchema} at the {@link #terminal()} of this
+     * {@code TableTransformGraph}.
+     *
+     * @return schema of this {@code TableTransformGraph}
+     */
+    public ColumnarSchema createSchema() {
+        return TableTransformGraphProperties.schema(this);
     }
 
     @Override

@@ -72,6 +72,8 @@ import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
 import org.knime.core.table.virtual.graph.rag.RagNode;
 import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
@@ -216,13 +218,13 @@ public class ExecCap {
                 uuidRowAccessibleMap.put(sourceIdentifiers[i], sourceAccessibles[i]);
             }
 
-            final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
-            final List<RagNode> orderedRag = RagBuilder.createOrderedRag(graph);
-            final ColumnarSchema schema = RagBuilder.createSchema(orderedRag);
-            final CursorType cursorType = RagGraphProperties.supportedCursorType(orderedRag);
+            final TableTransformGraph graph = new TableTransformGraph(table.getProducingTransform());
+            TableTransformUtil.optimize(graph);
+            final CursorType cursorType = graph.supportedCursorType();
+            final ColumnarSchema schema = graph.createSchema();
             final RowAccessible rows = createRowAccessible(graph, schema, cursorType, uuidRowAccessibleMap);
 
-            System.out.println("supported CursorType = " + RagGraphProperties.supportedCursorType(orderedRag));
+            System.out.println("supported CursorType = " + cursorType);
 
             try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
                 while (cursor.forward()) {

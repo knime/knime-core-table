@@ -85,11 +85,8 @@ import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
-import org.knime.core.table.virtual.graph.rag.RagBuilder;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
-import org.knime.core.table.virtual.graph.rag.RagNode;
-import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformUtils;
 import org.knime.core.table.virtual.spec.MapTransformUtils.MapperWithRowIndexFactory;
@@ -142,16 +139,14 @@ public class VirtualTableTests {
             final RowAccessible[] sources,
             final boolean useRandomAccess) {
 
-        final RagGraph graph = SpecGraphBuilder.buildSpecGraph(table);
-        final List<RagNode> rag = RagBuilder.createOrderedRag(graph);
-        final CursorType supportedCursorType = RagGraphProperties.supportedCursorType(rag);
-        final CursorType cursorType = switch (supportedCursorType ) {
+        final TableTransformGraph graph = new TableTransformGraph(table.getProducingTransform());
+        TableTransformUtil.optimize(graph);
+        final CursorType cursorType = switch (graph.supportedCursorType()) {
             case BASIC -> BASIC;
             case LOOKAHEAD -> LOOKAHEAD;
             case RANDOMACCESS -> useRandomAccess ? RANDOMACCESS : LOOKAHEAD;
         };
-        final ColumnarSchema schema = RagBuilder.createSchema(rag);
-
+        final ColumnarSchema schema = graph.createSchema();
         final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
