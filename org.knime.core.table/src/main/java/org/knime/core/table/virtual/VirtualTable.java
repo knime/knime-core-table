@@ -66,6 +66,7 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
@@ -286,6 +287,12 @@ public final class VirtualTable {
     public VirtualTable appendRowIndex() {
         final RowIndexTransformSpec transformSpec = new RowIndexTransformSpec();
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema.append(LONG));
+    }
+
+    public VirtualTable appendMap(final int[] columnIndices, final MapperFactory mapperFactory) {
+        final TableTransformSpec transformSpec = new AppendMapTransformSpec(columnIndices, mapperFactory);
+        final ColumnarSchema schema = ColumnarSchemas.append(List.of(m_schema, mapperFactory.getOutputSchema()));
+        return new VirtualTable(new TableTransform(m_transform, transformSpec), schema);
     }
 
     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory) {

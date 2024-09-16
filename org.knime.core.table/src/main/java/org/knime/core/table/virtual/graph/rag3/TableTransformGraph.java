@@ -13,6 +13,7 @@ import java.util.function.IntUnaryOperator;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
+import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
@@ -128,7 +129,7 @@ public class TableTransformGraph {
             out = new Port(this);
         }
 
-        private Node(final TableTransformSpec spec, final int numColumns, final List<TableTransformGraph> predecessors) {
+        private Node(final TableTransformSpec spec, final int numOutputs, final List<TableTransformGraph> predecessors) {
             this.spec = spec;
             type = SpecType.forSpec(spec);
 
@@ -140,7 +141,7 @@ public class TableTransformGraph {
                     case APPEND, CONCATENATE -> predecessor.numColumns();
                     case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                     // TODO: COLSELECT shouldn't be a possible value here --> SpecType vs NodeType
-                    case COLSELECT -> throw new IllegalArgumentException();
+                    case COLSELECT, APPENDMAP -> throw new IllegalArgumentException();
                 };
 
                 final List<AccessId> inputs = createAccessIds(null, numInputs, accessLabel("gamma", id, p));
@@ -184,13 +185,6 @@ public class TableTransformGraph {
                 in.add(inPort);
             }
 
-            final int numOutputs = switch (type) {
-                case SOURCE, MAP, APPEND, CONCATENATE -> numColumns;
-                case ROWINDEX -> 1;
-                case SLICE, ROWFILTER -> 0;
-                case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
-                case COLSELECT -> throw new IllegalArgumentException();
-            };
             final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", id, -1));
             out = new Port(this, outputs);
         }
@@ -255,13 +249,22 @@ public class TableTransformGraph {
 
     TableTransformGraph(final TableTransformSpec spec, final List<TableTransformGraph> predecessors) {
         final SpecType type = SpecType.forSpec(spec);
-        final int numColumns = switch (type) {
+
+        final int numOutputs = switch (type) {
             case SOURCE -> ((SourceTransformSpec)spec).getSchema().numColumns();
             case MAP -> ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
-            case ROWINDEX -> predecessors.get(0).numColumns() + 1;
-            case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection().length;
+            case APPENDMAP -> ((AppendMapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
+            case ROWINDEX -> 1;
             case APPEND -> predecessors.stream().mapToInt(TableTransformGraph::numColumns).sum();
-            case SLICE, ROWFILTER, CONCATENATE -> predecessors.get(0).numColumns();
+            case CONCATENATE -> predecessors.get(0).numColumns();
+            case SLICE, ROWFILTER, COLSELECT -> 0;
+            case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
+        };
+
+        final int numColumns = switch (type) {
+            case SOURCE, MAP, CONCATENATE, APPEND -> numOutputs;
+            case APPENDMAP, ROWINDEX, SLICE, ROWFILTER -> numOutputs + predecessors.get(0).numColumns();
+            case COLSELECT -> getColumnSelection(spec).length;
             case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
         };
 
@@ -269,9 +272,13 @@ public class TableTransformGraph {
         final ArrayList<ControlFlowEdge> controlFlowEdges = new ArrayList<>();
         terminal = new Port(null, accessIds, controlFlowEdges);
 
-        final Node node = (type == COLSELECT) //
-                ? null // don't create a new node, just permute predecessor's outCols
-                : new Node(spec, numColumns, predecessors);
+        final Node node = switch (type) {
+            case COLSELECT -> // don't create a new node, just permute predecessor's outCols
+                    null;
+            case APPENDMAP -> // create a node with the equivalent MapTransformSpec
+                    new Node(((AppendMapTransformSpec)spec).toMap(), numOutputs, predecessors);
+            default -> new Node(spec, numOutputs, predecessors);
+        };
 
         // access tracing:
         switch (type) {
@@ -284,12 +291,12 @@ public class TableTransformGraph {
                 // (there is exactly one predecessor)
                 unionAccesses(terminal, predecessors.get(0).terminal, numColumns);
             }
-            case ROWINDEX -> {
-                // link outCols (except the last one) to the predecessor's outCols
+            case APPENDMAP, ROWINDEX -> {
+                // pass through the predecessor's outCols
                 // (there is exactly one predecessor)
-                unionAccesses(terminal, predecessors.get(0).terminal, numColumns - 1);
-                // link the last outCol to the node's output
-                terminal.access(numColumns - 1).union(node.out.access(0));
+                unionAccesses(terminal, predecessors.get(0).terminal, numColumns - numOutputs);
+                // link the final numOutputs outCols to the node's outputs
+                unionAccesses(terminal, numColumns - numOutputs, node.out, 0, numOutputs);
             }
             case COLSELECT -> {
                 // apply selection to predecessor's outCols
@@ -305,7 +312,7 @@ public class TableTransformGraph {
                 // link to the new node
                 terminal.linkTo(node);
             }
-            case MAP, COLSELECT -> {
+            case MAP, APPENDMAP, COLSELECT -> {
                 // link to everything that was linked to by predecessor
                 // (there is exactly one predecessor)
                 final List<ControlFlowEdge> predecessorControlFlowEdges =
@@ -434,8 +441,12 @@ public class TableTransformGraph {
     }
 
     private static void unionAccesses(Port from, Port to, int n) {
+        unionAccesses(from, 0, to, 0, n);
+    }
+
+    private static void unionAccesses(Port from, int fromStartPos, Port to, int toStartPos, int n) {
         for (int i = 0; i < n; i++) {
-            from.access(i).union(to.access(i));
+            from.access(i + fromStartPos).union(to.access(i + toStartPos));
         }
     }
 

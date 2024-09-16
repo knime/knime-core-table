@@ -1,5 +1,6 @@
 package org.knime.core.table.virtual.graph.rag3;
 
+import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -15,6 +16,7 @@ public enum SpecType {
     SOURCE, //
     SLICE, //
     APPEND, //
+    APPENDMAP, //
     CONCATENATE, //
     COLSELECT, //
     MAP, //
@@ -31,6 +33,8 @@ public enum SpecType {
             return COLSELECT;
         else if (spec instanceof AppendTransformSpec)
             return APPEND;
+        else if (spec instanceof AppendMapTransformSpec)
+            return APPENDMAP;
         else if (spec instanceof ConcatenateTransformSpec)
             return CONCATENATE;
         else if (spec instanceof MapTransformSpec)

@@ -185,6 +185,9 @@ public class TableTransformUtil { // TODO (TP) rename
      * @return {@code true} if any unused access was found and removed
      */
     public static boolean pruneAccesses(TableTransformGraph graph) {
+        // recursively find "required" AccessId
+        // every input of the terminal port is required.
+        // every control flow dependency of the terminal port is required,
         class Required {
             Required(TableTransformGraph graph) {
                 final Port port = graph.terminal();
