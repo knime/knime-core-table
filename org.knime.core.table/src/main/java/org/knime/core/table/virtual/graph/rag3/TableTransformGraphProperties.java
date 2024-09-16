@@ -4,10 +4,16 @@ import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType
 import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.LOOKAHEAD;
 import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.RANDOMACCESS;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.LongBinaryOperator;
 
+import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.schema.DataSpecs;
+import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
+import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -103,6 +109,35 @@ public class TableTransformGraphProperties {
             case BASIC -> BASIC;
             case LOOKAHEAD -> arg1.supportsLookahead() ? LOOKAHEAD : BASIC;
             case RANDOMACCESS -> arg1;
+        };
+    }
+
+    static ColumnarSchema schema(final TableTransformGraph graph) {
+        final List<AccessId> accesses = graph.terminal().accesses();
+        final DataSpecWithTraits[] specs = new DataSpecWithTraits[accesses.size()];
+        Arrays.setAll(specs, i -> getSpecWithTraits(accesses.get(i)));
+        return ColumnarSchema.of(specs);
+    }
+
+    private static DataSpecWithTraits getSpecWithTraits(final AccessId access) {
+        final AccessId.Producer producer = access.find().producer();
+        final Node node = producer.node();
+        return switch (node.type()) {
+            case SOURCE -> {
+                final SourceTransformSpec spec = node.getTransformSpec();
+                yield spec.getSchema().getSpecWithTraits(producer.index());
+            }
+            case APPEND -> getSpecWithTraits(TableTransformUtil.AppendAccesses.find(access).input());
+            case CONCATENATE -> {
+                final int i = node.out().accesses().indexOf(access);
+                yield getSpecWithTraits(node.in(0).access(i));
+            }
+            case MAP -> {
+                final MapTransformSpec spec = node.getTransformSpec();
+                yield spec.getMapperFactory().getOutputSchema().getSpecWithTraits(producer.index());
+            }
+            case ROWINDEX -> DataSpecs.LONG;
+            default -> throw new IllegalArgumentException("unexpected node type " + node.type());
         };
     }
 }

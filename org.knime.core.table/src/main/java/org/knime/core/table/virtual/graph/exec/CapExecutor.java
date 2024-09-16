@@ -69,6 +69,10 @@ public class CapExecutor {
     public static RowAccessible createRowAccessible(
             final TableTransformGraph tableTransformGraph,
             final ColumnarSchema schema,
+            // TODO (TP):
+            //   could we just get schema from TableTransformGraph? Or would
+            //   that be a problem in org.knime.core.data.columnar?
+            //   (with ColumnarValueSchema?)
             final CursorType cursorType,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap) {
         return switch (cursorType) {

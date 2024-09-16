@@ -69,7 +69,7 @@ public class GraphVirtualTableExecutor implements VirtualTableExecutor {
     public GraphVirtualTableExecutor(final TableTransform leafTransform)
     {
         tableTransformGraph = new TableTransformGraph(leafTransform);
-        schema = TableTransformUtil.createSchema(tableTransformGraph);
+        schema = tableTransformGraph.createSchema();
         cursorType = tableTransformGraph.supportedCursorType();
     }
 
