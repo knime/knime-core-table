@@ -50,17 +50,12 @@ public class ExecCap3 {
         // create TableTransformGraph
         var tableTransformGraph = new TableTransformGraph(table.getProducingTransform());
 
-        // try some optimizations
-        TableTransformUtil.pruneAccesses(tableTransformGraph);
-        while(TableTransformUtil.mergeSlices(tableTransformGraph)) {
-        }
+        TableTransformUtil.optimize(tableTransformGraph);
 
         System.out.println(new DependencyGraph(tableTransformGraph));
-        TableTransformGraph tableTransformGraph2 = tableTransformGraph.copy();
-        System.out.println(new DependencyGraph(tableTransformGraph2));
 
         // create CAP
-        BranchGraph depGraph = new BranchGraph(tableTransformGraph2);
+        BranchGraph depGraph = new BranchGraph(tableTransformGraph);
         CursorAssemblyPlan cap = BuildCap.createCursorAssemblyPlan(depGraph);
 
 
