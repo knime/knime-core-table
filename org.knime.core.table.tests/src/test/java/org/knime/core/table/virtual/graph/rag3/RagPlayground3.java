@@ -14,7 +14,8 @@ public class RagPlayground3 {
 //        final VirtualTable table = VirtualTableTests.vtAppend();
 //        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
 //        final VirtualTable table = VirtualTableTests.vtMapsAndFilters();
-        final VirtualTable table = VirtualTableTests.vtLinear().slice(2,4).slice(0,1);
+//        final VirtualTable table = VirtualTableTests.vtLinear().slice(2,4).slice(0,1);
+        final VirtualTable table = VirtualTableTests.vtSimpleAppendMap();
 
         var tableTransformGraph = new TableTransformGraph(table.getProducingTransform());
         System.out.println("tableTransformGraph = " + tableTransformGraph);

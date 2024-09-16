@@ -43,7 +43,7 @@ public class TableTransformGraphProperties {
                 // If any predecessor doesn't know its size, the size of this node is also unknown.
                 // Otherwise, the size of this is the sum of its predecessors.
                 accPredecessorNumRows(node, Long::sum);
-            case COLSELECT, MAP -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
+            case COLSELECT, MAP, APPENDMAP -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
         };
     }
 
@@ -99,7 +99,7 @@ public class TableTransformGraphProperties {
                 }
                 yield cursorType;
             }
-            case COLSELECT, MAP -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
+            case COLSELECT, MAP, APPENDMAP -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
         };
     }
 
