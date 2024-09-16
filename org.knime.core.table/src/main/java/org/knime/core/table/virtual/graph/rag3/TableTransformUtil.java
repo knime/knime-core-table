@@ -28,9 +28,16 @@ public class TableTransformUtil { // TODO (TP) rename
         return new UnsupportedOperationException("not handled yet. needs to be implemented or removed");
     }
 
-
-
-
+    /**
+     * Get all nodes in the given {@code TableTransformGraph}. Starting from
+     * {@code graph.terminal()}, recursively follows control-flow and data
+     * dependencies.
+     * <p>
+     * The returned {@code List} contains no duplicates.
+     *
+     * @param graph the TableTransformGraph
+     * @return list of all nodes in {@code graph}
+     */
     static List<Node> nodes(TableTransformGraph graph) {
         class Nodes {
             final Set<Node> nodes = new LinkedHashSet<>();
