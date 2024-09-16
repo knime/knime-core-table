@@ -70,9 +70,14 @@ public class TableTransformUtil { // TODO (TP) rename
 
 
 
+    public static void optimize(TableTransformGraph graph)
+    {
+        // TODO (TP): optionally, for debugging, save intermediate steps as mermaid graphs
 
-
-
+        TableTransformUtil.pruneAccesses(graph);
+        while(TableTransformUtil.mergeSlices(graph)) {
+        }
+    }
 
 
     // --------------------------------------------------------------------
