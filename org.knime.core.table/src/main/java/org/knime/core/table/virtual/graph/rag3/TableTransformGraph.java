@@ -14,6 +14,7 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
 import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
+import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
@@ -141,7 +142,7 @@ public class TableTransformGraph {
                     case APPEND, CONCATENATE -> predecessor.numColumns();
                     case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                     // TODO: COLSELECT shouldn't be a possible value here --> SpecType vs NodeType
-                    case COLSELECT, APPENDMAP -> throw new IllegalArgumentException();
+                    case COLSELECT, APPENDMAP, APPENDMISSING -> throw new IllegalArgumentException();
                 };
 
                 final List<AccessId> inputs = createAccessIds(null, numInputs, accessLabel("gamma", id, p));
@@ -254,6 +255,7 @@ public class TableTransformGraph {
             case SOURCE -> ((SourceTransformSpec)spec).getSchema().numColumns();
             case MAP -> ((MapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
             case APPENDMAP -> ((AppendMapTransformSpec)spec).getMapperFactory().getOutputSchema().numColumns();
+            case APPENDMISSING -> ((AppendMissingValuesTransformSpec)spec).getAppendedSchema().numColumns();
             case ROWINDEX -> 1;
             case APPEND -> predecessors.stream().mapToInt(TableTransformGraph::numColumns).sum();
             case CONCATENATE -> predecessors.get(0).numColumns();
@@ -263,7 +265,7 @@ public class TableTransformGraph {
 
         final int numColumns = switch (type) {
             case SOURCE, MAP, CONCATENATE, APPEND -> numOutputs;
-            case APPENDMAP, ROWINDEX, SLICE, ROWFILTER -> numOutputs + predecessors.get(0).numColumns();
+            case APPENDMAP, APPENDMISSING, ROWINDEX, SLICE, ROWFILTER -> numOutputs + predecessors.get(0).numColumns();
             case COLSELECT -> getColumnSelection(spec).length;
             case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
         };
@@ -277,6 +279,8 @@ public class TableTransformGraph {
                     null;
             case APPENDMAP -> // create a node with the equivalent MapTransformSpec
                     new Node(((AppendMapTransformSpec)spec).toMap(), numOutputs, predecessors);
+            case APPENDMISSING -> // create a node with the equivalent MapTransformSpec
+                    new Node(((AppendMissingValuesTransformSpec)spec).toMap(), numOutputs, predecessors);
             default -> new Node(spec, numOutputs, predecessors);
         };
 
@@ -291,7 +295,7 @@ public class TableTransformGraph {
                 // (there is exactly one predecessor)
                 unionAccesses(terminal, predecessors.get(0).terminal, numColumns);
             }
-            case APPENDMAP, ROWINDEX -> {
+            case APPENDMAP, APPENDMISSING, ROWINDEX -> {
                 // pass through the predecessor's outCols
                 // (there is exactly one predecessor)
                 unionAccesses(terminal, predecessors.get(0).terminal, numColumns - numOutputs);
@@ -312,7 +316,7 @@ public class TableTransformGraph {
                 // link to the new node
                 terminal.linkTo(node);
             }
-            case MAP, APPENDMAP, COLSELECT -> {
+            case MAP, APPENDMAP, APPENDMISSING, COLSELECT -> {
                 // link to everything that was linked to by predecessor
                 // (there is exactly one predecessor)
                 final List<ControlFlowEdge> predecessorControlFlowEdges =

@@ -1,6 +1,7 @@
 package org.knime.core.table.virtual.graph.rag3;
 
 import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
+import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
@@ -12,11 +13,16 @@ import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
+
+// TODO (TP):
+//  COLSELECT, APPENDMISSING, APPENDMAP never make it into the TableTransformGraph.
+//  Should we split SpecType and NodeType? RawSpecType, NodeSpecType, ... ?
 public enum SpecType {
     SOURCE, //
     SLICE, //
     APPEND, //
     APPENDMAP, //
+    APPENDMISSING, //
     CONCATENATE, //
     COLSELECT, //
     MAP, //
@@ -33,6 +39,8 @@ public enum SpecType {
             return COLSELECT;
         else if (spec instanceof AppendTransformSpec)
             return APPEND;
+        else if (spec instanceof AppendMissingValuesTransformSpec)
+            return APPENDMISSING;
         else if (spec instanceof AppendMapTransformSpec)
             return APPENDMAP;
         else if (spec instanceof ConcatenateTransformSpec)
