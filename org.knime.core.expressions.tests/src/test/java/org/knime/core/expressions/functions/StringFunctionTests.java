@@ -318,6 +318,7 @@ final class StringFunctionTests {
             .illegalArgs("2 strings", List.of(STRING, STRING)) //
             .illegalArgs("INTEGER", List.of(INTEGER)) //
             .impl("capitalise", List.of(arg("abc 123 def Hij")), "Abc 123 Def Hij") //
+            .impl("capitalise ALL CAPS", List.of(arg("BACKPORT IS FUN")), "Backport Is Fun") //
             .impl("noop", List.of(arg("A")), "A") //
             .tests();
     }
