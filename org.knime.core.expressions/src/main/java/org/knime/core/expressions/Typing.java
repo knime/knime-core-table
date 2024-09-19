@@ -154,6 +154,7 @@ final class Typing {
                     .orElseGet(message -> ErrorValueType.missingColumn(node, message));
                 case ROW_ID -> STRING;
                 case ROW_INDEX -> INTEGER;
+                case ROW_NUMBER -> INTEGER;
             };
         }
 
@@ -346,8 +347,7 @@ final class Typing {
 
         static ErrorValueType functionNotApplicable(final String message, final FunctionCall node) {
             return new ErrorValueType(List.of(ExpressionCompileError.typingError(
-                "In function '" + node.function().name() + "': " + message,
-                Parser.getTextLocation(node))));
+                "In function '" + node.function().name() + "': " + message, Parser.getTextLocation(node))));
         }
 
         static ErrorValueType aggregationNotApplicable(final String message, final AggregationCall node) {

@@ -412,6 +412,25 @@ public sealed interface Ast
     }
 
     /**
+     * Create a new {@code RowNumber} {@link ColumnAccess} for the given data.
+     *
+     * @param data
+     * @return the node
+     */
+    static ColumnAccess rowNumber(final Map<String, Object> data) {
+        return new ColumnAccess(RowNumber.INSTANCE, 0, data);
+    }
+
+    /**
+     * Create a new {@code RowNumber} {@link ColumnAccess} with no data.
+     *
+     * @return the node
+     */
+    static ColumnAccess rowNumber() {
+        return rowNumber(new HashMap<>());
+    }
+
+    /**
      * Create a new {@code RowId} {@link ColumnAccess} for the given data.
      *
      * @param data
@@ -801,7 +820,7 @@ public sealed interface Ast
         }
     }
 
-    sealed interface ColumnId permits ColumnName, RowIndex, RowId {
+    sealed interface ColumnId permits ColumnName, RowIndex, RowId, RowNumber {
 
         /**
          * @return the identifier as written as part of the {@link ColumnAccess} in the expression
@@ -813,7 +832,7 @@ public sealed interface Ast
         }
 
         enum ColumnIdType {
-                NAMED, ROW_ID, ROW_INDEX
+                NAMED, ROW_ID, ROW_INDEX, ROW_NUMBER
         }
 
         default ColumnIdType type() {
@@ -823,6 +842,8 @@ public sealed interface Ast
                 return ColumnIdType.ROW_ID;
             } else if (this instanceof RowIndex) {
                 return ColumnIdType.ROW_INDEX;
+            } else if (this instanceof RowNumber) {
+                return ColumnIdType.ROW_NUMBER;
             } else {
                 throw new IllegalStateException();
             }
@@ -865,6 +886,19 @@ public sealed interface Ast
         @Override
         public String identifier() {
             return "ROW_ID";
+        }
+    }
+
+    /**
+     * ColumnId representing the row id.
+     */
+    record RowNumber() implements ColumnId {
+
+        public static final RowNumber INSTANCE = new RowNumber();
+
+        @Override
+        public String identifier() {
+            return "ROW_NUMBER";
         }
     }
 

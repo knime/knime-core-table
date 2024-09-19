@@ -59,6 +59,7 @@ import static org.knime.core.expressions.Ast.integerConstant;
 import static org.knime.core.expressions.Ast.missingConstant;
 import static org.knime.core.expressions.Ast.rowId;
 import static org.knime.core.expressions.Ast.rowIndex;
+import static org.knime.core.expressions.Ast.rowNumber;
 import static org.knime.core.expressions.Ast.stringConstant;
 import static org.knime.core.expressions.Ast.unaryOp;
 
@@ -473,7 +474,7 @@ final class Parser {
                 case KnimeExpressionParser.ROW_INDEX -> //
                         rowIndex(data);
                 case KnimeExpressionParser.ROW_NUMBER -> //
-                        binaryOp(BinaryOperator.PLUS, rowIndex(data), integerConstant(1));
+                        rowNumber(data);
                 case KnimeExpressionParser.ROW_ID -> //
                         rowId(data);
                 default -> throw syntaxError("Unexpected terminal value: " + symbol.getText() + ".",

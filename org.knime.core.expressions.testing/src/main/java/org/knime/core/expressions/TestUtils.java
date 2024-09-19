@@ -91,6 +91,7 @@ public final class TestUtils {
         case NAMED -> columnId.name();
         case ROW_INDEX -> "ROW_INDEX";
         case ROW_ID -> "ROW_ID";
+        case ROW_NUMBER -> "ROW_NUMBER";
     };
 
     /** Function that maps from a {@link FlowVarAccess} to its name */
