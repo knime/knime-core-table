@@ -136,6 +136,13 @@ public final class AstTestUtils {
     }
 
     /**
+     * @return a {@link Ast.ColumnAccess}
+     */
+    public static Ast.ColumnAccess ROW_NUMBER() { // NOSONAR - name useful for visual clarity
+        return Ast.rowNumber();
+    }
+
+    /**
      * @param name
      * @return a {@link Ast.FlowVarAccess}
      */

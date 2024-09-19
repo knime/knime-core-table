@@ -77,6 +77,7 @@ import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.ROW_ID;
 import static org.knime.core.expressions.AstTestUtils.ROW_INDEX;
+import static org.knime.core.expressions.AstTestUtils.ROW_NUMBER;
 import static org.knime.core.expressions.AstTestUtils.STR;
 
 import java.util.List;
@@ -138,6 +139,7 @@ final class ParserTest {
             COL_LONG_2("$[\"my 'very\\\" special column\"]", COL("my 'very\" special column")), //
             COL_ROW_INDEX("$[ROW_INDEX]", ROW_INDEX()), //
             COL_ROW_ID("$[ROW_ID]", ROW_ID()), //
+            COL_ROW_NUMBER("$[ROW_NUMBER]", ROW_NUMBER()), //
 
             // Column access with offsets
             COL_ACCESS_OFFSET("$[\"col\", 10]", COL("col", 10)), //
