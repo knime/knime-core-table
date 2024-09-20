@@ -198,7 +198,7 @@ public final class ColumnFilterTransformTest {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testRejectFilterContainsColumnIndicesNotInTable() {
-        ColumnarSchemas.filter(
+        ColumnarSchemas.select(
             ColumnarSchema.of(DOUBLE, INT, STRING),
             new int[]{0, 3});
     }
