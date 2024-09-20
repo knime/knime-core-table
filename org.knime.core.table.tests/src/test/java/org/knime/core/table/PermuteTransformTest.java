@@ -163,16 +163,6 @@ public final class PermuteTransformTest {
         testPermuteTable(permutedSchema, permutedValues, originalSchema, originalValues, permutation);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testRejectNumPermutationIndicesGreaterThanNumColumns() {
-        ColumnarSchemas.permute(ColumnarSchema.of(DOUBLE, INT), new int[]{2, 1, 0});
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testRejectNumPermutationIndicesLessThanNumColumns() {
-        ColumnarSchemas.permute(ColumnarSchema.of(DOUBLE, INT, STRING), new int[]{1, 0});
-    }
-
     private static void testPermuteTable(final ColumnarSchema expectedSchema, final Object[][] expectedValues,
         final ColumnarSchema originalSchema, final Object[][] originalValues, final int[] permutation)
         throws IOException {
