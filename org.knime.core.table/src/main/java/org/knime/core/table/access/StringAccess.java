@@ -69,10 +69,11 @@ public final class StringAccess {
         default DataSpec getDataSpec() {
             return DataSpec.stringSpec();
         }
+
+        byte[] getUTF8Nullable();
     }
 
     public interface StringWriteAccess extends WriteAccess {
         void setStringValue(final String value);
     }
-
 }

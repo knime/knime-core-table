@@ -95,7 +95,7 @@ public final class RowAccessiblesTestUtils {
 
         private final TestRowAccessible m_delegate;
 
-        private TestRowAccessibleNoRandomAccess(TestRowAccessible delegate) {
+        private TestRowAccessibleNoRandomAccess(final TestRowAccessible delegate) {
             m_delegate = delegate;
         }
 
@@ -110,7 +110,7 @@ public final class RowAccessiblesTestUtils {
         }
 
         @Override
-        public LookaheadCursor<ReadAccessRow> createCursor(Selection selection) {
+        public LookaheadCursor<ReadAccessRow> createCursor(final Selection selection) {
             return m_delegate.createCursor(selection);
         }
 
@@ -213,11 +213,11 @@ public final class RowAccessiblesTestUtils {
             }
 
             @Override
-            public void moveTo(long row) {
+            public void moveTo(final long row) {
                 setRowIndex(row + m_fromIndex);
             }
 
-            private void setRowIndex(long row) {
+            private void setRowIndex(final long row) {
                 if (row < m_fromIndex || row >= m_toIndex) {
                     throw new IndexOutOfBoundsException(String.format("%d out of bounds [%d, %d)", row, m_fromIndex, m_toIndex));
                 }
@@ -380,7 +380,7 @@ public final class RowAccessiblesTestUtils {
         return toRowAccessible(writeTable(schema, valuesPerRow));
     }
 
-    private static TestRowWriteAccessible writeTable(ColumnarSchema schema, Object[][] valuesPerRow) {
+    private static TestRowWriteAccessible writeTable(final ColumnarSchema schema, final Object[][] valuesPerRow) {
         final TestRowWriteAccessible table = createRowWriteAccessible(schema);
         try (final WriteCursor<WriteAccessRow> cursor = table.getWriteCursor()) {
             final WriteAccessRow row = cursor.access();

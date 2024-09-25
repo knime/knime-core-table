@@ -130,6 +130,18 @@ public final class TestAccesses {
          * @return a new TestAccess on the same data, but with an independent index.
          */
         TestAccess copy();
+
+        @Deprecated
+        @Override
+        default void setFromInternal(final ReadAccess readAccess) {
+            if (readAccess.isMissing()) {
+                setMissing();
+            } else {
+                setFromNonMissing(readAccess);
+            }
+        }
+
+        void setFromNonMissing(ReadAccess readAccess);
     }
 
     private static final class DataSpecToTestAccessMapper implements DataSpec.Mapper<TestAccess> {
@@ -208,8 +220,8 @@ public final class TestAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((BooleanReadAccess)access).getBooleanValue());
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setBooleanValue(((BooleanReadAccess)readAccess).getBooleanValue());
             }
 
             @Override
@@ -232,8 +244,8 @@ public final class TestAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((ByteReadAccess)access).getByteValue());
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setByteValue(((ByteReadAccess)readAccess).getByteValue());
             }
 
             @Override
@@ -256,8 +268,8 @@ public final class TestAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((DoubleReadAccess)access).getDoubleValue());
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setDoubleValue(((DoubleReadAccess)readAccess).getDoubleValue());
             }
 
             @Override
@@ -275,13 +287,13 @@ public final class TestAccesses {
             }
 
             @Override
-            public float getFloatValue() {
-                return get();
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setFloatValue(((FloatReadAccess)readAccess).getFloatValue());
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((FloatReadAccess)access).getFloatValue());
+            public float getFloatValue() {
+                return get();
             }
 
             @Override
@@ -304,8 +316,8 @@ public final class TestAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((IntReadAccess)access).getIntValue());
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setIntValue(((IntReadAccess)readAccess).getIntValue());
             }
 
             @Override
@@ -328,8 +340,8 @@ public final class TestAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((LongReadAccess)access).getLongValue());
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setLongValue(((LongReadAccess)readAccess).getLongValue());
             }
 
             @Override
@@ -352,8 +364,13 @@ public final class TestAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((StringReadAccess)access).getStringValue());
+            public byte[] getUTF8Nullable() {
+                return null;
+            }
+
+            @Override
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setStringValue(((StringReadAccess)readAccess).getStringValue());
             }
 
             @Override
@@ -378,6 +395,11 @@ public final class TestAccesses {
             }
 
             @Override
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setByteArray(((VarBinaryReadAccess)readAccess).getByteArray());
+            }
+
+            @Override
             public byte[] getByteArray() {
                 return get();
             }
@@ -390,11 +412,6 @@ public final class TestAccesses {
             @Override
             public <T> T getObject(final ObjectDeserializer<T> deserializer) {
                 throw new UnsupportedOperationException("nyi");
-            }
-
-            @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                set(((VarBinaryReadAccess)access).getByteArray());
             }
 
             @Override
@@ -426,7 +443,7 @@ public final class TestAccesses {
             }
 
             @Override
-            public void setFrom(final ReadAccess access) {
+            public void setFromNonMissing(final ReadAccess readAccess) {
                 // not to be called
             }
 
@@ -470,15 +487,6 @@ public final class TestAccesses {
             }
 
             @Override
-            public void setFrom(final ReadAccess access) {
-                if (access.isMissing()) {
-                    m_data[m_index] = null;
-                } else {
-                    setFromNonMissing(access);
-                }
-            }
-
-            @Override
             public void setIndex(final int index) {
                 ensureSize();
                 m_index = index;
@@ -494,12 +502,10 @@ public final class TestAccesses {
                 return cast;
             }
 
-            protected AbstractTestAccess<T> setData(Object[] data) {
+            protected AbstractTestAccess<T> setData(final Object[] data) {
                 this.m_data = data;
                 return this;
             }
-
-            protected abstract void setFromNonMissing(ReadAccess access);
         }
     }
 }

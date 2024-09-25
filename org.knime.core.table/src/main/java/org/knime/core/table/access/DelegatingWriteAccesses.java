@@ -370,8 +370,8 @@ public final class DelegatingWriteAccesses {
         }
 
         @Override
-        public void setFrom(final ReadAccess access) {
-            m_delegateAccess.setFrom(access);
+        public final void setFromInternal(final ReadAccess readAccess) {
+            m_delegateAccess.setFrom(readAccess); // allows another delegation to be resolved, if any
         }
 
         @Override
@@ -380,7 +380,5 @@ public final class DelegatingWriteAccesses {
                 m_delegateAccess.setMissing();
             }
         }
-
     }
-
 }

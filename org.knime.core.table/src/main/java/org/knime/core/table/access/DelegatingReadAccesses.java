@@ -395,6 +395,11 @@ public final class DelegatingReadAccesses {
         public String getStringValue() {
             return m_delegateAccess.getStringValue();
         }
+
+        @Override
+        public byte[] getUTF8Nullable() {
+            return m_delegateAccess.getUTF8Nullable();
+        }
     }
 
     private static final class DelegatingStructReadAccess extends AbstractDelegatingReadAccess<StructReadAccess>
@@ -490,6 +495,11 @@ public final class DelegatingReadAccesses {
         @Override
         public String toString() {
             return m_delegateAccess.toString();
+        }
+
+        @Override
+        public void setIntoInternal(final WriteAccess writeAccess) {
+            m_delegateAccess.setIntoInternal(writeAccess);
         }
     }
 }

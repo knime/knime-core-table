@@ -98,6 +98,7 @@ import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectSerializer;
 import org.knime.core.table.schema.VoidDataSpec;
+import org.knime.core.table.util.StringEncoder;
 
 /**
  * A collection of buffered access implementations that can be retrieved by mapping from a given {@link DataSpec}.
@@ -222,7 +223,7 @@ public final class BufferedAccesses {
                     String.format("Wrong size: %d vs. %d", readAccessRow.size(), size()));
             }
             for (var i = 0; i < size(); i++) {
-                final BufferedAccess access = m_accesses[i];
+                final WriteAccess access = m_accesses[i];
                 if (access != null) {
                     access.setFrom(readAccessRow.getAccess(i));
                 }
@@ -258,7 +259,18 @@ public final class BufferedAccesses {
      * @author Marc Bux, KNIME GmbH, Berlin, Germany
      * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
      */
-    public interface BufferedAccess extends ReadAccess, WriteAccess {
+    public sealed interface BufferedAccess extends ReadAccess, WriteAccess {
+
+        @Override
+        default void setFromInternal(final ReadAccess readAccess) {
+            if (readAccess.isMissing()) {
+                setMissing();
+            } else {
+                setFromNonMissing(readAccess);
+            }
+        }
+
+        void setFromNonMissing(ReadAccess readAccess);
     }
 
     private static final class DataSpecToBufferedAccessMapper implements DataSpec.Mapper<BufferedAccess> {
@@ -337,15 +349,14 @@ public final class BufferedAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((BooleanReadAccess)access).getBooleanValue();
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setBooleanValue(((BooleanReadAccess)readAccess).getBooleanValue());
             }
 
             @Override
             protected String valueToString() {
                 return Boolean.toString(m_value);
             }
-
         }
 
         private static final class BufferedByteAccess extends AbstractBufferedAccess
@@ -365,8 +376,8 @@ public final class BufferedAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((ByteReadAccess)access).getByteValue();
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setByteValue(((ByteReadAccess)readAccess).getByteValue());
             }
 
             @Override
@@ -393,8 +404,8 @@ public final class BufferedAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((DoubleReadAccess)access).getDoubleValue();
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setDoubleValue(((DoubleReadAccess)readAccess).getDoubleValue());
             }
 
             @Override
@@ -420,8 +431,8 @@ public final class BufferedAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((FloatReadAccess)access).getFloatValue();
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setFloatValue(((FloatReadAccess)readAccess).getFloatValue());
             }
 
             @Override
@@ -448,15 +459,14 @@ public final class BufferedAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((IntReadAccess)access).getIntValue();
-            }
-
-            @Override
             protected String valueToString() {
                 return Integer.toString(m_value);
             }
 
+            @Override
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setIntValue(((IntReadAccess)readAccess).getIntValue());
+            }
         }
 
         private static final class BufferedListAccess extends AbstractBufferedAccess
@@ -551,14 +561,14 @@ public final class BufferedAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                final ListReadAccess listAccess = (ListReadAccess)access;
-                final int listSize = listAccess.size();
-                create(listSize);
-                final var elementAccess = listAccess.getAccess();
-                for (int i = 0; i < listSize; i++) {//NOSONAR
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                final ListReadAccess listAccess = (ListReadAccess)readAccess;
+                final int size = listAccess.size();
+                create(size);
+                final var elementReadAccess = listAccess.getAccess();
+                for (var i = 0; i < size; i++) {
                     listAccess.setIndex(i);
-                    m_inner[i].setFrom(elementAccess);
+                    m_inner[i].setFrom(elementReadAccess);
                 }
             }
 
@@ -569,7 +579,6 @@ public final class BufferedAccesses {
                     .map(Object::toString)//
                     .collect(Collectors.joining(",", "[", "]"));
             }
-
         }
 
         private static final class BufferedLongAccess extends AbstractBufferedAccess
@@ -589,15 +598,14 @@ public final class BufferedAccesses {
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((LongReadAccess)access).getLongValue();
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                setLongValue(((LongReadAccess)readAccess).getLongValue());
             }
 
             @Override
             protected String valueToString() {
                 return Long.toString(m_value);
             }
-
         }
 
         private static final class BufferedStructAccess implements StructWriteAccess, StructReadAccess, BufferedAccess {
@@ -647,10 +655,9 @@ public final class BufferedAccesses {
             }
 
             @Override
-            public void setFrom(final ReadAccess access) {
-                final StructReadAccess structAccess = (StructReadAccess)access;
-                final int numInnerReadAccesses = structAccess.size();
-                for (int i = 0; i < numInnerReadAccesses; i++) {//NOSONAR
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                final StructReadAccess structAccess = (StructReadAccess)readAccess;
+                for (var i = 0; i < m_inner.length; i++) {
                     m_inner[i].setFrom(structAccess.getAccess(i));
                 }
             }
@@ -667,8 +674,10 @@ public final class BufferedAccesses {
             }
         }
 
-        private static final class BufferedStringAccess extends AbstractBufferedObjectAccess<String>
+        private static final class BufferedStringAccess extends AbstractBufferedObjectAccess<Object>
             implements StringReadAccess, StringWriteAccess {
+
+            private final StringEncoder m_encoder = new StringEncoder();
 
             @Override
             public void setStringValue(final String value) {
@@ -677,14 +686,24 @@ public final class BufferedAccesses {
 
             @Override
             public String getStringValue() {
-                return m_value;
+                return m_value instanceof byte[] bytes ? m_encoder.decode(bytes) : (String)m_value;
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                m_value = ((StringReadAccess)access).getStringValue();
+            public byte[] getUTF8Nullable() {
+                return m_value instanceof byte[] bytes ? bytes : null;
             }
 
+            @Override
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                final var stringAccess = (StringReadAccess)readAccess;
+                final var raw = stringAccess.getUTF8Nullable();
+                if (raw != null) {
+                    m_value = raw;
+                } else {
+                    m_value = stringAccess.getStringValue();
+                }
+            }
         }
 
         private static final class BufferedVarBinaryAccess extends AbstractBufferedAccess
@@ -786,31 +805,26 @@ public final class BufferedAccesses {
                 return m_serializer;
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             public <T> T getObject() {
                 return (T)m_value;
             }
 
             @Override
-            protected void setFromNonMissing(final ReadAccess access) {
-                var binaryAccess = (VarBinaryReadAccess)access;
-                if (binaryAccess.hasObjectAndSerializer()) {
-                    m_value = binaryAccess.getObject();
-                    m_serializer = binaryAccess.getSerializer();
-                    m_storage = null;
+            public void setFromNonMissing(final ReadAccess readAccess) {
+                final var binaryReadAccess = (VarBinaryReadAccess)readAccess;
+                if (binaryReadAccess.hasObjectAndSerializer()) {
+                    setObject(binaryReadAccess.getObject(), binaryReadAccess.getSerializer());
                 } else {
-                    m_storage = ((VarBinaryReadAccess)access).getByteArray();
-                    m_value = null;
-                    m_serializer = null;
+                    setByteArray(binaryReadAccess.getByteArray());
                 }
-                m_isMissing = false;
             }
 
             @Override
             protected String valueToString() {
                 return m_value != null ? m_value.toString() : (m_storage != null ? m_storage.toString() : "null");
             }
-
         }
 
         private static final class BufferedVoidAccess implements BufferedAccess {
@@ -831,7 +845,7 @@ public final class BufferedAccesses {
             }
 
             @Override
-            public void setFrom(final ReadAccess access) {
+            public void setFromNonMissing(final ReadAccess readAccess) {
                 // not to be called
             }
 
@@ -841,7 +855,7 @@ public final class BufferedAccesses {
             }
         }
 
-        private abstract static class AbstractBufferedAccess implements BufferedAccess {
+        private abstract static sealed class AbstractBufferedAccess implements BufferedAccess {
 
             protected boolean m_isMissing = true;
 
@@ -856,18 +870,6 @@ public final class BufferedAccesses {
             }
 
             @Override
-            public void setFrom(final ReadAccess access) {
-                if (access.isMissing()) {
-                    setMissing(); // Overridden by BufferedVarBinaryAccess.
-                } else {
-                    m_isMissing = false;
-                    setFromNonMissing(access);
-                }
-            }
-
-            protected abstract void setFromNonMissing(ReadAccess access);
-
-            @Override
             public final String toString() {
                 return m_isMissing ? "?" : valueToString();
             }
@@ -876,7 +878,7 @@ public final class BufferedAccesses {
 
         }
 
-        private abstract static class AbstractBufferedObjectAccess<T> implements BufferedAccess {
+        private abstract static sealed class AbstractBufferedObjectAccess<T> implements BufferedAccess {
 
             protected T m_value;
 
@@ -889,17 +891,6 @@ public final class BufferedAccesses {
             public final void setMissing() {
                 m_value = null;
             }
-
-            @Override
-            public void setFrom(final ReadAccess access) {
-                if (access.isMissing()) {
-                    m_value = null;
-                } else {
-                    setFromNonMissing(access);
-                }
-            }
-
-            protected abstract void setFromNonMissing(ReadAccess access);
 
             @Override
             public String toString() {

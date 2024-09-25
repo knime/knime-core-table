@@ -60,6 +60,7 @@ import org.knime.core.table.access.LongAccess.LongReadAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
+import org.knime.core.table.row.DefaultReadAccessRow;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
@@ -75,7 +76,6 @@ import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.row.DefaultReadAccessRow;
 
 /**
  * A collection of access implementations that are all {@code isMissing} and can be
@@ -246,6 +246,11 @@ public final class MissingAccesses {
 
             @Override
             public String getStringValue() {
+                return null;
+            }
+
+            @Override
+            public byte[] getUTF8Nullable() {
                 return null;
             }
         }

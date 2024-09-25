@@ -63,11 +63,14 @@ public interface WriteAccess {
      */
     void setMissing();
 
-    // TODO: improve type safety? Would require a type parameter on WriteAccess (meh).
     /**
      * Copies the value at the given access into this access.
      *
      * @param access The access whose value to copy into this access.
      */
-    void setFrom(ReadAccess access);
+    default void setFrom(final ReadAccess access) {
+        access.setIntoInternal(this);
+    }
+
+    void setFromInternal(ReadAccess readAccess);
 }
