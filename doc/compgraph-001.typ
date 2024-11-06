@@ -85,7 +85,9 @@ $chi in Chi$ is a tuple $chi = (c_chi)$ where
 $c_chi in cal(P)(NN)$ is a tuple of input column indices.
 
 *`ROWFILTER`:*
-#text(red)[TODO]
+$phi in Phi$ is a tuple $phi = (f_phi, c_phi)$ where
+$f_phi$ is the filter function ID, and
+$c_phi$ is a tuple of input column indices.
 
 *`SLICE`:*
 #text(red)[TODO]
@@ -140,7 +142,7 @@ ncols(v) := cases(
   |c_chi|                   & "if" theta_v = chi in Chi         quad &"// COLSELECT",
   sum_i ncols(pi_(i)(v))    & "if" theta_v = psi in Psi         quad &"// APPEND",
   ncols(pi_0(v))            & "otherwise"                       quad &"// ROWFILTER, SLICE",
-                            &                                        &"// CONCATENATE, CONSUMER)",
+                            &                                        &"// CONCATENATE, CONSUMER",
 ) $
 
 
@@ -148,17 +150,16 @@ ncols(v) := cases(
 
 Every node has _in-cols_ and _out-cols_ that represent the columns "flowing into and out of" the node.
 
-Node $v$ has $ncols(v)$ _out-cols_ labeled $beta_v^i$ with $0<=i<ncols(v)$.
+=== In-cols
+The node $v$ has $sum_j ncols(pi_(j)(v))$ _in-cols_.\
+The _in-cols_ are labeled $alpha_v^(j,i)$ with $0 <= j < |Pi(v)|$) and $0<=i<ncols(pi_(j)(v))$.\
+If the node $v$ is not a `SOURCE`, `APPEND`, or `CONCATENATE`,
+  then $|Pi(v)|=1$ and
+  we may omit the predecessor index $j$ and write $alpha_v^i$ (instead of $alpha_v^(0,i)$).
 
-If node $v$ is not a `SOURCE`, `APPEND`, or `CONCATENATE`, then $|Pi(v)|=1$, and:\
-The node $v$ has $ncols(pi(v))$ _in-cols_ labeled $alpha_v^i$ with $0<=i<ncols(pi(v))$.
-
-`SOURCE` nodes have no inputs.
-
-`APPEND` #text(red)[TODO]
-
-`CONCATENATE` #text(red)[TODO]
-
+=== Out-cols
+Node $v$ has $ncols(v)$ _out-cols_.\
+The _out-cols_ are labeled $beta_v^i$ with $0<=i<ncols(v)$.
 
 
 == Inputs/outputs of a node
@@ -178,10 +179,37 @@ We call the _out-cols_ that are actually produced by a node its _outputs_.
 The _outputs_ of node $v$ are labeled $delta_v^i$ with $0<=i<m_v$, where $m_v$ depends on the spec $theta_v$.
 
 #text(red)[TODO:
+For `CONCATENATE` and `APPEND`, probably also use the predecessor index: $delta_v^(j,i)$ with $0<=i<m_v$
+]
+
+
+#text(red)[TODO:
 `CONCATENATE` and `APPEND` are a bit special.
 They use all _in-cols_ and produce all _out-cols_ because they buffer accesses.
 If later it becomes known that not all outputs of an `APPEND` are used, we can prune those outputs and the corresponding inputs.
 ]
+
+=== Number of inputs
+
+$
+n_v = |gamma_v| := cases(
+  "TODO",
+  "TODO",
+  "TODO",
+  "TODO",
+) $
+
+=== Number of outputs
+
+$
+m_v = |delta_v| := cases(
+  ncols(v) & "if" theta_v in Sigma union Mu union Psi union Xi 
+                                               quad &"// SOURCE, MAP, APPEND,",
+           &                                        &"// CONCATENATE",
+  1        & "if" theta_v = kappa in Kappa     quad &"// ROWINDEX",
+  0        & "otherwise"                       quad &"// COLFILTER, ROWFILTER,",
+           &                                        &"// SLICE, CONSUMER",
+) $
 
 
 == Accesses, access tracing
@@ -209,7 +237,12 @@ This will ultimately lead to the producer being the set leader.
 (Note that accesses do not "survive" `APPEND` or `CONCATENATE`. Therefore, $uni$ only happens within a totally ordered sequence of nodes, and consequently "the more predecessor one" is always well-defined.)
 
 The following equivalences hold:
- #text(red)[TODO]
+#text(red)[TODO
+ - incols to outcols
+ - inputs to incols
+ - outputs to outcols
+ - predecessor outputs to inputs
+]
 
 == Data dependencies
 
@@ -226,7 +259,7 @@ $
 
 Order in which nodes are forwarded. Basically: nodes have to be forwarded according to the spec order, with the following exceptions:
 - `COLSELECT` are not executed at all (no inputs, no outputs)
-- `MAP` nodes can be executed at any point after their inputs are produces and before their outputs are used. This is already ensured by data dependencies.
+- `MAP` nodes can be executed at any point after their inputs are produced and before their outputs are used. This is already ensured by data dependencies.
 - Consecutive `ROWFILTER` nodes can be executed in any order.
 
 More formally:\
