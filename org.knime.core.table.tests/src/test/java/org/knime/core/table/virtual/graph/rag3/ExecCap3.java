@@ -34,12 +34,7 @@ public class ExecCap3 {
 
         final UUID[] sourceIdentifiers = createSourceIds(1);
         final RowAccessible[] sourceAccessibles = VirtualTableTests.dataLinear();
-        final VirtualTable table = VirtualTableTests.vtLinear(sourceIdentifiers, sourceAccessibles).slice(2,4).slice(0,1);
-
-
-
-
-
+        final VirtualTable table = VirtualTableTests.vtLinear(sourceIdentifiers, sourceAccessibles).slice(2, 4).slice(0, 1);
 
 
         final Map<UUID, RowAccessible> uuidRowAccessibleMap = new HashMap<>();
@@ -79,11 +74,11 @@ public class ExecCap3 {
 //        -- > new CapRowAccessible( // final ColumnarSchema schema, //
 //        final Map<UUID, RowAccessible> availableSources){
 
-        }
-
-        private static UUID[] createSourceIds ( final int n){
-            final UUID[] ids = new UUID[n];
-            Arrays.setAll(ids, i -> UUID.randomUUID());
-            return ids;
-        }
     }
+
+    private static UUID[] createSourceIds(final int n) {
+        final UUID[] ids = new UUID[n];
+        Arrays.setAll(ids, i -> UUID.randomUUID());
+        return ids;
+    }
+}
