@@ -52,7 +52,7 @@ public class TableTransformGraph {
             return controlFlowEdges.get(i).to().owner();
         }
 
-        Node controlFlowSource(int i) {
+        Node controlFlowSource(int i) {// TODO: currently unused. remove?
             return controlFlowEdges.get(i).from().owner();
         }
 
