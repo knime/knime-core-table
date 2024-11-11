@@ -1,7 +1,7 @@
-package org.knime.core.table.virtual.graph.rag3;
+package org.knime.core.table.virtual.graph.rag;
 
-import static org.knime.core.table.virtual.graph.rag3.SpecType.APPEND;
-import static org.knime.core.table.virtual.graph.rag3.SpecType.SLICE;
+import static org.knime.core.table.virtual.graph.rag.SpecType.APPEND;
+import static org.knime.core.table.virtual.graph.rag.SpecType.SLICE;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.knime.core.table.row.Selection;
-import org.knime.core.table.virtual.graph.rag3.AccessId.Producer;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
+import org.knime.core.table.virtual.graph.rag.AccessId.Producer;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Node;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Port;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;

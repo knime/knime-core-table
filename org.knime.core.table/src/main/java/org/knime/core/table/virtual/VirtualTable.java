@@ -73,7 +73,6 @@ import org.knime.core.table.virtual.spec.ConcatenateTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 import org.knime.core.table.virtual.spec.MapTransformUtils;
-import org.knime.core.table.virtual.spec.MaterializeTransformSpec;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec.ObserverFactory;
 import org.knime.core.table.virtual.spec.ObserverTransformUtils;
@@ -331,10 +330,8 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
     }
 
-    // TODO: Should this take TargetTableProperties analogous to SourceTableProperties
-    public VirtualTable materialize(final UUID sinkIdentifier) {
-        final MaterializeTransformSpec transformSpec = new MaterializeTransformSpec(sinkIdentifier);
-        return new VirtualTable(new TableTransform(m_transform, transformSpec), ColumnarSchema.of());
+    public VirtualTable materialize(final UUID sinkIdentifier) { // TODO (TP): remove
+        throw new UnsupportedOperationException("TODO (TP): remove");
     }
 
     public VirtualTable resolveSources(final Map<UUID, VirtualTable> sourceMap) {

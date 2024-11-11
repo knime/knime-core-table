@@ -1,8 +1,8 @@
-package org.knime.core.table.virtual.graph.rag3.debug;
+package org.knime.core.table.virtual.graph.rag.debug;
 
-import static org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph.EdgeType.CONTROL;
-import static org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph.EdgeType.DATA;
-import static org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph.EdgeType.EXECUTION;
+import static org.knime.core.table.virtual.graph.rag.debug.DependencyGraph.EdgeType.CONTROL;
+import static org.knime.core.table.virtual.graph.rag.debug.DependencyGraph.EdgeType.DATA;
+import static org.knime.core.table.virtual.graph.rag.debug.DependencyGraph.EdgeType.EXECUTION;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.knime.core.table.virtual.graph.rag3.BranchGraph;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
+import org.knime.core.table.virtual.graph.rag.BranchGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Port;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
 /**

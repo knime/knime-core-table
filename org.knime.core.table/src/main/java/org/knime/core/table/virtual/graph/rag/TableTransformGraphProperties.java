@@ -1,4 +1,4 @@
-package org.knime.core.table.virtual.graph.rag3;
+package org.knime.core.table.virtual.graph.rag;
 
 import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.BASIC;
 import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.LOOKAHEAD;
@@ -11,8 +11,8 @@ import java.util.function.LongBinaryOperator;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Node;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Node;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Port;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;

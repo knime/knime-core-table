@@ -1,7 +1,6 @@
-package org.knime.core.table.virtual.graph.rag3;
+package org.knime.core.table.virtual.graph.rag;
 
-import static org.knime.core.table.virtual.graph.rag3.SpecType.COLSELECT;
-import static org.knime.core.table.virtual.graph.rag3.SpecType.ROWFILTER;
+import static org.knime.core.table.virtual.graph.rag.SpecType.ROWFILTER;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,7 +11,7 @@ import java.util.function.IntUnaryOperator;
 
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
-import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
+import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
 import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;

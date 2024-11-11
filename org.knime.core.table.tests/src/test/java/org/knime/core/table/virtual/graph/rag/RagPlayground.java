@@ -49,12 +49,8 @@ import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
-import org.knime.core.table.virtual.graph.rag3.BranchGraph;
-import org.knime.core.table.virtual.graph.rag3.BuildCap;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
-import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
-import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
-import org.knime.core.table.virtual.graph.rag3.debug.Mermaid;
+import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
+import org.knime.core.table.virtual.graph.rag.debug.Mermaid;
 
 public class RagPlayground {
 

@@ -1,4 +1,4 @@
-package org.knime.core.table.virtual.graph.rag3;
+package org.knime.core.table.virtual.graph.rag;
 
 import java.util.ArrayList;
 import java.util.Arrays;

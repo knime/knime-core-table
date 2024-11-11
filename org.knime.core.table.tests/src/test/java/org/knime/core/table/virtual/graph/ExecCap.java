@@ -59,10 +59,10 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
-import org.knime.core.table.virtual.graph.rag3.BranchGraph;
-import org.knime.core.table.virtual.graph.rag3.BuildCap;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
-import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
+import org.knime.core.table.virtual.graph.rag.BranchGraph;
+import org.knime.core.table.virtual.graph.rag.BuildCap;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 

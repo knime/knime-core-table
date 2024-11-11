@@ -1,10 +1,10 @@
-package org.knime.core.table.virtual.graph.rag3.debug;
+package org.knime.core.table.virtual.graph.rag.debug;
 
 import java.io.FileWriter;
 import java.io.IOException;
 
-import org.knime.core.table.virtual.graph.rag3.BranchGraph;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag.BranchGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 
 /**
  * Visualize {@code TableTransformGraph} using <a href=https://mermaid-js.github.io>mermaid</a>.

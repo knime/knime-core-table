@@ -59,7 +59,6 @@ import org.knime.core.table.virtual.graph.cap.CapNodeAppend;
 import org.knime.core.table.virtual.graph.cap.CapNodeConcatenate;
 import org.knime.core.table.virtual.graph.cap.CapNodeConsumer;
 import org.knime.core.table.virtual.graph.cap.CapNodeMap;
-import org.knime.core.table.virtual.graph.cap.CapNodeMaterialize;
 import org.knime.core.table.virtual.graph.cap.CapNodeMissing;
 import org.knime.core.table.virtual.graph.cap.CapNodeObserver;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
@@ -71,21 +70,12 @@ public class AssembleNodeImps {
 
     private final List<SequentialNodeImp> imps;
 
-    public AssembleNodeImps(
-            final List<CapNode> cap,
-            final List<RowAccessible> sources) {
-
-        this(cap, sources, Collections.emptyList());
-    }
-
     public AssembleNodeImps( //
             final List<CapNode> cap, //
-            final List<RowAccessible> sources, //
-            final List<RowWriteAccessible> sinks) {
+            final List<RowAccessible> sources) {
 
         imps = new ArrayList<>(cap.size());
         final Iterator<RowAccessible> sourceIter = sources.iterator();
-        final Iterator<RowWriteAccessible> sinksIter = sinks.iterator();
         for (CapNode node : cap) {
             switch (node.type()) {
                 case SOURCE: {
@@ -150,13 +140,6 @@ public class AssembleNodeImps {
                     final AccessImp[] inputs = accessImps(consumer.inputs());
                     final SequentialNodeImp predecessor = imps.get(consumer.predecessor());
                     imps.add(new SequentialNodeImpConsumer(inputs, predecessor));
-                    break;
-                }
-                case MATERIALIZE: {
-                    final CapNodeMaterialize materialize = (CapNodeMaterialize)node;
-                    final AccessImp[] inputs = accessImps(materialize.inputs());
-                    final SequentialNodeImp predecessor = imps.get(materialize.predecessor());
-                    imps.add(new SequentialNodeImpMaterialize(sinksIter.next(), inputs, predecessor));
                     break;
                 }
                 default:

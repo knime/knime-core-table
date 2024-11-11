@@ -1,4 +1,4 @@
-package org.knime.core.table.virtual.graph.rag3;
+package org.knime.core.table.virtual.graph.rag;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
+import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
 
 /**
  * Sequentialize a {@link TableTransformGraph} into a tree:

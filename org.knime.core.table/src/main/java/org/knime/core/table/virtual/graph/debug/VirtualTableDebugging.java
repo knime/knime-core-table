@@ -1,8 +1,8 @@
 package org.knime.core.table.virtual.graph.debug;
 
-import org.knime.core.table.virtual.graph.rag3.BranchGraph;
-import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
-import org.knime.core.table.virtual.graph.rag3.debug.Mermaid;
+import org.knime.core.table.virtual.graph.rag.BranchGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag.debug.Mermaid;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

@@ -51,17 +51,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.virtual.graph.cap.CapAccessId;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CapNodeAppend;
 import org.knime.core.table.virtual.graph.cap.CapNodeConcatenate;
 import org.knime.core.table.virtual.graph.cap.CapNodeConsumer;
 import org.knime.core.table.virtual.graph.cap.CapNodeMap;
-import org.knime.core.table.virtual.graph.cap.CapNodeMaterialize;
 import org.knime.core.table.virtual.graph.cap.CapNodeMissing;
 import org.knime.core.table.virtual.graph.cap.CapNodeObserver;
-import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
@@ -141,11 +138,6 @@ class AssembleRandomAccessibleNodeImps {
                     final RandomAccessNodeImp predecessor = imps.get(consumer.predecessor());
                     imps.add(new RandomAccessNodeImpConsumer(inputs, predecessor));
                     break;
-                }
-                case MATERIALIZE: {
-                    final CapNodeMaterialize materialize = (CapNodeMaterialize)node;
-                    throw new IllegalArgumentException(
-                            "MATERIALIZE is not yet supported. TODO");
                 }
                 default:
                     throw new IllegalStateException("Unexpected value: " + node.type());
