@@ -60,7 +60,7 @@ import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
-public class GraphVirtualTableExecutor implements VirtualTableExecutor {
+public class GraphVirtualTableExecutor implements VirtualTableExecutor { // TODO (TP) replace VirtualTableExecutor with just this class?
 
     private final TableTransformGraph tableTransformGraph;
     private final ColumnarSchema schema;
@@ -74,24 +74,8 @@ public class GraphVirtualTableExecutor implements VirtualTableExecutor {
     }
 
     @Override
-    public List<RowAccessible> execute(Map<UUID, RowAccessible> inputs) {
+    public List<RowAccessible> execute(Map<UUID, RowAccessible> inputs) { // TODO (TP) rename? return just RowAccessible
         final RowAccessible rows = CapExecutor.createRowAccessible(tableTransformGraph, schema, cursorType, inputs);
         return List.of(rows);
-    }
-
-    /**
-     * Run the comp graph, reading from the provided {@code inputs} and writing
-     * to the provided {@code outputs}.
-     *
-     * @param inputs
-     * @param outputs
-     * @throws CancellationException if the computation was cancelled
-     * @throws CompletionException if the computation threw an exception
-     */
-    public void execute( // TODO (TP): REMOVE
-            Map<UUID, RowAccessible> inputs,//
-            Map<UUID, RowWriteAccessible> outputs//
-    ) throws CancellationException, CompletionException {
-        throw new UnsupportedOperationException("TODO (TP): REMOVE");
     }
 }

@@ -53,7 +53,6 @@ import java.util.concurrent.CompletionException;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
@@ -80,13 +79,5 @@ public class CapExecutor {
             case LOOKAHEAD -> new CapLookaheadRowAccessible(tableTransformGraph, schema, uuidRowAccessibleMap);
             case RANDOMACCESS -> new CapRandomRowAccessible(tableTransformGraph, schema, uuidRowAccessibleMap);
         };
-    }
-
-    public static void execute( // TODO (TP): REMOVE
-            final RagGraph specGraph,
-            final Map<UUID, RowAccessible> uuidRowAccessibleMap, //
-            final Map<UUID, RowWriteAccessible> uuidRowWriteAccessibleMap //
-    ) throws CompletionException, CancellationException {
-        throw new UnsupportedOperationException("TODO (TP): REMOVE");
     }
 }

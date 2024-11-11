@@ -1,14 +1,10 @@
 package org.knime.core.table.virtual.graph.debug;
 
-import static org.knime.core.table.virtual.graph.rag.RagEdgeType.FLATTENED_ORDER;
+import org.knime.core.table.virtual.graph.rag3.BranchGraph;
+import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag3.debug.Mermaid;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.knime.core.table.virtual.graph.rag.RagEdge;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagNode;
 
 public class VirtualTableDebugging {
 
@@ -18,11 +14,11 @@ public class VirtualTableDebugging {
 
         void append(String text);
 
-        void appendRagGraph(String title, RagGraph graph);
+        void appendGraph(String title, TableTransformGraph graph);
 
-        void appendRagGraph(String title, String description, RagGraph graph);
+        void appendGraph(String title, String description, TableTransformGraph graph);
 
-        void appendOrderedRagGraph(String title, String description, RagGraph graph, List<RagNode> order);
+        void appendGraph(String title, String description, BranchGraph graph);
 
         @Override
         void close();
@@ -38,13 +34,13 @@ public class VirtualTableDebugging {
         public void append(String text) {}
 
         @Override
-        public void appendRagGraph(String title, RagGraph graph) {}
+        public void appendGraph(String title, TableTransformGraph graph) {}
 
         @Override
-        public void appendRagGraph(String title, String description, RagGraph graph) {}
+        public void appendGraph(String title, String description, TableTransformGraph graph) {}
 
         @Override
-        public void appendOrderedRagGraph(String title, String description, RagGraph graph, List<RagNode> order) {}
+        public void appendGraph(String title, String description, BranchGraph graph) {}
 
         @Override
         public void close() {}
@@ -71,22 +67,18 @@ public class VirtualTableDebugging {
         }
 
         @Override
-        public void appendRagGraph(final String title, final RagGraph graph) {
+        public void appendGraph(final String title, final TableTransformGraph graph) {
             mermaid.append(title, graph);
         }
 
         @Override
-        public void appendRagGraph(final String title, final String description, final RagGraph graph) {
+        public void appendGraph(final String title, final String description, final TableTransformGraph graph) {
             mermaid.append(title, description, graph);
         }
 
         @Override
-        public void appendOrderedRagGraph(String title, String description, RagGraph graph, List<RagNode> order) {
-            final List<RagEdge> edges = new ArrayList<>();
-            for (int i = 0; i < order.size() - 1; i++)
-                edges.add(graph.addEdge(order.get(i), order.get(i + 1), FLATTENED_ORDER));
-            appendRagGraph(title, description, graph);
-            edges.forEach(graph::remove);
+        public void appendGraph(String title, String description, BranchGraph graph) {
+            mermaid.append(title, description, graph);
         }
 
         @Override
