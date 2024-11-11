@@ -19,10 +19,6 @@ import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
 public class TableTransformUtil { // TODO (TP) rename
 
-    static UnsupportedOperationException unhandledNodeType() { // TODO: handle or remove OBSERVER case
-        return new UnsupportedOperationException("not handled yet. needs to be implemented or removed");
-    }
-
     /**
      * Get all nodes in the given {@code TableTransformGraph}. Starting from
      * {@code graph.terminal()}, recursively follows control-flow and data
