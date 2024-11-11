@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.IOExceptionList;
 import org.knime.core.table.access.DelegatingReadAccesses;
 import org.knime.core.table.access.ReadAccess;
 
@@ -193,8 +194,7 @@ class SequentialNodeImpConcatenate implements SequentialNodeImp {
     public void close() throws IOException {
         closeLinkedPredecessor();
         if (!exceptionsWhileClosing.isEmpty()) {
-            // TODO use IOExceptionList once org.apache.commons.io >= 2.7.0 is available in the nightlies
-            throw exceptionsWhileClosing.get(0);
+            throw new IOExceptionList(exceptionsWhileClosing);
         }
     }
 }
