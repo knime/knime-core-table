@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.knime.core.table.virtual.graph.rag.ConsumerTransformSpec;
 import org.knime.core.table.virtual.graph.rag3.BranchGraph;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph.Port;

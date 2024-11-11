@@ -45,6 +45,7 @@
  */
 package org.knime.core.table.virtual.graph.rag;
 
+import org.knime.core.table.virtual.graph.rag3.debug.ConsumerTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.AppendTransformSpec;
 import org.knime.core.table.virtual.spec.ObserverTransformSpec;

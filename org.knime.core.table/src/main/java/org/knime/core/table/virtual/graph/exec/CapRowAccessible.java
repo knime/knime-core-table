@@ -150,7 +150,7 @@ class CapRowAccessible implements RowAccessible {
     private CapCursorData createCursorData(final Selection selection) {
 
         final TableTransformGraph graph = TableTransformUtil.appendSelection(tableTransformGraph, selection);
-        // TODO (TP) optimize graph
+        TableTransformUtil.optimize(graph);
         final CursorAssemblyPlan cap = BuildCap.createCursorAssemblyPlan(new BranchGraph(graph));
         final int numColumns = schema.numColumns();
         final int[] selected = selection.columns().allSelected(0, numColumns) //

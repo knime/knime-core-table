@@ -81,7 +81,6 @@ import org.knime.core.table.row.LookaheadRowAccessible;
 import org.knime.core.table.row.RandomRowAccessible;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;

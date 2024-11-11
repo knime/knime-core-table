@@ -45,34 +45,24 @@
  */
 package org.knime.core.table.virtual.graph;
 
-import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
-import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
-import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.BASIC;
-import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.LOOKAHEAD;
-import static org.knime.core.table.virtual.spec.SourceTableProperties.CursorType.RANDOMACCESS;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
-import org.knime.core.table.virtual.graph.exec.CapExecutor;
-import org.knime.core.table.virtual.graph.rag.RagBuilder;
-import org.knime.core.table.virtual.graph.rag.RagGraph;
-import org.knime.core.table.virtual.graph.rag.RagGraphProperties;
-import org.knime.core.table.virtual.graph.rag.RagNode;
-import org.knime.core.table.virtual.graph.rag.SpecGraphBuilder;
 import org.knime.core.table.virtual.graph.rag3.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag3.TableTransformUtil;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
+import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
 
 public class ExecCapAll {
 

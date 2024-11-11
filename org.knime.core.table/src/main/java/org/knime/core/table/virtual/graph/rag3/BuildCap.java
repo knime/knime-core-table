@@ -57,9 +57,7 @@ public class BuildCap { // TODO (TP): rename, this should replace existing CapBu
         final BuildCap builder = new BuildCap(sequentializedGraph);
         final SourceTableProperties.CursorType cursorType =
                 sequentializedGraph.tableTransformGraph.supportedCursorType();
-        System.out.println("cursorType = " + cursorType);
         final long numRows = sequentializedGraph.tableTransformGraph.numRows();
-        System.out.println("numRows = " + numRows);
         return new CursorAssemblyPlan(builder.cap, cursorType, numRows, builder.sourceSchemas);
     }
 

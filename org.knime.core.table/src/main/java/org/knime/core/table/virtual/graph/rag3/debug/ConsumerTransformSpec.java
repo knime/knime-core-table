@@ -43,15 +43,16 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  */
-package org.knime.core.table.virtual.graph.rag;
+package org.knime.core.table.virtual.graph.rag3.debug;
 
 import org.knime.core.table.virtual.spec.TableTransformSpec;
+
 
 /**
  * Artificial {@link TableTransformSpec} that represents the "output" of a
  * VirtualTable. Is created when the RagGraph is build.
  */
-public class ConsumerTransformSpec implements TableTransformSpec {
+public class ConsumerTransformSpec implements TableTransformSpec {// TODO (TP) Make package-private. Maybe make inner class of DependencyGraph.
 
     @Override
     public String toString() {
