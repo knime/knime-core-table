@@ -16,6 +16,7 @@ import org.knime.core.table.virtual.graph.rag3.debug.DependencyGraph;
 import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
@@ -138,9 +139,8 @@ public class TableTransformGraph {
                 final TableTransformGraph predecessor = predecessors.get(p);
                 final int numInputs = switch (type) {
                     case SOURCE, SLICE, ROWINDEX -> 0;
-                    case MAP, ROWFILTER -> getColumnSelection(spec).length;
+                    case MAP, ROWFILTER, OBSERVER -> getColumnSelection(spec).length;
                     case APPEND, CONCATENATE -> predecessor.numColumns();
-                    case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                     // TODO: COLSELECT shouldn't be a possible value here --> SpecType vs NodeType
                     case COLSELECT, APPENDMAP, APPENDMISSING -> throw new IllegalArgumentException();
                 };
@@ -174,11 +174,10 @@ public class TableTransformGraph {
                             predecessorEdge.relinkFrom(inPort);
                         }
                     }
-                    case SLICE, ROWINDEX, APPEND, CONCATENATE -> {
+                    case SLICE, ROWINDEX, APPEND, CONCATENATE, OBSERVER -> {
                         // re-link the predecessor controlFlowEdges to this Node
                         predecessor.terminal.controlFlowEdges().forEach(e -> e.relinkFrom(inPort));
                     }
-                    case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                     default -> {
                     }
                 }
@@ -259,19 +258,17 @@ public class TableTransformGraph {
             case ROWINDEX -> 1;
             case APPEND -> predecessors.stream().mapToInt(TableTransformGraph::numColumns).sum();
             case CONCATENATE -> predecessors.get(0).numColumns();
-            case SLICE, ROWFILTER, COLSELECT -> 0;
-            case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
+            case SLICE, ROWFILTER, COLSELECT, OBSERVER -> 0;
         };
 
         final int numColumns = switch (type) {
             case SOURCE, MAP, CONCATENATE, APPEND -> numOutputs;
-            case APPENDMAP, APPENDMISSING, ROWINDEX, SLICE, ROWFILTER -> numOutputs + predecessors.get(0).numColumns();
+            case APPENDMAP, APPENDMISSING, ROWINDEX, SLICE, ROWFILTER, OBSERVER -> numOutputs + predecessors.get(0).numColumns();
             case COLSELECT -> getColumnSelection(spec).length;
-            case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
         };
 
         final List<AccessId> accessIds = createAccessIds(null, numColumns, i -> "beta^" + i);
-        final ArrayList<ControlFlowEdge> controlFlowEdges = new ArrayList<>();
+        final List<ControlFlowEdge> controlFlowEdges = new ArrayList<>();
         terminal = new Port(null, accessIds, controlFlowEdges);
 
         final Node node = switch (type) {
@@ -290,7 +287,7 @@ public class TableTransformGraph {
                 // link outCols to node's outputs
                 unionAccesses(terminal, node.out, numColumns);
             }
-            case SLICE, ROWFILTER -> {
+            case SLICE, ROWFILTER, OBSERVER -> {
                 // link outCols to the predecessor's outCols
                 // (there is exactly one predecessor)
                 unionAccesses(terminal, predecessors.get(0).terminal, numColumns);
@@ -312,7 +309,7 @@ public class TableTransformGraph {
 
         // control flow:
         switch (type) {
-            case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> {
+            case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE, OBSERVER -> {
                 // link to the new node
                 terminal.linkTo(node);
             }
@@ -465,6 +462,7 @@ public class TableTransformGraph {
             case MAP -> ((MapTransformSpec)spec).getColumnSelection();
             case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection();
             case COLSELECT -> ((SelectColumnsTransformSpec)spec).getColumnSelection();
+            case OBSERVER -> ((ObserverTransformSpec)spec).getColumnSelection();
             default -> throw new IllegalArgumentException();
         };
     }

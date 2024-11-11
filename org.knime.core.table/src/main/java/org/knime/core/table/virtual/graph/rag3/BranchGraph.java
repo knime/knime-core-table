@@ -117,7 +117,7 @@ public class BranchGraph {
                 depNodes.put(node, branchNode);
                 return branchNode;
             }
-            case SLICE, MAP, ROWFILTER, ROWINDEX -> {
+            case SLICE, MAP, ROWFILTER, ROWINDEX, OBSERVER -> {
                 final TableTransformGraph.Port port = node.in(0);
                 final Set<AbstractNode> dependencies = getDependencies(port, innerNodes, branchTarget);
                 final InnerNode innerNode = new InnerNode(node, dependencies);
@@ -125,7 +125,6 @@ public class BranchGraph {
                 depNodes.put(node, innerNode);
                 return innerNode;
             }
-            case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
             default -> throw new IllegalArgumentException();
         }
     }

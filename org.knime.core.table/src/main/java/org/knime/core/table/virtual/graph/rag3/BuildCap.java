@@ -16,12 +16,14 @@ import org.knime.core.table.virtual.graph.cap.CapNodeAppend;
 import org.knime.core.table.virtual.graph.cap.CapNodeConcatenate;
 import org.knime.core.table.virtual.graph.cap.CapNodeConsumer;
 import org.knime.core.table.virtual.graph.cap.CapNodeMap;
+import org.knime.core.table.virtual.graph.cap.CapNodeObserver;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowFilter;
 import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.spec.MapTransformSpec;
+import org.knime.core.table.virtual.spec.ObserverTransformSpec;
 import org.knime.core.table.virtual.spec.RowFilterTransformSpec;
 import org.knime.core.table.virtual.spec.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
@@ -157,7 +159,11 @@ public class BuildCap { // TODO (TP): rename, this should replace existing CapBu
                     createCapAccessIdsFor(outputs, capNode);
                     append(node, capNode);
                 }
-                case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
+                case OBSERVER -> {
+                    final ObserverTransformSpec spec = node.getTransformSpec();
+                    capNode = new CapNodeObserver(index++, capInputs, predecessor, spec.getObserverFactory());
+                    append(node, capNode);
+                }
                 default -> throw new IllegalStateException();
             }
         }

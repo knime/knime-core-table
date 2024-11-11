@@ -200,8 +200,7 @@ public class TableTransformUtil { // TODO (TP) rename
                     switch (node.type()) {
                         case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> {
                         }
-                        case ROWFILTER -> node.in(0).accesses().forEach(this::addRequired);
-                        case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
+                        case ROWFILTER, OBSERVER -> node.in(0).accesses().forEach(this::addRequired);
                         default -> throw new IllegalArgumentException();
                     }
                     node.in().forEach( //
@@ -230,7 +229,6 @@ public class TableTransformUtil { // TODO (TP) rename
                             requiredNodes.add(node);
                             node.in(0).accesses().forEach(this::addRequired);
                         }
-                        case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                         default -> throw new IllegalArgumentException();
                     }
                 }
