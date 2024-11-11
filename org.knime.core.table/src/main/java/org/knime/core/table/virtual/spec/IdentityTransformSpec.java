@@ -53,6 +53,7 @@ package org.knime.core.table.virtual.spec;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@Deprecated
 public enum IdentityTransformSpec implements TableTransformSpec {
     /**
      * The singleton instance of IdentityTransformSpec.

@@ -334,12 +334,6 @@ public final class VirtualTable {
         throw new UnsupportedOperationException("TODO (TP): remove");
     }
 
-    public VirtualTable resolveSources(final Map<UUID, VirtualTable> sourceMap) {
-        var reSourcedTransform = m_transform.reSource(sourceMap.entrySet().stream()//
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getProducingTransform())));
-        return new VirtualTable(reSourcedTransform, m_schema);
-    }
-
     public VirtualTable observe(final int[] columnIndices, final ObserverFactory observerFactory) {
         final ObserverTransformSpec transformSpec = new ObserverTransformSpec(columnIndices, observerFactory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
