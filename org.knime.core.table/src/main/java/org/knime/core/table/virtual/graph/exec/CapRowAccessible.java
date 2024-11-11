@@ -58,9 +58,9 @@ import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.BranchGraph;
-import org.knime.core.table.virtual.graph.rag.BuildCap;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
 
@@ -151,7 +151,7 @@ class CapRowAccessible implements RowAccessible {
 
         final TableTransformGraph graph = TableTransformUtil.appendSelection(tableTransformGraph, selection);
         TableTransformUtil.optimize(graph);
-        final CursorAssemblyPlan cap = BuildCap.createCursorAssemblyPlan(new BranchGraph(graph));
+        final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(new BranchGraph(graph));
         final int numColumns = schema.numColumns();
         final int[] selected = selection.columns().allSelected(0, numColumns) //
                 ? null //

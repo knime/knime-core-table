@@ -20,7 +20,7 @@ import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
 public class TableTransformGraphProperties {
 
-    static long numRows(final Port port) {
+    public static long numRows(final Port port) {
         return numRows(port.controlFlowTarget(0));
     }
 

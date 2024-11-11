@@ -47,6 +47,7 @@ package org.knime.core.table.virtual.graph.rag;
 
 import org.knime.core.table.virtual.VirtualTable;
 import org.knime.core.table.virtual.graph.VirtualTableTests;
+import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
@@ -84,7 +85,7 @@ public class RagPlayground {
         mermaid.append("BranchGraph", depGraph);
         mermaid.save("/Users/pietzsch/git/mermaid/b_graph.html");
 
-        CursorAssemblyPlan cap = BuildCap.createCursorAssemblyPlan(depGraph);
+        CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(depGraph);
         System.out.println();
         System.out.println("cap = ");
         for (CapNode node : cap.nodes()) {

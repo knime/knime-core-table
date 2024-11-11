@@ -57,10 +57,10 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
+import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.BranchGraph;
-import org.knime.core.table.virtual.graph.rag.BuildCap;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
@@ -111,7 +111,7 @@ public class ExecCap {
 
         // create CAP
         BranchGraph depGraph = new BranchGraph(tableTransformGraph);
-        CursorAssemblyPlan cap = BuildCap.createCursorAssemblyPlan(depGraph);
+        CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(depGraph);
 
         // create RowAccessible
         RowAccessible rows = CapExecutor.createRowAccessible(tableTransformGraph, schema, cursorType, uuidRowAccessibleMap);
