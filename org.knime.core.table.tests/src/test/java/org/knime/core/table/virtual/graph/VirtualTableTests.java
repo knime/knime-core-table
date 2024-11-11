@@ -1070,21 +1070,6 @@ public class VirtualTableTests {
     }
 
 
-    public static VirtualTable vtMaterializeMinimal() {
-        return vtMaterializeMinimal(new UUID[]{randomUUID()}, dataMinimal(), new UUID[]{randomUUID()}, null);
-    }
-
-    public static VirtualTable vtMaterializeMinimal(
-            final UUID[] sourceIdentifiers, final RowAccessible[] sources,
-            final UUID[] sinkIdentifiers, final RowWriteAccessible[] sinks) { // sinks argument is unused because we don't have SinkProperties yet
-        final ColumnarSchema schema = ColumnarSchema.of(DOUBLE, INT, STRING);
-        return new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]))
-                .permute(0, 2, 1)
-                .filterColumns(1)
-                .materialize(sinkIdentifiers[0]);
-    }
-
-
 
     public static VirtualTable vtRowIndexMap(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         final MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
