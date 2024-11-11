@@ -258,9 +258,6 @@ public class TableTransformUtil { // TODO (TP) rename
                                     node.out().accesses().remove(i);
                                     node.in().forEach(in -> in.accesses().remove(i));
                                 }
-                                case SLICE, ROWFILTER -> {
-                                }
-                                case OBSERVER -> throw TableTransformUtil.unhandledNodeType();
                                 default -> throw new IllegalArgumentException();
                             }
                         });
