@@ -58,19 +58,25 @@ import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 public class GraphVirtualTableExecutor implements VirtualTableExecutor { // TODO (TP) replace VirtualTableExecutor with just this class?
 
+    public static RowAccessible createRowAccessible(final TableTransform leafTransform, final Map<UUID, RowAccessible> inputs) {
+        var tableTransformGraph = new TableTransformGraph(leafTransform);
+        var schema = tableTransformGraph.createSchema();
+        var cursorType = tableTransformGraph.supportedCursorType();
+        return CapExecutor.createRowAccessible(tableTransformGraph, schema, cursorType, inputs);
+    }
+
     private final TableTransformGraph tableTransformGraph;
     private final ColumnarSchema schema;
     private final CursorType cursorType;
 
-    public GraphVirtualTableExecutor(final TableTransform leafTransform)
-    {
+    public GraphVirtualTableExecutor(final TableTransform leafTransform) {
         tableTransformGraph = new TableTransformGraph(leafTransform);
         schema = tableTransformGraph.createSchema();
         cursorType = tableTransformGraph.supportedCursorType();
     }
 
     @Override
-    public List<RowAccessible> execute(Map<UUID, RowAccessible> inputs) { // TODO (TP) rename? return just RowAccessible
+    public List<RowAccessible> execute(final Map<UUID, RowAccessible> inputs) { // TODO (TP) rename? return just RowAccessible
         final RowAccessible rows = CapExecutor.createRowAccessible(tableTransformGraph, schema, cursorType, inputs);
         return List.of(rows);
     }
