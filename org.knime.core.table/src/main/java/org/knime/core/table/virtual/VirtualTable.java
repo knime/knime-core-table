@@ -294,6 +294,13 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), schema);
     }
 
+    public VirtualTable appendMap(final int[] columnIndices, final MapTransformUtils.MapperWithRowIndexFactory mapperFactory) {
+        final int[] columns = Arrays.copyOf(columnIndices, columnIndices.length + 1);
+        columns[columns.length - 1] = m_schema.numColumns();
+        final MapperFactory factory = new MapTransformUtils.WrappedMapperWithRowIndexFactory(mapperFactory);
+        return appendRowIndex().appendMap(columns, factory);
+    }
+
     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory) {
         final TableTransformSpec transformSpec = new MapTransformSpec(columnIndices, mapperFactory);
         // TODO (TP) It would be nice to verify here that the MapperFactory
