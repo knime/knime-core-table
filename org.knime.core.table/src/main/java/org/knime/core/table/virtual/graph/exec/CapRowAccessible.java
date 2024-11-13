@@ -71,26 +71,26 @@ import com.google.common.cache.LoadingCache;
 
 class CapRowAccessible implements RowAccessible {
 
-    private final TableTransformGraph tableTransformGraph;
+    private final TableTransformGraph m_tableTransformGraph;
 
-    private final ColumnarSchema schema;
+    private final ColumnarSchema m_schema;
 
-    private final Map<UUID, RowAccessible> availableSources;
+    private final Map<UUID, RowAccessible> m_availableSources;
 
-    private final LoadingCache<Selection, CapCursorData> capCache;
+    private final LoadingCache<Selection, CapCursorData> m_capCache;
 
     CapRowAccessible( //
-            final TableTransformGraph tableTransformGraph, //
-            final ColumnarSchema schema, //
-            final Map<UUID, RowAccessible> availableSources) {
-        this.tableTransformGraph = tableTransformGraph;
-        this.schema = schema;
-        this.availableSources = availableSources;
+        final TableTransformGraph tableTransformGraph, //
+        final ColumnarSchema schema, //
+        final Map<UUID, RowAccessible> availableSources) {
+        this.m_tableTransformGraph = tableTransformGraph;
+        this.m_schema = schema;
+        this.m_availableSources = availableSources;
 
         // TODO (TP) Should we add Caffeine as a dependency?
         //           The Guava doc recommends to prefer it over com.google.common.cache
         //           https://guava.dev/releases/snapshot-jre/api/docs/com/google/common/cache/CacheBuilder.html
-        this.capCache = CacheBuilder.newBuilder().softValues().build(new CacheLoader<>() {
+        this.m_capCache = CacheBuilder.newBuilder().softValues().build(new CacheLoader<>() {
             @Override
             public CapCursorData load(Selection selection) {
                 return createCursorData(selection);
@@ -100,7 +100,7 @@ class CapRowAccessible implements RowAccessible {
 
     @Override
     public ColumnarSchema getSchema() {
-        return schema;
+        return m_schema;
     }
 
     @Override
@@ -139,28 +139,28 @@ class CapRowAccessible implements RowAccessible {
 
         ReadAccessRow createReadAccessRow(final IntFunction<? extends ReadAccess> generator) {
             return selectedColumns == null //
-                    ? new DefaultReadAccessRow(numColumns, generator) //
-                    : new DefaultReadAccessRow(numColumns, generator, selectedColumns);
+                ? new DefaultReadAccessRow(numColumns, generator) //
+                : new DefaultReadAccessRow(numColumns, generator, selectedColumns);
         }
     }
 
     CapCursorData getCursorData(final Selection selection) {
-        return capCache.getUnchecked(selection);
+        return m_capCache.getUnchecked(selection);
     }
 
     private CapCursorData createCursorData(final Selection selection) {
 
-        final TableTransformGraph graph = TableTransformUtil.appendSelection(tableTransformGraph, selection);
-        try( var logger = VirtualTableDebugging.createLogger() ) {
+        final TableTransformGraph graph = TableTransformUtil.appendSelection(m_tableTransformGraph, selection);
+        try (var logger = VirtualTableDebugging.createLogger()) {
             TableTransformUtil.optimize(graph, logger);
         }
         final CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(new BranchGraph(graph));
-        final int numColumns = schema.numColumns();
+        final int numColumns = m_schema.numColumns();
         final int[] selected = selection.columns().allSelected(0, numColumns) //
-                ? null //
-                : selection.columns().getSelected(0, numColumns);
+            ? null //
+            : selection.columns().getSelected(0, numColumns);
 
-        final List<RowAccessible> sources = CapExecutorUtils.getSources(cap, availableSources);
+        final List<RowAccessible> sources = CapExecutorUtils.getSources(cap, m_availableSources);
         return new CapCursorData(cap, sources, numColumns, selected);
     }
 }

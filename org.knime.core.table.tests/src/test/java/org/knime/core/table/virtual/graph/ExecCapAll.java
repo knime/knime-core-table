@@ -45,15 +45,8 @@
  */
 package org.knime.core.table.virtual.graph;
 
-import org.knime.core.table.cursor.Cursor;
-import org.knime.core.table.row.ReadAccessRow;
-import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.VirtualTable;
-import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
-import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
-import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
-import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
+import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
+import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -61,8 +54,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.knime.core.table.RowAccessiblesTestUtils.toLookahead;
-import static org.knime.core.table.virtual.graph.exec.CapExecutor.createRowAccessible;
+import org.knime.core.table.cursor.Cursor;
+import org.knime.core.table.row.ReadAccessRow;
+import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.virtual.VirtualTable;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
+import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
 
 public class ExecCapAll {
 
@@ -224,8 +222,9 @@ public class ExecCapAll {
         try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
             while (cursor.forward()) {
                 System.out.print("a = ");
-                for (int i = 0; i < cursor.access().size(); i++)
+                for (int i = 0; i < cursor.access().size(); i++) {
                     System.out.print(ReadAccessUtils.toString(cursor.access().getAccess(i)) + ", ");
+                }
                 System.out.println();
             }
         } catch (IOException e) {

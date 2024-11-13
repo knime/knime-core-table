@@ -47,12 +47,10 @@ package org.knime.core.table.virtual.graph.exec;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.row.RowWriteAccessible;
 import org.knime.core.table.virtual.graph.cap.CapAccessId;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CapNodeAppend;
@@ -66,7 +64,7 @@ import org.knime.core.table.virtual.graph.cap.CapNodeRowIndex;
 import org.knime.core.table.virtual.graph.cap.CapNodeSlice;
 import org.knime.core.table.virtual.graph.cap.CapNodeSource;
 
-public class AssembleNodeImps {
+class AssembleNodeImps {
 
     private final List<SequentialNodeImp> imps;
 
@@ -156,8 +154,9 @@ public class AssembleNodeImps {
     public SequentialNodeImpConsumer getConsumer()
     {
         SequentialNodeImp imp = getTerminator();
-        if (imp instanceof SequentialNodeImpConsumer)
+        if (imp instanceof SequentialNodeImpConsumer) {
             return (SequentialNodeImpConsumer)imp;
+        }
         throw new IllegalArgumentException("CAP doesn't end with CONSUMER");
     }
 

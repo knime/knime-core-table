@@ -55,9 +55,7 @@ import static org.knime.core.table.virtual.spec.SelectColumnsTransformSpec.indic
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.knime.core.table.cursor.Cursor;
 import org.knime.core.table.cursor.LookaheadCursor;
@@ -205,7 +203,7 @@ public final class VirtualTable {
         return appendMissingValueColumns(specsWithTraits);
     }
 
-    public VirtualTable appendMissingValueColumns(DataSpecWithTraits... specs) {
+    public VirtualTable appendMissingValueColumns(final DataSpecWithTraits... specs) {
         var appendSchema = ColumnarSchema.of(specs);
         final AppendMissingValuesTransformSpec transformSpec = new AppendMissingValuesTransformSpec(appendSchema);
         final ColumnarSchema schema = ColumnarSchemas.append(List.of(m_schema, appendSchema));
@@ -294,7 +292,8 @@ public final class VirtualTable {
         return new VirtualTable(new TableTransform(m_transform, transformSpec), schema);
     }
 
-    public VirtualTable appendMap(final int[] columnIndices, final MapTransformUtils.MapperWithRowIndexFactory mapperFactory) {
+    public VirtualTable appendMap(final int[] columnIndices,
+        final MapTransformUtils.MapperWithRowIndexFactory mapperFactory) {
         final int[] columns = Arrays.copyOf(columnIndices, columnIndices.length + 1);
         columns[columns.length - 1] = m_schema.numColumns();
         final MapperFactory factory = new MapTransformUtils.WrappedMapperWithRowIndexFactory(mapperFactory);
@@ -335,10 +334,6 @@ public final class VirtualTable {
     public VirtualTable filterRows(final int[] columnIndices, final RowFilterFactory filterFactory) {
         final TableTransformSpec transformSpec = new RowFilterTransformSpec(columnIndices, filterFactory);
         return new VirtualTable(new TableTransform(m_transform, transformSpec), m_schema);
-    }
-
-    public VirtualTable materialize(final UUID sinkIdentifier) { // TODO (TP): remove
-        throw new UnsupportedOperationException("TODO (TP): remove");
     }
 
     public VirtualTable observe(final int[] columnIndices, final ObserverFactory observerFactory) {

@@ -1,15 +1,15 @@
 package org.knime.core.table.virtual.graph.debug;
 
+import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.knime.core.table.virtual.graph.rag.BranchGraph;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag.debug.Mermaid;
 
-import java.time.LocalDateTime;
-import java.util.concurrent.atomic.AtomicInteger;
-
 public class VirtualTableDebugging {
 
-    public static boolean enableTableTransformGraphLogging = false;
+    static final boolean enableTableTransformGraphLogging = false;
 
     public interface Logger extends AutoCloseable {
 
@@ -29,25 +29,35 @@ public class VirtualTableDebugging {
         return enableTableTransformGraphLogging ? new MermaidLogger() : new NullLogger();
     }
 
-    public static class NullLogger implements Logger {
+    public static final class NullLogger implements Logger {
 
         @Override
-        public void append(String text) {}
+        public void append(final String text) {
+            // NOSONAR
+        }
 
         @Override
-        public void appendGraph(String title, TableTransformGraph graph) {}
+        public void appendGraph(final String title, final TableTransformGraph graph) {
+            // NOSONAR
+        }
 
         @Override
-        public void appendGraph(String title, String description, TableTransformGraph graph) {}
+        public void appendGraph(final String title, final String description, final TableTransformGraph graph) {
+            // NOSONAR
+        }
 
         @Override
-        public void appendGraph(String title, String description, BranchGraph graph) {}
+        public void appendGraph(final String title, final String description, final BranchGraph graph) {
+            // NOSONAR
+        }
 
         @Override
-        public void close() {}
+        public void close() {
+            // NOSONAR
+        }
     }
 
-    public static class MermaidLogger implements Logger {
+    public static final class MermaidLogger implements Logger {
 
         private static final AtomicInteger nextIndex = new AtomicInteger();
 
@@ -82,7 +92,7 @@ public class VirtualTableDebugging {
         }
 
         @Override
-        public void appendGraph(String title, String description, BranchGraph graph) {
+        public void appendGraph(final String title, final String description, final BranchGraph graph) {
             mermaid.append(title, description, graph);
         }
 
@@ -92,17 +102,13 @@ public class VirtualTableDebugging {
             mermaid.save(filename);
         }
 
-        private static String printStackTrace( int startDepth, int maxDepth, String ... unlessContains )
-        {
+        private static String printStackTrace(final int startDepth, final int maxDepth) {
             final StackTraceElement[] trace = Thread.currentThread().getStackTrace();
 
             final var sb = new StringBuilder();
-            final int len = ( maxDepth < 0 )
-                    ? trace.length
-                    : Math.min( startDepth + maxDepth, trace.length );
-            for ( int i = startDepth; i < len; ++i )
-            {
-                final String prefix = ( i == startDepth ) ? "" : "    at ";
+            final int len = (maxDepth < 0) ? trace.length : Math.min(startDepth + maxDepth, trace.length);
+            for (int i = startDepth; i < len; ++i) {
+                final String prefix = (i == startDepth) ? "" : "    at ";
                 sb.append(prefix).append(trace[i].toString()).append("\n");
             }
 

@@ -57,6 +57,7 @@ import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
+import org.knime.core.table.access.MissingAccesses.MissingAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
@@ -204,7 +205,7 @@ public final class DelegatingReadAccesses {
         void setDelegateAccess(ReadAccess access);
 
         /**
-         * TODO javadoc
+         * Let this access delegate to a {@link MissingAccess}.
          */
         default void setMissing() {
             setDelegateAccess(MissingAccesses.getMissingAccess(getDataSpec()));

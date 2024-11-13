@@ -45,11 +45,7 @@
  */
 package org.knime.core.table.virtual.graph.exec;
 
-import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.virtual.graph.cap.CapNode;
-import org.knime.core.table.virtual.graph.cap.CapNodeSource;
-import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
+import static org.knime.core.table.virtual.graph.cap.CapNodeType.SOURCE;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,16 +53,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.knime.core.table.virtual.graph.cap.CapNodeType.SOURCE;
+import org.knime.core.table.row.RowAccessible;
+import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.virtual.graph.cap.CapNode;
+import org.knime.core.table.virtual.graph.cap.CapNodeSource;
+import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 
-public class CapExecutorUtils {
+class CapExecutorUtils {
 
     /**
      * Get list of sources occurring in {@code CursorAssemblyPlan}. The list
      * contains one source for each {@code CapNodeSource} in the order in which
      * they occur in the CAP.
      */
-    public static List<RowAccessible> getSources(final CursorAssemblyPlan cap, final Map<UUID, ? extends RowAccessible> uuidRowAccessibleMap) {
+    static List<RowAccessible> getSources(final CursorAssemblyPlan cap,
+        final Map<UUID, ? extends RowAccessible> uuidRowAccessibleMap) {
         final List<RowAccessible> sources = new ArrayList<>();
         final Map<UUID, ColumnarSchema> schemas = cap.schemas();
         for (CapNode node : cap.nodes()) {
@@ -78,7 +79,7 @@ public class CapExecutorUtils {
                 }
                 if (!Objects.equals(a.getSchema(), schemas.get(uuid))) {
                     throw new IllegalArgumentException(
-                            "RowAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
+                        "RowAccessible for UUID " + uuid + " does not match expected ColumnarSchema");
                 }
                 sources.add(a);
             }

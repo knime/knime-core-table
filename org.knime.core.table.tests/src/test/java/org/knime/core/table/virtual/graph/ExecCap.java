@@ -57,11 +57,8 @@ import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.VirtualTable;
-import org.knime.core.table.virtual.graph.cap.CapBuilder;
-import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
-import org.knime.core.table.virtual.graph.rag.BranchGraph;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
 import org.knime.core.table.virtual.graph.util.ReadAccessUtils;
@@ -69,7 +66,7 @@ import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 public class ExecCap {
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
 
 //        final UUID[] sourceIdentifiers = createSourceIds(1);
 //        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMinimal();
@@ -108,11 +105,6 @@ public class ExecCap {
         System.out.println("inferred schema = " + schema);
         System.out.println("inferred numRows = " + numRows);
         System.out.println();
-
-
-        // create CAP
-        BranchGraph depGraph = new BranchGraph(tableTransformGraph);
-        CursorAssemblyPlan cap = CapBuilder.createCursorAssemblyPlan(depGraph);
 
         // create RowAccessible
         RowAccessible rows = CapExecutor.createRowAccessible(tableTransformGraph, uuidRowAccessibleMap);

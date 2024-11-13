@@ -52,11 +52,10 @@ import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
 import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
-import org.knime.core.table.virtual.graph.rag.debug.Mermaid;
 
 public class RagPlayground {
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
 //        final VirtualTable table = VirtualTableTests.vtMinimal();
 //        final VirtualTable table = VirtualTableTests.vtAppend();
         final VirtualTable table = VirtualTableTests.vtAppendAndSlice();

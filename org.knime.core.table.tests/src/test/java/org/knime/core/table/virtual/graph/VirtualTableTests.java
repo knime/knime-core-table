@@ -145,12 +145,11 @@ public class VirtualTableTests {
             case LOOKAHEAD -> LOOKAHEAD;
             case RANDOMACCESS -> useRandomAccess ? RANDOMACCESS : LOOKAHEAD;
         };
-        final ColumnarSchema schema = graph.createSchema();
         final Map<UUID, RowAccessible> sourceMap = new HashMap<>();
         for (int i = 0; i < sourceIds.length; ++i) {
             sourceMap.put(sourceIds[i], sources[i]);
         }
-        return CapExecutor.createRowAccessible(graph, sourceMap);
+        return CapExecutor.createRowAccessible(graph, cursorType, sourceMap);
     }
 
     @FunctionalInterface

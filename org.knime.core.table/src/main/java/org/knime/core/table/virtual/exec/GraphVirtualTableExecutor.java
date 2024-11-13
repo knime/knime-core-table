@@ -54,22 +54,24 @@ import org.knime.core.table.virtual.TableTransform;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 
-public class GraphVirtualTableExecutor implements VirtualTableExecutor { // TODO (TP) replace VirtualTableExecutor with just this class?
+// TODO (TP) replace VirtualTableExecutor with just this class?
+public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
     public static RowAccessible createRowAccessible(final TableTransform leafTransform,
         final Map<UUID, RowAccessible> inputs) {
         return CapExecutor.createRowAccessible(new TableTransformGraph(leafTransform), inputs);
     }
 
-    private final TableTransformGraph tableTransformGraph;
+    private final TableTransformGraph m_tableTransformGraph;
 
     public GraphVirtualTableExecutor(final TableTransform leafTransform) {
-        tableTransformGraph = new TableTransformGraph(leafTransform);
+        m_tableTransformGraph = new TableTransformGraph(leafTransform);
     }
 
     @Override
-    public List<RowAccessible> execute(final Map<UUID, RowAccessible> inputs) { // TODO (TP) rename? return just RowAccessible
-        final RowAccessible rows = CapExecutor.createRowAccessible(tableTransformGraph, inputs);
+    public List<RowAccessible> execute(final Map<UUID, RowAccessible> inputs) {
+        // TODO (TP) rename? return just RowAccessible?
+        final RowAccessible rows = CapExecutor.createRowAccessible(m_tableTransformGraph, inputs);
         return List.of(rows);
     }
 }

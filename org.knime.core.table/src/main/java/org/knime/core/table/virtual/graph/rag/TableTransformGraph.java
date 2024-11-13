@@ -336,6 +336,7 @@ public class TableTransformGraph {
             case ROWFILTER -> {
                 // link to other ROWFILTERs that were linked to by predecessor
                 // (there is exactly one predecessor)
+                // TODO (TP): add comment on why the isEmpty() is necessary.
                 if (!predecessorTerminal.controlFlowEdges().isEmpty() && predecessorTerminal.controlFlowTarget(0).type == ROWFILTER) {
                     predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(terminal));
                 }

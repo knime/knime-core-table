@@ -126,7 +126,6 @@ public final class SourceTransformSpec implements TableTransformSpec {
             sb.append(" from ").append(m_rowRange.fromIndex());
             sb.append(" to ").append(m_rowRange.toIndex());
         }
-//        sb.append(" m_sourceIdentifier=").append(m_sourceIdentifier);
         sb.append(" uuid=").append(m_sourceIdentifier.toString().substring(0, 8));
         return sb.toString();
     }

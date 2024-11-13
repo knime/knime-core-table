@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.knime.core.table.row.RowAccessible;
-import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
@@ -63,8 +62,21 @@ public class CapExecutor {
     public static RowAccessible createRowAccessible(
             final TableTransformGraph tableTransformGraph,
             final Map<UUID, RowAccessible> uuidRowAccessibleMap) {
-        var schema = tableTransformGraph.createSchema();
         var cursorType = tableTransformGraph.supportedCursorType();
+        return createRowAccessible(tableTransformGraph, cursorType, uuidRowAccessibleMap);
+    }
+
+    /**
+     * @param tableTransformGraph
+     * @param cursorType
+     * @param uuidRowAccessibleMap
+     * @return
+     */
+    public static RowAccessible createRowAccessible(
+            final TableTransformGraph tableTransformGraph,
+            final CursorType cursorType,
+            final Map<UUID, RowAccessible> uuidRowAccessibleMap) {
+        var schema = tableTransformGraph.createSchema();
         return switch (cursorType) {
             case BASIC -> new CapRowAccessible(tableTransformGraph, schema, uuidRowAccessibleMap);
             case LOOKAHEAD -> new CapLookaheadRowAccessible(tableTransformGraph, schema, uuidRowAccessibleMap);
