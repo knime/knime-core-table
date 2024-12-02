@@ -46,9 +46,9 @@ public class BranchGraph {
     public record BranchEdge(List<InnerNode> innerNodes, BranchNode target) {
     }
 
-    public final TableTransformGraph tableTransformGraph;
+    private final TableTransformGraph tableTransformGraph;
 
-    public final BranchEdge rootBranch;
+    private final BranchEdge rootBranch;
 
     private final Map<TableTransformGraph.Node, AbstractNode> depNodes = new HashMap<>();
 
@@ -56,6 +56,21 @@ public class BranchGraph {
         this.tableTransformGraph = tableTransformGraph;
         rootBranch = getBranch(tableTransformGraph.terminal());
         sequentialize(rootBranch);
+    }
+
+    /**
+     * Get the root {@code BranchEdge} (that leads to the terminal of {@link #tableTransformGraph()}).
+     * (This is the entry point into the sequentialized graph.)
+     */
+    public BranchEdge rootBranch() {
+        return rootBranch;
+    }
+
+    /**
+     * Get the {@code TableTransformGraph} from which this {@code BranchGraph} was built.
+     */
+    public TableTransformGraph tableTransformGraph() {
+        return tableTransformGraph;
     }
 
     private BranchEdge getBranch(final TableTransformGraph.Port port) {

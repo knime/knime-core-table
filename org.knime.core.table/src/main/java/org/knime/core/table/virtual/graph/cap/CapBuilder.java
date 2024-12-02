@@ -72,8 +72,8 @@ public class CapBuilder {
     public static CursorAssemblyPlan createCursorAssemblyPlan(final BranchGraph sequentializedGraph) {
         final CapBuilder builder = new CapBuilder(sequentializedGraph);
         final SourceTableProperties.CursorType cursorType =
-                sequentializedGraph.tableTransformGraph.supportedCursorType();
-        final long numRows = sequentializedGraph.tableTransformGraph.numRows();
+                sequentializedGraph.tableTransformGraph().supportedCursorType();
+        final long numRows = sequentializedGraph.tableTransformGraph().numRows();
         return new CursorAssemblyPlan(builder.cap, cursorType, numRows, builder.sourceSchemas);
     }
 
@@ -91,10 +91,10 @@ public class CapBuilder {
         capAccessIds = new HashMap<>();
         sourceSchemas = new HashMap<>();
 
-        BranchGraph.BranchEdge branch = sequentializedGraph.rootBranch;
+        BranchGraph.BranchEdge branch = sequentializedGraph.rootBranch();
 
         final CapNode capNode = appendBranch(branch);
-        final CapAccessId[] inputs = capAccessIdsFor(sequentializedGraph.tableTransformGraph.terminal().accesses());
+        final CapAccessId[] inputs = capAccessIdsFor(sequentializedGraph.tableTransformGraph().terminal().accesses());
         cap.add(new CapNodeConsumer(index++, inputs, capNode.index()));
     }
 

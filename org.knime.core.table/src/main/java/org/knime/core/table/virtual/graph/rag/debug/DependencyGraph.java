@@ -107,7 +107,7 @@ public class DependencyGraph {
     public DependencyGraph(final BranchGraph branchGraph) {
         final Node consumer = new Node(0, new ConsumerTransformSpec());
         nodes.add(consumer);
-        addRecursively(consumer, branchGraph.rootBranch);
+        addRecursively(consumer, branchGraph.rootBranch());
     }
 
     private void addRecursively(Node fromNode, final BranchGraph.BranchEdge branch) {
