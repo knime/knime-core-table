@@ -128,6 +128,15 @@ public class TableTransformGraph {
             return e;
         }
 
+        /**
+         * Remove this {@code ControlFlowEdge} from both its source and target
+         * {@code Port}.
+         */
+        void remove() {
+            this.to.controlFlowEdges.remove(this);
+            this.from.controlFlowEdges.remove(this);
+        }
+
         @Override
         public String toString() {
             return "ControlFlowEdge{" + //

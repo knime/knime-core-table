@@ -1,8 +1,5 @@
 package org.knime.core.table.virtual.graph.rag;
 
-import static org.knime.core.table.virtual.graph.rag.SpecType.APPEND;
-import static org.knime.core.table.virtual.graph.rag.SpecType.SLICE;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -10,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.knime.core.table.row.Selection;
+import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
 import org.knime.core.table.virtual.graph.rag.AccessId.Producer;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Node;
@@ -17,6 +15,12 @@ import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Port;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
+import org.knime.core.table.virtual.spec.TableTransformSpec;
+
+import static org.knime.core.table.virtual.graph.rag.SpecType.APPEND;
+import static org.knime.core.table.virtual.graph.rag.SpecType.CONCATENATE;
+import static org.knime.core.table.virtual.graph.rag.SpecType.ROWFILTER;
+import static org.knime.core.table.virtual.graph.rag.SpecType.SLICE;
 
 public class TableTransformUtil { // TODO (TP) rename
 
@@ -113,6 +117,10 @@ public class TableTransformUtil { // TODO (TP) rename
                 logger.appendGraph("moveSlices", "(optimize step)", graph);
                 changed = true;
             }
+            if (eliminateSingletonConcatenates(graph)) {
+                logger.appendGraph("eliminateSingletonConcatenates", "(optimize step)", graph);
+                changed = true;
+            }
 
             // TODO other optimizations
         }
@@ -151,9 +159,9 @@ public class TableTransformUtil { // TODO (TP) rename
 
         // merge indices from predecessor and slice
         final SliceTransformSpec sliceSpec = slice.getTransformSpec();
-        final Selection.RowRangeSelection sourceRange = sourceSpec.getRowRange();
-        final Selection.RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
-        final Selection.RowRangeSelection mergedRange = sourceRange.retain(sliceRange);
+        final RowRangeSelection sourceRange = sourceSpec.getRowRange();
+        final RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
+        final RowRangeSelection mergedRange = sourceRange.retain(sliceRange);
 
         // create new merged SOURCE Node
         final SourceTransformSpec mergedSpec = new SourceTransformSpec(sourceSpec.getSourceIdentifier(), sourceSpec.getProperties(), mergedRange);
@@ -175,9 +183,9 @@ public class TableTransformUtil { // TODO (TP) rename
         // merge row ranges from predecessor and node
         final SliceTransformSpec predecessorSpec = predecessor.getTransformSpec();
         final SliceTransformSpec sliceSpec = slice.getTransformSpec();
-        final Selection.RowRangeSelection predecessorRange = predecessorSpec.getRowRangeSelection();
-        final Selection.RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
-        final Selection.RowRangeSelection mergedRange = predecessorRange.retain(sliceRange);
+        final RowRangeSelection predecessorRange = predecessorSpec.getRowRangeSelection();
+        final RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
+        final RowRangeSelection mergedRange = predecessorRange.retain(sliceRange);
 
         // TODO: Maybe this is a common operation?
         final Node merged = new Node(new SliceTransformSpec(mergedRange));
@@ -204,7 +212,7 @@ public class TableTransformUtil { // TODO (TP) rename
         final Node predecessor = slice.in(0).controlFlowTarget(0);
         return switch (predecessor.type()) {
             case APPEND -> moveSliceBeforeAppend(slice);
-//            case CONCATENATE -> TODO (TP);
+            case CONCATENATE -> moveSliceBeforeConcatenate(slice);
             default -> false;
         };
     }
@@ -222,6 +230,157 @@ public class TableTransformUtil { // TODO (TP) rename
 
         slice.out().forEachControlFlowEdge(edge -> edge.relinkTo(append.out()));
         return true;
+    }
+
+    private static boolean moveSliceBeforeConcatenate(final Node slice) {
+        final SliceTransformSpec sliceSpec = slice.getTransformSpec();
+        final RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
+        final long s0 = sliceRange.fromIndex();
+        final long s1 = sliceRange.toIndex();
+
+        final Node concatenate = slice.in(0).controlFlowTarget(0);
+
+        final List<Port> inPorts = new ArrayList<>(concatenate.in());
+        long r0 = 0; // row index of first row of current predecessor
+        long numRemovedRows = 0; // how many rows (from the front) have been removed by eliminating or slicing predecessors
+        for (int i = 0; i < inPorts.size(); i++) {
+            final Port port = inPorts.get(i);
+            final long r = TableTransformGraphProperties.numRows(port);
+            if (r < 0) {
+                // Cannot move the SLICE because slicing into a predecessor with
+                // unknown number of rows.
+                //
+                // Note that although the SLICE can't be moved, we may still have
+                // removed input tables that fall before the start of the sliced range,
+                if ( i > 0 ) {
+                    // The SLICE needs to be modified with a new RowRange,
+                    // shifted by numRemovedRows.
+                    // That is, [0, s1 - numRemovedRows).
+
+                    // TODO (TP): not sure whether this is useful in more than one place
+                    replaceSpec(slice, new SliceTransformSpec(
+                            RowRangeSelection.all().retain(0, s1 - numRemovedRows)));
+                    // TODO (TP): otherwise, this is inlined and shortened:
+                    //      var newNode = new Node(new SliceTransformSpec(RowRangeSelection.all().retain(0, s1 - numRemovedRows)));
+                    //      for (Port oldInPort : slice.in()) {
+                    //          var newInPort = new Port(newNode);
+                    //          newNode.in().add(newInPort);
+                    //          oldInPort.forEachControlFlowEdge(edge -> edge.relinkFrom(newInPort));
+                    //      }
+                    //      slice.out().forEachControlFlowEdge(edge -> edge.relinkTo(newNode.out()));
+
+                    return true;
+                }
+                return false;
+            }
+            final long r1 = r0 + r; // row index of first row of next predecessor
+            if (r1 <= s0) {
+                // remove this predecessor
+                concatenate.in().remove(port);
+                numRemovedRows += r;
+            } else {
+                final long t0 = Math.max(0, s0 - r0);
+                final long t1 = Math.min(r, s1 - r0);
+                if (t0 != 0 || t1 != r) {
+                    // keep only slice(t0, t1) of this predecessor
+                    final Node preslice = new Node(new SliceTransformSpec(RowRangeSelection.all().retain(t0, t1)));
+                    preslice.in().add(new Port(preslice));
+                    port.forEachControlFlowEdge(edge -> edge.relinkFrom(preslice.in(0)));
+                    port.linkTo(preslice);
+                    numRemovedRows += t0;
+                }
+                // otherwise just keep the predecessor (no slicing)
+            }
+            r0 = r1;
+            if (r0 >= s1) {
+                // All remaining predecessors can be removed
+                concatenate.in().removeAll(inPorts.subList(i + 1, inPorts.size()));
+                break;
+            }
+        }
+
+        // remove the slice
+        slice.out().forEachControlFlowEdge(edge -> edge.relinkTo(concatenate.out()));
+        return true;
+    }
+
+    // TODO (TP): not sure whether this is useful in more than one place
+    private static Node replaceSpec(final Node oldNode, final TableTransformSpec newSpec ) {
+        var newNode = new Node(newSpec);
+        for (Port oldInPort : oldNode.in()) {
+            var newInPort = new Port(newNode);
+            newNode.in().add(newInPort);
+            newInPort.accesses().addAll(oldInPort.accesses());
+            oldInPort.forEachControlFlowEdge(edge -> edge.relinkFrom(newInPort));
+        }
+        var oldOutPort = oldNode.out();
+        var newOutPort = oldNode.out();
+        newOutPort.accesses().addAll(oldOutPort.accesses());
+        oldOutPort.forEachControlFlowEdge(edge -> edge.relinkTo(newOutPort));
+        return newNode;
+    }
+
+
+    // --------------------------------------------------------------------
+    // eliminateSingletonConcatenates()
+
+    public static boolean eliminateSingletonConcatenates(final TableTransformGraph graph) {
+        for (Node node : nodes(graph)) {
+            if (node.type() == CONCATENATE && tryEliminateConcatenate(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean tryEliminateConcatenate(final Node concatenate) {
+        if (concatenate.in().size() == 1) {
+
+            // union output accesses to input accesses
+            unionAccesses(concatenate.out(), concatenate.in(0));
+
+
+            // relink controlFlowEdges
+            //
+            // (This handles correctly cases where multiple ROWFILTERs come
+            // before and/or after the CONCATENATE.)
+
+            final Node predecessor = concatenate.in(0).controlFlowTarget(0);
+            final Node successor = concatenate.out().controlFlowSource(0);
+
+            final Port relinkTarget;
+            if ( predecessor.type() == ROWFILTER) {
+                relinkTarget = predecessor.in(0).controlFlowTarget(0).out();
+            } else {
+                relinkTarget = predecessor.out();
+                // remove in edge to avoid duplicate
+                concatenate.in(0).controlFlowEdges().get(0).remove();
+            }
+
+            final Port relinkSource;
+            if ( successor != null && successor.type() == ROWFILTER) {
+                relinkSource = successor.out().controlFlowEdges().get(0).from();
+            } else {
+                relinkSource = concatenate.out().controlFlowEdges().get(0).from();
+                if (predecessor.type() == ROWFILTER) {
+                    // remove out edge to avoid duplicate
+                    concatenate.out().controlFlowEdges().get(0).remove();
+                }
+            }
+
+            concatenate.in(0).forEachControlFlowEdge(edge -> edge.relinkFrom(relinkSource));
+            concatenate.out().forEachControlFlowEdge(edge -> edge.relinkTo(relinkTarget));
+
+            return true;
+        }
+        return false;
+    }
+
+    private static void unionAccesses(Port from, Port to) {
+        final int n = from.accesses().size();
+        for (int i = 0; i < n; i++) {
+            from.access(i).union(to.access(i));
+        }
     }
 
 
