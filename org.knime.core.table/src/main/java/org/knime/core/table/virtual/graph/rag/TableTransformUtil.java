@@ -54,7 +54,6 @@ import static org.knime.core.table.virtual.graph.rag.SpecType.ROWFILTER;
 import static org.knime.core.table.virtual.graph.rag.SpecType.SLICE;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -71,6 +70,58 @@ import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
 public class TableTransformUtil { // TODO (TP) rename
+
+    /**
+     * Creates a copy of {@code graph}, with SLICE and COLFILTER operations
+     * appended that implement the given {@code selection}.
+     * <p>
+     * If {@link Selection#allSelected()}, then {@code graph} is returned as-is
+     * (no copy).
+     *
+     * @param graph a TableTransformGraph
+     * @param selection the selection (columns and row range) to append
+     * @return copy of TableTransformGraph with appended selection
+     */
+    public static TableTransformGraph appendSelection(TableTransformGraph graph, final Selection selection) {
+        if (!selection.rows().allSelected()) {
+            graph = graph.append(new SliceTransformSpec(selection.rows()));
+        }
+        if (!selection.columns().allSelected()) {
+            graph = graph.append(new SelectColumnsTransformSpec(selection.columns().getSelected()));
+        }
+        return graph;
+    }
+
+
+    // --------------------------------------------------------------------
+    // optimize()
+
+    public static void optimize(final TableTransformGraph graph) {
+        optimize(graph, new VirtualTableDebugging.NullLogger());
+    }
+
+    public static void optimize(final TableTransformGraph graph, final VirtualTableDebugging.Logger logger) {
+        PruneAccesses.pruneAccesses(graph);
+        logger.appendGraph("optimize()", "trim unused nodes and edges", graph);
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            if (mergeSlices(graph)) {
+                logger.appendGraph("mergeSlices", "(optimize step)", graph);
+                changed = true;
+            }
+            if (moveSlices(graph)) {
+                logger.appendGraph("moveSlices", "(optimize step)", graph);
+                changed = true;
+            }
+            if (eliminateSingletonConcatenates(graph)) {
+                logger.appendGraph("eliminateSingletonConcatenates", "(optimize step)", graph);
+                changed = true;
+            }
+
+            // TODO other optimizations
+        }
+    }
 
     /**
      * Get all nodes in the given {@code TableTransformGraph}. Starting from
@@ -149,37 +200,6 @@ public class TableTransformUtil { // TODO (TP) rename
         void remove() {
             outPort.accesses().remove(outAccessIndex);
             inPort.accesses().remove(inAccessIndex);
-        }
-    }
-
-
-    // --------------------------------------------------------------------
-    // optimize()
-
-    public static void optimize(final TableTransformGraph graph) {
-        optimize(graph, new VirtualTableDebugging.NullLogger());
-    }
-
-    public static void optimize(final TableTransformGraph graph, final VirtualTableDebugging.Logger logger) {
-        TableTransformUtil.pruneAccesses(graph);
-        logger.appendGraph("optimize()", "trim unused nodes and edges", graph);
-        boolean changed = true;
-        while (changed) {
-            changed = false;
-            if (mergeSlices(graph)) {
-                logger.appendGraph("mergeSlices", "(optimize step)", graph);
-                changed = true;
-            }
-            if (moveSlices(graph)) {
-                logger.appendGraph("moveSlices", "(optimize step)", graph);
-                changed = true;
-            }
-            if (eliminateSingletonConcatenates(graph)) {
-                logger.appendGraph("eliminateSingletonConcatenates", "(optimize step)", graph);
-                changed = true;
-            }
-
-            // TODO other optimizations
         }
     }
 
@@ -438,133 +458,5 @@ public class TableTransformUtil { // TODO (TP) rename
         for (int i = 0; i < n; i++) {
             from.access(i).union(to.access(i));
         }
-    }
-
-
-
-
-    /**
-     * Identify and remove {@code AccessId} that are produced but never used in the {@code graph}.
-     *
-     * @return {@code true} if any unused access was found and removed
-     */
-    public static boolean pruneAccesses(final TableTransformGraph graph) {
-        // recursively find "required" AccessId
-        // every input of the terminal port is required.
-        // every control flow dependency of the terminal port is required,
-        class Required {
-            Required(final TableTransformGraph graph) {
-                final Port port = graph.terminal();
-                port.accesses().forEach(this::addRequired);
-                port.controlFlowEdges().forEach(edge -> addRequired(edge.to().owner()));
-            }
-
-            private void addRequired(final Node node) {
-                if (requiredNodes.add(node)) {
-                    switch (node.type()) {
-                        case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> {
-                        }
-                        case ROWFILTER, OBSERVER -> node.in(0).accesses().forEach(this::addRequired);
-                        default -> throw new IllegalArgumentException();
-                    }
-                    node.in().forEach( //
-                            port -> port.controlFlowEdges().forEach( //
-                                    edge -> addRequired(edge.to().owner())));
-                }
-            }
-
-            private final Set<AccessId> requiredAccessIds = new HashSet<>();
-
-            private final Set<Node> requiredNodes = new HashSet<>();
-
-            private void addRequired(final AccessId a) {
-                final AccessId access = a.find();
-                if (requiredAccessIds.add(access)) {
-                    final Node node = access.producer().node();
-                    switch (node.type()) {
-                        case SOURCE, ROWINDEX -> {
-                        }
-                        case APPEND -> addRequired(AppendAccesses.find(access).input());
-                        case CONCATENATE -> {
-                            final int i = node.out().accesses().indexOf(access);
-                            node.in().forEach(in -> addRequired(in.access(i)));
-                        }
-                        case MAP -> {
-                            requiredNodes.add(node);
-                            node.in(0).accesses().forEach(this::addRequired);
-                        }
-                        default -> throw new IllegalArgumentException();
-                    }
-                }
-            }
-
-            /**
-             * @return true if any unused access was found and removed
-             */
-            boolean pruneAccesses() {
-                boolean pruned = false;
-                for (Node node : requiredNodes) {
-                    final ArrayList<AccessId> unused = new ArrayList<>();
-                    node.out().accesses().forEach(a -> {
-                        AccessId access = a.find();
-                        if (!requiredAccessIds.contains(access)) {
-                            unused.add(access);
-                        }
-                    });
-                    if (!unused.isEmpty()) {
-                        pruned = true;
-                        unused.forEach(access -> {
-                            switch (node.type()) {
-                                case SOURCE, MAP, ROWINDEX -> node.out().accesses().remove(access);
-                                case APPEND -> AppendAccesses.find(access).remove();
-                                case CONCATENATE -> {
-                                    final int i = node.out().accesses().indexOf(access);
-                                    node.out().accesses().remove(i);
-                                    node.in().forEach(in -> in.accesses().remove(i));
-                                }
-                                default -> throw new IllegalArgumentException();
-                            }
-                        });
-                    }
-                }
-                return pruned;
-            }
-        }
-
-        return new Required(graph).pruneAccesses();
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Creates a copy of {@code graph}, with SLICE and COLFILTER operations
-     * appended that implement the given {@code selection}.
-     * <p>
-     * If {@link Selection#allSelected()}, then {@code graph} is returned as-is
-     * (no copy).
-     *
-     * @param graph a TableTransformGraph
-     * @param selection the selection (columns and row range) to append
-     * @return copy of TableTransformGraph with appended selection
-     */
-    public static TableTransformGraph appendSelection(TableTransformGraph graph, final Selection selection) {
-        if (!selection.rows().allSelected()) {
-            graph = graph.append(new SliceTransformSpec(selection.rows()));
-        }
-        if (!selection.columns().allSelected()) {
-            graph = graph.append(new SelectColumnsTransformSpec(selection.columns().getSelected()));
-        }
-        return graph;
     }
 }

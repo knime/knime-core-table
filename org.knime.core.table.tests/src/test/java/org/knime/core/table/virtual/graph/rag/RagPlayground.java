@@ -73,7 +73,7 @@ public class RagPlayground {
             var tableTransformGraph = new TableTransformGraph(table.getProducingTransform());
             System.out.println("tableTransformGraph = " + tableTransformGraph);
 
-            TableTransformUtil.pruneAccesses(tableTransformGraph);
+            PruneAccesses.pruneAccesses(tableTransformGraph);
 
             var dependencyGraph = new DependencyGraph(tableTransformGraph);
             System.out.println("graph = " + dependencyGraph);
