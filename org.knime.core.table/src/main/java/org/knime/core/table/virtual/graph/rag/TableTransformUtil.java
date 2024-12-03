@@ -110,8 +110,15 @@ public class TableTransformUtil { // TODO (TP) rename
     }
 
     /**
+     * Relates output access of an APPEND node to the corresponding input access.
+     * <p>
      * Use {@code AppendAccesses.find(a)} (where {@code AccessId a} is an output
      * of a APPEND node) to get the corresponding input port and index.
+     *
+     * @param outPort out port of the APPEND node
+     * @param outAccessIndex index of an access in {@code outPort}
+     * @param inPort in port of the APPEND node that contains the corresponding access
+     * @param inAccessIndex index of the corresponding access in {@code inPort}
      */
     record AppendAccesses(Port outPort, int outAccessIndex, Port inPort, int inAccessIndex) {
         static AppendAccesses find(final AccessId a) {
