@@ -1,3 +1,51 @@
+/*
+ * ------------------------------------------------------------------------
+ *
+ *  Copyright by KNIME AG, Zurich, Switzerland
+ *  Website: http://www.knime.com; Email: contact@knime.com
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License, Version 3, as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses>.
+ *
+ *  Additional permission under GNU GPL version 3 section 7:
+ *
+ *  KNIME interoperates with ECLIPSE solely via ECLIPSE's plug-in APIs.
+ *  Hence, KNIME and ECLIPSE are both independent programs and are not
+ *  derived from each other. Should, however, the interpretation of the
+ *  GNU GPL Version 3 ("License") under any applicable laws result in
+ *  KNIME and ECLIPSE being a combined program, KNIME AG herewith grants
+ *  you the additional permission to use and propagate KNIME together with
+ *  ECLIPSE with only the license terms in place for ECLIPSE applying to
+ *  ECLIPSE and the GNU GPL Version 3 applying for KNIME, provided the
+ *  license terms of ECLIPSE themselves allow for the respective use and
+ *  propagation of ECLIPSE together with KNIME.
+ *
+ *  Additional permission relating to nodes for KNIME that extend the Node
+ *  Extension (and in particular that are based on subclasses of NodeModel,
+ *  NodeDialog, and NodeView) and that only interoperate with KNIME through
+ *  standard APIs ("Nodes"):
+ *  Nodes are deemed to be separate and independent programs and to not be
+ *  covered works.  Notwithstanding anything to the contrary in the
+ *  License, the License does not apply to Nodes, you are not required to
+ *  license Nodes under the License, and you are granted a license to
+ *  prepare and propagate Nodes, in each case even if such Nodes are
+ *  propagated with or for interoperation with KNIME.  The owner of a Node
+ *  may freely choose the license terms applicable to such Node, including
+ *  when such Node is propagated with or for interoperation with KNIME.
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   3 Dec 2024 (pietzsch): created
+ */
 package org.knime.core.table.virtual.graph.rag;
 
 import static org.knime.core.table.virtual.graph.rag.SpecType.ROWFILTER;
@@ -37,23 +85,23 @@ public class TableTransformGraph {
      * @param controlFlowEdges control-flow edges from or to this port (depending on whether this is an in or out port)
      */
     public record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
-        Port(Node owner, List<AccessId> accesses) {
+        Port(final Node owner, final List<AccessId> accesses) {
             this(owner, accesses, new ArrayList<>());
         }
 
-        Port(Node owner) {
+        Port(final Node owner) {
             this(owner, new ArrayList<>());
         }
 
-        AccessId access(int i) {
+        AccessId access(final int i) {
             return accesses.get(i);
         }
 
-        Node controlFlowTarget(int i) {
+        Node controlFlowTarget(final int i) {
             return controlFlowEdges.get(i).to().owner();
         }
 
-        Node controlFlowSource(int i) {// TODO: currently unused. remove?
+        Node controlFlowSource(final int i) {// TODO: currently unused. remove?
             return controlFlowEdges.get(i).from().owner();
         }
 
@@ -64,7 +112,7 @@ public class TableTransformGraph {
          * R
          * @param action
          */
-        public void forEachControlFlowEdge(Consumer<? super ControlFlowEdge> action) {
+        public void forEachControlFlowEdge(final Consumer<? super ControlFlowEdge> action) {
             new ArrayList<>(controlFlowEdges).forEach(action);
         }
 
@@ -73,14 +121,14 @@ public class TableTransformGraph {
          * <p>
          * <em>This should be only called on an {@link Node#in() in} port!</em>
          */
-        void linkTo(Node to) {
+        void linkTo(final Node to) {
             final ControlFlowEdge e = new ControlFlowEdge(this, to.out());
             controlFlowEdges.add(e);
             to.out().controlFlowEdges().add(e);
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(final Object obj) {
             return obj == this;
         }
 
@@ -98,7 +146,7 @@ public class TableTransformGraph {
          *
          * @return the new edge
          */
-        ControlFlowEdge relinkFrom(Port from) throws IllegalStateException {
+        ControlFlowEdge relinkFrom(final Port from) throws IllegalStateException {
             final ControlFlowEdge e = new ControlFlowEdge(from, this.to);
             this.from.controlFlowEdges.remove(this);
             final int i = this.to.controlFlowEdges.indexOf(this);
@@ -116,7 +164,7 @@ public class TableTransformGraph {
          *
          * @return the new edge
          */
-        ControlFlowEdge relinkTo(Port to) throws IllegalStateException {
+        ControlFlowEdge relinkTo(final Port to) throws IllegalStateException {
             final ControlFlowEdge e = new ControlFlowEdge(this.from, to);
             this.to.controlFlowEdges.remove(this);
             final int i = this.from.controlFlowEdges.indexOf(this);
@@ -230,7 +278,7 @@ public class TableTransformGraph {
             return in;
         }
 
-        public Port in(int i) {
+        public Port in(final int i) {
             return in.get(i);
         }
 
@@ -280,7 +328,7 @@ public class TableTransformGraph {
                 tableTransform.getPrecedingTransforms().stream().map(TableTransformGraph::new).toList());
     }
 
-    TableTransformGraph(final TableTransformSpec spec, final List<TableTransformGraph> predecessors) {
+    TableTransformGraph(final TableTransformSpec spec, final List<TableTransformGraph> predecessors) { // NOSONAR This method is complex, but splitting it up will not make it easier to understand.
         final SpecType type = SpecType.forSpec(spec);
 
         final int numOutputs = switch (type) {
@@ -424,7 +472,7 @@ public class TableTransformGraph {
      * @param spec TableTransformSpec to append
      * @return a copy of this graph with the new spec appended.
      */
-    public TableTransformGraph append(TableTransformSpec spec) {
+    public TableTransformGraph append(final TableTransformSpec spec) {
         return new TableTransformGraph(spec, List.of(copy()));
     }
 
@@ -449,7 +497,7 @@ public class TableTransformGraph {
                 if (n != null) {
                     return n;
                 }
-                final Node nodeCopy = new Node((TableTransformSpec)node.getTransformSpec()); // TODO cast necessary because of Node(Port) constructor
+                final Node nodeCopy = new Node(node.getTransformSpec()); // TODO cast necessary because of Node(Port) constructor
                 nodes.put(node, nodeCopy);
                 node.out.accesses().forEach(a -> nodeCopy.out.accesses().add(copyOf(a.find())));
                 node.in.forEach(port -> nodeCopy.in.add(copyInPort(port, nodeCopy)));
@@ -465,30 +513,30 @@ public class TableTransformGraph {
                 return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label()));
             }
 
-            private AccessId.Producer copyOf(AccessId.Producer producer) {
+            private AccessId.Producer copyOf(final AccessId.Producer producer) {
                 return new AccessId.Producer(copyOf(producer.node()), producer.index());
             }
         }
         return new TableTransformGraph(new Copier().copyInPort(terminal, null));
     }
 
-    private static void unionAccesses(Port from, Port to, int n) {
+    private static void unionAccesses(final Port from, final Port to, final int n) {
         unionAccesses(from, 0, to, 0, n);
     }
 
-    private static void unionAccesses(Port from, int fromStartPos, Port to, int toStartPos, int n) {
+    private static void unionAccesses(final Port from, final int fromStartPos, final Port to, final int toStartPos, final int n) {
         for (int i = 0; i < n; i++) {
             from.access(i + fromStartPos).union(to.access(i + toStartPos));
         }
     }
 
-    private static void unionAccesses(Port from, Port to, int n, IntUnaryOperator indexMapper) {
+    private static void unionAccesses(final Port from, final Port to, final int n, final IntUnaryOperator indexMapper) {
         for (int i = 0; i < n; i++) {
             from.access(i).union(to.access(indexMapper.applyAsInt(i)));
         }
     }
 
-    private static int[] getColumnSelection(TableTransformSpec spec) {
+    private static int[] getColumnSelection(final TableTransformSpec spec) {
         return switch (SpecType.forSpec(spec)) {
             case MAP -> ((MapTransformSpec)spec).getColumnSelection();
             case ROWFILTER -> ((RowFilterTransformSpec)spec).getColumnSelection();
@@ -527,8 +575,9 @@ public class TableTransformGraph {
     static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
         return i -> {
             String label = varName + "^" + i + "_v" + nodeId;
-            if (predecessorIndex >= 0)
+            if (predecessorIndex >= 0) {
                 label += "(" + predecessorIndex + ")";
+            }
             return label;
         };
     }

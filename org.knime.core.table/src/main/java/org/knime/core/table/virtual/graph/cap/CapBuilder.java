@@ -106,103 +106,102 @@ public class CapBuilder {
         branch.target().branches().forEach(b -> heads.add(appendBranch(b)));
 
         // current head while building this branch
-        CapNode capNode = null;
+        CapNode capNode = appendBranchTarget(branch.target(), heads);
 
-        // append branch target
-        final TableTransformGraph.Node target = branch.target().node();
-        switch (target.type()) {
+        // append inner nodes
+        for (BranchGraph.InnerNode innerNode : branch.innerNodes()) {
+            capNode = appendInnerNode(innerNode, capNode);
+        }
+
+        return capNode;
+    }
+
+    private CapNode appendBranchTarget(final BranchGraph.BranchNode branchTarget, final List<CapNode> prededessors) {
+
+        final TableTransformGraph.Node node = branchTarget.node();
+        final int numPredecessors = prededessors.size();
+        final int[] predecessorIndices = new int[numPredecessors];
+        final long[] predecessorSizes = new long[numPredecessors];
+        for (int i = 0; i < numPredecessors; ++i) {
+            predecessorIndices[i] = prededessors.get(i).index();
+            predecessorSizes[i] = TableTransformGraphProperties.numRows(node.in(i));
+        }
+
+        final List<AccessId> outputs = node.out().accesses();
+        final CapNode capNode;
+        switch (node.type()) {
             case SOURCE -> {
-                final SourceTransformSpec spec = target.getTransformSpec();
+                final SourceTransformSpec spec = node.getTransformSpec();
                 final UUID uuid = spec.getSourceIdentifier();
-                final List<AccessId> outputs = target.out().accesses();
                 final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
                 final Selection.RowRangeSelection range = spec.getRowRange();
                 capNode = new CapNodeSource(index++, uuid, columns, range);
-                createCapAccessIdsFor(outputs, capNode);
-                append(target, capNode);
                 sourceSchemas.put(uuid, spec.getSchema());
             }
             case APPEND -> {
-                final int numPredecessors = heads.size();
-                final int[] predecessors = new int[numPredecessors];
                 final int[][] predecessorOutputIndices = new int[numPredecessors][];
-                final long[] predecessorSizes = new long[numPredecessors];
                 final List<AccessId> inputs = new ArrayList<>();
                 for (int i = 0; i < numPredecessors; ++i) {
-                    predecessors[i] = heads.get(i).index();
-                    predecessorSizes[i] = TableTransformGraphProperties.numRows(target.in(i));
-                    final List<AccessId> branchInputs = target.in(i).accesses();
+                    final List<AccessId> branchInputs = node.in(i).accesses();
                     predecessorOutputIndices[i] = new int[branchInputs.size()];
                     Arrays.setAll(predecessorOutputIndices[i], j -> j + inputs.size());
                     inputs.addAll(branchInputs);
                 }
                 final CapAccessId[] capInputs = capAccessIdsFor(inputs);
-                capNode =
-                        new CapNodeAppend(index++, capInputs, predecessors, predecessorOutputIndices, predecessorSizes);
-                createCapAccessIdsFor(target.out().accesses(), capNode);
-                append(target, capNode);
+                capNode = new CapNodeAppend(index++, capInputs, predecessorIndices, predecessorOutputIndices, predecessorSizes);
             }
             case CONCATENATE -> {
-                final int numPredecessors = heads.size();
-                final int[] predecessors = new int[numPredecessors];
                 final CapAccessId[][] capInputs = new CapAccessId[numPredecessors][];
-                final long[] predecessorSizes = new long[numPredecessors];
-                for (int i = 0; i < numPredecessors; ++i) {
-                    predecessors[i] = heads.get(i).index();
-                    capInputs[i] = capAccessIdsFor(target.in(i).accesses());
-                    predecessorSizes[i] = TableTransformGraphProperties.numRows(target.in(i));
-                }
-                capNode = new CapNodeConcatenate(index++, capInputs, predecessors, predecessorSizes);
-                createCapAccessIdsFor(target.out().accesses(), capNode);
-                append(target, capNode);
+                Arrays.setAll(capInputs, i -> capAccessIdsFor(node.in(i).accesses()));
+                capNode = new CapNodeConcatenate(index++, capInputs, predecessorIndices, predecessorSizes);
             }
             default -> throw new IllegalStateException();
         }
 
-        // append inner nodes
-        for (BranchGraph.AbstractNode depNode : branch.innerNodes()) {
-            final TableTransformGraph.Node node = depNode.node();
-            final List<AccessId> inputs = node.in(0).accesses();
-            final CapAccessId[] capInputs = capAccessIdsFor(inputs);
+        createCapAccessIdsFor(outputs, capNode);
+        append(node, capNode);
+        return capNode;
+    }
 
-            final int predecessor = capNode.index();
-            switch (node.type()) {
-                case MAP -> {
-                    final MapTransformSpec spec = node.getTransformSpec();
-                    final List<AccessId> outputs = node.out().accesses();
-                    final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
-                    capNode = new CapNodeMap(index++, capInputs, predecessor, columns, spec.getMapperFactory());
-                    createCapAccessIdsFor(outputs, capNode);
-                    append(node, capNode);
-                }
-                case SLICE -> {
-                    final SliceTransformSpec spec = node.getTransformSpec();
-                    final long from = spec.getRowRangeSelection().fromIndex();
-                    final long to = spec.getRowRangeSelection().toIndex();
-                    capNode = new CapNodeSlice(index++, predecessor, from, to);
-                    append(node, capNode);
-                }
-                case ROWFILTER -> {
-                    final RowFilterTransformSpec spec = node.getTransformSpec();
-                    capNode = new CapNodeRowFilter(index++, capInputs, predecessor, spec.getFilterFactory());
-                    append(node, capNode);
-                }
-                case ROWINDEX -> {
-                    final RowIndexTransformSpec spec = node.getTransformSpec();
-                    final List<AccessId> outputs = node.out().accesses();
-                    capNode = new CapNodeRowIndex(index++, predecessor, spec.getOffset());
-                    createCapAccessIdsFor(outputs, capNode);
-                    append(node, capNode);
-                }
-                case OBSERVER -> {
-                    final ObserverTransformSpec spec = node.getTransformSpec();
-                    capNode = new CapNodeObserver(index++, capInputs, predecessor, spec.getObserverFactory());
-                    append(node, capNode);
-                }
-                default -> throw new IllegalStateException();
+    private CapNode appendInnerNode(final BranchGraph.InnerNode innerNode, final CapNode predecessor) {
+
+        final TableTransformGraph.Node node = innerNode.node();
+        final List<AccessId> inputs = node.in(0).accesses();
+        final CapAccessId[] capInputs = capAccessIdsFor(inputs);
+
+        final CapNode capNode;
+        switch (node.type()) {
+            case MAP -> {
+                final MapTransformSpec spec = node.getTransformSpec();
+                final List<AccessId> outputs = node.out().accesses();
+                final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
+                capNode = new CapNodeMap(index++, capInputs, predecessor.index(), columns, spec.getMapperFactory());
+                createCapAccessIdsFor(outputs, capNode);
             }
+            case SLICE -> {
+                final SliceTransformSpec spec = node.getTransformSpec();
+                final long from = spec.getRowRangeSelection().fromIndex();
+                final long to = spec.getRowRangeSelection().toIndex();
+                capNode = new CapNodeSlice(index++, predecessor.index(), from, to);
+            }
+            case ROWFILTER -> {
+                final RowFilterTransformSpec spec = node.getTransformSpec();
+                capNode = new CapNodeRowFilter(index++, capInputs, predecessor.index(), spec.getFilterFactory());
+            }
+            case ROWINDEX -> {
+                final RowIndexTransformSpec spec = node.getTransformSpec();
+                final List<AccessId> outputs = node.out().accesses();
+                capNode = new CapNodeRowIndex(index++, predecessor.index(), spec.getOffset());
+                createCapAccessIdsFor(outputs, capNode);
+            }
+            case OBSERVER -> {
+                final ObserverTransformSpec spec = node.getTransformSpec();
+                capNode = new CapNodeObserver(index++, capInputs, predecessor.index(), spec.getObserverFactory());
+            }
+            default -> throw new IllegalStateException();
         }
 
+        append(node, capNode);
         return capNode;
     }
 
