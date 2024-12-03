@@ -100,7 +100,7 @@ public class TableTransformUtil { // TODO (TP) rename
         optimize(graph, new VirtualTableDebugging.NullLogger());
     }
 
-    public static void optimize(final TableTransformGraph graph, final VirtualTableDebugging.Logger logger) {
+    public static void optimize(final TableTransformGraph graph, final VirtualTableDebugging.TableTransformGraphLogger logger) {
         PruneAccesses.pruneAccesses(graph);
         logger.appendGraph("optimize()", "trim unused nodes and edges", graph);
         boolean changed = true;
@@ -134,31 +134,33 @@ public class TableTransformUtil { // TODO (TP) rename
      * @return list of all nodes in {@code graph}
      */
     static List<Node> nodes(final TableTransformGraph graph) {
-        class Nodes {
-            final Set<Node> nodes = new LinkedHashSet<>();
-
-            Nodes(final TableTransformGraph graph) {
-                addRecursively(graph.terminal());
-            }
-
-            private void addRecursively(final Port port) {
-                port.controlFlowEdges().forEach(e -> {
-                    addRecursively(e.to().owner());
-                });
-                port.accesses().forEach(a -> {
-                    addRecursively(a.find().producer().node());
-                });
-            }
-
-            private void addRecursively(final Node node) {
-                if (!nodes.contains(node)) {
-                    nodes.add(node);
-                    node.in().forEach(port -> addRecursively(port));
-                }
-            }
-        }
         return new ArrayList<>(new Nodes(graph).nodes);
     }
+
+    private static class Nodes {
+        final Set<Node> nodes = new LinkedHashSet<>();
+
+        Nodes(final TableTransformGraph graph) {
+            addRecursively(graph.terminal());
+        }
+
+        private void addRecursively(final Port port) {
+            port.controlFlowEdges().forEach(e -> {
+                addRecursively(e.to().owner());
+            });
+            port.accesses().forEach(a -> {
+                addRecursively(a.find().producer().node());
+            });
+        }
+
+        private void addRecursively(final Node node) {
+            if (!nodes.contains(node)) {
+                nodes.add(node);
+                node.in().forEach(port -> addRecursively(port));
+            }
+        }
+    }
+
 
     /**
      * Relates output access of an APPEND node to the corresponding input access.

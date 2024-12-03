@@ -62,8 +62,10 @@ import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
 /**
  * Sequentialize a {@link TableTransformGraph} into a tree:
  * <ul>
- * <li>{@link BranchNode Nodes} of the tree are SOURCE, CONCATENATE, and APPEND operations (the only nodes where execution splits into branches).</li>
- * <li>{@link BranchEdge Edges} between tree nodes contain all other operations (MAP, ROWFILTER, ROWINDEX, SLICE, OBSERVER).</li>
+ * <li>{@link BranchNode Nodes} of the tree are SOURCE, CONCATENATE, and APPEND operations (the only nodes where
+ * execution splits into branches).</li>
+ * <li>{@link BranchEdge Edges} between tree nodes contain all other operations (MAP, ROWFILTER, ROWINDEX, SLICE,
+ * OBSERVER).</li>
  * </ul>
  */
 public class BranchGraph {
@@ -156,9 +158,11 @@ public class BranchGraph {
      * <p>
      * This creates or retrieves all dependencies of {@code node}, recursively.
      * <p>
-     * If {@code node} is SOURCE, APPEND, or CONCATENATE the retrieved {@code AbstractNode} is set as {@code branchTarget}.
+     * If {@code node} is SOURCE, APPEND, or CONCATENATE the retrieved {@code AbstractNode} is set as
+     * {@code branchTarget}.
      * <p>
-     * If {@code node} is SLICE, MAP, ROWFILTER, ROWINDEX, or OBSERVER the retrieved {@code AbstractNode} is added to {@code innerNodes}.
+     * If {@code node} is SLICE, MAP, ROWFILTER, ROWINDEX, or OBSERVER the retrieved {@code AbstractNode} is added to
+     * {@code innerNodes}.
      *
      * @param node the node for which to create or retrieve the corresponding {@code AbstractNode}
      * @param innerNodes all {@code InnerNode} encountered while walking to the next {@code BranchNode}
@@ -172,7 +176,7 @@ public class BranchGraph {
             return depNode;
         }
         switch (node.type()) {
-            case SOURCE, APPEND, CONCATENATE -> {
+            case SOURCE, APPEND, CONCATENATE -> { // NOSONAR
                 final ArrayList<BranchEdge> branches = new ArrayList<>();
                 node.in().forEach(port -> branches.add(getBranch(port)));
                 final BranchNode branchNode = new BranchNode(node, branches);
@@ -180,7 +184,7 @@ public class BranchGraph {
                 depNodes.put(node, branchNode);
                 return branchNode;
             }
-            case SLICE, MAP, ROWFILTER, ROWINDEX, OBSERVER -> {
+            case SLICE, MAP, ROWFILTER, ROWINDEX, OBSERVER -> { // NOSONAR
                 final TableTransformGraph.Port port = node.in(0);
                 final Set<AbstractNode> dependencies = getDependencies(port, innerNodes, branchTarget);
                 final InnerNode innerNode = new InnerNode(node, dependencies);
@@ -198,10 +202,10 @@ public class BranchGraph {
         branch.innerNodes.clear();
         while (!todo.isEmpty()) {
             var next = todo.stream() //
-                    .filter(node -> node.dependencies().stream() //
-                            .noneMatch(todo::contains)) //
-                    .sorted(policy) //
-                    .findFirst().get();
+                .filter(node -> node.dependencies().stream() //
+                    .noneMatch(todo::contains)) //
+                .sorted(policy) //
+                .findFirst().orElseThrow();
             branch.innerNodes().add(next);
             todo.remove(next);
         }

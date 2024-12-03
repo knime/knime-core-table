@@ -71,6 +71,9 @@ import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
+/**
+ * Graph representation of a virtual table {@code TableTransform}.
+ */
 public class TableTransformGraph {
 
     /**
@@ -78,10 +81,11 @@ public class TableTransformGraph {
      * <p>
      * Every {@code Node} has exactly one {@link Node#out() out} port.
      * <p>
-     * Every {@code Node} has exactly one {@link Node#in() in} port, except SOURCE which has none, and APPEND/CONCATENATE which have one or more.
+     * Every {@code Node} has exactly one {@link Node#in() in} port, except SOURCE which has none, and
+     * APPEND/CONCATENATE which have one or more.
      *
-     * @param owner            the node which this port belongs to (as in or out port)
-     * @param accesses         the input or output accesses (depending on whether this is an in or out port)
+     * @param owner the node which this port belongs to (as in or out port)
+     * @param accesses the input or output accesses (depending on whether this is an in or out port)
      * @param controlFlowEdges control-flow edges from or to this port (depending on whether this is an in or out port)
      */
     public record Port(Node owner, List<AccessId> accesses, List<ControlFlowEdge> controlFlowEdges) {
@@ -197,22 +201,37 @@ public class TableTransformGraph {
      * A node in the TableTransformGraph.
      */
     public static class Node {
+
+        // ids are just for printing ...
+        private static int nextNodeId = 1;
+        private final int id;
+
         private final TableTransformSpec spec;
         private final SpecType type;
         private final List<Port> in = new ArrayList<>();
         private final Port out;
+
 
         /**
          * Create a new node with the given {@code TableTransformSpec} but without populated inputs or outputs.
          * This is needed to implement {@link #copy()}.
          */
         Node(final TableTransformSpec spec) {
+
+            id = nextNodeId;
+            ++nextNodeId;
+
             this.spec = spec;
             type = SpecType.forSpec(spec);
             out = new Port(this);
         }
 
-        private Node(final TableTransformSpec spec, final int numOutputs, final List<TableTransformGraph> predecessors) {
+        private Node(final TableTransformSpec spec, final int numOutputs,
+            final List<TableTransformGraph> predecessors) {
+
+            id = nextNodeId;
+            ++nextNodeId;
+
             this.spec = spec;
             type = SpecType.forSpec(spec);
 
@@ -241,7 +260,7 @@ public class TableTransformGraph {
 
                 // control flow:
                 switch (type) {
-                    case ROWFILTER -> {
+                    case ROWFILTER -> { // NOSONAR
                         final ControlFlowEdge predecessorEdge = predecessor.terminal.controlFlowEdges().get(0);
                         final Node predecessorNode = predecessorEdge.to().owner();
                         if (predecessorNode.type == ROWFILTER) {
@@ -260,13 +279,14 @@ public class TableTransformGraph {
                         predecessor.terminal.forEachControlFlowEdge(e -> e.relinkFrom(inPort));
                     }
                     default -> {
+                        // NOSONAR
                     }
                 }
 
                 in.add(inPort);
             }
 
-            final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", id, -1));
+            final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", id, -1)); // NOSONAR
             out = new Port(this, outputs);
         }
 
@@ -294,10 +314,6 @@ public class TableTransformGraph {
         public String toString() {
             return "(<" + id + ">, " + type + ", " + spec + ")";
         }
-
-        // ids are just for printing ...
-        private static int nextNodeId = 1;
-        private final int id = nextNodeId++;
 
         /**
          * To make it easier to identify nodes in debug output, each node is assigned a
@@ -344,7 +360,8 @@ public class TableTransformGraph {
 
         final int numColumns = switch (type) {
             case SOURCE, MAP, CONCATENATE, APPEND -> numOutputs;
-            case APPENDMAP, APPENDMISSING, ROWINDEX, SLICE, ROWFILTER, OBSERVER -> numOutputs + predecessors.get(0).numColumns();
+            case APPENDMAP, APPENDMISSING, ROWINDEX, SLICE, ROWFILTER, OBSERVER -> //
+                    numOutputs + predecessors.get(0).numColumns();
             case COLSELECT -> getColumnSelection(spec).length;
         };
 
@@ -367,7 +384,7 @@ public class TableTransformGraph {
         switch (type) {
             case SOURCE, MAP, APPEND, CONCATENATE -> {
                 // link outCols to node's outputs
-                unionAccesses(terminal, node.out, numColumns);
+                unionAccesses(terminal, node.out, numColumns); // NOSONAR node cannot be null here
             }
             case SLICE, ROWFILTER, OBSERVER -> {
                 // link outCols to the predecessor's outCols
@@ -379,7 +396,7 @@ public class TableTransformGraph {
                 // (there is exactly one predecessor)
                 unionAccesses(terminal, predecessorTerminal, numColumns - numOutputs);
                 // link the final numOutputs outCols to the node's outputs
-                unionAccesses(terminal, numColumns - numOutputs, node.out, 0, numOutputs);
+                unionAccesses(terminal, numColumns - numOutputs, node.out, 0, numOutputs); // NOSONAR node cannot be null here
             }
             case COLSELECT -> {
                 // apply selection to predecessor's outCols
@@ -393,7 +410,7 @@ public class TableTransformGraph {
         switch (type) {
             case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE, OBSERVER -> {
                 // link to the new node
-                terminal.linkTo(node);
+                terminal.linkTo(node); // NOSONAR node cannot be null here
             }
             case MAP, APPENDMAP, APPENDMISSING, COLSELECT -> {
                 // link to everything that was linked to by predecessor
@@ -408,7 +425,7 @@ public class TableTransformGraph {
                     predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(terminal));
                 }
                 // link to the new node
-                terminal.linkTo(node);
+                terminal.linkTo(node); // NOSONAR node cannot be null here
             }
         }
     }

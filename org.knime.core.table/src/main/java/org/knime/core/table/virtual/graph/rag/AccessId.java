@@ -76,7 +76,7 @@ public class AccessId {
      */
     public AccessId(final Producer producer, final String label) {
         this.producer = producer;
-        this.parent = this;
+        this.parent = this; // NOSONAR
         this.label = label;
     }
 
@@ -100,7 +100,7 @@ public class AccessId {
 
     @Override
     public String toString() {
-        return label + (parent == this ? "" : "->" + find());
+        return label + (parent == this ? "" : ("->" + find()));
     }
 
     /**

@@ -59,7 +59,7 @@ import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
  */
 public class Mermaid {
 
-    private static final boolean darkMode = true;
+    private static final boolean DARK_MODE = true;
 
     private final StringBuilder sb;
 
@@ -92,7 +92,7 @@ public class Mermaid {
         }
         sb.append("<div class=\"mermaid\">\n");
         sb.append("%%{init: {'theme': 'base', 'themeVariables': { ");
-        if (darkMode) {
+        if (DARK_MODE) {
             sb.append("'background' : '#2B2B2B', ");
             sb.append("'primaryColor': '#444444', ");
             sb.append("'darkMode': 'true'");
@@ -112,20 +112,20 @@ public class Mermaid {
 
     public void save(final String filename) {
         try (FileWriter w = new FileWriter(filename)) {
-            w.write(header + sb + footer);
+            w.write(HEADER + sb + FOOTER);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static final String header = """
+    private static final String HEADER = """
             <!DOCTYPE html>
             <html lang="en">
             <head>
               <meta charset="UTF-8">
               <title>virtual table</title>
               <style>
-            """ + (darkMode ? """
+            """ + (DARK_MODE ? """
                 body {
                   color: #EEEEEE;
                   background-color:#2B2B2B;
@@ -148,7 +148,7 @@ public class Mermaid {
               </script>
             """;
 
-    private static final String footer = """
+    private static final String FOOTER = """
             </body>
             </html>
             """;
@@ -164,9 +164,9 @@ public class Mermaid {
             sb.append("  " + edge.from().id() + "--> " + edge.to().id() + "\n");
             sb.append("  linkStyle " + edgeId + " stroke:");
             sb.append(switch (edge.type()) {
-                case DATA -> (darkMode ? "blue" : "#8888FF,anything");
-                case CONTROL -> (darkMode ? "red" : "#FF8888,anything");
-                case EXECUTION -> (darkMode ? "lime" : "lime");
+                case DATA -> (DARK_MODE ? "blue" : "#8888FF,anything");
+                case CONTROL -> (DARK_MODE ? "red" : "#FF8888,anything");
+                case EXECUTION -> (DARK_MODE ? "lime" : "lime");
             });
             sb.append(";\n");
             ++edgeId;

@@ -66,7 +66,7 @@ import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 
-public class TableTransformGraphProperties {
+public final class TableTransformGraphProperties {
 
     public static long numRows(final Port port) {
         return numRows(port.controlFlowTarget(0));
@@ -76,7 +76,7 @@ public class TableTransformGraphProperties {
         return switch (node.type()) {
             case SOURCE -> node.<SourceTransformSpec>getTransformSpec().numRows();
             case ROWFILTER -> -1;
-            case SLICE -> {
+            case SLICE -> { // NOSONAR
                 final SliceTransformSpec spec = node.getTransformSpec();
                 final long from = spec.getRowRangeSelection().fromIndex();
                 final long to = spec.getRowRangeSelection().toIndex();
@@ -91,7 +91,8 @@ public class TableTransformGraphProperties {
                 // If any predecessor doesn't know its size, the size of this node is also unknown.
                 // Otherwise, the size of this is the sum of its predecessors.
                 accPredecessorNumRows(node, Long::sum);
-            case COLSELECT, MAP, APPENDMAP, APPENDMISSING -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
+            case COLSELECT, MAP, APPENDMAP, APPENDMISSING -> throw new IllegalArgumentException(
+                "Unexpected SpecType: " + node.type());
         };
     }
 
@@ -120,7 +121,7 @@ public class TableTransformGraphProperties {
         return switch (node.type()) {
             case SOURCE -> node.<SourceTransformSpec>getTransformSpec().getProperties().cursorType();
             case ROWFILTER -> BASIC;
-            case SLICE, APPEND, ROWINDEX, OBSERVER -> {
+            case SLICE, APPEND, ROWINDEX, OBSERVER -> { // NOSONAR
                 var cursorType = RANDOMACCESS;
                 for (Port port : node.in()) {
                     cursorType = min(cursorType, supportedCursorType(port.controlFlowTarget(0)));
@@ -130,7 +131,7 @@ public class TableTransformGraphProperties {
                 }
                 yield cursorType;
             }
-            case CONCATENATE -> {
+            case CONCATENATE -> { // NOSONAR
                 // all predecessors need to support random-access AND
                 // all predecessors except the last one need to know numRows()
                 var cursorType = RANDOMACCESS;
@@ -147,7 +148,8 @@ public class TableTransformGraphProperties {
                 }
                 yield cursorType;
             }
-            case COLSELECT, MAP, APPENDMAP, APPENDMISSING -> throw new IllegalArgumentException("Unexpected SpecType: " + node.type());
+            case COLSELECT, MAP, APPENDMAP, APPENDMISSING -> throw new IllegalArgumentException(
+                "Unexpected SpecType: " + node.type());
         };
     }
 
@@ -187,5 +189,9 @@ public class TableTransformGraphProperties {
             case ROWINDEX -> DataSpecs.LONG;
             default -> throw new IllegalArgumentException("unexpected node type " + node.type());
         };
+    }
+
+    private TableTransformGraphProperties() {
+        // no instances, just static utility methods
     }
 }

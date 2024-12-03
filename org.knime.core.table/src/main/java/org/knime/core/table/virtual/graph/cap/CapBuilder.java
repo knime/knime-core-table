@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.knime.core.table.row.Selection;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.graph.rag.AccessId;
 import org.knime.core.table.virtual.graph.rag.BranchGraph;
@@ -95,10 +94,13 @@ public class CapBuilder {
 
         final CapNode capNode = appendBranch(branch);
         final CapAccessId[] inputs = capAccessIdsFor(sequentializedGraph.tableTransformGraph().terminal().accesses());
-        cap.add(new CapNodeConsumer(index++, inputs, capNode.index()));
+        cap.add(new CapNodeConsumer(nextCapNodeIndex(), inputs, capNode.index()));
     }
 
-    private int index = 0;
+    // get index of next CapNode
+    private int nextCapNodeIndex() {
+        return cap.size();
+    }
 
     private CapNode appendBranch(final BranchGraph.BranchEdge branch) {
         // append predecessor branches
@@ -130,15 +132,14 @@ public class CapBuilder {
         final List<AccessId> outputs = node.out().accesses();
         final CapNode capNode;
         switch (node.type()) {
-            case SOURCE -> {
+            case SOURCE -> { // NOSONAR
                 final SourceTransformSpec spec = node.getTransformSpec();
                 final UUID uuid = spec.getSourceIdentifier();
                 final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
-                final Selection.RowRangeSelection range = spec.getRowRange();
-                capNode = new CapNodeSource(index++, uuid, columns, range);
+                capNode = new CapNodeSource(nextCapNodeIndex(), uuid, columns, spec.getRowRange());
                 sourceSchemas.put(uuid, spec.getSchema());
             }
-            case APPEND -> {
+            case APPEND -> { // NOSONAR
                 final int[][] predecessorOutputIndices = new int[numPredecessors][];
                 final List<AccessId> inputs = new ArrayList<>();
                 for (int i = 0; i < numPredecessors; ++i) {
@@ -148,12 +149,13 @@ public class CapBuilder {
                     inputs.addAll(branchInputs);
                 }
                 final CapAccessId[] capInputs = capAccessIdsFor(inputs);
-                capNode = new CapNodeAppend(index++, capInputs, predecessorIndices, predecessorOutputIndices, predecessorSizes);
+                capNode = new CapNodeAppend(nextCapNodeIndex(), capInputs, predecessorIndices, predecessorOutputIndices,
+                    predecessorSizes);
             }
             case CONCATENATE -> {
                 final CapAccessId[][] capInputs = new CapAccessId[numPredecessors][];
                 Arrays.setAll(capInputs, i -> capAccessIdsFor(node.in(i).accesses()));
-                capNode = new CapNodeConcatenate(index++, capInputs, predecessorIndices, predecessorSizes);
+                capNode = new CapNodeConcatenate(nextCapNodeIndex(), capInputs, predecessorIndices, predecessorSizes);
             }
             default -> throw new IllegalStateException();
         }
@@ -171,32 +173,35 @@ public class CapBuilder {
 
         final CapNode capNode;
         switch (node.type()) {
-            case MAP -> {
+            case MAP -> { // NOSONAR
                 final MapTransformSpec spec = node.getTransformSpec();
                 final List<AccessId> outputs = node.out().accesses();
                 final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
-                capNode = new CapNodeMap(index++, capInputs, predecessor.index(), columns, spec.getMapperFactory());
+                capNode = new CapNodeMap(nextCapNodeIndex(), capInputs, predecessor.index(), columns,
+                    spec.getMapperFactory());
                 createCapAccessIdsFor(outputs, capNode);
             }
-            case SLICE -> {
+            case SLICE -> { // NOSONAR
                 final SliceTransformSpec spec = node.getTransformSpec();
                 final long from = spec.getRowRangeSelection().fromIndex();
                 final long to = spec.getRowRangeSelection().toIndex();
-                capNode = new CapNodeSlice(index++, predecessor.index(), from, to);
+                capNode = new CapNodeSlice(nextCapNodeIndex(), predecessor.index(), from, to);
             }
             case ROWFILTER -> {
                 final RowFilterTransformSpec spec = node.getTransformSpec();
-                capNode = new CapNodeRowFilter(index++, capInputs, predecessor.index(), spec.getFilterFactory());
+                capNode =
+                    new CapNodeRowFilter(nextCapNodeIndex(), capInputs, predecessor.index(), spec.getFilterFactory());
             }
-            case ROWINDEX -> {
+            case ROWINDEX -> { // NOSONAR
                 final RowIndexTransformSpec spec = node.getTransformSpec();
                 final List<AccessId> outputs = node.out().accesses();
-                capNode = new CapNodeRowIndex(index++, predecessor.index(), spec.getOffset());
+                capNode = new CapNodeRowIndex(nextCapNodeIndex(), predecessor.index(), spec.getOffset());
                 createCapAccessIdsFor(outputs, capNode);
             }
             case OBSERVER -> {
                 final ObserverTransformSpec spec = node.getTransformSpec();
-                capNode = new CapNodeObserver(index++, capInputs, predecessor.index(), spec.getObserverFactory());
+                capNode =
+                    new CapNodeObserver(nextCapNodeIndex(), capInputs, predecessor.index(), spec.getObserverFactory());
             }
             default -> throw new IllegalStateException();
         }
@@ -220,7 +225,8 @@ public class CapBuilder {
     private void createCapAccessIdsFor(final Iterable<AccessId> outputs, final CapNode producer) {
         int i = 0;
         for (AccessId output : outputs) {
-            capAccessIds.put(output.find(), new CapAccessId(producer, i++));
+            capAccessIds.put(output.find(), new CapAccessId(producer, i));
+            ++i;
         }
     }
 
@@ -231,7 +237,8 @@ public class CapBuilder {
         final CapAccessId[] imps = new CapAccessId[ids.size()];
         int i = 0;
         for (AccessId id : ids) {
-            imps[i++] = capAccessIds.get(id.find());
+            imps[i] = capAccessIds.get(id.find());
+            ++i;
         }
         return imps;
     }

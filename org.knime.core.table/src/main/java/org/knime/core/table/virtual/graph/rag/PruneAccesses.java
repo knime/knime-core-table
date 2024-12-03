@@ -52,6 +52,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.knime.core.table.virtual.graph.rag.TableTransformUtil.AppendAccesses;
+
 /**
  * Identify and remove {@code AccessId} that are produced but never used in
  * a {@code TableTransformGraph}.
@@ -83,7 +85,7 @@ final class PruneAccesses {
     private void addRequired(final TableTransformGraph.Node node) {
         if (requiredNodes.add(node)) {
             switch (node.type()) {
-                case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> {
+                case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> { // NOSONAR
                 }
                 case ROWFILTER, OBSERVER -> node.in(0).accesses().forEach(this::addRequired);
                 default -> throw new IllegalArgumentException();
@@ -103,9 +105,9 @@ final class PruneAccesses {
         if (requiredAccessIds.add(access)) {
             final TableTransformGraph.Node node = access.producer().node();
             switch (node.type()) {
-                case SOURCE, ROWINDEX -> {
+                case SOURCE, ROWINDEX -> { // NOSONAR
                 }
-                case APPEND -> addRequired(TableTransformUtil.AppendAccesses.find(access).input());
+                case APPEND -> addRequired(AppendAccesses.find(access).input());
                 case CONCATENATE -> {
                     final int i = node.out().accesses().indexOf(access);
                     node.in().forEach(in -> addRequired(in.access(i)));
@@ -134,18 +136,16 @@ final class PruneAccesses {
             });
             if (!unused.isEmpty()) {
                 pruned = true;
-                unused.forEach(access -> {
-                    switch (node.type()) {
-                        case SOURCE, MAP, ROWINDEX -> node.out().accesses().remove(access);
-                        case APPEND -> TableTransformUtil.AppendAccesses.find(access).remove();
-                        case CONCATENATE -> {
-                            final int i = node.out().accesses().indexOf(access);
-                            node.out().accesses().remove(i);
-                            node.in().forEach(in -> in.accesses().remove(i));
-                        }
-                        default -> throw new IllegalArgumentException();
-                    }
-                });
+                switch (node.type()) {
+                    case SOURCE, MAP, ROWINDEX -> node.out().accesses().removeAll(unused);
+                    case APPEND -> unused.forEach(access -> AppendAccesses.find(access).remove());
+                    case CONCATENATE -> unused.forEach(access -> {
+                        final int i = node.out().accesses().indexOf(access);
+                        node.out().accesses().remove(i);
+                        node.in().forEach(in -> in.accesses().remove(i));
+                    });
+                    default -> throw new IllegalArgumentException();
+                }
             }
         }
         return pruned;

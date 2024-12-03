@@ -54,12 +54,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.knime.core.table.virtual.graph.rag.BranchGraph;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
 import org.knime.core.table.virtual.graph.rag.debug.Mermaid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class VirtualTableDebugging {
 
     static final boolean ENABLE_TABLE_TRANSFORM_GRAPH_LOGGING = false;
 
-    public interface Logger extends AutoCloseable {
+    public interface TableTransformGraphLogger extends AutoCloseable {
 
         void append(String text);
 
@@ -73,11 +75,11 @@ public class VirtualTableDebugging {
         void close();
     }
 
-    public static Logger createLogger() {
+    public static TableTransformGraphLogger createLogger() {
         return ENABLE_TABLE_TRANSFORM_GRAPH_LOGGING ? new MermaidLogger() : new NullLogger();
     }
 
-    public static final class NullLogger implements Logger {
+    public static final class NullLogger implements TableTransformGraphLogger {
 
         @Override
         public void append(final String text) {
@@ -105,7 +107,9 @@ public class VirtualTableDebugging {
         }
     }
 
-    public static final class MermaidLogger implements Logger {
+    public static final class MermaidLogger implements TableTransformGraphLogger {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(MermaidLogger.class);
 
         private static final AtomicInteger nextIndex = new AtomicInteger();
 
@@ -146,7 +150,7 @@ public class VirtualTableDebugging {
 
         @Override
         public void close() {
-            System.out.println("Writing Mermaid output to " + filename);
+            LOGGER.info("Writing Mermaid output to " + filename);
             mermaid.save(filename);
         }
 

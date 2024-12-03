@@ -94,7 +94,7 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
 
         private final ColumnarSchema schema;
 
-        MissingValueMapperFactory(ColumnarSchema schema) {
+        MissingValueMapperFactory(final ColumnarSchema schema) {
             this.schema = schema;
         }
 
@@ -104,7 +104,7 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
         }
 
         @Override
-        public Runnable createMapper(ReadAccess[] inputs, WriteAccess[] outputs) {
+        public Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs) {
             for (WriteAccess output : outputs) {
                 output.setMissing();
             }
@@ -112,11 +112,13 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
         }
 
         @Override
-        public final boolean equals(Object o) {
-            if (this == o)
+        public final boolean equals(final Object o) {
+            if (this == o) {
                 return true;
-            if (!(o instanceof MissingValueMapperFactory that))
+            }
+            if (!(o instanceof MissingValueMapperFactory that)) {
                 return false;
+            }
 
             return schema.equals(that.schema);
         }
