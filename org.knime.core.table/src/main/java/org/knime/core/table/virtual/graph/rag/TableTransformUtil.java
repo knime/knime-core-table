@@ -61,6 +61,7 @@ import java.util.Set;
 import org.knime.core.table.row.Selection;
 import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
+import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging.TableTransformGraphLogger;
 import org.knime.core.table.virtual.graph.rag.AccessId.Producer;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Node;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Port;
@@ -100,7 +101,7 @@ public class TableTransformUtil { // TODO (TP) rename
         optimize(graph, new VirtualTableDebugging.NullLogger());
     }
 
-    public static void optimize(final TableTransformGraph graph, final VirtualTableDebugging.TableTransformGraphLogger logger) {
+    public static void optimize(final TableTransformGraph graph, final TableTransformGraphLogger logger) {
         PruneAccesses.pruneAccesses(graph);
         logger.appendGraph("optimize()", "trim unused nodes and edges", graph);
         boolean changed = true;
@@ -134,23 +135,19 @@ public class TableTransformUtil { // TODO (TP) rename
      * @return list of all nodes in {@code graph}
      */
     static List<Node> nodes(final TableTransformGraph graph) {
-        return new ArrayList<>(new Nodes(graph).nodes);
+        return new ArrayList<>(new CollectNodes(graph).nodes);
     }
 
-    private static class Nodes {
+    private static class CollectNodes {
         final Set<Node> nodes = new LinkedHashSet<>();
 
-        Nodes(final TableTransformGraph graph) {
+        CollectNodes(final TableTransformGraph graph) {
             addRecursively(graph.terminal());
         }
 
         private void addRecursively(final Port port) {
-            port.controlFlowEdges().forEach(e -> {
-                addRecursively(e.to().owner());
-            });
-            port.accesses().forEach(a -> {
-                addRecursively(a.find().producer().node());
-            });
+            port.controlFlowEdges().forEach(e -> addRecursively(e.to().owner()));
+            port.accesses().forEach(a -> addRecursively(a.find().producer().node()));
         }
 
         private void addRecursively(final Node node) {
@@ -228,7 +225,7 @@ public class TableTransformUtil { // TODO (TP) rename
     }
 
     private static boolean mergeSliceToSource(final Node slice) {
-        final Node source = slice.in(0).controlFlowTarget(0);;
+        final Node source = slice.in(0).controlFlowTarget(0);
 
         // check whether the source supports efficient row range slicing
         final SourceTransformSpec sourceSpec = source.getTransformSpec();
@@ -243,7 +240,8 @@ public class TableTransformUtil { // TODO (TP) rename
         final RowRangeSelection mergedRange = sourceRange.retain(sliceRange);
 
         // create new merged SOURCE Node
-        final SourceTransformSpec mergedSpec = new SourceTransformSpec(sourceSpec.getSourceIdentifier(), sourceSpec.getProperties(), mergedRange);
+        final SourceTransformSpec mergedSpec =
+            new SourceTransformSpec(sourceSpec.getSourceIdentifier(), sourceSpec.getProperties(), mergedRange);
         final Node merged = new Node(mergedSpec);
         source.out().accesses().forEach(access -> {
             final int i = access.producer().index();
@@ -319,9 +317,12 @@ public class TableTransformUtil { // TODO (TP) rename
 
         final Node concatenate = slice.in(0).controlFlowTarget(0);
 
+        // make a copy because we might modify the conatenate.in() list
         final List<Port> inPorts = new ArrayList<>(concatenate.in());
-        long r0 = 0; // row index of first row of current predecessor
-        long numRemovedRows = 0; // how many rows (from the front) have been removed by eliminating or slicing predecessors
+        // row index of first row of current predecessor
+        long r0 = 0;
+        // how many rows (from the front) have been removed by eliminating or slicing predecessors
+        long numRemovedRows = 0;
         for (int i = 0; i < inPorts.size(); i++) {
             final Port port = inPorts.get(i);
             final long r = TableTransformGraphProperties.numRows(port);
@@ -335,19 +336,7 @@ public class TableTransformUtil { // TODO (TP) rename
                     // The SLICE needs to be modified with a new RowRange,
                     // shifted by numRemovedRows.
                     // That is, [0, s1 - numRemovedRows).
-
-                    // TODO (TP): not sure whether this is useful in more than one place
-                    replaceSpec(slice, new SliceTransformSpec(
-                            RowRangeSelection.all().retain(0, s1 - numRemovedRows)));
-                    // TODO (TP): otherwise, this is inlined and shortened:
-                    //      var newNode = new Node(new SliceTransformSpec(RowRangeSelection.all().retain(0, s1 - numRemovedRows)));
-                    //      for (Port oldInPort : slice.in()) {
-                    //          var newInPort = new Port(newNode);
-                    //          newNode.in().add(newInPort);
-                    //          oldInPort.forEachControlFlowEdge(edge -> edge.relinkFrom(newInPort));
-                    //      }
-                    //      slice.out().forEachControlFlowEdge(edge -> edge.relinkTo(newNode.out()));
-
+                    replaceSpec(slice, new SliceTransformSpec(RowRangeSelection.all().retain(0, s1 - numRemovedRows)));
                     return true;
                 }
                 return false;
@@ -383,7 +372,6 @@ public class TableTransformUtil { // TODO (TP) rename
         return true;
     }
 
-    // TODO (TP): not sure whether this is useful in more than one place
     private static Node replaceSpec(final Node oldNode, final TableTransformSpec newSpec ) {
         var newNode = new Node(newSpec);
         for (Port oldInPort : oldNode.in()) {

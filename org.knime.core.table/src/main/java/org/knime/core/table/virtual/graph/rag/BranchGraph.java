@@ -76,8 +76,6 @@ public class BranchGraph {
                 default -> 0;
             });
 
-    private final Comparator<InnerNode> policy = DEFAULT_POLICY;
-
     public sealed interface AbstractNode {
         TableTransformGraph.Node node();
 
@@ -96,16 +94,20 @@ public class BranchGraph {
     public record BranchEdge(List<InnerNode> innerNodes, BranchNode target) {
     }
 
-    private final TableTransformGraph tableTransformGraph;
+    private final TableTransformGraph m_tableTransformGraph;
 
-    private final BranchEdge rootBranch;
+    private final Map<TableTransformGraph.Node, AbstractNode> m_depNodes;
 
-    private final Map<TableTransformGraph.Node, AbstractNode> depNodes = new HashMap<>();
+    private final BranchEdge m_rootBranch;
+
+    private final Comparator<InnerNode> m_policy;
 
     public BranchGraph(final TableTransformGraph tableTransformGraph) {
-        this.tableTransformGraph = tableTransformGraph;
-        rootBranch = getBranch(tableTransformGraph.terminal());
-        sequentialize(rootBranch);
+        m_tableTransformGraph = tableTransformGraph;
+        m_depNodes = new HashMap<>();
+        m_rootBranch = getBranch(tableTransformGraph.terminal());
+        m_policy = DEFAULT_POLICY;
+        sequentialize(m_rootBranch);
     }
 
     /**
@@ -113,14 +115,14 @@ public class BranchGraph {
      * (This is the entry point into the sequentialized graph.)
      */
     public BranchEdge rootBranch() {
-        return rootBranch;
+        return m_rootBranch;
     }
 
     /**
      * Get the {@code TableTransformGraph} from which this {@code BranchGraph} was built.
      */
     public TableTransformGraph tableTransformGraph() {
-        return tableTransformGraph;
+        return m_tableTransformGraph;
     }
 
     private BranchEdge getBranch(final TableTransformGraph.Port port) {
@@ -171,7 +173,7 @@ public class BranchGraph {
      */
     private AbstractNode getDepNode(final TableTransformGraph.Node node, final List<InnerNode> innerNodes,
             final AtomicReference<BranchNode> branchTarget) {
-        final AbstractNode depNode = depNodes.get(node);
+        final AbstractNode depNode = m_depNodes.get(node);
         if (depNode != null) {
             return depNode;
         }
@@ -181,7 +183,7 @@ public class BranchGraph {
                 node.in().forEach(port -> branches.add(getBranch(port)));
                 final BranchNode branchNode = new BranchNode(node, branches);
                 branchTarget.setPlain(branchNode);
-                depNodes.put(node, branchNode);
+                m_depNodes.put(node, branchNode);
                 return branchNode;
             }
             case SLICE, MAP, ROWFILTER, ROWINDEX, OBSERVER -> { // NOSONAR
@@ -189,7 +191,7 @@ public class BranchGraph {
                 final Set<AbstractNode> dependencies = getDependencies(port, innerNodes, branchTarget);
                 final InnerNode innerNode = new InnerNode(node, dependencies);
                 innerNodes.add(innerNode);
-                depNodes.put(node, innerNode);
+                m_depNodes.put(node, innerNode);
                 return innerNode;
             }
             default -> throw new IllegalArgumentException();
@@ -204,7 +206,7 @@ public class BranchGraph {
             var next = todo.stream() //
                 .filter(node -> node.dependencies().stream() //
                     .noneMatch(todo::contains)) //
-                .sorted(policy) //
+                .sorted(m_policy) //
                 .findFirst().orElseThrow();
             branch.innerNodes().add(next);
             todo.remove(next);

@@ -48,6 +48,7 @@
  */
 package org.knime.core.table.virtual.graph.debug;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -113,45 +114,49 @@ public class VirtualTableDebugging {
 
         private static final AtomicInteger nextIndex = new AtomicInteger();
 
-        private final Mermaid mermaid;
+        private final Mermaid m_mermaid;
 
-        private final String filename;
+        private final String m_filename;
 
         public MermaidLogger() {
             this(String.format("/Users/pietzsch/git/mermaid/irgraph%03d.html", nextIndex.getAndIncrement()));
         }
 
         public MermaidLogger(final String filename) {
-            mermaid = new Mermaid();
-            this.filename = filename;
+            m_mermaid = new Mermaid();
+            this.m_filename = filename;
             append("Log " + LocalDateTime.now());
             append(printStackTrace(3, -1));
         }
 
         @Override
         public void append(final String text) {
-            mermaid.append("<pre>" + text + "</pre>\n");
+            m_mermaid.append("<pre>" + text + "</pre>\n");
         }
 
         @Override
         public void appendGraph(final String title, final TableTransformGraph graph) {
-            mermaid.append(title, graph);
+            m_mermaid.append(title, graph);
         }
 
         @Override
         public void appendGraph(final String title, final String description, final TableTransformGraph graph) {
-            mermaid.append(title, description, graph);
+            m_mermaid.append(title, description, graph);
         }
 
         @Override
         public void appendGraph(final String title, final String description, final BranchGraph graph) {
-            mermaid.append(title, description, graph);
+            m_mermaid.append(title, description, graph);
         }
 
         @Override
         public void close() {
-            LOGGER.info("Writing Mermaid output to " + filename);
-            mermaid.save(filename);
+            LOGGER.info("Writing Mermaid output to {}", m_filename);
+            try {
+                m_mermaid.save(m_filename);
+            } catch (IOException e) {
+                LOGGER.error("Writing Mermaid output to {} failed:", m_filename, e);
+            }
         }
 
         private static String printStackTrace(final int startDepth, final int maxDepth) {

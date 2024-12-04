@@ -73,33 +73,33 @@ public class CapBuilder {
         final SourceTableProperties.CursorType cursorType =
                 sequentializedGraph.tableTransformGraph().supportedCursorType();
         final long numRows = sequentializedGraph.tableTransformGraph().numRows();
-        return new CursorAssemblyPlan(builder.cap, cursorType, numRows, builder.sourceSchemas);
+        return new CursorAssemblyPlan(builder.m_cap, cursorType, numRows, builder.m_sourceSchemas);
     }
 
-    private final List<CapNode> cap;
+    private final List<CapNode> m_cap;
 
-    private final Map<TableTransformGraph.Node, CapNode> capNodes;
+    private final Map<TableTransformGraph.Node, CapNode> m_capNodes;
 
-    private final Map<AccessId, CapAccessId> capAccessIds;
+    private final Map<AccessId, CapAccessId> m_capAccessIds;
 
-    private final Map<UUID, ColumnarSchema> sourceSchemas;
+    private final Map<UUID, ColumnarSchema> m_sourceSchemas;
 
     private CapBuilder(final BranchGraph sequentializedGraph) {
-        cap = new ArrayList<>();
-        capNodes = new HashMap<>();
-        capAccessIds = new HashMap<>();
-        sourceSchemas = new HashMap<>();
+        m_cap = new ArrayList<>();
+        m_capNodes = new HashMap<>();
+        m_capAccessIds = new HashMap<>();
+        m_sourceSchemas = new HashMap<>();
 
         BranchGraph.BranchEdge branch = sequentializedGraph.rootBranch();
 
         final CapNode capNode = appendBranch(branch);
         final CapAccessId[] inputs = capAccessIdsFor(sequentializedGraph.tableTransformGraph().terminal().accesses());
-        cap.add(new CapNodeConsumer(nextCapNodeIndex(), inputs, capNode.index()));
+        m_cap.add(new CapNodeConsumer(nextCapNodeIndex(), inputs, capNode.index()));
     }
 
     // get index of next CapNode
     private int nextCapNodeIndex() {
-        return cap.size();
+        return m_cap.size();
     }
 
     private CapNode appendBranch(final BranchGraph.BranchEdge branch) {
@@ -137,7 +137,7 @@ public class CapBuilder {
                 final UUID uuid = spec.getSourceIdentifier();
                 final int[] columns = outputs.stream().mapToInt(a -> a.find().producer().index()).toArray();
                 capNode = new CapNodeSource(nextCapNodeIndex(), uuid, columns, spec.getRowRange());
-                sourceSchemas.put(uuid, spec.getSchema());
+                m_sourceSchemas.put(uuid, spec.getSchema());
             }
             case APPEND -> { // NOSONAR
                 final int[][] predecessorOutputIndices = new int[numPredecessors][];
@@ -215,8 +215,8 @@ public class CapBuilder {
      * Remember the association to corresponding {@code ragNode}.
      */
     private void append(final TableTransformGraph.Node ragNode, final CapNode capNode) {
-        cap.add(capNode);
-        capNodes.put(ragNode, capNode);
+        m_cap.add(capNode);
+        m_capNodes.put(ragNode, capNode);
     }
 
     /**
@@ -225,7 +225,7 @@ public class CapBuilder {
     private void createCapAccessIdsFor(final Iterable<AccessId> outputs, final CapNode producer) {
         int i = 0;
         for (AccessId output : outputs) {
-            capAccessIds.put(output.find(), new CapAccessId(producer, i));
+            m_capAccessIds.put(output.find(), new CapAccessId(producer, i));
             ++i;
         }
     }
@@ -237,7 +237,7 @@ public class CapBuilder {
         final CapAccessId[] imps = new CapAccessId[ids.size()];
         int i = 0;
         for (AccessId id : ids) {
-            imps[i] = capAccessIds.get(id.find());
+            imps[i] = m_capAccessIds.get(id.find());
             ++i;
         }
         return imps;

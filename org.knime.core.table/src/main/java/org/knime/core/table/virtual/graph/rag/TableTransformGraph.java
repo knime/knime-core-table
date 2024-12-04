@@ -151,12 +151,12 @@ public class TableTransformGraph {
          * @return the new edge
          */
         ControlFlowEdge relinkFrom(final Port from) throws IllegalStateException {
-            final ControlFlowEdge e = new ControlFlowEdge(from, this.to);
             this.from.controlFlowEdges.remove(this);
             final int i = this.to.controlFlowEdges.indexOf(this);
             if (i < 0) {
                 throw new IllegalStateException();
             }
+            final var e = new ControlFlowEdge(from, this.to);
             this.to.controlFlowEdges.set(i, e);
             from.controlFlowEdges.add(e);
             return e;
@@ -169,12 +169,12 @@ public class TableTransformGraph {
          * @return the new edge
          */
         ControlFlowEdge relinkTo(final Port to) throws IllegalStateException {
-            final ControlFlowEdge e = new ControlFlowEdge(this.from, to);
             this.to.controlFlowEdges.remove(this);
             final int i = this.from.controlFlowEdges.indexOf(this);
             if (i < 0) {
                 throw new IllegalStateException();
             }
+            final var e = new ControlFlowEdge(this.from, to);
             this.from.controlFlowEdges.set(i, e);
             to.controlFlowEdges.add(e);
             return e;
@@ -241,7 +241,6 @@ public class TableTransformGraph {
                     case SOURCE, SLICE, ROWINDEX -> 0;
                     case MAP, ROWFILTER, OBSERVER -> getColumnSelection(spec).length;
                     case APPEND, CONCATENATE -> predecessor.numColumns();
-                    // TODO: COLSELECT shouldn't be a possible value here --> SpecType vs NodeType
                     case COLSELECT, APPENDMAP, APPENDMISSING -> throw new IllegalArgumentException();
                 };
 
@@ -409,19 +408,36 @@ public class TableTransformGraph {
         // control flow:
         switch (type) {
             case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE, OBSERVER -> {
-                // link to the new node
+                // link to the new node.
+                //
+                // NB: Everything link from the predecessorTerminal has already
+                //     been re-linked from the new node by the constructor.
                 terminal.linkTo(node); // NOSONAR node cannot be null here
             }
             case MAP, APPENDMAP, APPENDMISSING, COLSELECT -> {
                 // link to everything that was linked to by predecessor
                 // (there is exactly one predecessor)
-                predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(terminal));
+                //
+                // NB: Nodes of these spec types are not themselves linked with
+                //     control flow edges. Therefore, no re-linking of edges
+                //     from predecessorTerminal has happened in the Node
+                //     constructor.
+                predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(terminal)); // NOSONAR predecessorTerminal cannot be null here
             }
-            case ROWFILTER -> {
+            case ROWFILTER -> { // NOSONAR
                 // link to other ROWFILTERs that were linked to by predecessor
                 // (there is exactly one predecessor)
-                // TODO (TP): add comment on why the isEmpty() is necessary.
-                if (!predecessorTerminal.controlFlowEdges().isEmpty() && predecessorTerminal.controlFlowTarget(0).type == ROWFILTER) {
+                //
+                // NB: The controlFlowEdges().isEmpty() check is necessary:
+                //     At this point, we have constructed a new ROWFILTER node.
+                //     If the predecessorTerminal did already link to one or
+                //     more other ROWFILTERs, these links are still connected to
+                //     predecessorTerminal and we need to re-link them. However,
+                //     if the predecessorTerminal linked to some other node
+                //     type, that link has already been re-linked from the bew
+                //     node by the constructor.
+                if (!predecessorTerminal.controlFlowEdges().isEmpty() // NOSONAR predecessorTerminal cannot be null here
+                    && predecessorTerminal.controlFlowTarget(0).type == ROWFILTER) {
                     predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(terminal));
                 }
                 // link to the new node
@@ -478,7 +494,6 @@ public class TableTransformGraph {
 
     @Override
     public String toString() {
-        // return "TableTransformGraph{terminal=" + terminal + "}";
         return "TableTransformGraph" + DependencyGraph.prettyPrint(this);
     }
 
@@ -497,51 +512,53 @@ public class TableTransformGraph {
      * Make an independent copy of this {@code TableTransformGraph}.
      */
     public TableTransformGraph copy() {
-        class Copier {
-            private final Map<Node, Node> nodes = new HashMap<>();
-
-            private final Map<AccessId, AccessId> accessIds = new HashMap<>();
-
-            private Port copyInPort(final Port port, final Node owner) {
-                final Port portCopy = new Port(owner);
-                port.accesses().forEach(a -> portCopy.accesses().add(copyOf(a.find())));
-                port.controlFlowEdges().forEach(e -> portCopy.linkTo(copyOf(e.to().owner())));
-                return portCopy;
-            }
-
-            private Node copyOf(final Node node) {
-                final Node n = nodes.get(node);
-                if (n != null) {
-                    return n;
-                }
-                final Node nodeCopy = new Node(node.getTransformSpec()); // TODO cast necessary because of Node(Port) constructor
-                nodes.put(node, nodeCopy);
-                node.out.accesses().forEach(a -> nodeCopy.out.accesses().add(copyOf(a.find())));
-                node.in.forEach(port -> nodeCopy.in.add(copyInPort(port, nodeCopy)));
-                return nodeCopy;
-            }
-
-            private AccessId copyOf(final AccessId access) {
-                final AccessId a = accessIds.get(access);
-                if (a != null) {
-                    return a;
-                }
-                final AccessId.Producer producerCopy = copyOf(access.producer());
-                return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label()));
-            }
-
-            private AccessId.Producer copyOf(final AccessId.Producer producer) {
-                return new AccessId.Producer(copyOf(producer.node()), producer.index());
-            }
-        }
         return new TableTransformGraph(new Copier().copyInPort(terminal, null));
+    }
+
+    private static class Copier {
+        private final Map<Node, Node> nodes = new HashMap<>();
+
+        private final Map<AccessId, AccessId> accessIds = new HashMap<>();
+
+        private Port copyInPort(final Port port, final Node owner) {
+            final Port portCopy = new Port(owner);
+            port.accesses().forEach(a -> portCopy.accesses().add(copyOf(a.find())));
+            port.controlFlowEdges().forEach(e -> portCopy.linkTo(copyOf(e.to().owner())));
+            return portCopy;
+        }
+
+        private Node copyOf(final Node node) {
+            final Node n = nodes.get(node);
+            if (n != null) {
+                return n;
+            }
+            final Node nodeCopy = new Node(node.getTransformSpec());
+            nodes.put(node, nodeCopy);
+            node.out.accesses().forEach(a -> nodeCopy.out.accesses().add(copyOf(a.find())));
+            node.in.forEach(port -> nodeCopy.in.add(copyInPort(port, nodeCopy)));
+            return nodeCopy;
+        }
+
+        private AccessId copyOf(final AccessId access) {
+            final AccessId a = accessIds.get(access);
+            if (a != null) {
+                return a;
+            }
+            final AccessId.Producer producerCopy = copyOf(access.producer());
+            return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label()));
+        }
+
+        private AccessId.Producer copyOf(final AccessId.Producer producer) {
+            return new AccessId.Producer(copyOf(producer.node()), producer.index());
+        }
     }
 
     private static void unionAccesses(final Port from, final Port to, final int n) {
         unionAccesses(from, 0, to, 0, n);
     }
 
-    private static void unionAccesses(final Port from, final int fromStartPos, final Port to, final int toStartPos, final int n) {
+    private static void unionAccesses(final Port from, final int fromStartPos, final Port to, final int toStartPos,
+        final int n) {
         for (int i = 0; i < n; i++) {
             from.access(i + fromStartPos).union(to.access(i + toStartPos));
         }

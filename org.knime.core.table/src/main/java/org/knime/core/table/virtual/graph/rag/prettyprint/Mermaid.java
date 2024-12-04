@@ -98,8 +98,6 @@ public class Mermaid {
             sb.append("'darkMode': 'true'");
         } else {
             sb.append("'background' : '#AAAAAA', ");
-            //            sb.append("'primaryColor': '#44FF44', ");
-            //            sb.append("'darkMode': 'false'");
         }
         sb.append("}}}%%\n");
         sb.append(graph);
@@ -110,11 +108,9 @@ public class Mermaid {
         sb.append(html);
     }
 
-    public void save(final String filename) {
+    public void save(final String filename) throws IOException {
         try (FileWriter w = new FileWriter(filename)) {
             w.write(HEADER + sb + FOOTER);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -166,7 +162,7 @@ public class Mermaid {
             sb.append(switch (edge.type()) {
                 case DATA -> (DARK_MODE ? "blue" : "#8888FF,anything");
                 case CONTROL -> (DARK_MODE ? "red" : "#FF8888,anything");
-                case EXECUTION -> (DARK_MODE ? "lime" : "lime");
+                case EXECUTION -> "lime";
             });
             sb.append(";\n");
             ++edgeId;

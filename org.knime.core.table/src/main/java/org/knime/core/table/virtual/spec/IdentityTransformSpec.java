@@ -52,6 +52,8 @@ package org.knime.core.table.virtual.spec;
  * This transformation is a no-op i.e. it doesn't change the incoming table.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ *
+ * @deprecated This class is unused and only kept in case a serialized instance exists somewhere
  */
 @Deprecated
 public enum IdentityTransformSpec implements TableTransformSpec {

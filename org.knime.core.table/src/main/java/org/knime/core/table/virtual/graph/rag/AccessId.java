@@ -55,16 +55,16 @@ public class AccessId {
     public record Producer(Node node, int index) {
     }
 
-    private final Producer producer;
+    private final Producer m_producer;
 
     // parent for union-find
-    private AccessId parent;
+    private AccessId m_parent;
 
     /**
      * Label is for used for {@code toString()} only, and shouldn't be relied on
      * for anything else.
      */
-    private final String label;
+    private final String m_label;
 
     /**
      * {@code producer} may be {@code null}, for example if this {@code
@@ -75,32 +75,32 @@ public class AccessId {
      * @param label
      */
     public AccessId(final Producer producer, final String label) {
-        this.producer = producer;
-        this.parent = this; // NOSONAR
-        this.label = label;
+        this.m_producer = producer;
+        this.m_parent = this; // NOSONAR
+        this.m_label = label;
     }
 
     public Producer producer() {
-        return producer;
+        return m_producer;
     }
 
     public AccessId find() {
-        if (parent != this) {
-            final var p = parent.find();
-            if (parent != p) {
-                parent = p;
+        if (m_parent != this) {
+            final var p = m_parent.find();
+            if (m_parent != p) {
+                m_parent = p;
             }
         }
-        return parent;
+        return m_parent;
     }
 
     public void union(final AccessId other) {
-        parent = other.find();
+        m_parent = other.find();
     }
 
     @Override
     public String toString() {
-        return label + (parent == this ? "" : ("->" + find()));
+        return m_label + (m_parent == this ? "" : ("->" + find()));
     }
 
     /**
@@ -108,6 +108,6 @@ public class AccessId {
      * for anything else.
      */
     String label() {
-        return label;
+        return m_label;
     }
 }

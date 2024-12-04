@@ -61,10 +61,6 @@ import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
 import org.knime.core.table.virtual.spec.TableTransformSpec;
 
-
-// TODO (TP):
-//  COLSELECT, APPENDMISSING, APPENDMAP never make it into the TableTransformGraph.
-//  Should we split SpecType and NodeType? RawSpecType, NodeSpecType, ... ?
 public enum SpecType {
     SOURCE, //
     SLICE, //
