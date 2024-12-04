@@ -91,15 +91,15 @@ public class DependencyGraph {
         }
     }
 
-    private final Map<TableTransformGraph.Node, Node> nodeMap = new HashMap<>();
+    private final Map<TableTransformGraph.Node, Node> m_nodeMap = new HashMap<>();
 
-    final Set<Node> nodes = new LinkedHashSet<>();
+    final Set<Node> m_nodes = new LinkedHashSet<>();
 
-    final Set<Edge> edges = new LinkedHashSet<>();
+    final Set<Edge> m_edges = new LinkedHashSet<>();
 
     public DependencyGraph(final TableTransformGraph tableTransformGraph) {
         final Node consumer = new Node(0, new ConsumerTransformSpec());
-        nodes.add(consumer);
+        m_nodes.add(consumer);
         addRecursively(consumer, tableTransformGraph.terminal());
     }
 
@@ -107,24 +107,24 @@ public class DependencyGraph {
         port.controlFlowEdges().forEach(e -> {
             final TableTransformGraph.Node target = e.to().owner();
             Node toNode = addRecursively(target );
-            edges.add(new Edge(CONTROL, fromNode, toNode));
+            m_edges.add(new Edge(CONTROL, fromNode, toNode));
         });
         port.accesses().forEach(a -> {
             final TableTransformGraph.Node target = a.find().producer().node();
             Node toNode = addRecursively(target );
-            edges.add(new Edge(DATA, fromNode, toNode));
+            m_edges.add(new Edge(DATA, fromNode, toNode));
         });
     }
 
     private Node addRecursively(final TableTransformGraph.Node ttgNode) {
-        final Node existing = nodeMap.get(ttgNode);
+        final Node existing = m_nodeMap.get(ttgNode);
         if (existing != null) {
             return existing;
         }
 
         final Node node = new Node(ttgNode);
-        nodeMap.put(ttgNode, node);
-        nodes.add(node);
+        m_nodeMap.put(ttgNode, node);
+        m_nodes.add(node);
         ttgNode.in().forEach(port -> addRecursively(node, port));
         return node;
     }
@@ -137,9 +137,9 @@ public class DependencyGraph {
     private String prettyPrint() {
         final StringBuilder sb = new StringBuilder("{");
         sb.append("\n  nodes=");
-        nodes.forEach(node -> sb.append("\n    ").append(node));
+        m_nodes.forEach(node -> sb.append("\n    ").append(node));
         sb.append("\n  edges=");
-        edges.forEach(edge -> sb.append("\n    ").append(edge));
+        m_edges.forEach(edge -> sb.append("\n    ").append(edge));
         sb.append("\n}");
         return sb.toString();
     }
@@ -154,7 +154,7 @@ public class DependencyGraph {
 
     public DependencyGraph(final BranchGraph branchGraph) {
         final Node consumer = new Node(0, new ConsumerTransformSpec());
-        nodes.add(consumer);
+        m_nodes.add(consumer);
         addRecursively(consumer, branchGraph.rootBranch());
     }
 
@@ -163,13 +163,13 @@ public class DependencyGraph {
         for (int i = innerNodes.size() - 1; i >= 0; i--) {
             BranchGraph.InnerNode innerNode = innerNodes.get(i);
             final Node toNode = new Node(innerNode.node());
-            nodes.add(toNode);
-            edges.add(new Edge(EXECUTION, fromNode, toNode));
+            m_nodes.add(toNode);
+            m_edges.add(new Edge(EXECUTION, fromNode, toNode));
             fromNode = toNode;
         }
         final Node toNode = new Node(branch.target().node());
-        nodes.add(toNode);
-        edges.add(new Edge(EXECUTION, fromNode, toNode));
+        m_nodes.add(toNode);
+        m_edges.add(new Edge(EXECUTION, fromNode, toNode));
         branch.target().branches().forEach(b -> addRecursively(toNode, b));
     }
 

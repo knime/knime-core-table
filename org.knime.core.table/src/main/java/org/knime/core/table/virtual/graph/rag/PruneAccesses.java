@@ -83,7 +83,7 @@ final class PruneAccesses {
     }
 
     private void addRequired(final TableTransformGraph.Node node) {
-        if (requiredNodes.add(node)) {
+        if (m_requiredNodes.add(node)) {
             switch (node.type()) {
                 case SOURCE, SLICE, ROWINDEX, APPEND, CONCATENATE -> { // NOSONAR
                 }
@@ -96,13 +96,13 @@ final class PruneAccesses {
         }
     }
 
-    private final Set<AccessId> requiredAccessIds = new HashSet<>();
+    private final Set<AccessId> m_requiredAccessIds = new HashSet<>();
 
-    private final Set<TableTransformGraph.Node> requiredNodes = new HashSet<>();
+    private final Set<TableTransformGraph.Node> m_requiredNodes = new HashSet<>();
 
     private void addRequired(final AccessId a) {
         final AccessId access = a.find();
-        if (requiredAccessIds.add(access)) {
+        if (m_requiredAccessIds.add(access)) {
             final TableTransformGraph.Node node = access.producer().node();
             switch (node.type()) {
                 case SOURCE, ROWINDEX -> { // NOSONAR
@@ -113,7 +113,7 @@ final class PruneAccesses {
                     node.in().forEach(in -> addRequired(in.access(i)));
                 }
                 case MAP -> {
-                    requiredNodes.add(node);
+                    m_requiredNodes.add(node);
                     node.in(0).accesses().forEach(this::addRequired);
                 }
                 default -> throw new IllegalArgumentException();
@@ -126,11 +126,11 @@ final class PruneAccesses {
      */
     private boolean pruneAccesses() {
         boolean pruned = false;
-        for (TableTransformGraph.Node node : requiredNodes) {
+        for (TableTransformGraph.Node node : m_requiredNodes) {
             final ArrayList<AccessId> unused = new ArrayList<>();
             node.out().accesses().forEach(a -> {
                 AccessId access = a.find();
-                if (!requiredAccessIds.contains(access)) {
+                if (!m_requiredAccessIds.contains(access)) {
                     unused.add(access);
                 }
             });

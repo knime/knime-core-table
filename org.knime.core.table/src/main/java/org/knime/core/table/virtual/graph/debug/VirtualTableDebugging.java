@@ -124,7 +124,7 @@ public class VirtualTableDebugging {
 
         public MermaidLogger(final String filename) {
             m_mermaid = new Mermaid();
-            this.m_filename = filename;
+            m_filename = filename;
             append("Log " + LocalDateTime.now());
             append(printStackTrace(3, -1));
         }

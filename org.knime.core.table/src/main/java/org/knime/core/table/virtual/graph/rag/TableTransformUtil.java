@@ -137,11 +137,12 @@ public class TableTransformUtil { // TODO (TP) rename
      * @return list of all nodes in {@code graph}
      */
     static List<Node> nodes(final TableTransformGraph graph) {
-        return new ArrayList<>(new CollectNodes(graph).nodes);
+        return new ArrayList<>(new CollectNodes(graph).m_nodes);
     }
 
     private static class CollectNodes {
-        final Set<Node> nodes = new LinkedHashSet<>();
+
+        final Set<Node> m_nodes = new LinkedHashSet<>();
 
         CollectNodes(final TableTransformGraph graph) {
             addRecursively(graph.terminal());
@@ -153,9 +154,9 @@ public class TableTransformUtil { // TODO (TP) rename
         }
 
         private void addRecursively(final Node node) {
-            if (!nodes.contains(node)) {
-                nodes.add(node);
-                node.in().forEach(port -> addRecursively(port));
+            if (!m_nodes.contains(node)) {
+                m_nodes.add(node);
+                node.in().forEach(this::addRecursively);
             }
         }
     }
@@ -266,7 +267,7 @@ public class TableTransformUtil { // TODO (TP) rename
         final RowRangeSelection sliceRange = sliceSpec.getRowRangeSelection();
         final RowRangeSelection mergedRange = predecessorRange.retain(sliceRange);
 
-        // TODO: Maybe this is a common operation?
+        // replace slice and predecessor by merged SLICE node
         final Node merged = new Node(new SliceTransformSpec(mergedRange));
         merged.in().add(new Port(merged));
         predecessor.in(0).forEachControlFlowEdge(edge -> edge.relinkFrom(merged.in(0)));

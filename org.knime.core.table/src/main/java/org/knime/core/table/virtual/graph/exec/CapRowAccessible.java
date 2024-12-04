@@ -83,14 +83,14 @@ class CapRowAccessible implements RowAccessible {
         final TableTransformGraph tableTransformGraph, //
         final ColumnarSchema schema, //
         final Map<UUID, RowAccessible> availableSources) {
-        this.m_tableTransformGraph = tableTransformGraph;
-        this.m_schema = schema;
-        this.m_availableSources = availableSources;
+        m_tableTransformGraph = tableTransformGraph;
+        m_schema = schema;
+        m_availableSources = availableSources;
 
         // TODO (TP) Should we add Caffeine as a dependency?
         //           The Guava doc recommends to prefer it over com.google.common.cache
         //           https://guava.dev/releases/snapshot-jre/api/docs/com/google/common/cache/CacheBuilder.html
-        this.m_capCache = CacheBuilder.newBuilder().softValues().build(new CacheLoader<>() {
+        m_capCache = CacheBuilder.newBuilder().softValues().build(new CacheLoader<>() {
             @Override
             public CapCursorData load(Selection selection) {
                 return createCursorData(selection);

@@ -54,20 +54,20 @@ import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
 public class AppendMapTransformSpec implements TableTransformSpec {
 
-    private final int[] inputColumnIndices;
+    private final int[] m_inputColumnIndices;
 
-    private final MapperFactory mapperFactory;
+    private final MapperFactory m_mapperFactory;
 
     public AppendMapTransformSpec(final int[] columnIndices, final MapperFactory mapperFactory) {
-        this.inputColumnIndices = columnIndices;
-        this.mapperFactory = mapperFactory;
+        m_inputColumnIndices = columnIndices;
+        m_mapperFactory = mapperFactory;
     }
 
     /**
      * @return The (input) column indices required for the map computation.
      */
     public int[] getColumnSelection() {
-        return inputColumnIndices.clone();
+        return m_inputColumnIndices.clone();
     }
 
     /**
@@ -78,12 +78,12 @@ public class AppendMapTransformSpec implements TableTransformSpec {
      * @return the MapperFactory
      */
     public MapperFactory getMapperFactory() {
-        return mapperFactory;
+        return m_mapperFactory;
     }
 
     @Override
     public String toString() {
-        return "AppendMap " + Arrays.toString(inputColumnIndices);
+        return "AppendMap " + Arrays.toString(m_inputColumnIndices);
     }
 
     @Override
@@ -95,21 +95,21 @@ public class AppendMapTransformSpec implements TableTransformSpec {
             return false;
         }
 
-        if (!Arrays.equals(inputColumnIndices, that.inputColumnIndices)) {
+        if (!Arrays.equals(m_inputColumnIndices, that.m_inputColumnIndices)) {
             return false;
         }
-        return mapperFactory.equals(that.mapperFactory);
+        return m_mapperFactory.equals(that.m_mapperFactory);
     }
 
     @Override
     public int hashCode() {
-        int result = Arrays.hashCode(inputColumnIndices);
-        result = 31 * result + mapperFactory.hashCode();
+        int result = Arrays.hashCode(m_inputColumnIndices);
+        result = 31 * result + m_mapperFactory.hashCode();
         return result;
     }
 
     public MapTransformSpec toMap() {
-        return new MapTransformSpec(inputColumnIndices, mapperFactory);
+        return new MapTransformSpec(m_inputColumnIndices, m_mapperFactory);
     }
 
 }

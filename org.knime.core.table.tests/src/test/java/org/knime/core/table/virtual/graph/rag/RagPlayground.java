@@ -56,18 +56,7 @@ import org.knime.core.table.virtual.graph.rag.prettyprint.DependencyGraph;
 public class RagPlayground {
 
     public static void main(final String[] args) {
-//        final VirtualTable table = VirtualTableTests.vtMinimal();
-//        final VirtualTable table = VirtualTableTests.vtAppend();
-//        final VirtualTable table = VirtualTableTests.vtAppendAndSlice();
-//        final VirtualTable table = VirtualTableTests.vtMapsAndFilters().slice(0,4);
-//        final VirtualTable table = VirtualTableTests.vtLinear().slice(2,4).slice(0,1);
-//        final VirtualTable table = VirtualTableTests.vtSimpleAppendMap();
-//        final VirtualTable table = VirtualTableTests.vtObserve();
-
-        final VirtualTable table = VirtualTableTests.vtConcatenateAndSlice();
-//        final VirtualTable table = VirtualTableTests.vtConcatenateAndSliceFullTable();
-//        final VirtualTable table = VirtualTableTests.vtConcatenateAndSliceSingleTable();
-//        final VirtualTable table = VirtualTableTests.vtConcatenateAndSliceFullSingleTable();
+        final VirtualTable table = VirtualTableTests.vtRowIndexMapAndSlice();
 
         try (var logger = new VirtualTableDebugging.MermaidLogger("/Users/pietzsch/git/mermaid/RagPlayGround_graph.html")) {
             var tableTransformGraph = new TableTransformGraph(table.getProducingTransform());

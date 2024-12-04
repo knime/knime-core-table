@@ -110,10 +110,9 @@ public class TableTransformGraph {
         }
 
         /**
-         * Performs the given action for each of {@code ControlFlowEdge}.
-         * Calls {@code forEach(action)} on a copy of the {@code controlFlowEdges} list,
-         * such that , on a copy of the
-         * R
+         * Performs the given action for each of {@code ControlFlowEdge}. Calls {@code forEach(action)} on a copy of the
+         * {@code controlFlowEdges} list, such that , on a copy of the R
+         *
          * @param action
          */
         public void forEachControlFlowEdge(final Consumer<? super ControlFlowEdge> action) {
@@ -144,8 +143,8 @@ public class TableTransformGraph {
 
     public record ControlFlowEdge(Port from, Port to) {
         /**
-         * Remove this {@code ControlFlowEdge} from its source {@code Port} and
-         * replace it in its target {@code Port} with a new edge from {@code
+         * Remove this {@code ControlFlowEdge} from its source {@code Port} and replace it in its target {@code Port}
+         * with a new edge from {@code
          * from}.
          *
          * @return the new edge
@@ -163,8 +162,8 @@ public class TableTransformGraph {
         }
 
         /**
-         * Remove this {@code ControlFlowEdge} from its target {@code Port} and
-         * replace it in its source {@code Port} with a new edge to {@code to}.
+         * Remove this {@code ControlFlowEdge} from its target {@code Port} and replace it in its source {@code Port}
+         * with a new edge to {@code to}.
          *
          * @return the new edge
          */
@@ -181,8 +180,7 @@ public class TableTransformGraph {
         }
 
         /**
-         * Remove this {@code ControlFlowEdge} from both its source and target
-         * {@code Port}.
+         * Remove this {@code ControlFlowEdge} from both its source and target {@code Port}.
          */
         void remove() {
             this.to.controlFlowEdges.remove(this);
@@ -192,8 +190,8 @@ public class TableTransformGraph {
         @Override
         public String toString() {
             return "ControlFlowEdge{" + //
-                    "from=" + (from.owner() == null ? "terminal" : from.owner().id()) + //
-                    ", to=" + to.owner().id() + "}";
+                "from=" + (from.owner() == null ? "terminal" : from.owner().id()) + //
+                ", to=" + to.owner().id() + "}";
         }
     }
 
@@ -204,65 +202,64 @@ public class TableTransformGraph {
 
         // ids are just for printing ...
         private static int nextNodeId = 1;
-        private final int id;
+        private final int m_id;
 
-        private final TableTransformSpec spec;
-        private final SpecType type;
-        private final List<Port> in = new ArrayList<>();
-        private final Port out;
-
+        private final TableTransformSpec m_spec;
+        private final SpecType m_type;
+        private final List<Port> m_in = new ArrayList<>();
+        private final Port m_out;
 
         /**
-         * Create a new node with the given {@code TableTransformSpec} but without populated inputs or outputs.
-         * This is needed to implement {@link #copy()}.
+         * Create a new node with the given {@code TableTransformSpec} but without populated inputs or outputs. This is
+         * needed to implement {@link #copy()}.
          */
         Node(final TableTransformSpec spec) {
 
-            id = nextNodeId;
+            m_id = nextNodeId;
             ++nextNodeId;
 
-            this.spec = spec;
-            type = SpecType.forSpec(spec);
-            out = new Port(this);
+            m_spec = spec;
+            m_type = SpecType.forSpec(spec);
+            m_out = new Port(this);
         }
 
         private Node(final TableTransformSpec spec, final int numOutputs,
             final List<TableTransformGraph> predecessors) {
 
-            id = nextNodeId;
+            m_id = nextNodeId;
             ++nextNodeId;
 
-            this.spec = spec;
-            type = SpecType.forSpec(spec);
+            m_spec = spec;
+            m_type = SpecType.forSpec(spec);
 
             for (int p = 0; p < predecessors.size(); p++) {
                 final TableTransformGraph predecessor = predecessors.get(p);
-                final int numInputs = switch (type) {
+                final int numInputs = switch (m_type) {
                     case SOURCE, SLICE, ROWINDEX -> 0;
                     case MAP, ROWFILTER, OBSERVER -> getColumnSelection(spec).length;
                     case APPEND, CONCATENATE -> predecessor.numColumns();
                     case COLSELECT, APPENDMAP, APPENDMISSING -> throw new IllegalArgumentException();
                 };
 
-                final List<AccessId> inputs = createAccessIds(null, numInputs, accessLabel("gamma", id, p));
+                final List<AccessId> inputs = createAccessIds(null, numInputs, accessLabel("gamma", m_id, p));
                 final Port inPort = new Port(this, inputs);
 
                 // access tracing:
                 // link inputs to predecessor outCols
-                switch (type) {
+                switch (m_type) { // NOSONAR "switch" statement is more readable here than "if"
                     case MAP, ROWFILTER -> {
                         final int[] selection = getColumnSelection(spec);
-                        unionAccesses(inPort, predecessor.terminal, numInputs, i -> selection[i]);
+                        unionAccesses(inPort, predecessor.m_terminal, numInputs, i -> selection[i]);
                     }
-                    default -> unionAccesses(inPort, predecessor.terminal, numInputs);
+                    default -> unionAccesses(inPort, predecessor.m_terminal, numInputs);
                 }
 
                 // control flow:
-                switch (type) {
+                switch (m_type) {
                     case ROWFILTER -> { // NOSONAR
-                        final ControlFlowEdge predecessorEdge = predecessor.terminal.controlFlowEdges().get(0);
+                        final ControlFlowEdge predecessorEdge = predecessor.m_terminal.controlFlowEdges().get(0);
                         final Node predecessorNode = predecessorEdge.to().owner();
-                        if (predecessorNode.type == ROWFILTER) {
+                        if (predecessorNode.m_type == ROWFILTER) {
                             // if predecessor links to a ROWFILTER (one or more)
                             // link this node to the target of that ROWFILTER's controlFlowEdge
                             final Node target = predecessorNode.in(0).controlFlowTarget(0);
@@ -275,72 +272,71 @@ public class TableTransformGraph {
                     }
                     case SLICE, ROWINDEX, APPEND, CONCATENATE, OBSERVER -> {
                         // re-link the predecessor controlFlowEdges to this Node
-                        predecessor.terminal.forEachControlFlowEdge(e -> e.relinkFrom(inPort));
+                        predecessor.m_terminal.forEachControlFlowEdge(e -> e.relinkFrom(inPort));
                     }
                     default -> {
                         // NOSONAR
                     }
                 }
 
-                in.add(inPort);
+                m_in.add(inPort);
             }
 
-            final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", id, -1)); // NOSONAR
-            out = new Port(this, outputs);
+            final List<AccessId> outputs = createAccessIds(this, numOutputs, accessLabel("delta", m_id, -1)); // NOSONAR
+            m_out = new Port(this, outputs);
         }
 
         public SpecType type() {
-            return type;
+            return m_type;
         }
 
         public List<Port> in() {
-            return in;
+            return m_in;
         }
 
         public Port in(final int i) {
-            return in.get(i);
+            return m_in.get(i);
         }
 
         public Port out() {
-            return out;
+            return m_out;
         }
 
         public <T extends TableTransformSpec> T getTransformSpec() {
-            return (T)spec;
+            return (T) m_spec;
         }
 
         @Override
         public String toString() {
-            return "(<" + id + ">, " + type + ", " + spec + ")";
+            return "(<" + m_id + ">, " + m_type + ", " + m_spec + ")";
         }
 
         /**
-         * To make it easier to identify nodes in debug output, each node is assigned a
-         * unique id on construction.
+         * To make it easier to identify nodes in debug output, each node is assigned a unique id on construction.
          * <p>
          * <em>This might be removed later. Please do not rely on uniqueness of {@code
          * id()}!</em>
          */
         public int id() {
-            return id;
+            return m_id;
         }
     }
 
-    private final Port terminal;
+    private final Port m_terminal;
 
     TableTransformGraph(final Port terminal) {
-        this.terminal = terminal;
+        m_terminal = terminal;
     }
 
     /**
      * Build a {@code TableTransformGraph} from {@code tableTransform}.
      *
      * @param tableTransform the producingTransform of the table
-     * @return TableTransformGraph  representing the given table
+     * @return TableTransformGraph representing the given table
      */
     public TableTransformGraph(final TableTransform tableTransform) {
         this(tableTransform.getSpec(),
-                tableTransform.getPrecedingTransforms().stream().map(TableTransformGraph::new).toList());
+            tableTransform.getPrecedingTransforms().stream().map(TableTransformGraph::new).toList());
     }
 
     TableTransformGraph(final TableTransformSpec spec, final List<TableTransformGraph> predecessors) { // NOSONAR This method is complex, but splitting it up will not make it easier to understand.
@@ -366,7 +362,7 @@ public class TableTransformGraph {
 
         final List<AccessId> accessIds = createAccessIds(null, numColumns, i -> "beta^" + i);
         final List<ControlFlowEdge> controlFlowEdges = new ArrayList<>();
-        terminal = new Port(null, accessIds, controlFlowEdges);
+        m_terminal = new Port(null, accessIds, controlFlowEdges);
 
         final Node node = switch (type) {
             case COLSELECT -> // don't create a new node, just permute predecessor's outCols
@@ -379,29 +375,29 @@ public class TableTransformGraph {
         };
 
         // access tracing:
-        final Port predecessorTerminal = predecessors.isEmpty() ? null : predecessors.get(0).terminal;
+        final Port predecessorTerminal = predecessors.isEmpty() ? null : predecessors.get(0).m_terminal;
         switch (type) {
             case SOURCE, MAP, APPEND, CONCATENATE -> {
                 // link outCols to node's outputs
-                unionAccesses(terminal, node.out, numColumns); // NOSONAR node cannot be null here
+                unionAccesses(m_terminal, node.m_out, numColumns); // NOSONAR node cannot be null here
             }
             case SLICE, ROWFILTER, OBSERVER -> {
                 // link outCols to the predecessor's outCols
                 // (there is exactly one predecessor)
-                unionAccesses(terminal, predecessorTerminal, numColumns);
+                unionAccesses(m_terminal, predecessorTerminal, numColumns);
             }
             case APPENDMAP, APPENDMISSING, ROWINDEX -> {
                 // pass through the predecessor's outCols
                 // (there is exactly one predecessor)
-                unionAccesses(terminal, predecessorTerminal, numColumns - numOutputs);
+                unionAccesses(m_terminal, predecessorTerminal, numColumns - numOutputs);
                 // link the final numOutputs outCols to the node's outputs
-                unionAccesses(terminal, numColumns - numOutputs, node.out, 0, numOutputs); // NOSONAR node cannot be null here
+                unionAccesses(m_terminal, numColumns - numOutputs, node.m_out, 0, numOutputs); // NOSONAR node cannot be null here
             }
             case COLSELECT -> {
                 // apply selection to predecessor's outCols
                 // (there is exactly one predecessor)
                 final int[] selection = getColumnSelection(spec);
-                unionAccesses(terminal, predecessorTerminal, numColumns, i -> selection[i]);
+                unionAccesses(m_terminal, predecessorTerminal, numColumns, i -> selection[i]);
             }
         }
 
@@ -412,7 +408,7 @@ public class TableTransformGraph {
                 //
                 // NB: Everything link from the predecessorTerminal has already
                 //     been re-linked from the new node by the constructor.
-                terminal.linkTo(node); // NOSONAR node cannot be null here
+                m_terminal.linkTo(node); // NOSONAR node cannot be null here
             }
             case MAP, APPENDMAP, APPENDMISSING, COLSELECT -> {
                 // link to everything that was linked to by predecessor
@@ -422,7 +418,7 @@ public class TableTransformGraph {
                 //     control flow edges. Therefore, no re-linking of edges
                 //     from predecessorTerminal has happened in the Node
                 //     constructor.
-                predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(terminal)); // NOSONAR predecessorTerminal cannot be null here
+                predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(m_terminal)); // NOSONAR predecessorTerminal cannot be null here
             }
             case ROWFILTER -> { // NOSONAR
                 // link to other ROWFILTERs that were linked to by predecessor
@@ -437,11 +433,11 @@ public class TableTransformGraph {
                 //     type, that link has already been re-linked from the bew
                 //     node by the constructor.
                 if (!predecessorTerminal.controlFlowEdges().isEmpty() // NOSONAR predecessorTerminal cannot be null here
-                    && predecessorTerminal.controlFlowTarget(0).type == ROWFILTER) {
-                    predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(terminal));
+                    && predecessorTerminal.controlFlowTarget(0).m_type == ROWFILTER) {
+                    predecessorTerminal.forEachControlFlowEdge(e -> e.relinkFrom(m_terminal));
                 }
                 // link to the new node
-                terminal.linkTo(node); // NOSONAR node cannot be null here
+                m_terminal.linkTo(node); // NOSONAR node cannot be null here
             }
         }
     }
@@ -450,31 +446,30 @@ public class TableTransformGraph {
      * Control-flow and accesses at the root (output, CONSUMER, sink, ...) of this {@code TableTransformGraph}.
      */
     public Port terminal() {
-        return terminal;
+        return m_terminal;
     }
 
     /**
      * number of columns at the root (output, CONSUMER, sink, ...) of this {@code TableTransformGraph}.
      */
     public int numColumns() {
-        return terminal.accesses().size();
+        return m_terminal.accesses().size();
     }
 
     /**
-     * Returns the number of rows of this {@code TableTransformGraph}, or a
-     * negative value if the number of rows cannot be determined.
+     * Returns the number of rows of this {@code TableTransformGraph}, or a negative value if the number of rows cannot
+     * be determined.
      *
      * @return number of rows in this {@code TableTransformGraph}
      */
     public long numRows() {
-        return TableTransformGraphProperties.numRows(terminal);
+        return TableTransformGraphProperties.numRows(m_terminal);
     }
 
     /**
      * Returns the {@link CursorType} supported by this {@code
-     * TableTransformGraph} (without additional prefetching and buffering). The
-     * result is determined by the {@code CursorType} of the sources, and the
-     * presence of ROWFILTER operations, etc.
+     * TableTransformGraph} (without additional prefetching and buffering). The result is determined by the
+     * {@code CursorType} of the sources, and the presence of ROWFILTER operations, etc.
      *
      * @return cursor supported by this {@code TableTransformGraph}
      */
@@ -483,8 +478,7 @@ public class TableTransformGraph {
     }
 
     /**
-     * Returns the {@code ColumnarSchema} at the {@link #terminal()} of this
-     * {@code TableTransformGraph}.
+     * Returns the {@code ColumnarSchema} at the {@link #terminal()} of this {@code TableTransformGraph}.
      *
      * @return schema of this {@code TableTransformGraph}
      */
@@ -512,13 +506,14 @@ public class TableTransformGraph {
      * Make an independent copy of this {@code TableTransformGraph}.
      */
     public TableTransformGraph copy() {
-        return new TableTransformGraph(new Copier().copyInPort(terminal, null));
+        return new TableTransformGraph(new Copier().copyInPort(m_terminal, null));
     }
 
     private static class Copier {
-        private final Map<Node, Node> nodes = new HashMap<>();
 
-        private final Map<AccessId, AccessId> accessIds = new HashMap<>();
+        private final Map<Node, Node> m_nodes = new HashMap<>();
+
+        private final Map<AccessId, AccessId> m_accessIds = new HashMap<>();
 
         private Port copyInPort(final Port port, final Node owner) {
             final Port portCopy = new Port(owner);
@@ -528,24 +523,24 @@ public class TableTransformGraph {
         }
 
         private Node copyOf(final Node node) {
-            final Node n = nodes.get(node);
+            final Node n = m_nodes.get(node);
             if (n != null) {
                 return n;
             }
             final Node nodeCopy = new Node(node.getTransformSpec());
-            nodes.put(node, nodeCopy);
-            node.out.accesses().forEach(a -> nodeCopy.out.accesses().add(copyOf(a.find())));
-            node.in.forEach(port -> nodeCopy.in.add(copyInPort(port, nodeCopy)));
+            m_nodes.put(node, nodeCopy);
+            node.m_out.accesses().forEach(a -> nodeCopy.m_out.accesses().add(copyOf(a.find())));
+            node.m_in.forEach(port -> nodeCopy.m_in.add(copyInPort(port, nodeCopy)));
             return nodeCopy;
         }
 
         private AccessId copyOf(final AccessId access) {
-            final AccessId a = accessIds.get(access);
+            final AccessId a = m_accessIds.get(access);
             if (a != null) {
                 return a;
             }
             final AccessId.Producer producerCopy = copyOf(access.producer());
-            return accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label()));
+            return m_accessIds.computeIfAbsent(access, ac -> new AccessId(producerCopy, access.label()));
         }
 
         private AccessId.Producer copyOf(final AccessId.Producer producer) {
@@ -582,8 +577,8 @@ public class TableTransformGraph {
 
     /**
      * Create {@code n} new {@code AccessId}s with the given {@code
-     * producerNode} (may be {@code null}). The {@code AccessId}s will be
-     * labeled by applying the given {@code label} function to {@code 0, 1, ...,
+     * producerNode} (may be {@code null}). The {@code AccessId}s will be labeled by applying the given {@code label}
+     * function to {@code 0, 1, ...,
      * n-1}.
      *
      * @param producerNode
@@ -591,8 +586,7 @@ public class TableTransformGraph {
      * @param label
      * @return
      */
-    static List<AccessId> createAccessIds(final Node producerNode, final int n,
-            final IntFunction<String> label) {
+    static List<AccessId> createAccessIds(final Node producerNode, final int n, final IntFunction<String> label) {
         final List<AccessId> cols = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             AccessId.Producer producer = producerNode == null ? null : new AccessId.Producer(producerNode, i);
@@ -602,9 +596,8 @@ public class TableTransformGraph {
     }
 
     /**
-     * Create an AccessId labeling function to produce labels like
-     * "alpha^i_v1(0)" (this would be created for {@code varName="alpha"},
-     * {@code nodeId=1}, {@code predecessorIndex=0}).
+     * Create an AccessId labeling function to produce labels like "alpha^i_v1(0)" (this would be created for
+     * {@code varName="alpha"}, {@code nodeId=1}, {@code predecessorIndex=0}).
      */
     static IntFunction<String> accessLabel(final String varName, final int nodeId, final int predecessorIndex) {
         return i -> {

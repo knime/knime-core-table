@@ -61,10 +61,10 @@ public class Mermaid {
 
     private static final boolean DARK_MODE = true;
 
-    private final StringBuilder sb;
+    private final StringBuilder m_sb;
 
     public Mermaid() {
-        sb = new StringBuilder();
+        m_sb = new StringBuilder();
     }
 
     public void append(final String title, final TableTransformGraph graph) {
@@ -85,32 +85,32 @@ public class Mermaid {
 
     private void append(final String title, final String description, final String graph) {
         if (title != null) {
-            sb.append("<h3>").append(title).append("</h3>\n");
+            m_sb.append("<h3>").append(title).append("</h3>\n");
         }
         if (description != null) {
-            sb.append(description).append("<br/>\n");
+            m_sb.append(description).append("<br/>\n");
         }
-        sb.append("<div class=\"mermaid\">\n");
-        sb.append("%%{init: {'theme': 'base', 'themeVariables': { ");
+        m_sb.append("<div class=\"mermaid\">\n");
+        m_sb.append("%%{init: {'theme': 'base', 'themeVariables': { ");
         if (DARK_MODE) {
-            sb.append("'background' : '#2B2B2B', ");
-            sb.append("'primaryColor': '#444444', ");
-            sb.append("'darkMode': 'true'");
+            m_sb.append("'background' : '#2B2B2B', ");
+            m_sb.append("'primaryColor': '#444444', ");
+            m_sb.append("'darkMode': 'true'");
         } else {
-            sb.append("'background' : '#AAAAAA', ");
+            m_sb.append("'background' : '#AAAAAA', ");
         }
-        sb.append("}}}%%\n");
-        sb.append(graph);
-        sb.append("</div><br/>\n");
+        m_sb.append("}}}%%\n");
+        m_sb.append(graph);
+        m_sb.append("</div><br/>\n");
     }
 
     public void append(final String html) {
-        sb.append(html);
+        m_sb.append(html);
     }
 
     public void save(final String filename) throws IOException {
         try (FileWriter w = new FileWriter(filename)) {
-            w.write(HEADER + sb + FOOTER);
+            w.write(HEADER + m_sb + FOOTER);
         }
     }
 
@@ -151,12 +151,12 @@ public class Mermaid {
 
     private static String mermaid(final DependencyGraph depGraph) {
         final var sb = new StringBuilder("graph BT\n");
-        for (var node : depGraph.nodes) {
+        for (var node : depGraph.m_nodes) {
             final String name = "<" + node.id() + "> " + node.spec();
             sb.append("  " + node.id() + "(\"" + name + "\")\n");
         }
         int edgeId = 0;
-        for (var edge : depGraph.edges) {
+        for (var edge : depGraph.m_edges) {
             sb.append("  " + edge.from().id() + "--> " + edge.to().id() + "\n");
             sb.append("  linkStyle " + edgeId + " stroke:");
             sb.append(switch (edge.type()) {

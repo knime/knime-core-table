@@ -92,15 +92,15 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
 
     static class MissingValueMapperFactory implements MapperFactory {
 
-        private final ColumnarSchema schema;
+        private final ColumnarSchema m_schema;
 
         MissingValueMapperFactory(final ColumnarSchema schema) {
-            this.schema = schema;
+            m_schema = schema;
         }
 
         @Override
         public ColumnarSchema getOutputSchema() {
-            return schema;
+            return m_schema;
         }
 
         @Override
@@ -120,12 +120,12 @@ public final class AppendMissingValuesTransformSpec implements TableTransformSpe
                 return false;
             }
 
-            return schema.equals(that.schema);
+            return m_schema.equals(that.m_schema);
         }
 
         @Override
         public int hashCode() {
-            return schema.hashCode();
+            return m_schema.hashCode();
         }
     }
 }

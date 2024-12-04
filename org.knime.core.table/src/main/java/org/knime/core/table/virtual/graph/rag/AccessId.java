@@ -75,9 +75,9 @@ public class AccessId {
      * @param label
      */
     public AccessId(final Producer producer, final String label) {
-        this.m_producer = producer;
-        this.m_parent = this; // NOSONAR
-        this.m_label = label;
+        m_producer = producer;
+        m_parent = this; // NOSONAR
+        m_label = label;
     }
 
     public Producer producer() {
