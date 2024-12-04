@@ -63,8 +63,10 @@ import org.knime.core.table.row.Selection.RowRangeSelection;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging.TableTransformGraphLogger;
 import org.knime.core.table.virtual.graph.rag.AccessId.Producer;
+import org.knime.core.table.virtual.graph.rag.TableTransformGraph.ControlFlowEdge;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Node;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph.Port;
+import org.knime.core.table.virtual.spec.RowIndexTransformSpec;
 import org.knime.core.table.virtual.spec.SelectColumnsTransformSpec;
 import org.knime.core.table.virtual.spec.SliceTransformSpec;
 import org.knime.core.table.virtual.spec.SourceTransformSpec;
@@ -290,6 +292,7 @@ public class TableTransformUtil { // TODO (TP) rename
         return switch (predecessor.type()) {
             case APPEND -> moveSliceBeforeAppend(slice);
             case CONCATENATE -> moveSliceBeforeConcatenate(slice);
+            case ROWINDEX -> moveSliceBeforeRowIndex(slice);
             default -> false;
         };
     }
@@ -381,10 +384,34 @@ public class TableTransformUtil { // TODO (TP) rename
             oldInPort.forEachControlFlowEdge(edge -> edge.relinkFrom(newInPort));
         }
         var oldOutPort = oldNode.out();
-        var newOutPort = oldNode.out();
+        var newOutPort = newNode.out();
+        for (AccessId oldAccess : oldOutPort.accesses()) {
+            final AccessId newAccess =
+                new AccessId(new Producer(newNode, oldAccess.producer().index()), oldAccess.label());
+            oldAccess.union(newAccess);
+            newOutPort.accesses().add(newAccess);
+        }
         newOutPort.accesses().addAll(oldOutPort.accesses());
         oldOutPort.forEachControlFlowEdge(edge -> edge.relinkTo(newOutPort));
         return newNode;
+    }
+
+    private static boolean moveSliceBeforeRowIndex(final Node slice) {
+        final ControlFlowEdge edge = slice.in(0).controlFlowEdges().get(0);
+        final Node rowIndex = edge.to().owner();
+        edge.remove();
+
+        rowIndex.in(0).forEachControlFlowEdge(e -> e.relinkFrom(slice.in(0)));
+        slice.out().forEachControlFlowEdge(e -> e.relinkTo(rowIndex.out()));
+        rowIndex.in(0).linkTo(slice);
+
+        // add offset to rowIndex to compensate for slice
+        final SliceTransformSpec sliceSpec = slice.getTransformSpec();
+        final RowIndexTransformSpec rowIndexSpec = rowIndex.getTransformSpec();
+        final long offset = rowIndexSpec.getOffset() + Math.max(sliceSpec.getRowRangeSelection().fromIndex(), 0);
+        replaceSpec(rowIndex, new RowIndexTransformSpec(offset));
+
+        return true;
     }
 
 
