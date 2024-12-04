@@ -60,7 +60,7 @@ import java.util.function.IntUnaryOperator;
 
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.virtual.TableTransform;
-import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
+import org.knime.core.table.virtual.graph.rag.prettyprint.DependencyGraph;
 import org.knime.core.table.virtual.spec.AppendMapTransformSpec;
 import org.knime.core.table.virtual.spec.AppendMissingValuesTransformSpec;
 import org.knime.core.table.virtual.spec.MapTransformSpec;

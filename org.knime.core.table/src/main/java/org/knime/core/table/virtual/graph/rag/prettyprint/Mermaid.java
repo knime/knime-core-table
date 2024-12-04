@@ -46,7 +46,7 @@
  * History
  *   3 Dec 2024 (pietzsch): created
  */
-package org.knime.core.table.virtual.graph.rag.debug;
+package org.knime.core.table.virtual.graph.rag.prettyprint;
 
 import java.io.FileWriter;
 import java.io.IOException;

@@ -51,7 +51,7 @@ import org.knime.core.table.virtual.graph.cap.CapBuilder;
 import org.knime.core.table.virtual.graph.cap.CapNode;
 import org.knime.core.table.virtual.graph.cap.CursorAssemblyPlan;
 import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
-import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
+import org.knime.core.table.virtual.graph.rag.prettyprint.DependencyGraph;
 
 public class RagPlayground {
 

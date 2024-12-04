@@ -46,11 +46,11 @@
  * History
  *   3 Dec 2024 (pietzsch): created
  */
-package org.knime.core.table.virtual.graph.rag.debug;
+package org.knime.core.table.virtual.graph.rag.prettyprint;
 
-import static org.knime.core.table.virtual.graph.rag.debug.DependencyGraph.EdgeType.CONTROL;
-import static org.knime.core.table.virtual.graph.rag.debug.DependencyGraph.EdgeType.DATA;
-import static org.knime.core.table.virtual.graph.rag.debug.DependencyGraph.EdgeType.EXECUTION;
+import static org.knime.core.table.virtual.graph.rag.prettyprint.DependencyGraph.EdgeType.CONTROL;
+import static org.knime.core.table.virtual.graph.rag.prettyprint.DependencyGraph.EdgeType.DATA;
+import static org.knime.core.table.virtual.graph.rag.prettyprint.DependencyGraph.EdgeType.EXECUTION;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;

@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.knime.core.table.virtual.graph.rag.BranchGraph;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
-import org.knime.core.table.virtual.graph.rag.debug.Mermaid;
+import org.knime.core.table.virtual.graph.rag.prettyprint.Mermaid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

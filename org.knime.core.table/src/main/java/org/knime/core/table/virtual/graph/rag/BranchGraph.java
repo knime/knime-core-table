@@ -57,7 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.knime.core.table.virtual.graph.rag.debug.DependencyGraph;
+import org.knime.core.table.virtual.graph.rag.prettyprint.DependencyGraph;
 
 /**
  * Sequentialize a {@link TableTransformGraph} into a tree:
