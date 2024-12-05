@@ -110,28 +110,27 @@ public class TableTransformUtil { // TODO (TP) rename
         boolean changed = true;
         while (changed) {
             changed = false;
-            if (mergeSlices(graph)) {
-                logger.appendGraph("mergeSlices", "(optimize step)", graph);
-                changed = true;
-            }
-            if (moveSlices(graph)) {
+            List<Node> nodes = nodes(graph);
+            if (moveSlices(nodes)) {
                 logger.appendGraph("moveSlices", "(optimize step)", graph);
                 changed = true;
             }
-            if (eliminateSingletonConcatenates(graph)) {
+            else if (mergeSlices(nodes)) {
+                logger.appendGraph("mergeSlices", "(optimize step)", graph);
+                changed = true;
+            }
+            else if (eliminateSingletonConcatenates(nodes)) {
                 logger.appendGraph("eliminateSingletonConcatenates", "(optimize step)", graph);
                 changed = true;
             }
-            if (eliminateUnusedRowIndexes(graph)) {
+            else if (eliminateUnusedRowIndexes(nodes)) {
                 logger.appendGraph("eliminateUnusedRowIndexes", "(optimize step)", graph);
                 changed = true;
             }
-            if (mergeRowIndexSequences(graph)) {
+            else if (mergeRowIndexSequences(nodes)) {
                 logger.appendGraph("mergeRowIndexSequences", "(optimize step)", graph);
                 changed = true;
             }
-
-            // TODO other optimizations
         }
     }
 
@@ -218,8 +217,8 @@ public class TableTransformUtil { // TODO (TP) rename
     // --------------------------------------------------------------------
     // mergeSlices()
 
-    public static boolean mergeSlices(final TableTransformGraph graph) {
-        for (Node node : nodes(graph)) {
+    public static boolean mergeSlices(final List<Node> nodes) {
+        for (Node node : nodes) {
             if (node.type() == SLICE && tryMergeSlice(node)) {
                 return true;
             }
@@ -288,8 +287,8 @@ public class TableTransformUtil { // TODO (TP) rename
     // --------------------------------------------------------------------
     // moveSlices()
 
-    public static boolean moveSlices(final TableTransformGraph graph) {
-        for (Node node : nodes(graph)) {
+    public static boolean moveSlices(final List<Node> nodes) {
+        for (Node node : nodes) {
             if (node.type() == SLICE && tryMoveSlice(node)) {
                 return true;
             }
@@ -427,8 +426,8 @@ public class TableTransformUtil { // TODO (TP) rename
     // --------------------------------------------------------------------
     // eliminateSingletonConcatenates()
 
-    public static boolean eliminateSingletonConcatenates(final TableTransformGraph graph) {
-        for (Node node : nodes(graph)) {
+    public static boolean eliminateSingletonConcatenates(final List<Node> nodes) {
+        for (Node node : nodes) {
             if (node.type() == CONCATENATE && node.in().size() == 1) {
                 eliminate(node);
                 return true;
@@ -488,8 +487,8 @@ public class TableTransformUtil { // TODO (TP) rename
     // --------------------------------------------------------------------
     // eliminateUnusedRowIndexes()
 
-    private static boolean eliminateUnusedRowIndexes(final TableTransformGraph graph) {
-        for (Node node : nodes(graph)) {
+    public static boolean eliminateUnusedRowIndexes(final List<Node> nodes) {
+        for (Node node : nodes) {
             if (node.type() == ROWINDEX && node.out().accesses().isEmpty()) {
                 eliminate(node);
                 return true;
@@ -502,8 +501,8 @@ public class TableTransformUtil { // TODO (TP) rename
     // --------------------------------------------------------------------
     // mergeRowIndexSequences()
 
-    private static boolean mergeRowIndexSequences(final TableTransformGraph graph) {
-        for (Node node : nodes(graph)) {
+    public static boolean mergeRowIndexSequences(final List<Node> nodes) {
+        for (Node node : nodes) {
             if (node.type() == ROWINDEX && tryMergeRowIndexSequence(node)) {
                 return true;
             }
