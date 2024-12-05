@@ -82,9 +82,8 @@ public class ExecCap {
 
 
         final UUID[] sourceIdentifiers = createSourceIds(1);
-        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataLinear();
-        final VirtualTable table = VirtualTableTests.vtLinear(sourceIdentifiers, sourceAccessibles).slice(2, 4).slice(0, 1);
-
+        final RowAccessible[] sourceAccessibles = VirtualTableTests.dataMinimal();
+        final VirtualTable table = VirtualTableTests.vtRowIndexAppendMapsSequentialAndSlice(sourceIdentifiers, sourceAccessibles);
 
         final Map<UUID, RowAccessible> uuidRowAccessibleMap = new HashMap<>();
         for (int i = 0; i < sourceIdentifiers.length; ++i) {
@@ -110,6 +109,7 @@ public class ExecCap {
         RowAccessible rows = CapExecutor.createRowAccessible(tableTransformGraph, uuidRowAccessibleMap);
 
         // print results:
+        System.out.println("cursor = rows.createCursor()");
         try (final Cursor<ReadAccessRow> cursor = rows.createCursor()) {
             while (cursor.forward()) {
                 System.out.print("a = ");
@@ -122,7 +122,10 @@ public class ExecCap {
             e.printStackTrace();
         }
 
+        System.out.println();
+
         // use RowAccessible with column selection
+        System.out.println("cursor = rows.createCursor(Selection.all().retainColumns(0))");
         try (final Cursor<ReadAccessRow> cursor = rows.createCursor(Selection.all().retainColumns(0))) {
             while (cursor.forward()) {
                 System.out.print("a = ");

@@ -51,6 +51,7 @@ package org.knime.core.table.virtual.graph.rag;
 import static org.knime.core.table.virtual.graph.rag.SpecType.APPEND;
 import static org.knime.core.table.virtual.graph.rag.SpecType.CONCATENATE;
 import static org.knime.core.table.virtual.graph.rag.SpecType.ROWFILTER;
+import static org.knime.core.table.virtual.graph.rag.SpecType.ROWINDEX;
 import static org.knime.core.table.virtual.graph.rag.SpecType.SLICE;
 
 import java.util.ArrayList;
@@ -119,6 +120,14 @@ public class TableTransformUtil { // TODO (TP) rename
             }
             if (eliminateSingletonConcatenates(graph)) {
                 logger.appendGraph("eliminateSingletonConcatenates", "(optimize step)", graph);
+                changed = true;
+            }
+            if (eliminateUnusedRowIndexes(graph)) {
+                logger.appendGraph("eliminateUnusedRowIndexes", "(optimize step)", graph);
+                changed = true;
+            }
+            if (mergeRowIndexSequences(graph)) {
+                logger.appendGraph("mergeRowIndexSequences", "(optimize step)", graph);
                 changed = true;
             }
 
@@ -420,54 +429,52 @@ public class TableTransformUtil { // TODO (TP) rename
 
     public static boolean eliminateSingletonConcatenates(final TableTransformGraph graph) {
         for (Node node : nodes(graph)) {
-            if (node.type() == CONCATENATE && tryEliminateConcatenate(node)) {
+            if (node.type() == CONCATENATE && node.in().size() == 1) {
+                eliminate(node);
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean tryEliminateConcatenate(final Node concatenate) {
-        if (concatenate.in().size() == 1) {
-
-            // union output accesses to input accesses
-            unionAccesses(concatenate.out(), concatenate.in(0));
-
-
-            // relink controlFlowEdges
-            //
-            // (This handles correctly cases where multiple ROWFILTERs come
-            // before and/or after the CONCATENATE.)
-
-            final Node predecessor = concatenate.in(0).controlFlowTarget(0);
-            final Node successor = concatenate.out().controlFlowSource(0);
-
-            final Port relinkTarget;
-            if ( predecessor.type() == ROWFILTER) {
-                relinkTarget = predecessor.in(0).controlFlowTarget(0).out();
-            } else {
-                relinkTarget = predecessor.out();
-                // remove in edge to avoid duplicate
-                concatenate.in(0).controlFlowEdges().get(0).remove();
-            }
-
-            final Port relinkSource;
-            if ( successor != null && successor.type() == ROWFILTER) {
-                relinkSource = successor.out().controlFlowEdges().get(0).from();
-            } else {
-                relinkSource = concatenate.out().controlFlowEdges().get(0).from();
-                if (predecessor.type() == ROWFILTER) {
-                    // remove out edge to avoid duplicate
-                    concatenate.out().controlFlowEdges().get(0).remove();
-                }
-            }
-
-            concatenate.in(0).forEachControlFlowEdge(edge -> edge.relinkFrom(relinkSource));
-            concatenate.out().forEachControlFlowEdge(edge -> edge.relinkTo(relinkTarget));
-
-            return true;
+    private static void eliminate(final Node node) {
+        if (node.in().size() != 1) {
+            throw new IllegalArgumentException("node must have exactly one input port");
         }
-        return false;
+
+        // union output accesses to input accesses
+        unionAccesses(node.out(), node.in(0));
+
+        // relink controlFlowEdges
+        //
+        // (This handles correctly cases where multiple ROWFILTERs come
+        // before and/or after the node.)
+
+        final Node predecessor = node.in(0).controlFlowTarget(0);
+        final Node successor = node.out().controlFlowSource(0);
+
+        final Port relinkTarget;
+        if ( predecessor.type() == ROWFILTER) {
+            relinkTarget = predecessor.in(0).controlFlowTarget(0).out();
+        } else {
+            relinkTarget = predecessor.out();
+            // remove in edge to avoid duplicate
+            node.in(0).controlFlowEdges().get(0).remove();
+        }
+
+        final Port relinkSource;
+        if ( successor != null && successor.type() == ROWFILTER) {
+            relinkSource = successor.out().controlFlowEdges().get(0).from();
+        } else {
+            relinkSource = node.out().controlFlowEdges().get(0).from();
+            if (predecessor.type() == ROWFILTER) {
+                // remove out edge to avoid duplicate
+                node.out().controlFlowEdges().get(0).remove();
+            }
+        }
+
+        node.in(0).forEachControlFlowEdge(edge -> edge.relinkFrom(relinkSource));
+        node.out().forEachControlFlowEdge(edge -> edge.relinkTo(relinkTarget));
     }
 
     private static void unionAccesses(final Port from, final Port to) {
@@ -476,4 +483,51 @@ public class TableTransformUtil { // TODO (TP) rename
             from.access(i).union(to.access(i));
         }
     }
+
+
+    // --------------------------------------------------------------------
+    // eliminateUnusedRowIndexes()
+
+    private static boolean eliminateUnusedRowIndexes(final TableTransformGraph graph) {
+        for (Node node : nodes(graph)) {
+            if (node.type() == ROWINDEX && node.out().accesses().isEmpty()) {
+                eliminate(node);
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    // --------------------------------------------------------------------
+    // mergeRowIndexSequences()
+
+    private static boolean mergeRowIndexSequences(final TableTransformGraph graph) {
+        for (Node node : nodes(graph)) {
+            if (node.type() == ROWINDEX && tryMergeRowIndexSequence(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean tryMergeRowIndexSequence(final Node rowIndex) {
+        final Node predecessor = rowIndex.in(0).controlFlowTarget(0);
+        if ( predecessor.type() == ROWINDEX ) {
+            final long o1 = rowIndex.<RowIndexTransformSpec>getTransformSpec().getOffset();
+            final long o2 = predecessor.<RowIndexTransformSpec>getTransformSpec().getOffset();
+            if ( o1 == o2 ) {
+                if (predecessor.out().accesses().isEmpty()) {
+                    eliminate(predecessor);
+                } else {
+                    rowIndex.out().accesses().remove(0).union(predecessor.out().access(0));
+                    eliminate(rowIndex);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
+

@@ -1307,6 +1307,7 @@ public class VirtualTableTests {
     }
 
 
+
     public static VirtualTable vtObserve(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
         return vtObserve(sourceIdentifiers, sources, new ArrayList<>());
     }
@@ -1473,4 +1474,83 @@ public class VirtualTableTests {
         testTransformedTableLookahead(true, VirtualTableTests::dataAppendTwice, VirtualTableTests::vtAppendTwice);
         testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataAppendTwice, VirtualTableTests::vtAppendTwice);
     }
+
+
+
+    public static VirtualTable vtUnusedRowIndex(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(DOUBLE), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                    final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                    return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+                });
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        return table.appendMap(new int[]{0}, addRowIndex).selectColumns(2);
+    }
+
+    public static VirtualTable vtUnusedRowIndex() {
+        return vtUnusedRowIndex(new UUID[]{randomUUID()}, dataMinimal());
+    }
+
+    @Test
+    public void testUnusedRowIndex() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(STRING);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{"First"}, //
+                new Object[]{"Second"}, //
+                new Object[]{"Third"}, //
+                new Object[]{"Fourth"}, //
+                new Object[]{"Fifth"} //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataMinimal, VirtualTableTests::vtUnusedRowIndex);
+        testTransformedTableLookahead(true, VirtualTableTests::dataMinimal, VirtualTableTests::vtUnusedRowIndex);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataMinimal, VirtualTableTests::vtUnusedRowIndex);
+    }
+
+
+
+    public static VirtualTable vtRowIndexAppendMapsSequentialAndSlice(final UUID[] sourceIdentifiers, final RowAccessible[] sources) {
+        final MapperWithRowIndexFactory addRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(DOUBLE), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final DoubleAccess.DoubleReadAccess i = (DoubleAccess.DoubleReadAccess)inputs[0];
+                    final DoubleAccess.DoubleWriteAccess o = (DoubleAccess.DoubleWriteAccess)outputs[0];
+                    return rowIndex -> o.setDoubleValue(i.getDoubleValue() + rowIndex);
+                });
+        final MapperWithRowIndexFactory appendRowIndex = MapTransformUtils.MapperWithRowIndexFactory.of( //
+                ColumnarSchema.of(STRING), //
+                (inputs, outputs) -> {
+                    MapTransformUtils.verify(inputs, 1, outputs, 1);
+                    final StringAccess.StringReadAccess i = (StringAccess.StringReadAccess)inputs[0];
+                    final StringAccess.StringWriteAccess o = (StringAccess.StringWriteAccess)outputs[0];
+                    return rowIndex -> o.setStringValue(i.getStringValue() + "-" + rowIndex);
+                });
+        final VirtualTable table = new VirtualTable(sourceIdentifiers[0], new SourceTableProperties(sources[0]));
+        return table //
+            .appendMap(new int[]{0}, addRowIndex) //
+            .appendMap(new int[]{2}, appendRowIndex) //
+            .selectColumns(3, 1, 4) //
+            .slice(2, 4);
+    }
+
+    public static VirtualTable vtRowIndexAppendMapsSequentialAndSlice() {
+        return vtRowIndexAppendMapsSequentialAndSlice(new UUID[]{randomUUID()}, dataMinimal());
+    }
+
+    @Test
+    public void testRowIndexAppendMapsSequentialAndSlice() {
+        final ColumnarSchema expectedSchema = ColumnarSchema.of(DOUBLE, INT, STRING);
+        final Object[][] expectedValues = new Object[][]{ //
+                new Object[]{2.3, 3, "Third-2"}, //
+                new Object[]{3.4, 4, "Fourth-3"}, //
+        };
+        testTransformedTable(expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexAppendMapsSequentialAndSlice);
+        testTransformedTableLookahead(true, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexAppendMapsSequentialAndSlice);
+        testTransformedTableRandomAccess(true, expectedSchema, expectedValues, expectedValues.length, VirtualTableTests::dataMinimal, VirtualTableTests::vtRowIndexAppendMapsSequentialAndSlice);
+    }
+
+
 }
