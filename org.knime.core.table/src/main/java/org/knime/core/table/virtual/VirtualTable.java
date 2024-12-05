@@ -295,9 +295,12 @@ public final class VirtualTable {
     public VirtualTable appendMap(final int[] columnIndices,
         final MapTransformUtils.MapperWithRowIndexFactory mapperFactory) {
         final int[] columns = Arrays.copyOf(columnIndices, columnIndices.length + 1);
-        columns[columns.length - 1] = m_schema.numColumns();
+        final int rowIndexColumn = m_schema.numColumns();
+        columns[columns.length - 1] = rowIndexColumn;
         final MapperFactory factory = new MapTransformUtils.WrappedMapperWithRowIndexFactory(mapperFactory);
-        return appendRowIndex().appendMap(columns, factory);
+        return appendRowIndex() //
+            .appendMap(columns, factory) //
+            .dropColumns(rowIndexColumn);
     }
 
     public VirtualTable map(final int[] columnIndices, final MapperFactory mapperFactory) {

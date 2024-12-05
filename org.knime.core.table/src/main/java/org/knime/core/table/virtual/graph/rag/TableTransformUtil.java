@@ -392,7 +392,6 @@ public class TableTransformUtil { // TODO (TP) rename
             oldAccess.union(newAccess);
             newOutPort.accesses().add(newAccess);
         }
-        newOutPort.accesses().addAll(oldOutPort.accesses());
         oldOutPort.forEachControlFlowEdge(edge -> edge.relinkTo(newOutPort));
         return newNode;
     }
