@@ -162,6 +162,12 @@ public final class DataSpecs {
         return new DataSpecWithTraits(StringDataSpec.INSTANCE, traits);
     }
 
+    public static final DataSpecWithTraits LOCAL_DATE = new DataSpecWithTraits(LocalDateDataSpec.INSTANCE);
+
+    public static final DataSpecWithTraits LOCAL_DATE(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
+        return new DataSpecWithTraits(LocalDateDataSpec.INSTANCE, traits);
+    }
+
     public static final DataSpecWithTraits VARBINARY = new DataSpecWithTraits(VarBinaryDataSpec.INSTANCE);
 
     public static final DataSpecWithTraits VARBINARY(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
@@ -173,7 +179,6 @@ public final class DataSpecs {
     public static DataSpecWithTraits VOID(final DataTrait... traits) {// NOSONAR: we provide TYPE and TYPE(TRAITS...) as overloads
         return new DataSpecWithTraits(VoidDataSpec.INSTANCE, traits);
     }
-
 
     /**
      * Helper class to construct DataSpecWithTraits of lists. In conjunction with the definition below (which can be

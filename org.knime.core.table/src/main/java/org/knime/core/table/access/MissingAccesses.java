@@ -48,10 +48,12 @@
  */
 package org.knime.core.table.access;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
+import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
@@ -60,11 +62,13 @@ import org.knime.core.table.access.LongAccess.LongReadAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StructAccess.StructReadAccess;
 import org.knime.core.table.access.VarBinaryAccess.VarBinaryReadAccess;
+import org.knime.core.table.row.DefaultReadAccessRow;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.LocalDateDataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
@@ -75,7 +79,6 @@ import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec.ObjectDeserializer;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.row.DefaultReadAccessRow;
 
 /**
  * A collection of access implementations that are all {@code isMissing} and can be
@@ -180,6 +183,14 @@ public final class MissingAccesses {
             return MissingFloatAccess.INSTANCE;
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public MissingAccess visit(final LocalDateDataSpec spec) {
+            return MissingLocalDateAccess.INSTANCE;
+        }
+
         private static final class MissingBooleanAccess implements MissingAccess, BooleanReadAccess {
 
             static final MissingBooleanAccess INSTANCE = new MissingBooleanAccess();
@@ -246,6 +257,16 @@ public final class MissingAccesses {
 
             @Override
             public String getStringValue() {
+                return null;
+            }
+        }
+
+        private static final class MissingLocalDateAccess implements MissingAccess, LocalDateReadAccess {
+
+            static final MissingLocalDateAccess INSTANCE = new MissingLocalDateAccess();
+
+            @Override
+            public LocalDate getLocalDateValue() {
                 return null;
             }
         }
