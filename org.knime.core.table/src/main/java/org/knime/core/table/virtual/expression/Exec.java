@@ -60,6 +60,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.LocalTimeComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
@@ -72,6 +73,7 @@ import org.knime.core.table.access.DoubleAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
+import org.knime.core.table.access.LocalDateAccess;
 import org.knime.core.table.access.LongAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
 import org.knime.core.table.access.ReadAccess;
@@ -88,6 +90,7 @@ import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
+import org.knime.core.table.schema.LocalDateDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
@@ -141,8 +144,7 @@ public final class Exec {
     public static MapperFactory createMapperFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
         final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
-        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer,
-        final EvaluationContext ctx) {
+        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer, final EvaluationContext ctx) {
 
         var outputSpec = valueTypeToDataSpec(Expressions.getInferredType(ast));
         final TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> writerFactory =
@@ -173,8 +175,7 @@ public final class Exec {
     public static RowFilterFactory createRowFilterFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
         final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
-        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer,
-        final EvaluationContext ctx) {
+        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer, final EvaluationContext ctx) {
         var outputType = Expressions.getInferredType(ast);
         if (!ValueType.BOOLEAN.equals(outputType)) {
             throw new IllegalArgumentException(
@@ -222,6 +223,8 @@ public final class Exec {
             return DataSpecs.STRING;
         } else if (ValueType.LOCAL_TIME.equals(valueType.baseType())) {
             return DataSpecs.STRING;
+        } else if (ValueType.LOCAL_DATE.equals(valueType.baseType())) {
+            return DataSpecs.LOCAL_DATE;
         } else {
             throw new IllegalArgumentException("The value type " + valueType.name() + " cannot be mapped to DataSpecs");
         }
@@ -323,6 +326,12 @@ public final class Exec {
         }
 
         @Override
+        public Function<ReadAccess, LocalDateComputer> visit(final LocalDateDataSpec spec) {
+            return ra -> LocalDateComputer.of(ctx -> ((LocalDateAccess.LocalDateReadAccess)ra).getLocalDateValue(),
+                ctx -> ra.isMissing());
+        }
+
+        @Override
         public Function<ReadAccess, ? extends Computer> visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("Var binary data is not suppored by expressions");
         }
@@ -414,8 +423,7 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>
-            visit(final VarBinaryDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce var binary data");
         }
 
@@ -430,9 +438,31 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>
-            visit(final ListDataSpec listDataSpec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final ListDataSpec listDataSpec) {
             throw new IllegalArgumentException("Expressions cannot produce list data");
+        }
+
+        @Override
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final LocalDateDataSpec spec) {
+            return (access, computer, ctx) -> {
+                if (access instanceof LocalDateAccess.LocalDateWriteAccess a) {
+                    var c = (LocalDateComputer)computer;
+                    return setMissingOrSetValue(c, a, () -> a.setLocalDateValue(c.compute(ctx)), ctx);
+                } else if (access instanceof LongAccess.LongWriteAccess a) {
+                    var c = (IntegerComputer)computer;
+                    var val = c.compute(ctx);
+                    return setMissingOrSetValue(c, a, () -> a.setLongValue(val), ctx);
+                } else {
+                    return new Runnable() {
+
+                        @Override
+                        public void run() {
+                            // TODO Auto-generated method stub
+
+                        }
+                    };
+                }
+            };
         }
     }
 

@@ -53,7 +53,8 @@ import org.knime.core.table.schema.traits.StructDataTraits;
  * Specification / configuration of implementations of data.
  * <P>
  * Implementations of this interface must provide meaningful implementations of {@link Object#equals(Object) equals} and
- * {@link Object#hashCode() hashcode}. They should also provide a meaningful implementation of {@link Object#toString() toString}.
+ * {@link Object#hashCode() hashcode}. They should also provide a meaningful implementation of {@link Object#toString()
+ * toString}.
  *
  * @author Marc Bux, KNIME GmbH, Berlin, Germany
  */
@@ -115,6 +116,12 @@ public interface DataSpec {
         return VarBinaryDataSpec.INSTANCE;
     }
 
+    /**
+     * @return singleton LocalDate spec
+     */
+    static LocalDateDataSpec localDateSpec() {
+        return LocalDateDataSpec.INSTANCE;
+    }
 
     /**
      * @return singleton void spec
@@ -151,15 +158,17 @@ public interface DataSpec {
         R visit(ListDataSpec listDataSpec);
 
         R visit(StringDataSpec spec);
+
+        R visit(LocalDateDataSpec spec);
     }
 
     /**
-     * A visitor that visits {@link DataSpec DataSpecs} and provides additional DataTraits,
-     * mapping each DataSpec to other objects of a certain type R.
+     * A visitor that visits {@link DataSpec DataSpecs} and provides additional DataTraits, mapping each DataSpec to
+     * other objects of a certain type R.
      *
      * @param <R> the return type of the mapping
      */
-    static interface MapperWithTraits<R> {
+    interface MapperWithTraits<R> {
 
         R visit(BooleanDataSpec spec, DataTraits traits);
 
@@ -183,6 +192,7 @@ public interface DataSpec {
 
         R visit(StringDataSpec spec, DataTraits traits);
 
+        R visit(LocalDateDataSpec spec, DataTraits traits);
     }
 
     /**

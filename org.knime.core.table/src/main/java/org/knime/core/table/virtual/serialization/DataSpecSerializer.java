@@ -55,6 +55,7 @@ import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
+import org.knime.core.table.schema.LocalDateDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
@@ -109,6 +110,8 @@ public final class DataSpecSerializer {
                     return VarBinaryDataSpec.INSTANCE;
                 case "void":
                     return VoidDataSpec.INSTANCE;
+                case "local_date":
+                    return LocalDateDataSpec.INSTANCE;
                 default:
                     throw new IllegalStateException("Unknown data spec type identifier: " + typeIdentifier);
             }
@@ -199,6 +202,11 @@ public final class DataSpecSerializer {
         @Override
         public JsonNode visit(final StringDataSpec spec) {
             return m_factory.textNode("string");
+        }
+
+        @Override
+        public JsonNode visit(final LocalDateDataSpec spec) {
+            return m_factory.textNode("local_date");
         }
     }
 }

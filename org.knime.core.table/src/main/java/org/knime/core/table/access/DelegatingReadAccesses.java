@@ -48,6 +48,7 @@
  */
 package org.knime.core.table.access;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
@@ -56,6 +57,7 @@ import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
 import org.knime.core.table.access.FloatAccess.FloatReadAccess;
 import org.knime.core.table.access.IntAccess.IntReadAccess;
 import org.knime.core.table.access.ListAccess.ListReadAccess;
+import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
 import org.knime.core.table.access.LongAccess.LongReadAccess;
 import org.knime.core.table.access.MissingAccesses.MissingAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
@@ -71,6 +73,7 @@ import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
+import org.knime.core.table.schema.LocalDateDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
@@ -247,6 +250,11 @@ public final class DelegatingReadAccesses {
         }
 
         @Override
+        public DelegatingReadAccess visit(final LocalDateDataSpec spec) {
+            return new DelegatingLocalDateReadAccess(spec);
+        }
+
+        @Override
         public DelegatingReadAccess visit(final VarBinaryDataSpec spec) {
             return new DelegatingVarBinaryReadAccess(spec);
         }
@@ -335,6 +343,19 @@ public final class DelegatingReadAccesses {
         @Override
         public int getIntValue() {
             return m_delegateAccess.getIntValue();
+        }
+    }
+
+    private static final class DelegatingLocalDateReadAccess extends AbstractDelegatingReadAccess<LocalDateReadAccess>
+        implements LocalDateReadAccess {
+
+        private DelegatingLocalDateReadAccess(final DataSpec spec) {
+            super(spec);
+        }
+
+        @Override
+        public LocalDate getLocalDateValue() {
+            return m_delegateAccess.getLocalDateValue();
         }
     }
 

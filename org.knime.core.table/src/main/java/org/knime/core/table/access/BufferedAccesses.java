@@ -52,6 +52,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -60,6 +61,8 @@ import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
 import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
 import org.knime.core.table.access.ByteAccess.ByteReadAccess;
 import org.knime.core.table.access.ByteAccess.ByteWriteAccess;
+import org.knime.core.table.access.LocalDateAccess.LocalDateReadAccess;
+import org.knime.core.table.access.LocalDateAccess.LocalDateWriteAccess;
 import org.knime.core.table.access.DelegatingReadAccesses.DelegatingReadAccess;
 import org.knime.core.table.access.DelegatingWriteAccesses.DelegatingWriteAccess;
 import org.knime.core.table.access.DoubleAccess.DoubleReadAccess;
@@ -87,6 +90,7 @@ import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
+import org.knime.core.table.schema.LocalDateDataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
@@ -183,8 +187,8 @@ public final class BufferedAccesses {
         public <A extends BufferedAccess> A getBufferedAccess(int index);
 
         /**
-         * Reset all accesses of this row, which should be when the BufferedAccessRow is advanced to a new row and it
-         * is not guaranteed that all accesses of this row will be set to a new value (or set missing explicitly).
+         * Reset all accesses of this row, which should be when the BufferedAccessRow is advanced to a new row and it is
+         * not guaranteed that all accesses of this row will be set to a new value (or set missing explicitly).
          */
         public void reset();
     }
@@ -313,6 +317,11 @@ public final class BufferedAccesses {
         @Override
         public BufferedAccess visit(final ByteDataSpec spec) {
             return new BufferedByteAccess();
+        }
+
+        @Override
+        public BufferedAccess visit(final LocalDateDataSpec spec) {
+            return new BufferedDateAccess();
         }
 
         @Override
@@ -683,6 +692,33 @@ public final class BufferedAccesses {
             @Override
             protected void setFromNonMissing(final ReadAccess access) {
                 m_value = ((StringReadAccess)access).getStringValue();
+            }
+
+        }
+
+        private static final class BufferedDateAccess extends AbstractBufferedAccess
+            implements LocalDateReadAccess, LocalDateWriteAccess {
+
+            private LocalDate m_value;
+
+            @Override
+            public void setLocalDateValue(final LocalDate value) {
+                m_value = value;
+                m_isMissing = false;
+            }
+
+            @Override
+            public LocalDate getLocalDateValue() {
+                return m_value;
+            }
+
+            @Override
+            protected void setFromNonMissing(final ReadAccess access) {
+            }
+
+            @Override
+            protected String valueToString() {
+                return m_value.toString();
             }
 
         }

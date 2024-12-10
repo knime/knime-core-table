@@ -48,6 +48,7 @@
  */
 package org.knime.core.table.access;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 
 import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
@@ -56,6 +57,7 @@ import org.knime.core.table.access.DoubleAccess.DoubleWriteAccess;
 import org.knime.core.table.access.FloatAccess.FloatWriteAccess;
 import org.knime.core.table.access.IntAccess.IntWriteAccess;
 import org.knime.core.table.access.ListAccess.ListWriteAccess;
+import org.knime.core.table.access.LocalDateAccess.LocalDateWriteAccess;
 import org.knime.core.table.access.LongAccess.LongWriteAccess;
 import org.knime.core.table.access.StringAccess.StringWriteAccess;
 import org.knime.core.table.access.StructAccess.StructWriteAccess;
@@ -67,6 +69,7 @@ import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
+import org.knime.core.table.schema.LocalDateDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
@@ -139,6 +142,11 @@ public final class DelegatingWriteAccesses {
         @Override
         public DelegatingWriteAccess visit(final LongDataSpec spec) {
             return new DelegatingLongWriteAccess(spec);
+        }
+
+        @Override
+        public DelegatingWriteAccess visit(final LocalDateDataSpec spec) {
+            return new DelegatingLocalDateWriteAccess(spec);
         }
 
         @Override
@@ -230,6 +238,19 @@ public final class DelegatingWriteAccesses {
         @Override
         public void setIntValue(final int value) {
             m_delegateAccess.setIntValue(value);
+        }
+    }
+
+    private static final class DelegatingLocalDateWriteAccess
+        extends AbstractDelegatingWriteAccess<LocalDateWriteAccess> implements LocalDateWriteAccess {
+
+        private DelegatingLocalDateWriteAccess(final DataSpec spec) {
+            super(spec);
+        }
+
+        @Override
+        public void setLocalDateValue(final LocalDate value) {
+            m_delegateAccess.setLocalDateValue(value);
         }
     }
 
