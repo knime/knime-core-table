@@ -163,6 +163,18 @@ public final class SignatureUtils {
         return hasBaseType(ValueType.BOOLEAN);
     }
 
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DATE} */
+    public static ArgMatcher isTemporal() {
+        return isOneOfTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_DATE_TIME, ValueType.LOCAL_TIME,
+            ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DATE} and {@link ValueType#OPT_DATE} */
+    public static ArgMatcher isTemporalOrOpt() {
+        return isOneOfBaseTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_DATE_TIME, ValueType.LOCAL_TIME,
+            ValueType.ZONED_DATE_TIME);
+    }
+
     /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
     public static ArgMatcher isAnything() {
         return new ArgMatcherImpl("ANYTHING", arg -> true);

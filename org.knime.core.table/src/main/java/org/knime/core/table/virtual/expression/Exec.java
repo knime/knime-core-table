@@ -59,6 +59,7 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
@@ -218,6 +219,8 @@ public final class Exec {
         } else if (ValueType.FLOAT.equals(valueType.baseType())) {
             return DataSpecs.DOUBLE;
         } else if (ValueType.STRING.equals(valueType.baseType())) {
+            return DataSpecs.STRING;
+        } else if (ValueType.LOCAL_TIME.equals(valueType.baseType())) {
             return DataSpecs.STRING;
         } else {
             throw new IllegalArgumentException("The value type " + valueType.name() + " cannot be mapped to DataSpecs");
@@ -385,6 +388,11 @@ public final class Exec {
         public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final StringDataSpec spec) {
             return (access, computer, ctx) -> {
                 var a = (StringAccess.StringWriteAccess)access;
+                if (computer instanceof StringComputer c) {
+                    return setMissingOrSetValue(c, a, () -> a.setStringValue(c.compute(ctx)), ctx);
+                } else if (computer instanceof LocalTimeComputer c) {
+                    return setMissingOrSetValue(c, a, () -> a.setStringValue(c.compute(ctx).toString()), ctx);
+                }
                 var c = (StringComputer)computer;
                 return setMissingOrSetValue(c, a, () -> a.setStringValue(c.compute(ctx)), ctx);
             };
