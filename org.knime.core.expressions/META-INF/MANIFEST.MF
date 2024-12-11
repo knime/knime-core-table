@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Expressions Core Plugin
 Bundle-SymbolicName: org.knime.core.expressions;singleton:=true
 Bundle-Version: 5.5.0.qualifier
-Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Bundle-Vendor: KNIME AG
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: 
@@ -14,7 +14,8 @@ Require-Bundle:
  com.google.guava;bundle-version="[19.0.0,20.0.0)",
  com.fasterxml.jackson.core.jackson-core;bundle-version="[2.11.0,3.0.0)",
  com.fasterxml.jackson.core.jackson-databind;bundle-version="[2.11.0,3.0.0)",
- org.apache.commons.text;bundle-version="[1.12.0,2.0.0)"
+ org.apache.commons.text;bundle-version="[1.12.0,2.0.0)",
+ org.knime.core.ui;bundle-version="[5.4.0,6.0.0)"
 Export-Package: org.knime.core.expressions;x-friends:="org.knime.base.expressions,org.knime.core.expressions.testing,org.knime.base.expressions.tests",
  org.knime.core.expressions.aggregations;x-friends:="org.knime.base.expressions,org.knime.core.expressions.testing,org.knime.base.expressions.tests",
  org.knime.core.expressions.functions;x-friends:="org.knime.base.expressions,org.knime.core.expressions.testing,org.knime.base.expressions.tests"
