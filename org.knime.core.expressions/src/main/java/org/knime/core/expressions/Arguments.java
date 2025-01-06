@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -107,6 +108,10 @@ public class Arguments<T> {
             return m_namedArguments.get(name);
         }
         throw new NoSuchElementException("Argument '" + name + "' does not exist.");
+    }
+
+    public Optional<T> getArgumentAsOptional(final String name) {
+        return Optional.ofNullable(get(name, null));
     }
 
     /**

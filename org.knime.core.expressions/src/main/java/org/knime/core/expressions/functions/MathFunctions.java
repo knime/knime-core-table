@@ -51,7 +51,7 @@ package org.knime.core.expressions.functions;
 import static org.knime.core.expressions.Computer.toFloat;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_BOOLEAN;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_FLOAT_MISSING;
-import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_NUMERIC_MISSING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_INTEGER_MISSING;
 import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.isFloatOrOpt;
@@ -168,7 +168,7 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Largest number of the `input` arguments", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("Largest number of the `input` arguments", RETURN_NUMERIC_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(MathFunctions::maxImpl) //
         .build();
@@ -217,7 +217,7 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Smallest number of the arguments", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("Smallest number of the arguments", RETURN_NUMERIC_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(MathFunctions::minImpl) //
         .build();
@@ -388,7 +388,7 @@ public final class MathFunctions {
         .keywords("absolute") //
         .category(CATEGORY_GENERAL) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Absolute value of x", RETURN_INTEGER_FLOAT_MISSING, args -> args.get("x")) //
+        .returnType("Absolute value of x", RETURN_NUMERIC_MISSING, args -> args.get("x")) //
         .impl(MathFunctions::absImpl) //
         .build();
 
@@ -1155,7 +1155,7 @@ public final class MathFunctions {
             arg("x", "The base", isNumericOrOpt()), //
             arg("y", "The exponent", isNumericOrOpt()) //
         ) //
-        .returnType("x to the power of y", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("x to the power of y", RETURN_NUMERIC_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args)))//
         .impl(MathFunctions::powImpl) //
         .build();
@@ -1264,7 +1264,7 @@ public final class MathFunctions {
             arg("x", "The numerator", isNumericOrOpt()), //
             arg("y", "The divisor", isNumericOrOpt()) //
         ) //
-        .returnType("x modulo y", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("x modulo y", RETURN_NUMERIC_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args)))//
         .impl(MathFunctions::modImpl) //
         .build();
@@ -1521,7 +1521,7 @@ public final class MathFunctions {
             arg("x", "A number", isNumericOrOpt()), //
             optarg(PRECISION, "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_NUMERIC_MISSING,
             roundReturnType) //
         .impl(roundImplFactory(RoundingMode.HALF_DOWN, "roundhalfdown")) //
         .build();
@@ -1565,7 +1565,7 @@ public final class MathFunctions {
             arg("x", "A number", isNumericOrOpt()), //
             optarg(PRECISION, "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_NUMERIC_MISSING,
             roundReturnType) //
         .impl(roundImplFactory(RoundingMode.HALF_UP, "roundhalfup")) //
         .build();
@@ -1613,7 +1613,7 @@ public final class MathFunctions {
             arg("x", "A number", isNumericOrOpt()), //
             optarg(PRECISION, "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_NUMERIC_MISSING,
             roundReturnType) //
         .impl(roundImplFactory(RoundingMode.HALF_EVEN, "round")) //
         .build();
@@ -1824,7 +1824,7 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Sum of the arguments", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("Sum of the arguments", RETURN_NUMERIC_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args)))//
         .impl(MathFunctions::sumImpl) //
         .build();
@@ -2215,7 +2215,7 @@ public final class MathFunctions {
         .keywords("NaN") //
         .category(CATEGORY_GENERAL) //
         .args(arg("x", "A number", isFloatOrOpt())) //
-        .returnType("x if x is not `NaN`, `MISSING` otherwise", RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("x if x is not `NaN`, `MISSING` otherwise", RETURN_NUMERIC_MISSING,
             args -> FLOAT(anyOptional(args)))//
         .impl(MathFunctions::nanToMissingImpl) //
         .build();
