@@ -51,21 +51,30 @@ import java.util.UUID;
 
 import org.knime.core.table.row.RowAccessible;
 import org.knime.core.table.virtual.TableTransform;
+import org.knime.core.table.virtual.graph.debug.VirtualTableDebugging;
 import org.knime.core.table.virtual.graph.exec.CapExecutor;
 import org.knime.core.table.virtual.graph.rag.TableTransformGraph;
+import org.knime.core.table.virtual.graph.rag.TableTransformUtil;
 
 // TODO (TP) replace VirtualTableExecutor with just this class?
 public class GraphVirtualTableExecutor implements VirtualTableExecutor {
 
     public static RowAccessible createRowAccessible(final TableTransform leafTransform,
         final Map<UUID, RowAccessible> inputs) {
-        return CapExecutor.createRowAccessible(new TableTransformGraph(leafTransform), inputs);
+        final TableTransformGraph graph = new TableTransformGraph(leafTransform);
+        try (var logger = VirtualTableDebugging.createLogger()) {
+            TableTransformUtil.optimize(graph, logger);
+        }
+        return CapExecutor.createRowAccessible(graph, inputs);
     }
 
     private final TableTransformGraph m_tableTransformGraph;
 
     public GraphVirtualTableExecutor(final TableTransform leafTransform) {
         m_tableTransformGraph = new TableTransformGraph(leafTransform);
+        try (var logger = VirtualTableDebugging.createLogger()) {
+            TableTransformUtil.optimize(m_tableTransformGraph, logger);
+        }
     }
 
     @Override
