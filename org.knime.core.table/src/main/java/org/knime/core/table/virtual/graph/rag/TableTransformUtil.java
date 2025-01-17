@@ -79,8 +79,7 @@ public class TableTransformUtil { // TODO (TP) rename
      * Creates a copy of {@code graph}, with SLICE and COLFILTER operations
      * appended that implement the given {@code selection}.
      * <p>
-     * If {@link Selection#allSelected()}, then {@code graph} is returned as-is
-     * (no copy).
+     * If {@link Selection#allSelected()}, then a copy of {@code graph} is returned.
      *
      * @param graph a TableTransformGraph
      * @param selection the selection (columns and row range) to append
@@ -93,7 +92,7 @@ public class TableTransformUtil { // TODO (TP) rename
         if (!selection.columns().allSelected()) {
             graph = graph.append(new SelectColumnsTransformSpec(selection.columns().getSelected()));
         }
-        return graph;
+        return graph.copy();
     }
 
 
