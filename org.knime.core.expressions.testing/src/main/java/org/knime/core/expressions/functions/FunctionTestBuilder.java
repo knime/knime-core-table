@@ -159,6 +159,20 @@ public final class FunctionTestBuilder {
                 return ctx -> isMissing();
             }
         }
+
+        private ValueType type() {
+            if (m_value instanceof Boolean) {
+                return ValueType.BOOLEAN(m_isMissing);
+            } else if (m_value instanceof Long) {
+                return ValueType.INTEGER(m_isMissing);
+            } else if (m_value instanceof Double) {
+                return ValueType.FLOAT(m_isMissing);
+            } else if (m_value instanceof String) {
+                return ValueType.STRING(m_isMissing);
+            } else {
+                return ValueType.MISSING;
+            }
+        }
     }
 
     /**
@@ -321,13 +335,17 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs) {
-        return impl(name, positionalArgs, namedArgs, c -> {
+        return impl(name, positionalArgs, namedArgs, inferredType -> {
+            assertTrue(inferredType.isOptional(), "type inference should return optional type. Was " + inferredType);
+        }, c -> {
             assertInstanceOf(Computer.class, c, m_function.name() + " should eval to Computer");
             assertTrue(c.isMissing(DUMMY_WML), m_function.name() + " should be missing");
         });
     }
 
     /**
+     * Add a test that checks that the function evaluates to "MISSING".
+     *
      * @param name
      * @param positionalArgs
      * @return <code>this</code> for chaining
@@ -347,7 +365,9 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final boolean expected) {
-        return impl(name, positionalArgs, namedArgs, c -> {
+        return impl(name, positionalArgs, namedArgs, inferredType -> {
+            assertEquals(ValueType.BOOLEAN, inferredType.baseType(), "type inference should return BOOLEAN");
+        }, c -> {
             assertInstanceOf(BooleanComputer.class, c, m_function.name() + " should eval to BOOLEAN");
             assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
             positionalArgs.forEach(TestingArgument::resetAccessed);
@@ -379,7 +399,9 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final long expected) {
-        return impl(name, positionalArgs, namedArgs, c -> {
+        return impl(name, positionalArgs, namedArgs, inferredType -> {
+            assertEquals(ValueType.INTEGER, inferredType.baseType(), "type inference should return INTEGER");
+        }, c -> {
             assertInstanceOf(IntegerComputer.class, c, m_function.name() + " should eval to INTEGER");
             assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
             positionalArgs.forEach(TestingArgument::resetAccessed);
@@ -411,7 +433,9 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final double expected) {
-        return impl(name, positionalArgs, namedArgs, c -> {
+        return impl(name, positionalArgs, namedArgs, inferredType -> {
+            assertEquals(ValueType.FLOAT, inferredType.baseType(), "type inference should return FLOAT");
+        }, c -> {
             assertInstanceOf(FloatComputer.class, c, m_function.name() + " should eval to FLOAT");
             assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
             positionalArgs.forEach(TestingArgument::resetAccessed);
@@ -442,7 +466,9 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final String expected) {
-        return impl(name, positionalArgs, namedArgs, c -> {
+        return impl(name, positionalArgs, namedArgs, inferredType -> {
+            assertEquals(ValueType.STRING, inferredType.baseType(), "type inference should return STRING");
+        }, c -> {
             assertInstanceOf(StringComputer.class, c, m_function.name() + " should eval to STRING");
             assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
             positionalArgs.forEach(TestingArgument::resetAccessed);
@@ -475,8 +501,9 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final double expected, final double tolerance) {
-        return impl(name, positionalArgs, namedArgs,
-            TestUtils.computerResultChecker(m_function.name(), expected, tolerance));
+        return impl(name, positionalArgs, namedArgs, inferredType -> {
+            assertEquals(ValueType.FLOAT, inferredType.baseType(), "type inference should return FLOAT");
+        }, TestUtils.computerResultChecker(m_function.name(), expected, tolerance));
     }
 
     /**
@@ -523,12 +550,13 @@ public final class FunctionTestBuilder {
      * @param name display name of the test
      * @param positionalArgs
      * @param namedArgs
+     * @param typeChecker a consumer that checks if the inferred return type is correct
      * @param resultChecker a consumer that checks if the returned computer evaluates to the correct value
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
-        final Map<String, TestingArgument> namedArgs, final Consumer<Computer> resultChecker) {
-
+    private FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final Consumer<ValueType> typeChecker,
+        final Consumer<Computer> resultChecker) {
         m_implTests.add(DynamicTest.dynamicTest("impl - " + name, () -> {
 
             var args = m_function.signature(positionalArgs, namedArgs);
@@ -536,6 +564,13 @@ public final class FunctionTestBuilder {
             if (args.isError()) {
                 fail("Arguments do not match signature: " + args.getErrorMessage());
             }
+
+            var resultType = m_function.returnType(args.getValue().map(TestingArgument::type));
+            if (resultType.isError()) {
+                fail("Type inference failed: " + resultType.getErrorMessage());
+            }
+            typeChecker.accept(resultType.getValue());
+
             var result = m_function.apply(args.getValue().map(TestingArgument::computer));
             // NB: we open the args after calling apply to make sure that apply does not access the computers
             positionalArgs.forEach(TestingArgument::setOpen);
