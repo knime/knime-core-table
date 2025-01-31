@@ -62,6 +62,7 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.table.access.BooleanAccess;
@@ -126,6 +127,10 @@ public final class Exec {
 
     /**
      * Create a {@link MapperFactory}, that is, the final realization of the expression.
+     * <p>
+     * Note that the mapper of the returned {@link MapperFactory} might throw a
+     * {@link ExpressionEvaluationRuntimeException}. Make sure to catch this exception while executing the mapper and
+     * unwrap it to get the original {@link ExpressionEvaluationException}.
      *
      * @param ast the expression
      * @param columnIndexToComputerFactory function that maps column index to a factory that produces {@code Computer}
@@ -140,8 +145,7 @@ public final class Exec {
     public static MapperFactory createMapperFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
         final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
-        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer,
-        final EvaluationContext ctx) {
+        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer, final EvaluationContext ctx) {
 
         var outputSpec = valueTypeToDataSpec(Expressions.getInferredType(ast));
         final TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> writerFactory =
@@ -157,6 +161,10 @@ public final class Exec {
     /**
      * Create a {@code RowFilterFactory}, that includes only rows for which the expression evaluates to
      * <code>true</code>.
+     * <p>
+     * Note that the filter of the returned {@link RowFilterFactory} might throw a
+     * {@link ExpressionEvaluationRuntimeException}. Make sure to catch this exception while executing the filter and
+     * unwrap it to get the original {@link ExpressionEvaluationException}.
      *
      * @param ast the expression
      * @param columnIndexToComputerFactory function that maps column index to a factory that produces {@code Computer}
@@ -172,8 +180,7 @@ public final class Exec {
     public static RowFilterFactory createRowFilterFactory(final Ast ast,
         final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory,
         final Function<Ast.FlowVarAccess, Optional<Computer>> flowVariableToComputer,
-        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer,
-        final EvaluationContext ctx) {
+        final Function<Ast.AggregationCall, Optional<Computer>> aggregationToComputer, final EvaluationContext ctx) {
         var outputType = Expressions.getInferredType(ast);
         if (!ValueType.BOOLEAN.equals(outputType)) {
             throw new IllegalArgumentException(
@@ -181,7 +188,13 @@ public final class Exec {
         }
         final Function<ReadAccess[], Computer> computerFactory =
             createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer, aggregationToComputer);
-        return inputs -> () -> ((BooleanComputer)computerFactory.apply(inputs)).compute(ctx);
+        return inputs -> () -> {
+            try {
+                return ((BooleanComputer)computerFactory.apply(inputs)).compute(ctx);
+            } catch (ExpressionEvaluationException ex) {
+                throw new ExpressionEvaluationRuntimeException(ex);
+            }
+        };
     }
 
     /**
@@ -221,6 +234,29 @@ public final class Exec {
             return DataSpecs.STRING;
         } else {
             throw new IllegalArgumentException("The value type " + valueType.name() + " cannot be mapped to DataSpecs");
+        }
+    }
+
+    /**
+     * Exception throw by the {@link MapperFactory} and {@link RowFilterFactory} when the expression cannot be evaluated
+     * on the current input data.
+     */
+    public static final class ExpressionEvaluationRuntimeException extends RuntimeException {
+
+        private static final long serialVersionUID = 1L;
+
+        private ExpressionEvaluationRuntimeException(final ExpressionEvaluationException cause) {
+            super(cause);
+        }
+
+        /**
+         * The {@link ExpressionEvaluationException} that caused this runtime exception.
+         * <p>
+         * {@inheritDoc}
+         */
+        @Override
+        public synchronized ExpressionEvaluationException getCause() {
+            return (ExpressionEvaluationException)super.getCause();
         }
     }
 
@@ -343,13 +379,22 @@ public final class Exec {
     private static class WriterFactoryMapper
         implements DataSpec.Mapper<TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>> {
 
-        private static Runnable setMissingOrSetValue(final Computer c, final WriteAccess a, final Runnable setValue,
-            final EvaluationContext ctx) {
+        interface ThrowingRunnable {
+            void run() throws ExpressionEvaluationException;
+        }
+
+        private static Runnable setMissingOrSetValue(final Computer c, final WriteAccess a,
+            final ThrowingRunnable setValue, final EvaluationContext ctx) {
             return () -> {
-                if (c.isMissing(ctx)) {
-                    a.setMissing();
-                } else {
-                    setValue.run();
+                try {
+                    if (c.isMissing(ctx)) {
+                        a.setMissing();
+                    } else {
+                        setValue.run();
+                    }
+                } catch (ExpressionEvaluationException e) {
+                    // NB: We wrap the exception as a RuntimeException so we can throw it
+                    throw new ExpressionEvaluationRuntimeException(e);
                 }
             };
         }
@@ -406,8 +451,7 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>
-            visit(final VarBinaryDataSpec spec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final VarBinaryDataSpec spec) {
             throw new IllegalArgumentException("Expressions cannot produce var binary data");
         }
 
@@ -422,8 +466,7 @@ public final class Exec {
         }
 
         @Override
-        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>
-            visit(final ListDataSpec listDataSpec) {
+        public TriFunction<WriteAccess, Computer, EvaluationContext, Runnable> visit(final ListDataSpec listDataSpec) {
             throw new IllegalArgumentException("Expressions cannot produce list data");
         }
     }
