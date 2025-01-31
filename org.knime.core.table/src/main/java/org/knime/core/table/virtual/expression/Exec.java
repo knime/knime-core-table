@@ -62,6 +62,7 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.table.access.BooleanAccess;
@@ -181,7 +182,14 @@ public final class Exec {
         }
         final Function<ReadAccess[], Computer> computerFactory =
             createComputerFactory(ast, columnIndexToComputerFactory, flowVariableToComputer, aggregationToComputer);
-        return inputs -> () -> ((BooleanComputer)computerFactory.apply(inputs)).compute(ctx);
+        return inputs -> () -> {
+            try {
+                return ((BooleanComputer)computerFactory.apply(inputs)).compute(ctx);
+            } catch (ExpressionEvaluationException ex) {
+                // TODO Handle better - but I guess we won't get around an unchecked exception here...
+                throw new IllegalStateException(ex);
+            }
+        };
     }
 
     /**
@@ -343,13 +351,23 @@ public final class Exec {
     private static class WriterFactoryMapper
         implements DataSpec.Mapper<TriFunction<WriteAccess, Computer, EvaluationContext, Runnable>> {
 
-        private static Runnable setMissingOrSetValue(final Computer c, final WriteAccess a, final Runnable setValue,
+        interface ThrowingRunnable {
+            void run() throws ExpressionEvaluationException;
+        }
+
+        private static Runnable setMissingOrSetValue(final Computer c, final WriteAccess a,
+            final ThrowingRunnable setValue,
             final EvaluationContext ctx) {
             return () -> {
-                if (c.isMissing(ctx)) {
-                    a.setMissing();
-                } else {
-                    setValue.run();
+                try {
+                    if (c.isMissing(ctx)) {
+                        a.setMissing();
+                    } else {
+                        setValue.run();
+                    }
+                } catch (ExpressionEvaluationException e) {
+                    // TODO Handle better - but I guess we won't get around an unchecked exception here...
+                    throw new IllegalStateException(e);
                 }
             };
         }
