@@ -49,24 +49,9 @@
 package org.knime.core.expressions;
 
 /**
- * Exception that is thrown when an expression cannot be evaluated on the current input data.
+ * TODO describe
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public final class ExpressionEvaluationException extends ExpressionException {
-    private static final long serialVersionUID = 1L;
-
-    private final AstContext m_context;
-
-    // TODO add location of the issue
-
-    public ExpressionEvaluationException(final String message, final AstContext context) {
-        super(message);
-        m_context = context;
-    }
-
-    @Override
-    public String getMessage() {
-        return super.getMessage() + " at " + m_context.textLocation();
-    }
+public record AstContext(TextRange textLocation) {
 }
