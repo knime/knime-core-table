@@ -208,7 +208,7 @@ final class Evaluation {
         @Override
         public Computer visit(final FunctionCall node) throws ExpressionCompileException {
             var argComputers = node.args().map(arg -> arg.accept(this));
-            return node.function().apply(argComputers, new AstContext(Parser.getTextLocation(node)));
+            return node.function().apply(argComputers);
         }
 
         @Override
@@ -359,7 +359,8 @@ final class Evaluation {
 
         }
 
-        private static ComputerResultSupplier<KleenesLogic> toKleenesLogicComputer(final BooleanComputer c) {
+        private static ComputerResultSupplier<KleenesLogic>
+            toKleenesLogicComputer(final BooleanComputer c) {
             return ctx -> {
                 if (c.isMissing(ctx)) {
                     return KleenesLogic.UNKNOWN;
@@ -405,7 +406,8 @@ final class Evaluation {
             return IntegerComputer.of(value, (final EvaluationContext w) -> a1.isMissing(w) || a2.isMissing(w));
         }
 
-        static IntegerComputerResultSupplier safeFloorDivide(final IntegerComputer a1, final IntegerComputer a2) {
+        static IntegerComputerResultSupplier safeFloorDivide(final IntegerComputer a1,
+            final IntegerComputer a2) {
             return ctx -> {
                 var divisor = a2.compute(ctx);
                 if (divisor == 0) {
@@ -416,7 +418,8 @@ final class Evaluation {
             };
         }
 
-        static IntegerComputerResultSupplier safeRemainder(final IntegerComputer a1, final IntegerComputer a2) {
+        static IntegerComputerResultSupplier safeRemainder(final IntegerComputer a1,
+            final IntegerComputer a2) {
             return ctx -> {
                 var divisor = a2.compute(ctx);
                 if (divisor == 0) {

@@ -56,17 +56,9 @@ package org.knime.core.expressions;
 public final class ExpressionEvaluationException extends ExpressionException {
     private static final long serialVersionUID = 1L;
 
-    private final AstContext m_context;
-
     // TODO add location of the issue
 
-    public ExpressionEvaluationException(final String message, final AstContext context) {
+    public ExpressionEvaluationException(final String message) {
         super(message);
-        m_context = context;
-    }
-
-    @Override
-    public String getMessage() {
-        return super.getMessage() + " at " + m_context.textLocation();
     }
 }

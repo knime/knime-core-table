@@ -61,7 +61,6 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import org.knime.core.expressions.Arguments;
-import org.knime.core.expressions.AstContext;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
@@ -197,7 +196,7 @@ public final class ControlFlowFunctions {
         }
 
         @Override
-        public Computer apply(final Arguments<Computer> arguments, final AstContext context) {
+        public Computer apply(final Arguments<Computer> arguments) {
             return Computer.createTypedResultComputer(ctx -> computeMatchingBranchIf(arguments, ctx),
                 ifReturnTypeFromComputer(arguments).getValue());
         }
@@ -328,7 +327,7 @@ public final class ControlFlowFunctions {
         }
 
         @Override
-        public Computer apply(final Arguments<Computer> arguments, final AstContext context) {
+        public Computer apply(final Arguments<Computer> arguments) {
             return Computer.createTypedResultComputer(ctx -> computeMatchingCaseSwitch(arguments, ctx),
                 switchReturnTypeFromComputer(arguments).getValue());
         }

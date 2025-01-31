@@ -118,11 +118,11 @@ public final class BuiltInFunctions {
         .category(ControlFlowFunctions.CATEGORY) //
         .args(SignatureUtils.arg("message", "The error message to display", SignatureUtils.isString())) //
         .returnType("", ValueType.INTEGER.toString(), args -> ValueType.INTEGER) //
-        .implWithContext((args, context) -> {
+        .impl(args -> {
             return IntegerComputer.of(ctx -> {
-                throw new ExpressionEvaluationException(((StringComputer)args.get("message")).compute(ctx), context);
+                throw new ExpressionEvaluationException(((StringComputer)args.get("message")).compute(ctx));
             }, ctx -> {
-                throw new ExpressionEvaluationException(((StringComputer)args.get("message")).compute(ctx), context);
+                throw new ExpressionEvaluationException(((StringComputer)args.get("message")).compute(ctx));
             });
         }).build();
 

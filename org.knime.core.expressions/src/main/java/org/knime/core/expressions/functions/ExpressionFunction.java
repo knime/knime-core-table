@@ -49,7 +49,6 @@
 package org.knime.core.expressions.functions;
 
 import org.knime.core.expressions.Arguments;
-import org.knime.core.expressions.AstContext;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.NamedExpressionOperator;
 import org.knime.core.expressions.OperatorDescription;
@@ -93,5 +92,5 @@ public interface ExpressionFunction extends NamedExpressionOperator {
      * @param args the arguments
      * @return a computer that applies the function to the input arguments
      */
-    Computer apply(Arguments<Computer> args, AstContext context);
+    Computer apply(Arguments<Computer> args);
 }
