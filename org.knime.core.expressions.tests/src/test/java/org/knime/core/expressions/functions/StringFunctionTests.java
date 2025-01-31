@@ -146,25 +146,74 @@ final class StringFunctionTests {
     }
 
     @TestFactory
-    List<DynamicNode> like() {
-        return new FunctionTestBuilder(StringFunctions.LIKE) //
-            .typing("STRING + STRING", List.of(STRING, STRING), BOOLEAN) //
-            .typing("STRING + STRING?", List.of(STRING, OPT_STRING), OPT_BOOLEAN) //
-            .typing("STRING x 3", List.of(STRING, STRING, STRING), BOOLEAN) //
-            .illegalArgs("INTEGER", List.of(INTEGER, INTEGER)) //
-            .illegalArgs("1 STRING", List.of(STRING)) //
-            .illegalArgs("BOOLEAN", List.of(BOOLEAN, BOOLEAN)) //
-            .illegalArgs("MISSING", List.of(MISSING, MISSING)) //
-            .impl("match %", List.of(arg("hellototheworld"), arg("hello%world")), true) //
-            .impl("match _", List.of(arg("hellotoaworld"), arg("helloto_world")), true) //
-            .impl("literal", List.of(arg("foo"), arg("foo")), true) //
-            .impl("escape %", List.of(arg("50%50"), arg("50[%]50")), true) //
-            .impl("escape _", List.of(arg("50_50"), arg("50[_]50")), true) //
-            .impl("escape % at end", List.of(arg("5050%"), arg("5050[%]")), true) //
-            .impl("escape _ at start", List.of(arg("_5050"), arg("[_]5050")), true) //
-            .impl("double escape _", List.of(arg("50[_]50"), arg("50[[_]]50")), true) //
-            .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg("i")), true) //
-            .impl("missing STRING", List.of(misString(), arg("foo"))) //
+    List<DynamicNode> likeTests() {
+        return new FunctionTestBuilder(StringFunctions.LIKE)
+
+            // ──────────────────────────────────────────────
+            // 1) Type‐Checking and Illegal Arguments
+            // ──────────────────────────────────────────────
+            .typing("STRING + STRING", List.of(STRING, STRING), BOOLEAN)
+            .typing("STRING + (optional) STRING", List.of(STRING, OPT_STRING), OPT_BOOLEAN)
+            .typing("STRING x 3 (with modifiers)", List.of(STRING, STRING, STRING), BOOLEAN)
+            .illegalArgs("INTEGER", List.of(INTEGER, INTEGER)).illegalArgs("1 STRING", List.of(STRING))
+            .illegalArgs("BOOLEAN", List.of(BOOLEAN, BOOLEAN)).illegalArgs("MISSING", List.of(MISSING, MISSING))
+
+            // ──────────────────────────────────────────────
+            // 2) Basic Matching (Expected TRUE)
+            // ──────────────────────────────────────────────
+            .impl("match % (substring)", List.of(arg("hellototheworld"), arg("hello%world")), true)
+            .impl("match _ (single char)", List.of(arg("hellotoaworld"), arg("helloto_world")), true)
+            .impl("exact literal match", List.of(arg("foo"), arg("foo")), true)
+
+            // ──────────────────────────────────────────────
+            // 3) Escaping Literal Wildcards (Expected TRUE)
+            // ──────────────────────────────────────────────
+            .impl("escape %", List.of(arg("50%50"), arg("50[%]50")), true)
+            .impl("escape _", List.of(arg("50_50"), arg("50[_]50")), true)
+            .impl("escape % at end", List.of(arg("5050%"), arg("5050[%]")), true)
+            .impl("escape _ at start", List.of(arg("_5050"), arg("[_]5050")), true)
+            .impl("double escape _", List.of(arg("50[_]50"), arg("50[[_]]50")), true)
+
+            // ──────────────────────────────────────────────
+            // 4) Case‐Insensitive Matching (Expected TRUE)
+            // ──────────────────────────────────────────────
+            .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg("i")), true)
+
+            // ──────────────────────────────────────────────
+            // 5) Additional Examples (All TRUE)
+            //    (from your question: patterns on "ABCDE", etc.)
+            // ──────────────────────────────────────────────
+            .impl("A%%E => ABCDE", List.of(arg("ABCDE"), arg("A%%E")), true)
+            .impl("A%E => ABCDE", List.of(arg("ABCDE"), arg("A%E")), true)
+            .impl("%%%%E => ABCDE", List.of(arg("ABCDE"), arg("%%%%E")), true) // same as %E effectively
+            .impl("%E => ABCDE", List.of(arg("ABCDE"), arg("%E")), true)
+            .impl("____E => ABCDE", List.of(arg("ABCDE"), arg("____E")), true)
+            .impl("A____ => ABCDE", List.of(arg("ABCDE"), arg("A____")), true)
+            .impl("A% => ABCDE", List.of(arg("ABCDE"), arg("A%")), true)
+            .impl("A%E => ABCDE", List.of(arg("ABCDE"), arg("A%E")), true)
+            .impl("A%_ => ABCDE", List.of(arg("ABCDE"), arg("A%_")), true)
+            .impl("% => ABCDE", List.of(arg("ABCDE"), arg("%")), true) // matches anything
+            .impl("%B% => ABCDE", List.of(arg("ABCDE"), arg("%B%")), true) // must contain 'B'
+            .impl("%B__% => ABCDE", List.of(arg("ABCDE"), arg("%B__%")), true)
+            .impl("apple => a%le", List.of(arg("apple"), arg("a%le")), true)
+            .impl("banana => _a_a_a", List.of(arg("banana"), arg("_a_a_a")), true)
+
+            // ──────────────────────────────────────────────
+            // 6) Explicitly Failing Scenarios (Expected FALSE)
+            // ──────────────────────────────────────────────
+            .impl("Too short for underscores", List.of(arg("ABCDE"), arg("___E")), false) // pattern: 4 char, string: 5
+            .impl("Must start with B", List.of(arg("ABCDE"), arg("B%")), false)
+            .impl("Doesn't contain Z", List.of(arg("ABCDE"), arg("%Z%")), false)
+            .impl("Case‐sensitive fail", List.of(arg("AbCdE"), arg("abcde")), false)
+            .impl("Single char vs two underscores", List.of(arg("A"), arg("__")), false)
+            .impl("No partial substring match", List.of(arg("ABCDE"), arg("CD")), false)
+
+            // ──────────────────────────────────────────────
+            // 7) Tests with MISSING arguments
+            // ──────────────────────────────────────────────
+            .impl("missing STRING arg", List.of(misString(), arg("foo")))
+
+            // Collect everything into test nodes
             .tests();
     }
 
@@ -378,25 +427,24 @@ final class StringFunctionTests {
             .typing("STRING + start + len", List.of(STRING, INTEGER, INTEGER), STRING) //
             .typing("optional length", List.of(STRING, INTEGER, OPT_INTEGER), STRING) //
             .typing("Optional start and length", List.of(STRING, OPT_INTEGER, OPT_INTEGER), STRING) //
-            .typing("only STRING", List.of(STRING), STRING)
-            .illegalArgs("Integer instead of string", List.of(INTEGER)) //
-            .illegalArgs("only optional length", List.of(),Map.of("length", INTEGER)) //)
-            .warns("negative length",  List.of(arg("abcdefg"), arg(1), arg(-1))) //
-            .warns("non-positive start",    List.of(arg("abcdefg"), arg(0), arg(3))) //
+            .typing("only STRING", List.of(STRING), STRING).illegalArgs("Integer instead of string", List.of(INTEGER)) //
+            .illegalArgs("only optional length", List.of(), Map.of("length", INTEGER)) //)
+            .warns("negative length", List.of(arg("abcdefg"), arg(1), arg(-1))) //
+            .warns("non-positive start", List.of(arg("abcdefg"), arg(0), arg(3))) //
             .impl("substr", List.of(arg("abcdefg"), arg(2), arg(3)), "bcd") //
-            .impl("length is MISSING",List.of(arg("abcdefg"), arg(0), misInteger()), "abcdefg") //))
-            .impl("length is negative",List.of(arg("abcdefg"), arg(1), arg(-1)), "") //
+            .impl("length is MISSING", List.of(arg("abcdefg"), arg(0), misInteger()), "abcdefg") //))
+            .impl("length is negative", List.of(arg("abcdefg"), arg(1), arg(-1)), "") //
             .impl("start is negative", List.of(arg("abcdefg"), arg(-1), arg(1)), "a") //
             .impl("noop", List.of(arg("abcdefg"), arg(1), arg(100)), "abcdefg") //
             .impl("last char", List.of(arg("abc"), arg(3), arg(1)), "c") //
-            .impl("start after last char",  List.of(arg("abc"), arg(4), arg(1)), "") //
-            .impl("empty string1",  List.of(arg(""), arg(0), arg(0)), "") //
-            .impl("empty string2",  List.of(arg(""), arg(1), arg(3)), "") //
+            .impl("start after last char", List.of(arg("abc"), arg(4), arg(1)), "") //
+            .impl("empty string1", List.of(arg(""), arg(0), arg(0)), "") //
+            .impl("empty string2", List.of(arg(""), arg(1), arg(3)), "") //
             .impl("string is missing", List.of(misString(), arg(1), arg(3))) //
-            .impl("start and length is missing", List.of(arg("abc"), misInteger(), misInteger()),"abc") //
-            .impl("start is missing", List.of(arg("abc"), misInteger(), arg(3)),"abc") //
-            .impl("length is negative", List.of(arg("abc"), misInteger(), arg(-1)),"") //
-            .impl("length is very large", List.of(arg("abc"), misInteger(), arg(Integer.MAX_VALUE)),"abc") //
+            .impl("start and length is missing", List.of(arg("abc"), misInteger(), misInteger()), "abc") //
+            .impl("start is missing", List.of(arg("abc"), misInteger(), arg(3)), "abc") //
+            .impl("length is negative", List.of(arg("abc"), misInteger(), arg(-1)), "") //
+            .impl("length is very large", List.of(arg("abc"), misInteger(), arg(Integer.MAX_VALUE)), "abc") //
             .tests();
     }
 
