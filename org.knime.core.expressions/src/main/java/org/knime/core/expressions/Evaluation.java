@@ -57,9 +57,6 @@ import static org.knime.core.expressions.ValueType.STRING;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToLongFunction;
 
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.BinaryOp;
@@ -75,8 +72,12 @@ import org.knime.core.expressions.Ast.StringConstant;
 import org.knime.core.expressions.Ast.UnaryOp;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
+import org.knime.core.expressions.Computer.ComputerResultSupplier;
 import org.knime.core.expressions.Computer.FloatComputer;
+import org.knime.core.expressions.Computer.FloatComputerResultSupplier;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.IntegerComputerResultSupplier;
 import org.knime.core.expressions.Computer.StringComputer;
 
 /**
@@ -86,6 +87,11 @@ import org.knime.core.expressions.Computer.StringComputer;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 final class Evaluation {
+
+    // TODO join with ToBooleanFunction from Computer?
+    private interface Predicate<T> {
+        boolean test(T ctx) throws ExpressionEvaluationException;
+    }
 
     private Evaluation() {
     }
@@ -214,10 +220,10 @@ final class Evaluation {
         private static Computer missingFallbackOperatorImpl(final ValueType outputType, final Computer arg1,
             final Computer arg2) {
             // Deferred evaluation to avoid calling missing during setup
-            Function<EvaluationContext, Computer> outputComputer = ctx -> arg1.isMissing(ctx) ? arg2 : arg1;
+            ComputerResultSupplier<Computer> outputComputer = ctx -> arg1.isMissing(ctx) ? arg2 : arg1;
 
             // Output is missing iff both inputs are missing
-            ToBooleanFunction<EvaluationContext> outputMissing = ctx -> arg1.isMissing(ctx) && arg2.isMissing(ctx);
+            BooleanComputerResultSupplier outputMissing = ctx -> arg1.isMissing(ctx) && arg2.isMissing(ctx);
 
             // NOSONARs because it otherwise suggests a change that breaks deferred evaluation of get()
             if (BOOLEAN.equals(outputType.baseType())) {
@@ -276,7 +282,7 @@ final class Evaluation {
             Predicate<EvaluationContext> anyMissing = ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx);
             Predicate<EvaluationContext> bothMissing = ctx -> arg1.isMissing(ctx) && arg2.isMissing(ctx);
 
-            ToBooleanFunction<EvaluationContext> value;
+            BooleanComputerResultSupplier value;
             if (arg1 instanceof FloatComputer || arg2 instanceof FloatComputer) {
                 // One is FLOAT -> we do the comparison for FLOAT
                 var a1 = toFloat(arg1);
@@ -329,7 +335,7 @@ final class Evaluation {
                     "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not equality comparable.");
             }
 
-            ToBooleanFunction<EvaluationContext> equal = //
+            BooleanComputerResultSupplier equal = //
                 ctx -> (arg1.isMissing(ctx) && arg2.isMissing(ctx)) // both missing -> true
                     || (!arg1.isMissing(ctx) && !arg2.isMissing(ctx) && valuesEqual.test(ctx)); // any missing -> false
 
@@ -353,7 +359,8 @@ final class Evaluation {
 
         }
 
-        private static Function<EvaluationContext, KleenesLogic> toKleenesLogicComputer(final BooleanComputer c) {
+        private static ComputerResultSupplier<KleenesLogic>
+            toKleenesLogicComputer(final BooleanComputer c) {
             return ctx -> {
                 if (c.isMissing(ctx)) {
                     return KleenesLogic.UNKNOWN;
@@ -366,7 +373,7 @@ final class Evaluation {
         }
 
         private static BooleanComputer
-            fromKleenesLogicSupplier(final Function<EvaluationContext, KleenesLogic> logicSupplier) {
+            fromKleenesLogicSupplier(final ComputerResultSupplier<KleenesLogic> logicSupplier) {
             return BooleanComputer.of( //
                 ctx -> logicSupplier.apply(ctx) == KleenesLogic.TRUE, //
                 ctx -> logicSupplier.apply(ctx) == KleenesLogic.UNKNOWN //
@@ -377,7 +384,7 @@ final class Evaluation {
     private static class Integer {
 
         static IntegerComputer unary(final UnaryOperator op, final IntegerComputer arg) {
-            ToLongFunction<EvaluationContext> value = switch (op) {
+            IntegerComputerResultSupplier value = switch (op) {
                 case MINUS -> ctx -> -arg.compute(ctx);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
@@ -387,7 +394,7 @@ final class Evaluation {
         static IntegerComputer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
             var a1 = (IntegerComputer)arg1;
             var a2 = (IntegerComputer)arg2;
-            ToLongFunction<EvaluationContext> value = switch (op) {
+            IntegerComputerResultSupplier value = switch (op) {
                 case PLUS -> ctx -> a1.compute(ctx) + a2.compute(ctx);
                 case MINUS -> ctx -> a1.compute(ctx) - a2.compute(ctx);
                 case MULTIPLY -> ctx -> a1.compute(ctx) * a2.compute(ctx);
@@ -399,7 +406,8 @@ final class Evaluation {
             return IntegerComputer.of(value, (final EvaluationContext w) -> a1.isMissing(w) || a2.isMissing(w));
         }
 
-        static ToLongFunction<EvaluationContext> safeFloorDivide(final IntegerComputer a1, final IntegerComputer a2) {
+        static IntegerComputerResultSupplier safeFloorDivide(final IntegerComputer a1,
+            final IntegerComputer a2) {
             return ctx -> {
                 var divisor = a2.compute(ctx);
                 if (divisor == 0) {
@@ -410,7 +418,8 @@ final class Evaluation {
             };
         }
 
-        static ToLongFunction<EvaluationContext> safeRemainder(final IntegerComputer a1, final IntegerComputer a2) {
+        static IntegerComputerResultSupplier safeRemainder(final IntegerComputer a1,
+            final IntegerComputer a2) {
             return ctx -> {
                 var divisor = a2.compute(ctx);
                 if (divisor == 0) {
@@ -425,7 +434,7 @@ final class Evaluation {
     private static class Float {
 
         static FloatComputer unary(final UnaryOperator op, final FloatComputer arg) {
-            ToDoubleFunction<EvaluationContext> value = switch (op) {
+            FloatComputerResultSupplier value = switch (op) {
                 case MINUS -> ctx -> -arg.compute(ctx);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
@@ -433,7 +442,7 @@ final class Evaluation {
         }
 
         static FloatComputer binary(final BinaryOperator op, final FloatComputer arg1, final FloatComputer arg2) {
-            ToDoubleFunction<EvaluationContext> value = switch (op) {
+            FloatComputerResultSupplier value = switch (op) {
                 case PLUS -> ctx -> arg1.compute(ctx) + arg2.compute(ctx);
                 case MINUS -> ctx -> arg1.compute(ctx) - arg2.compute(ctx);
                 case MULTIPLY -> ctx -> arg1.compute(ctx) * arg2.compute(ctx);
@@ -463,8 +472,8 @@ final class Evaluation {
     }
 
     private static class Strings {
-        static Function<EvaluationContext, String> stringRepr(final Computer computer) {
-            Function<EvaluationContext, String> value;
+        static ComputerResultSupplier<String> stringRepr(final Computer computer) {
+            ComputerResultSupplier<String> value;
             if (computer instanceof BooleanComputer c) {
                 value = ctx -> c.compute(ctx) ? "true" : "false";
             } else if (computer instanceof IntegerComputer c) {
