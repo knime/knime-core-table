@@ -54,7 +54,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.expressions.SignatureUtils;
+import org.knime.core.expressions.ValueType;
 
 /**
  * Holds the collection of all built-in {@link ExpressionFunction functions} and {@link OperatorCategory function
@@ -105,8 +110,25 @@ public final class BuiltInFunctions {
         META_CATEGORY_CONTROL.stream() //
     ).collect(Collectors.toUnmodifiableList());
 
+    static ExpressionFunction FAIL = ExpressionFunctionBuilder.functionBuilder() //
+        .name("fail") //
+        .description("Fails with an error message") //
+        .examples("") //
+        .keywords("error", "fail", "exception") //
+        .category(ControlFlowFunctions.CATEGORY) //
+        .args(SignatureUtils.arg("message", "The error message to display", SignatureUtils.isString())) //
+        .returnType("", ValueType.INTEGER.toString(), args -> ValueType.INTEGER) //
+        .impl(args -> {
+            return IntegerComputer.of(ctx -> {
+                throw new ExpressionEvaluationException(((StringComputer)args.get("message")).compute(ctx));
+            }, ctx -> {
+                throw new ExpressionEvaluationException(((StringComputer)args.get("message")).compute(ctx));
+            });
+        }).build();
+
     /** Built-in functions */
     public static final List<ExpressionFunction> BUILT_IN_FUNCTIONS = List.of( //
+        FAIL,
         // Condition
         ControlFlowFunctions.IF, //
         ControlFlowFunctions.SWITCH, //
@@ -213,5 +235,4 @@ public final class BuiltInFunctions {
     public static final Map<String, ExpressionFunction> BUILT_IN_FUNCTIONS_MAP = Collections.unmodifiableMap( //
         BUILT_IN_FUNCTIONS.stream().collect(Collectors.toMap(ExpressionFunction::name, f -> f)) //
     );
-
 }
