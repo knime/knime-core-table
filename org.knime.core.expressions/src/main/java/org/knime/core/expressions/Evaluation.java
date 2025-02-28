@@ -298,9 +298,11 @@ final class Evaluation {
                 var a2 = (IntegerComputer)arg2;
                 value = switch (op) {
                     case LESS_THAN -> ctx -> !anyMissing.test(ctx) && a1.compute(ctx) < a2.compute(ctx);
-                    case LESS_THAN_EQUAL -> ctx -> !anyMissing.test(ctx) && a1.compute(ctx) <= a2.compute(ctx);
+                    case LESS_THAN_EQUAL -> ctx -> bothMissing.test(ctx)
+                        || (!anyMissing.test(ctx) && a1.compute(ctx) <= a2.compute(ctx));
                     case GREATER_THAN -> ctx -> !anyMissing.test(ctx) && a1.compute(ctx) > a2.compute(ctx);
-                    case GREATER_THAN_EQUAL -> ctx -> !anyMissing.test(ctx) && a1.compute(ctx) >= a2.compute(ctx);
+                    case GREATER_THAN_EQUAL -> ctx -> bothMissing.test(ctx)
+                        || (!anyMissing.test(ctx) && a1.compute(ctx) >= a2.compute(ctx));
                     default -> throw new EvaluationImplementationError(
                         "Binary operator " + op + " is not a comparison.");
                 };
