@@ -85,6 +85,8 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
 
+import com.google.common.math.LongMath;
+
 /**
  * Implementation of built-in functions that do math.
  *
@@ -621,7 +623,7 @@ public final class MathFunctions {
 
                 if (isNearZero(xC) && isNearZero(yC)) {
                     ctx.addWarning("atan2 returned NaN because both inputs are zero.");
-                    return Float.NaN;
+                    return Double.NaN;
                 }
 
                 return Math.atan2(yC, xC);
@@ -778,7 +780,7 @@ public final class MathFunctions {
 
             if (cC < 1) {
                 ctx.addWarning("acosh returned NaN because argument is less than 1.");
-                return Float.NaN;
+                return Double.NaN;
             }
 
             return Math.log(cC + Math.sqrt(cC * cC - 1));
@@ -824,7 +826,7 @@ public final class MathFunctions {
                 ctx.addWarning("atanh returned %s because argument is %s.".formatted(ret, argSign));
             } else if (Math.abs(cC) >= 1) {
                 ctx.addWarning("atanh returned NaN because argument is outside the range [-1, 1].");
-                return Float.NaN;
+                return Double.NaN;
             }
 
             return 0.5 * Math.log((cC + 1.0) / (1.0 - cC));
@@ -1160,9 +1162,13 @@ public final class MathFunctions {
                     if (xC == 0 && yC <= 0) {
                         ctx.addWarning("INTEGER pow returned 0 because base is zero and exponent is non-positive.");
                         return 0;
+                    } else if (xC != 1 && yC < 0) {
+                        return 0; // 1/x^y is always 0 for integer x!=1 and positive y
+                    } else if (xC == 1) {
+                        return 1; // 1^y is always 1
                     }
 
-                    return (long)Math.pow(xC, yC);
+                    return LongMath.pow(xC, FunctionUtils.toIntExact(yC, "Exponent argument was too large."));
                 }, anyMissing(args) //
             );
         } else {
@@ -1175,7 +1181,7 @@ public final class MathFunctions {
 
                     if (isNearZero(xC) && (isNearZero(yC) || yC < 0)) {
                         ctx.addWarning("FLOAT pow returned NaN because base is zero and exponent is non-positive.");
-                        return Float.NaN;
+                        return Double.NaN;
                     }
 
                     return Math.pow(xC, yC);
@@ -1215,7 +1221,7 @@ public final class MathFunctions {
 
                 if (cC < 0) {
                     ctx.addWarning("sqrt returned NaN because argument is negative.");
-                    return Float.NaN;
+                    return Double.NaN;
                 }
 
                 return Math.sqrt(cC); //
@@ -1278,7 +1284,7 @@ public final class MathFunctions {
 
                     if (isNearZero(y)) {
                         ctx.addWarning("FLOAT mod returned NaN because divisor is zero.");
-                        return Float.NaN;
+                        return Double.NaN;
                     }
 
                     return x % y;
@@ -1409,7 +1415,7 @@ public final class MathFunctions {
     private static Computer ceilImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
-            ctx -> (int)Math.ceil(c.compute(ctx)), //
+            ctx -> (long)Math.ceil(c.compute(ctx)), //
             ctx -> {
                 if (c.isMissing(ctx)) {
                     return true;
@@ -1625,7 +1631,8 @@ public final class MathFunctions {
                 return FloatComputer.of(ctx -> {
                     var precisionArgument = args.get(1);
 
-                    int scale = precisionArgument.isMissing(ctx) ? 0 : (int)toInteger(args.get(1)).compute(ctx);
+                    int scale = precisionArgument.isMissing(ctx) ? 0
+                        : FunctionUtils.toIntExact(toInteger(args.get(1)).compute(ctx), "precision arg was too large.");
                     double value = c.compute(ctx);
 
                     if (Double.isNaN(value)) {
@@ -1981,7 +1988,7 @@ public final class MathFunctions {
             // integer the whole way, so no floating point. Nice!
             long ret = 1;
 
-            for (int d = 1; d <= r; d++) {
+            for (long d = 1; d <= r; d++) {
                 ret *= n;
                 ret /= d;
 
@@ -2041,8 +2048,8 @@ public final class MathFunctions {
             if (args.size() > 2 && !args.get(2).isMissing(ctx)) {
                 standardDeviation = toFloat(args.get(2)).compute(ctx);
                 if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                    ctx.addWarning("normal returned NaN because standard deviation <= 0");
-                    return Float.NaN;
+                    ctx.addWarning("normal returned NaN because standard deviation <= 0.");
+                    return Double.NaN;
                 }
             }
 
@@ -2114,8 +2121,8 @@ public final class MathFunctions {
             if (args.size() > 2 && !args.get(2).isMissing(ctx)) {
                 standardDeviation = toFloat(args.get(2)).compute(ctx);
                 if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                    ctx.addWarning("error_function returned NaN because standard deviation <= 0");
-                    return Float.NaN;
+                    ctx.addWarning("error_function returned NaN because standard deviation <= 0.");
+                    return Double.NaN;
                 }
             }
 

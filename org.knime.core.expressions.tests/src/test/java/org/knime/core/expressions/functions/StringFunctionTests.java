@@ -333,6 +333,8 @@ final class StringFunctionTests {
             .illegalArgs("INTEGER", List.of(INTEGER)) //
             .impl("pad right", List.of(arg("ab"), arg(4)), "ab  ") //
             .impl("noop", List.of(arg("abcde"), arg(3)), "abcde") //
+            .impl("negative target length", List.of(arg("ab"), arg(-1)), "ab") //
+            .impl("with pad char", List.of(arg("ab"), arg(4), arg("0")), "ab00") //
             .tests();
     }
 
@@ -346,6 +348,8 @@ final class StringFunctionTests {
             .illegalArgs("INTEGER", List.of(INTEGER)) //
             .impl("pad right", List.of(arg("ab"), arg(4)), "  ab") //
             .impl("noop", List.of(arg("abcde"), arg(3)), "abcde") //
+            .impl("negative target length", List.of(arg("ab"), arg(-1)), "ab") //
+            .impl("with pad char", List.of(arg("ab"), arg(4), arg("0")), "00ab") //
             .tests();
     }
 
@@ -385,7 +389,14 @@ final class StringFunctionTests {
             .impl("start and length is missing", List.of(arg("abc"), misInteger(), misInteger()),"abc") //
             .impl("start is missing", List.of(arg("abc"), misInteger(), arg(3)),"abc") //
             .impl("length is negative", List.of(arg("abc"), arg(1), arg(-1)), "") //
+            .impl("length is negative and start missing", List.of(arg("abc"), misInteger(), arg(-1)), "") //
             .impl("length is very large", List.of(arg("abc"), arg(1), arg(Integer.MAX_VALUE)), "abc") //
+            .impl("length is very large and start missing", List.of(arg("abc"), misInteger(), arg(Integer.MAX_VALUE)),
+                "abc") //
+            .impl("length is larger than int MAX_VALUE", List.of(arg("abc"), misInteger(), arg(Long.MAX_VALUE)), "abc") //
+            .impl("length is less than int MIN_VALUE", List.of(arg("abc"), misInteger(), arg(Long.MIN_VALUE)), "") //
+            .impl("start is larger than int MAX_VALUE", List.of(arg("abc"), arg(Long.MAX_VALUE - 100L), arg(1)), "") //
+            .impl("start is less than int MIN_VALUE", List.of(arg("abc"), arg(Long.MIN_VALUE + 100L), arg(1)), "a") //
             .tests();
     }
 
@@ -397,6 +408,9 @@ final class StringFunctionTests {
             .illegalArgs("1 string", List.of(STRING)) //
             .impl("first n", List.of(arg("abcdefg"), arg(2)), "ab") //
             .impl("noop", List.of(arg("abcdefg"), arg(100)), "abcdefg") //
+            .impl("n bigger than integer MAX_VALUE", List.of(arg("abcdefg"), arg(100L + Integer.MAX_VALUE)), "abcdefg") //
+            .impl("n negative", List.of(arg("abcdefg"), arg(-100)), "") //
+            .impl("n less than integer MIN_VALUE", List.of(arg("abcdefg"), arg(-100L + Integer.MIN_VALUE)), "") //
             .tests();
     }
 
@@ -408,6 +422,9 @@ final class StringFunctionTests {
             .illegalArgs("1 string", List.of(STRING)) //
             .impl("last n", List.of(arg("abcdefg"), arg(2)), "fg") //
             .impl("noop", List.of(arg("abcdefg"), arg(100)), "abcdefg") //
+            .impl("n bigger than integer MAX_VALUE", List.of(arg("abcdefg"), arg(100L + Integer.MAX_VALUE)), "abcdefg") //
+            .impl("n negative", List.of(arg("abcdefg"), arg(-100)), "") //
+            .impl("n less than integer MIN_VALUE", List.of(arg("abcdefg"), arg(-100L + Integer.MIN_VALUE)), "") //
             .tests();
     }
 
@@ -674,10 +691,11 @@ final class StringFunctionTests {
             .illegalArgs("INTEGER", List.of(FLOAT)) //
             .illegalArgs("MISSING", List.of(MISSING)) //
             .illegalArgs("2 STRINGs", List.of(STRING, STRING)) //
-            .impl("valid", List.of(arg("-1.24")), Float.parseFloat("-1.24")) //
-            .impl("valid int", List.of(arg("10")), Float.parseFloat("10.0")) //
+            .impl("valid", List.of(arg("-1.24")), -1.24) //
+            .impl("valid int", List.of(arg("10")), 10.0) //
             .impl("invalid", List.of(arg("1.3a"))) //
             .impl("MISSING", List.of(misString())) //
+            .impl("very large float", List.of(arg("3e39")), 3e39) //
             .tests();
     }
 
@@ -693,6 +711,7 @@ final class StringFunctionTests {
             .impl("valid", List.of(arg("-10")), -10) //
             .impl("invalid", List.of(arg("1.3"))) //
             .impl("MISSING", List.of(misString())) //
+            .impl("very large int", List.of(arg(String.valueOf(Integer.MAX_VALUE + 11L))), 11 + (long)Integer.MAX_VALUE) //)
             .tests();
     }
 

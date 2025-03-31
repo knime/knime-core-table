@@ -623,6 +623,8 @@ final class MathFunctionTests {
             .impl("missing second FLOAT", List.of(arg(5.2), misFloat())) //
             .impl("0.0^0.0", List.of(arg(0.0), arg(0.0)), Float.NaN) //
             .impl("0^0", List.of(arg(0), arg(0)), 0) //
+            .impl("1^negative", List.of(arg(1), arg(-2)), 1) //
+            .impl("2^negative", List.of(arg(2), arg(-2)), 0) // (>1)^(<0) should always be 0
             .impl("0^negative", List.of(arg(0), arg(-1)), 0) //
             .impl("0.0^negative", List.of(arg(0.0), arg(-1)), Float.NaN) //
             .impl("NaN", List.of(arg(Float.NaN), arg(5)), Float.NaN) //
@@ -760,6 +762,7 @@ final class MathFunctionTests {
             .impl("NEG FLOAT", List.of(arg(-1.9)), -1) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .impl("very large float", List.of(arg(2147483650.5)), 2147483651L) //
             .impl("NaN", List.of(arg(Float.NaN))) //
             .warns("NaN", List.of(arg(Float.NaN))) //
             .tests();

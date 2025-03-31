@@ -48,6 +48,8 @@
  */
 package org.knime.core.expressions.functions;
 
+import java.util.function.Supplier;
+
 /**
  * Utilities for implementing functions.
  *
@@ -61,5 +63,78 @@ public final class FunctionUtils {
     /** @return an {@link IllegalStateException} that indicates an implementation error */
     static IllegalStateException calledWithIllegalArgs() {
         return new IllegalStateException("Implementation error: called function with unsupported arguments");
+    }
+
+    /**
+     * Convert a long to an int, throwing an exception if the value is out of range for an int.
+     *
+     * NOTE: This throws an unchecked exception which is not handled correctly. In future versions this function throws
+     * a checked ExpressionEvaluationException which was introduced in AP-22801
+     *
+     * @param value the long value
+     * @param message the exception message
+     * @param formattingArgs the formatting arguments for the message. Will be forwarded to
+     *            {@link String#format(String, Object...)} along with the message. Can be empty.
+     * @return the int value
+     * @throws ArithmeticException if the value is out of range
+     */
+    public static int toIntExact(final long value, final String message, final Object... formattingArgs)
+        throws ArithmeticException {
+        return toIntExact(value, () -> String.format(message, formattingArgs));
+    }
+
+    /**
+     * Convert a long to an int, throwing an exception if the value is out of range for an int.
+     *
+     * NOTE: This throws an unchecked exception which is not handled correctly. In future versions this function throws
+     * a checked ExpressionEvaluationException which was introduced in AP-22801
+     *
+     * @param value the long value
+     * @param messageSupplier a supplier for the exception message. Will only be called if the value is out of range.
+     * @return the int value
+     * @throws ArithmeticException if the value is out of range
+     */
+    public static int toIntExact(final long value, final Supplier<String> messageSupplier) throws ArithmeticException {
+        return Math.toIntExact(value);
+    }
+
+    /**
+     * Convert a long to an int, clamping the value to the range of an int.
+     *
+     * @param value the long value
+     * @return the int value
+     */
+    public static int toIntClamped(final long value) {
+        return clamped(value, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Clamp the given long value to the given range. Note: if both boundary args are ints, the result is an int.
+     *
+     * @param value the value to clamp
+     * @param min the minimum value as int
+     * @param max the maximum value as int
+     * @return the clamped value as int
+     */
+    public static int clamped(final long value, final int min, final int max) {
+        return (int)clamped(value, (long)min, (long)max);
+    }
+
+    /**
+     * Clamp the given long value to the given range.
+     *
+     * @param value the value to clamp
+     * @param min the minimum value
+     * @param max the maximum value
+     * @return the clamped value
+     */
+    public static long clamped(final long value, final long min, final long max) {
+        if (value < min) {
+            return min;
+        } else if (value > max) {
+            return max;
+        } else {
+            return value;
+        }
     }
 }
