@@ -49,11 +49,6 @@
 package org.knime.core.table.util;
 
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -64,49 +59,27 @@ import java.nio.charset.StandardCharsets;
  */
 public final class StringEncoder {
 
-    private final CharsetDecoder m_decoder = StandardCharsets.UTF_8.newDecoder()
-        .onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
-
-    private final CharsetEncoder m_encoder = StandardCharsets.UTF_8.newEncoder()
-        .onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
-
-    private final String decode(final ByteBuffer buffer) {
-        try {
-            synchronized (m_decoder) {
-                return m_decoder.decode(buffer).toString();
-            }
-        } catch (final CharacterCodingException e) {
-            // This cannot happen because the CodingErrorAction is not REPORT
-            throw new IllegalStateException(e);
-        }
+    /**
+     * Decode a {@code String} from UTF-8 encoded {@code bytes}.
+     *
+     * @param bytes byte sequence to decode
+     * @return decoded String
+     */
+    public final static String decode(final byte[] bytes) {
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     /**
+     * Encode a {@code String} into UTF-8 byte sequence
      *
-     * @param bytes
-     * @return
+     * @param value String to encode
+     * @return encoded byte sequence
      */
-    public final String decode(final byte[] bytes) {
-        return decode(ByteBuffer.wrap(bytes));
+    public static ByteBuffer encode(final String value) {
+        return ByteBuffer.wrap(value.getBytes(StandardCharsets.UTF_8));
     }
 
-    private ByteBuffer encode(final CharBuffer values) {
-        try {
-            synchronized (m_encoder) {
-                return m_encoder.encode(values);
-            }
-        } catch (final CharacterCodingException e) {
-            // This cannot happen because the CodingErrorAction is not REPORT
-            throw new IllegalStateException(e);
-        }
-    }
-
-    /**
-     *
-     * @param value
-     * @return
-     */
-    public ByteBuffer encode(final String value) {
-        return encode(CharBuffer.wrap(value));
+    private StringEncoder() {
+        // no instantiation
     }
 }
