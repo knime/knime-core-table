@@ -65,7 +65,7 @@ public final class StringEncoder {
      * @param bytes byte sequence to decode
      * @return decoded String
      */
-    public final static String decode(final byte[] bytes) {
+    public static String decode(final byte[] bytes) {
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
